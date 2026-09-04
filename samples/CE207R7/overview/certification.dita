@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="certification" xml:lang="ru-RU">
+  <title>Сведения о сертификации</title>
+  <shortdesc>Где искать сведения о сертификации счётчика.</shortdesc>
+  <conbody>
+    <p>Сведения о сертификации счётчика приведены в формуляре <keyword keyref="doc-number"/> ФО.</p>
+  </conbody>
+</concept>

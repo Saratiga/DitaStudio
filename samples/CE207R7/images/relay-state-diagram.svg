@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 220">
+  <g font-family="Segoe UI,sans-serif" font-size="12" fill="#1a1c1f">
+    <circle cx="90" cy="60" r="42" fill="#fdf3e2" stroke="#c58217" stroke-width="2"/>
+    <text x="90" y="56" text-anchor="middle">Отключено</text>
+    <text x="90" y="72" text-anchor="middle" font-size="16">0</text>
+
+    <circle cx="230" cy="150" r="42" fill="#eef4fb" stroke="#1f5fa9" stroke-width="2"/>
+    <text x="230" y="146" text-anchor="middle">Подключено</text>
+    <text x="230" y="162" text-anchor="middle" font-size="16">1</text>
+
+    <circle cx="370" cy="60" r="42" fill="#f7f8fa" stroke="#5b6472" stroke-width="2"/>
+    <text x="370" y="52" text-anchor="middle">Разрешено</text>
+    <text x="370" y="66" text-anchor="middle">включение</text>
+    <text x="370" y="82" text-anchor="middle" font-size="16">2</text>
+
+    <path d="M125,80 L200,130" fill="none" stroke="#1a1c1f" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="145" y="115" font-size="10">a — удалённое подкл.</text>
+    <path d="M200,130 L125,80" fill="none" stroke="#1a1c1f" stroke-width="1.5" marker-end="url(#arrow)" transform="translate(0,18)"/>
+    <text x="130" y="150" font-size="10">b — удалённое откл.</text>
+
+    <path d="M335,80 L260,130" fill="none" stroke="#1a1c1f" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="330" y="115" font-size="10">d — разреш. вкл.</text>
+    <path d="M260,120 L335,70" fill="none" stroke="#1a1c1f" stroke-width="1.5" marker-end="url(#arrow)" transform="translate(0,20)"/>
+    <text x="300" y="152" font-size="10">c — откл.</text>
+  </g>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#1a1c1f"/>
+    </marker>
+  </defs>
+  <text x="230" y="210" font-family="Segoe UI,sans-serif" font-size="11" text-anchor="middle" fill="#8a94a6">Упрощённая схема состояний реле по СТО 34.01-5.1-006-2023 (полный перечень переходов — в п. «Реле и импульсные выходы»)</text>
+</svg>

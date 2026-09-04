@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="direct-channel-and-lcd-interfaces" xml:lang="ru-RU">
+  <title>Прямой канал и отображение состояния интерфейсов на ЖКИ</title>
+  <shortdesc>Режим ретрансляции данных между портами и индексы протокола/скорости обмена,
+    выводимые на ЖКИ. Механизм и таблицы индексов общие для всей линейки счётчиков с ЖКИ.</shortdesc>
+  <conbody>
+    <section>
+      <title>Прямой канал</title>
+      <p>Режим работы портов связи, при котором данные, полученные по одному порту,
+        передаются в другой порт и наоборот. Применяется для:</p>
+      <ul>
+        <li>конфигурации или обновления ПО модуля связи;</li>
+        <li>доступа к локальной сети счётчиков, объединённых интерфейсом RS-485, через
+          счётчик-«шлюз» с дополнительным интерфейсом (например, NB-IoT/GSM).</li>
+      </ul>
+    </section>
+
+    <section>
+      <title>Информация об интерфейсах связи на ЖКИ</title>
+      <p>Настройки интерфейсов доступны для отображения на ЖКИ в группе, назначенной для
+        вывода параметров интерфейсов (см.
+        <xref href="../software/button-and-lcd-setup.dita" format="dita"/>).</p>
+      <table>
+        <title>Индекс типа протокола</title>
+        <tgroup cols="2">
+          <colspec colname="c1" colnum="1" colwidth="1*"/>
+          <colspec colname="c2" colnum="2" colwidth="2*"/>
+          <thead><row><entry>Индекс</entry><entry>Тип протокола</entry></row></thead>
+          <tbody>
+            <row><entry>n0</entry><entry>Авто (тип протокола определяется счётчиком между технологическим и СПОДЭС в режиме HDLC)</entry></row>
+            <row><entry>n3</entry><entry>СПОДЭС (IEC 62056 DLMS/COSEM)</entry></row>
+          </tbody>
+        </tgroup>
+      </table>
+      <table>
+        <title>Индекс скорости обмена</title>
+        <tgroup cols="2">
+          <colspec colname="c1" colnum="1" colwidth="1*"/>
+          <colspec colname="c2" colnum="2" colwidth="1*"/>
+          <thead><row><entry>Индекс</entry><entry>Скорость, бод</entry></row></thead>
+          <tbody>
+            <row><entry>0</entry><entry>300</entry></row>
+            <row><entry>1</entry><entry>600</entry></row>
+            <row><entry>2</entry><entry>1200</entry></row>
+            <row><entry>3</entry><entry>2400</entry></row>
+            <row><entry>4</entry><entry>4800</entry></row>
+            <row><entry>5</entry><entry>9600 (рекомендуемая для всех интерфейсов)</entry></row>
+            <row><entry>6</entry><entry>19200</entry></row>
+            <row><entry>7</entry><entry>38400</entry></row>
+            <row><entry>8</entry><entry>57600</entry></row>
+            <row><entry>9</entry><entry>115200</entry></row>
+          </tbody>
+        </tgroup>
+      </table>
+    </section>
+
+    <section>
+      <title>Конфигурирование интерфейсов с помощью кнопок</title>
+      <p>Тип протокола и скорость обмена доступны для настройки кнопками «ДСТП» и «КАДР» в
+        окне состояния модуля связи: длительное нажатие «ДСТП» переводит редактируемый
+        параметр в режим мигания, короткое нажатие «КАДР» изменяет значение, короткое нажатие
+        «ДСТП» записывает параметр и переходит к следующему. Изменения фиксируются в «Журнале
+        коррекции данных» (см. <xref href="../functions/event-logs.dita" format="dita"/>).</p>
+    </section>
+  </conbody>
+</concept>

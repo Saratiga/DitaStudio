@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="install" xml:lang="ru-RU">
+  <title>Установка</title>
+  <shortdesc>Установка <keyword keyref="product-name"/> на рабочую станцию под Windows.</shortdesc>
+  <taskbody>
+    <prereq>
+      <p conref="../concepts/about.dita#about/reusable-note"/>
+      <p>Понадобятся права администратора и 500 МБ свободного места.</p>
+    </prereq>
+
+    <context>
+      <p>Установщик распространяется одним файлом <filepath>setup.exe</filepath>.</p>
+    </context>
+
+    <steps>
+      <step>
+        <cmd>Запустите <filepath>setup.exe</filepath>.</cmd>
+        <info>Если появится запрос контроля учётных записей, подтвердите его.</info>
+      </step>
+      <step>
+        <cmd>Выберите папку установки и нажмите <uicontrol>Далее</uicontrol>.</cmd>
+        <stepxmp>По умолчанию используется <filepath>C:\Program Files\Example</filepath>.</stepxmp>
+      </step>
+      <step>
+        <cmd>Выберите вариант установки.</cmd>
+        <choicetable>
+          <chhead>
+            <choptionhd>Вариант</choptionhd>
+            <chdeschd>Когда выбирать</chdeschd>
+          </chhead>
+          <chrow>
+            <choption>Обычная</choption>
+            <chdesc>Подходит большинству пользователей.</chdesc>
+          </chrow>
+          <chrow>
+            <choption>Выборочная</choption>
+            <chdesc>Если нужно отключить отдельные компоненты.</chdesc>
+          </chrow>
+        </choicetable>
+      </step>
+      <step>
+        <cmd>Нажмите <uicontrol>Установить</uicontrol> и дождитесь завершения.</cmd>
+        <stepresult>В меню «Пуск» появится ярлык программы.</stepresult>
+      </step>
+    </steps>
+
+    <result>
+      <p>Продукт установлен и готов к первому запуску.</p>
+    </result>
+
+    <postreq>
+      <p>Далее выполните <xref href="first-run.dita#first-run">первый запуск</xref>.</p>
+    </postreq>
+  </taskbody>
+</task>

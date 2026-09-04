@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 220">
+  <g font-family="Segoe UI,sans-serif" font-size="12" fill="#1a1c1f">
+    <rect x="20" y="60" width="110" height="90" rx="6" fill="#f7f8fa" stroke="#5b6472" stroke-width="2"/>
+    <text x="75" y="110" text-anchor="middle">Корпус</text>
+    <text x="75" y="126" text-anchor="middle">счётчика</text>
+
+    <rect x="170" y="70" width="80" height="70" rx="4" fill="#eef4fb" stroke="#1f5fa9" stroke-width="2"/>
+    <text x="210" y="110" text-anchor="middle">Модуль</text>
+    <text x="210" y="126" text-anchor="middle">связи</text>
+
+    <rect x="300" y="80" width="60" height="20" rx="3" fill="#ffffff" stroke="#1a1c1f"/>
+    <text x="330" y="94" text-anchor="middle" font-size="10">SIM</text>
+
+    <path d="M130,105 L165,105" stroke="#1a1c1f" stroke-width="2" marker-end="url(#a2)"/>
+    <path d="M250,90 L295,90" stroke="#1a1c1f" stroke-width="2" marker-end="url(#a2)"/>
+  </g>
+  <defs>
+    <marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#1a1c1f"/>
+    </marker>
+  </defs>
+  <text x="210" y="190" font-family="Segoe UI,sans-serif" font-size="11" text-anchor="middle" fill="#8a94a6">Порядок замены: снять крышку → извлечь модуль/SIM-карту → установить новый модуль до щелчка</text>
+</svg>

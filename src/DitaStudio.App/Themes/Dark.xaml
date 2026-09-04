@@ -1,0 +1,40 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Тёмная палитра. Холст документа в режиме «Автор» намеренно остаётся светлым (лист бумаги) —
+         тема красит только раму: меню, панели, вкладки, дерево, списки. -->
+
+    <Color x:Key="AccentColor">#4C8DDA</Color>
+    <SolidColorBrush x:Key="Accent" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="AccentSoft" Color="#1B3A5C" />
+    <SolidColorBrush x:Key="AccentHover" Color="#234870" />
+
+    <SolidColorBrush x:Key="Surface" Color="#1E1F22" />
+    <SolidColorBrush x:Key="SurfaceAlt" Color="#26282C" />
+    <SolidColorBrush x:Key="SurfaceSunken" Color="#17181A" />
+    <SolidColorBrush x:Key="SurfaceHover" Color="#32343A" />
+
+    <SolidColorBrush x:Key="Line" Color="#3A3D42" />
+    <SolidColorBrush x:Key="LineStrong" Color="#4B4F57" />
+
+    <SolidColorBrush x:Key="TextPrimary" Color="#E6E8EB" />
+    <SolidColorBrush x:Key="TextMuted" Color="#9AA0AA" />
+    <SolidColorBrush x:Key="TextDisabled" Color="#5B5F66" />
+
+    <SolidColorBrush x:Key="Danger" Color="#E5534B" />
+    <SolidColorBrush x:Key="Warning" Color="#E0A040" />
+    <SolidColorBrush x:Key="Success" Color="#4CAF6D" />
+
+    <SolidColorBrush x:Key="TagBrush" Color="#7D8590" />
+    <SolidColorBrush x:Key="AttributeNameBrush" Color="#C792EA" />
+    <SolidColorBrush x:Key="CodeBackground" Color="#2A2C30" />
+
+    <SolidColorBrush x:Key="ScrollThumb" Color="#4B4F57" />
+    <SolidColorBrush x:Key="ScrollThumbHover" Color="#6B7078" />
+
+    <sys:Double x:Key="EditorFontSize">14.5</sys:Double>
+    <FontFamily x:Key="UiFont">Segoe UI</FontFamily>
+    <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas, Courier New</FontFamily>
+
+</ResourceDictionary>

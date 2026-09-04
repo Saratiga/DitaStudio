@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary Entry//EN" "glossentry.dtd">
+<glossentry id="api" xml:lang="ru-RU">
+  <glossterm>программный интерфейс приложения</glossterm>
+  <glossdef>
+    <p>Набор функций и соглашений, по которым одна программа обращается к другой.</p>
+  </glossdef>
+  <glossBody>
+    <glossSurfaceForm>программный интерфейс приложения (API)</glossSurfaceForm>
+    <glossAlt>
+      <glossAcronym>API</glossAcronym>
+    </glossAlt>
+  </glossBody>
+</glossentry>

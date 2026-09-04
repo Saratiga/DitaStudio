@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="about" xml:lang="ru-RU">
+  <title>О продукте</title>
+  <shortdesc><keyword keyref="product-name"/> — учебный пример проекта DITA, на котором удобно
+    посмотреть, как устроены концепции, задачи, справка и глоссарий.</shortdesc>
+  <conbody>
+    <p id="reusable-note">Этот абзац подключается в другие топики через <codeph>conref</codeph> —
+      достаточно исправить его здесь, и текст обновится везде.</p>
+
+    <p>Проект состоит из четырёх типов топиков:</p>
+    <ul>
+      <li><b>Концепция</b> отвечает на вопрос «что это и зачем».</li>
+      <li><b>Задача</b> — пошаговая инструкция.</li>
+      <li><b>Справка</b> — таблицы параметров и синтаксис.</li>
+      <li><b>Устранение неполадки</b> — признак, причина и решение.</li>
+    </ul>
+
+    <note type="tip">Начните с задачи <xref href="../tasks/install.dita#install">Установка</xref>,
+      если хотите сразу попробовать продукт.</note>
+  </conbody>
+</concept>

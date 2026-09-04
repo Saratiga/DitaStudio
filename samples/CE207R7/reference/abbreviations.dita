@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="abbreviations" xml:lang="ru-RU">
+  <title>Обозначения и сокращения</title>
+  <shortdesc>Сокращения, используемые в руководстве пользователя.</shortdesc>
+  <refbody>
+    <section>
+      <p>Список не зависит от конкретной модели прибора учёта и переносится в руководство
+        на другое устройство без изменений — специфичных для <keyword keyref="product-model"/>
+        обозначений здесь нет.</p>
+    </section>
+    <table>
+      <title>Сокращения</title>
+      <tgroup cols="2">
+        <colspec colname="c1" colnum="1" colwidth="1*"/>
+        <colspec colname="c2" colnum="2" colwidth="3*"/>
+        <thead>
+          <row><entry>Сокращение</entry><entry>Расшифровка</entry></row>
+        </thead>
+        <tbody>
+          <row><entry>АСКУЭ</entry><entry>автоматизированная система коммерческого учёта электроэнергии</entry></row>
+          <row><entry>ВПО</entry><entry>встроенное программное обеспечение</entry></row>
+          <row><entry>ЖКИ</entry><entry>жидкокристаллический индикатор</entry></row>
+          <row><entry>ИВК</entry><entry>информационно-вычислительный комплекс</entry></row>
+          <row><entry>ИВКЭ</entry><entry>информационно-вычислительный комплекс электроустановки</entry></row>
+          <row><entry>ОТК</entry><entry>отдел технического контроля</entry></row>
+          <row><entry>ПКЭ</entry><entry>показатель качества электроэнергии</entry></row>
+          <row><entry>ПО</entry><entry>программное обеспечение</entry></row>
+          <row><entry>ПУ</entry><entry>прибор учёта</entry></row>
+          <row><entry>РУН</entry><entry>реле управления нагрузкой</entry></row>
+          <row><entry>РИП</entry><entry>резервный источник питания</entry></row>
+          <row><entry>УСПД</entry><entry>устройство сбора и передачи данных</entry></row>
+          <row><entry>ФО</entry><entry>формуляр</entry></row>
+          <row><entry>ЧРВ</entry><entry>часы реального времени</entry></row>
+          <row><entry>ДСТП</entry><entry>кнопка «ДОСТУП»</entry></row>
+          <row><entry>СПОДЭС</entry><entry>протокол обмена данными приборов учёта электрической энергии (ГОСТ Р 58940-2020, IEC 62056 DLMS/COSEM)</entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+  </refbody>
+</reference>

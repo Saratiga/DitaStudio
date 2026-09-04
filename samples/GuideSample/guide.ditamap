@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE map PUBLIC "-//OASIS//DTD DITA Map//EN" "map.dtd">
+<map xml:lang="ru-RU">
+  <title>Руководство пользователя «Пример»</title>
+
+  <keydef keys="product-name">
+    <topicmeta>
+      <keywords>
+        <keyword>Пример 2.0</keyword>
+      </keywords>
+    </topicmeta>
+  </keydef>
+
+  <keydef keys="glossary-api" href="glossary/api.dita" format="dita" processing-role="resource-only"/>
+
+  <topicref href="concepts/about.dita">
+    <topicref href="tasks/install.dita"/>
+    <topicref href="tasks/first-run.dita"/>
+  </topicref>
+
+  <topicref href="reference/settings.dita"/>
+  <topicref href="troubleshooting/no-start.dita"/>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Справочные материалы</navtitle>
+    </topicmeta>
+    <topicref href="glossary/api.dita"/>
+  </topichead>
+</map>

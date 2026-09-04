@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE troubleshooting PUBLIC "-//OASIS//DTD DITA Troubleshooting//EN" "troubleshooting.dtd">
+<troubleshooting id="no-start" xml:lang="ru-RU">
+  <title>Программа не запускается</title>
+  <shortdesc>Окно не появляется, в журнале — ошибка доступа к рабочей папке.</shortdesc>
+  <troublebody>
+    <condition>
+      <p>После двойного щелчка по ярлыку окно не открывается, а в
+        <filepath>example.log</filepath> появляется строка
+        <msgph>Cannot access working directory</msgph>.</p>
+    </condition>
+
+    <troubleSolution>
+      <cause>
+        <p>Рабочая папка удалена или недоступна текущему пользователю.</p>
+      </cause>
+      <remedy>
+        <title>Указать доступную рабочую папку</title>
+        <steps>
+          <step>
+            <cmd>Откройте <filepath>example.yaml</filepath> в текстовом редакторе.</cmd>
+          </step>
+          <step>
+            <cmd>Задайте существующую папку в параметре <parmname>workdir</parmname>.</cmd>
+          </step>
+          <step>
+            <cmd>Запустите программу заново.</cmd>
+            <stepresult>Окно открывается, ошибка из журнала пропадает.</stepresult>
+          </step>
+        </steps>
+      </remedy>
+    </troubleSolution>
+  </troublebody>
+</troubleshooting>

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE map PUBLIC "-//OASIS//DTD DITA Map//EN" "map.dtd">
+<map xml:lang="ru-RU">
+  <title>Счётчик электрической энергии СЕ207 R7 — руководство пользователя</title>
+
+  <!-- Ключи модели: единственное место, которое меняется при переносе руководства
+       на другой прибор учёта. Все топики со специфичными числами и обозначениями
+       ссылаются на эти ключи через keyref, а не хранят значения в тексте. -->
+  <keydef keys="product-model">
+    <topicmeta><keywords><keyword>СЕ207 R7</keyword></keywords></topicmeta>
+  </keydef>
+  <keydef keys="product-model-short">
+    <topicmeta><keywords><keyword>СЕ207</keyword></keywords></topicmeta>
+  </keydef>
+  <keydef keys="product-name">
+    <topicmeta><keywords>
+      <keyword>Счётчик электрической энергии однофазный многофункциональный СЕ207 R7</keyword>
+    </keywords></topicmeta>
+  </keydef>
+  <keydef keys="fw-version">
+    <topicmeta><keywords><keyword>12.X</keyword></keywords></topicmeta>
+  </keydef>
+  <keydef keys="doc-number">
+    <topicmeta><keywords><keyword>САНТ.411152.194-01</keyword></keywords></topicmeta>
+  </keydef>
+  <keydef keys="voltage-nom">
+    <topicmeta><keywords><keyword>230 В</keyword></keywords></topicmeta>
+  </keydef>
+  <keydef keys="current-base">
+    <topicmeta><keywords><keyword>5</keyword></keywords></topicmeta>
+  </keydef>
+  <keydef keys="current-max">
+    <topicmeta><keywords><keyword>80</keyword></keywords></topicmeta>
+  </keydef>
+  <keydef keys="module-family">
+    <topicmeta><keywords><keyword>СЕ812</keyword></keywords></topicmeta>
+  </keydef>
+  <keydef keys="dimensions-hwd">
+    <topicmeta><keywords><keyword>135 × 90 × 62</keyword></keywords></topicmeta>
+  </keydef>
+
+  <topicref href="reference/abbreviations.dita"/>
+  <topicref href="overview/general-info.dita"/>
+  <topicref href="safety/safety-requirements.dita"/>
+
+  <topichead>
+    <topicmeta><navtitle>Обзор устройства</navtitle></topicmeta>
+    <topicref href="overview/purpose-and-functions.dita"/>
+    <topicref href="overview/modification-codes.dita"/>
+    <topicref href="overview/certification.dita"/>
+    <topicref href="overview/operating-conditions.dita"/>
+    <topicref href="overview/technical-characteristics.dita"/>
+    <topicref href="overview/construction.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta><navtitle>Подготовка и монтаж</navtitle></topicmeta>
+    <topicref href="installation/unpacking-and-setup.dita"/>
+    <topicref href="installation/wiring-and-interfaces.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta><navtitle>Программное обеспечение и конфигурирование</navtitle></topicmeta>
+    <topicref href="software/admintools-overview.dita"/>
+    <topicref href="software/parameter-and-module-configuration.dita"/>
+    <topicref href="software/direct-channel-and-lcd-interfaces.dita"/>
+    <topicref href="software/button-and-lcd-setup.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta><navtitle>Функции счётчика</navtitle></topicmeta>
+    <topicref href="functions/network-quality-and-push.dita"/>
+    <topicref href="functions/firmware-identification.dita"/>
+    <topicref href="functions/energy-metering-and-tariffs.dita"/>
+    <topicref href="functions/retrospective-and-profiles.dita"/>
+    <topicref href="functions/power-quality-monitoring.dita"/>
+    <topicref href="functions/network-and-consumption-control.dita"/>
+    <topicref href="functions/relay-and-pulse-outputs.dita"/>
+    <topicref href="functions/time-accounting.dita"/>
+    <topicref href="functions/self-diagnostics-and-power-management.dita"/>
+    <topicref href="functions/data-protection.dita"/>
+    <topicref href="functions/tamper-and-environment-sensors.dita"/>
+    <topicref href="functions/event-logs.dita"/>
+  </topichead>
+
+  <topicref href="messages/lcd-messages.dita"/>
+
+  <topichead>
+    <topicmeta><navtitle>Обслуживание и ремонт</navtitle></topicmeta>
+    <topicref href="maintenance/verification-and-sealing.dita"/>
+    <topicref href="maintenance/service-and-repair.dita"/>
+    <topicref href="maintenance/module-and-battery-replacement.dita"/>
+  </topichead>
+
+  <topicref href="logistics/storage-packaging-marking-disposal.dita"/>
+
+  <topichead>
+    <topicmeta><navtitle>Приложения</navtitle></topicmeta>
+    <topicref href="reference/dimensions.dita"/>
+  </topichead>
+</map>

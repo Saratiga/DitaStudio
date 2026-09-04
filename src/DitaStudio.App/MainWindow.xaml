@@ -1,0 +1,239 @@
+<Window x:Class="DitaStudio.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DITA Studio" Height="820" Width="1440"
+        WindowStartupLocation="CenterScreen">
+
+    <DockPanel>
+
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_Файл">
+                <MenuItem Header="Открыть папку проекта…" Click="OnOpenProject" InputGestureText="Ctrl+Shift+O" />
+                <MenuItem Header="Создать документ…" Click="OnNewDocument" InputGestureText="Ctrl+N" />
+                <Separator />
+                <MenuItem Header="Сохранить" Click="OnSave" InputGestureText="Ctrl+S" />
+                <MenuItem Header="Сохранить всё" Click="OnSaveAll" InputGestureText="Ctrl+Shift+S" />
+                <MenuItem Header="Закрыть вкладку" Click="OnCloseTab" InputGestureText="Ctrl+W" />
+                <Separator />
+                <MenuItem Header="Выход" Click="OnExit" />
+            </MenuItem>
+
+            <MenuItem Header="_Правка">
+                <MenuItem Header="Отменить структурное изменение" Click="OnUndo" InputGestureText="Ctrl+Alt+Z" />
+                <MenuItem Header="Повторить" Click="OnRedo" InputGestureText="Ctrl+Alt+Y" />
+                <Separator />
+                <MenuItem Header="Найти в проекте…" Click="OnFocusSearch" InputGestureText="Ctrl+Shift+F" />
+                <MenuItem Header="Проверить проект" Click="OnValidateProject" InputGestureText="F7" />
+                <MenuItem Header="Проверить документ" Click="OnValidateDocument" />
+            </MenuItem>
+
+            <MenuItem Header="_Вставка">
+                <MenuItem Header="Элемент…" Click="OnFocusPalette" InputGestureText="Ctrl+E" />
+                <Separator />
+                <MenuItem Header="Абзац" Click="OnInsertParagraph" />
+                <MenuItem Header="Маркированный список" Click="OnInsertUl" />
+                <MenuItem Header="Нумерованный список" Click="OnInsertOl" />
+                <MenuItem Header="Примечание" Click="OnInsertNote" />
+                <MenuItem Header="Блок кода" Click="OnInsertCodeblock" />
+                <MenuItem Header="Таблица…" Click="OnInsertTable" />
+                <MenuItem Header="Изображение…" Click="OnInsertImage" />
+                <MenuItem Header="Перекрёстная ссылка…" Click="OnInsertXref" />
+                <Separator />
+                <MenuItem Header="Полужирный" Click="OnFormatBold" InputGestureText="Ctrl+B" />
+                <MenuItem Header="Курсив" Click="OnFormatItalic" InputGestureText="Ctrl+I" />
+                <MenuItem Header="Код в строке" Click="OnFormatCode" />
+                <MenuItem Header="Элемент интерфейса" Click="OnFormatUicontrol" />
+            </MenuItem>
+
+            <MenuItem Header="_Структура">
+                <MenuItem Header="Переместить вверх" Click="OnMoveUp" InputGestureText="Ctrl+Shift+Up" />
+                <MenuItem Header="Переместить вниз" Click="OnMoveDown" InputGestureText="Ctrl+Shift+Down" />
+                <MenuItem Header="Удалить элемент" Click="OnDeleteElement" />
+                <Separator />
+                <MenuItem Header="Показывать имена элементов" IsCheckable="True" IsChecked="True" Click="OnToggleTags" />
+            </MenuItem>
+
+            <MenuItem Header="_Публикация">
+                <MenuItem Header="Собрать сайт HTML…" Click="OnPublishSite" InputGestureText="F5" />
+                <MenuItem Header="Собрать один HTML…" Click="OnPublishSingle" />
+                <MenuItem Header="Экспорт в PDF…" Click="OnPublishPdf" />
+                <Separator />
+                <MenuItem Header="Условия сборки…" Click="OnPublishConditions" />
+            </MenuItem>
+
+            <MenuItem Header="_Справка">
+                <MenuItem Header="Об элементе под курсором" Click="OnElementHelp" InputGestureText="F1" />
+                <MenuItem x:Name="ThemeMenuItem" Header="Тёмная тема" IsCheckable="True" Click="OnToggleTheme" />
+                <Separator />
+                <MenuItem Header="О программе" Click="OnAbout" />
+            </MenuItem>
+        </Menu>
+
+        <ToolBarTray DockPanel.Dock="Top">
+            <ToolBar>
+                <Button Style="{StaticResource ToolButton}" Content="📂" Click="OnOpenProject" ToolTip="Открыть папку проекта (Ctrl+Shift+O)" />
+                <Button Style="{StaticResource ToolButton}" Content="➕" Click="OnNewDocument" ToolTip="Создать документ (Ctrl+N)" />
+                <Button Style="{StaticResource ToolButton}" Content="💾" Click="OnSave" ToolTip="Сохранить (Ctrl+S)" />
+                <Separator />
+                <Button Style="{StaticResource ToolButton}" Content="↩" Click="OnUndo" ToolTip="Отменить структурное изменение (Ctrl+Alt+Z)" />
+                <Button Style="{StaticResource ToolButton}" Content="↪" Click="OnRedo" ToolTip="Повторить (Ctrl+Alt+Y)" />
+                <Separator />
+                <Button Style="{StaticResource ToolButton}" Content="Ж" FontWeight="Bold" Click="OnFormatBold" ToolTip="Полужирный (Ctrl+B)" />
+                <Button Style="{StaticResource ToolButton}" Content="К" FontStyle="Italic" Click="OnFormatItalic" ToolTip="Курсив (Ctrl+I)" />
+                <Button Style="{StaticResource ToolButton}" Content="&lt;/&gt;" FontFamily="Consolas" FontSize="12" Click="OnFormatCode" ToolTip="Код в строке" />
+                <Separator />
+                <Button Style="{StaticResource ToolButton}" Content="↑" Click="OnMoveUp" ToolTip="Переместить элемент вверх (Ctrl+Shift+Up)" />
+                <Button Style="{StaticResource ToolButton}" Content="↓" Click="OnMoveDown" ToolTip="Переместить элемент вниз (Ctrl+Shift+Down)" />
+                <Button Style="{StaticResource ToolButton}" Content="🗑" Click="OnDeleteElement" ToolTip="Удалить элемент" />
+                <Separator />
+                <Button Style="{StaticResource ToolButton}" Content="✔" Click="OnValidateProject" ToolTip="Проверить проект (F7)" />
+                <Button Style="{StaticResource ToolButton}" Content="▶" Click="OnPublishSite" ToolTip="Собрать сайт HTML (F5)" />
+            </ToolBar>
+        </ToolBarTray>
+
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusText" Text="Готово" />
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <TextBlock x:Name="ContextText" Foreground="{DynamicResource TextMuted}" />
+            </StatusBarItem>
+        </StatusBar>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300" MinWidth="200" />
+                <ColumnDefinition Width="4" />
+                <ColumnDefinition Width="*" MinWidth="420" />
+                <ColumnDefinition Width="4" />
+                <ColumnDefinition Width="320" MinWidth="220" />
+            </Grid.ColumnDefinitions>
+
+            <TabControl Grid.Column="0" x:Name="LeftTabs">
+                <TabItem Header="Проект">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4">
+                            <Button Content="Обновить" Padding="8,3" Click="OnRescanProject" />
+                            <Button Content="Создать…" Padding="8,3" Margin="4,0,0,0" Click="OnNewDocument" />
+                        </StackPanel>
+                        <TreeView x:Name="ProjectTree" BorderThickness="0"
+                                  MouseDoubleClick="OnProjectTreeDoubleClick" />
+                    </DockPanel>
+                </TabItem>
+
+                <TabItem Header="Карта">
+                    <DockPanel>
+                        <ComboBox x:Name="MapSelector" DockPanel.Dock="Top" Margin="4"
+                                  SelectionChanged="OnMapSelected" DisplayMemberPath="RelativePath" />
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4,0,4,4">
+                            <Button Content="+ Топик" Padding="6,3" Click="OnMapAddTopicref" ToolTip="Добавить ссылку на топик" />
+                            <Button Content="+ Раздел" Padding="6,3" Margin="3,0,0,0" Click="OnMapAddTopichead" />
+                            <Button Content="↑" Padding="6,3" Margin="3,0,0,0" Click="OnMapMoveUp" />
+                            <Button Content="↓" Padding="6,3" Margin="3,0,0,0" Click="OnMapMoveDown" />
+                            <Button Content="→" Padding="6,3" Margin="3,0,0,0" Click="OnMapIndent" ToolTip="Сделать вложенным" />
+                            <Button Content="←" Padding="6,3" Margin="3,0,0,0" Click="OnMapOutdent" />
+                            <Button Content="✕" Padding="6,3" Margin="3,0,0,0" Click="OnMapDelete" />
+                        </StackPanel>
+                        <TreeView x:Name="MapTreeView" BorderThickness="0"
+                                  MouseDoubleClick="OnMapTreeDoubleClick"
+                                  SelectedItemChanged="OnMapTreeSelectionChanged" />
+                    </DockPanel>
+                </TabItem>
+
+                <TabItem Header="Ключи">
+                    <ListView x:Name="KeysList" BorderThickness="0" MouseDoubleClick="OnKeyDoubleClick">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Ключ" Width="110" DisplayMemberBinding="{Binding Key}" />
+                                <GridViewColumn Header="Цель" Width="160" DisplayMemberBinding="{Binding Href}" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </TabItem>
+            </TabControl>
+
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" />
+
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" MinHeight="200" />
+                    <RowDefinition Height="4" />
+                    <RowDefinition Height="200" MinHeight="80" />
+                </Grid.RowDefinitions>
+
+                <TabControl Grid.Row="0" x:Name="DocumentTabs" SelectionChanged="OnDocumentTabChanged" />
+
+                <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" />
+
+                <TabControl Grid.Row="2" x:Name="BottomTabs">
+                    <TabItem Header="Проверка">
+                        <ListView x:Name="IssuesList" BorderThickness="0" MouseDoubleClick="OnIssueDoubleClick">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Уровень" Width="110" DisplayMemberBinding="{Binding SeverityText}" />
+                                    <GridViewColumn Header="Сообщение" Width="620" DisplayMemberBinding="{Binding Message}" />
+                                    <GridViewColumn Header="Место" Width="220" DisplayMemberBinding="{Binding Location}" />
+                                    <GridViewColumn Header="Файл" Width="260" DisplayMemberBinding="{Binding FilePath}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </TabItem>
+
+                    <TabItem Header="Поиск">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4">
+                                <TextBox x:Name="SearchBox" Width="320" Padding="4,3" KeyDown="OnSearchKeyDown" />
+                                <Button Content="Найти" Padding="10,3" Margin="4,0,0,0" Click="OnSearch" />
+                                <CheckBox x:Name="SearchElements" Content="искать имена элементов" Margin="10,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <ListView x:Name="SearchResults" BorderThickness="0" MouseDoubleClick="OnSearchResultDoubleClick">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="Файл" Width="260" DisplayMemberBinding="{Binding File.RelativePath}" />
+                                        <GridViewColumn Header="Фрагмент" Width="700" DisplayMemberBinding="{Binding Context}" />
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </DockPanel>
+                    </TabItem>
+
+                    <TabItem Header="Журнал сборки">
+                        <TextBox x:Name="BuildLog" IsReadOnly="True" BorderThickness="0"
+                                 FontFamily="Consolas" FontSize="12"
+                                 VerticalScrollBarVisibility="Auto" TextWrapping="NoWrap"
+                                 HorizontalScrollBarVisibility="Auto" />
+                    </TabItem>
+                </TabControl>
+            </Grid>
+
+            <GridSplitter Grid.Column="3" Width="4" HorizontalAlignment="Stretch" />
+
+            <TabControl Grid.Column="4" x:Name="RightTabs">
+                <TabItem Header="Атрибуты">
+                    <DockPanel>
+                        <TextBlock x:Name="AttributeContext" DockPanel.Dock="Top"
+                                   Margin="8,6,8,4" FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource TextMuted}" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="AttributePanel" Margin="8,0,8,12" />
+                        </ScrollViewer>
+                    </DockPanel>
+                </TabItem>
+
+                <TabItem Header="Вставка">
+                    <DockPanel>
+                        <TextBox x:Name="PaletteFilter" DockPanel.Dock="Top" Margin="6" Padding="4,3"
+                                 TextChanged="OnPaletteFilterChanged" />
+                        <TextBlock x:Name="PaletteHint" DockPanel.Dock="Top" Margin="8,0,8,6"
+                                   FontSize="11" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap" />
+                        <ListBox x:Name="PaletteList" BorderThickness="0" MouseDoubleClick="OnPaletteInsert" />
+                    </DockPanel>
+                </TabItem>
+
+                <TabItem Header="Структура">
+                    <TreeView x:Name="OutlineTree" BorderThickness="0"
+                              SelectedItemChanged="OnOutlineSelected" />
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </DockPanel>
+</Window>

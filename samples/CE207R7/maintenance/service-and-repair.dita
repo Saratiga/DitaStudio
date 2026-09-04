@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE troubleshooting PUBLIC "-//OASIS//DTD DITA Troubleshooting//EN" "troubleshooting.dtd">
+<troubleshooting id="service-and-repair" xml:lang="ru-RU">
+  <title>Техническое обслуживание и текущий ремонт</title>
+  <shortdesc>Систематическое наблюдение за работой счётчика и устранение типовых
+    неисправностей своими силами. Таблица «признак — причина — устранение» — стандартный
+    паттерн, переносимый на другой прибор учёта с заменой конкретных признаков.</shortdesc>
+  <troublebody>
+    <condition>
+      <p>Техническое обслуживание счётчика в местах установки заключается в систематическом
+        наблюдении за его работой и устранении ошибок и сбоев. В случае отказа ЖКИ информация
+        сохраняется не менее 40 лет и может быть считана через интерфейс после подключения
+        счётчика к сети.</p>
+      <p>Ниже приведены неисправности, которые потребитель может попытаться устранить
+        самостоятельно, прежде чем направлять счётчик в ремонт.</p>
+    </condition>
+
+    <troubleSolution>
+      <cause><p>Погашен ЖКИ.</p></cause>
+      <remedy>
+        <steps-informal>
+          <p>Проверьте наличие напряжения на клеммах напряжения счётчика. Если напряжение есть —
+            вероятен отказ электронной схемы, направьте счётчик в ремонт.</p>
+        </steps-informal>
+      </remedy>
+    </troubleSolution>
+
+    <troubleSolution>
+      <cause><p>Информация на ЖКИ не меняется, нет реакции на кнопки.</p></cause>
+      <remedy><steps-informal><p>Отказ в электронной схеме счётчика — направьте счётчик в ремонт.</p></steps-informal></remedy>
+    </troubleSolution>
+
+    <troubleSolution>
+      <cause><p>При подключении к нагрузке направление учёта электроэнергии не соответствует
+        истинному.</p></cause>
+      <remedy><steps-informal><p>Неправильное подключение параллельных и/или последовательных цепей —
+        проверьте правильность подключения цепей (см.
+        <xref href="../installation/wiring-and-interfaces.dita" format="dita"/>).</p></steps-informal></remedy>
+    </troubleSolution>
+
+    <troubleSolution>
+      <cause><p>При периодической поверке погрешность вышла за пределы допустимой.</p></cause>
+      <remedy><steps-informal><p>Уход параметров элементов, определяющих точность, или отказ в электронной
+        схеме — направьте счётчик в ремонт.</p></steps-informal></remedy>
+    </troubleSolution>
+
+    <troubleSolution>
+      <cause><p>Отсутствует или неверный учёт электрической энергии по каналам
+        телеметрии.</p></cause>
+      <remedy>
+        <steps-informal>
+          <p>Проверьте подключение линий телеметрии к клеммам счётчика и настройку
+            телеметрических выходов (см.
+            <xref href="../functions/relay-and-pulse-outputs.dita" format="dita"/>), при
+            необходимости подключите линии заново и выполните правильную настройку.</p>
+        </steps-informal>
+      </remedy>
+    </troubleSolution>
+  </troublebody>
+</troubleshooting>

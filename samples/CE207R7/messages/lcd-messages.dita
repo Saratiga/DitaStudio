@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="lcd-messages" xml:lang="ru-RU">
+  <title>Сообщения, выводимые на ЖКИ</title>
+  <shortdesc>Информационные сообщения, сообщения об аварии, о состоянии сети и диагностические
+    сообщения. Коды «Info N» определены протоколом СПОДЭС/DLMS и общие для приборов учёта с
+    этим протоколом; аппаратные коды «Err N»/«At NN» относятся к конкретной аппаратной
+    платформе счётчика.</shortdesc>
+  <refbody>
+    <section>
+      <title>Информационные сообщения</title>
+      <simpletable relcolwidth="1* 4*">
+        <sthead><stentry>Код</stentry><stentry>Значение</stentry></sthead>
+        <strow><stentry>Info 3</stentry><stentry>Неверный пароль при открытии сеанса обмена</stentry></strow>
+        <strow><stentry>Info 4</stentry><stentry>Сбой обмена — превышен таймаут ожидания байта</stentry></strow>
+        <strow><stentry>Info 5</stentry><stentry>Нарушение протокола (контрольная сумма, чётность, синтаксис)</stentry></strow>
+        <strow><stentry>Info 9</stentry><stentry>Исчерпаны попытки парольного доступа</stentry></strow>
+        <strow><stentry>Info 11</stentry><stentry>Команда не поддерживается устройством</stentry></strow>
+        <strow><stentry>Info 12</stentry><stentry>Неизвестное имя параметра</stentry></strow>
+        <strow><stentry>Info 13</stentry><stentry>Неправильная структура параметра</stentry></strow>
+        <strow><stentry>Info 14</stentry><stentry>Не нажата кнопка «ДСТП»</stentry></strow>
+        <strow><stentry>Info 15</stentry><stentry>Отказано в доступе к параметру для записи или чтения</stentry></strow>
+        <strow><stentry>Info 16</stentry><stentry>Запрещено программирование — не соответствует уровень допуска</stentry></strow>
+        <strow><stentry>Info 17</stentry><stentry>Недопустимое значение параметра</stentry></strow>
+        <strow><stentry>Info 18</stentry><stentry>Несуществующая дата или отсутствует фиксация в архивах/профиле</stentry></strow>
+        <strow><stentry>Info 19</stentry><stentry>Занят доступ для программирования (запись по другому порту)</stentry></strow>
+        <strow><stentry>Info 41</stentry><stentry>Разрушены данные для отображения при питании от литиевого элемента — выполните включение/выключение счётчика</stentry></strow>
+        <strow><stentry>ACCES</stentry><stentry>Разрешён доступ для записи параметров по интерфейсу (с обратным отсчётом времени)</stentry></strow>
+        <strow><stentry>OFF</stentry><stentry>Переход в пассивный режим при снятии напряжения с фаз</stentry></strow>
+      </simpletable>
+    </section>
+
+    <section>
+      <title>Сообщения об аварии</title>
+      <simpletable relcolwidth="1* 4*">
+        <sthead><stentry>Код</stentry><stentry>Значение и действие</stentry></sthead>
+        <strow><stentry>Err 1</stentry><stentry>Нарушение памяти программ счётчика — направить в ремонт</stentry></strow>
+        <strow><stentry>Err 2</stentry><stentry>Нарушение памяти данных счётчика — направить в ремонт</stentry></strow>
+        <strow><stentry>Err 3</stentry><stentry>Аппаратный сбой системы тактирования (L — часовой, H — высокочастотный генератор) — при непрерывной индикации направить в ремонт</stentry></strow>
+        <strow><stentry>Err 4</stentry><stentry>Аппаратный сбой измерителя — направить в ремонт</stentry></strow>
+        <strow><stentry>At 01</stentry><stentry>Аппаратные проблемы чтения/записи энергонезависимой памяти — при непрерывной индикации направить в ремонт</stentry></strow>
+        <strow><stentry>At 02</stentry><stentry>Аппаратный сбой при записи блока данных — при непрерывной индикации направить в ремонт</stentry></strow>
+        <strow><stentry>HArdFAIL</stentry><stentry>Аппаратная ошибка — при непрерывной индикации направить в ремонт</stentry></strow>
+      </simpletable>
+      <note type="note">Сообщения об аварии выводятся только при отображении параметров того
+        интерфейса, в котором произошёл сбой.</note>
+    </section>
+
+    <section>
+      <title>Сообщения о состоянии сети и диагностические маркеры</title>
+      <simpletable relcolwidth="1* 4*">
+        <sthead><stentry>Маркер</stentry><stentry>Значение</stentry></sthead>
+        <strow><stentry>Info 2</stentry><stentry>Разное направление активной мощности в фазном и нейтральном канале либо обратный поток для однонаправленного счётчика — обратиться в сетевую организацию</stentry></strow>
+        <strow><stentry>UL (мигает)</stentry><stentry>Отклонение напряжения от предела (80–120%) — обратиться в сетевую организацию</stentry></strow>
+        <strow><stentry>N</stentry><stentry>Учёт потреблённой активной энергии по нейтральному каналу — проверить схему подключения</stentry></strow>
+        <strow><stentry>маркер над РУН (мигает)</stentry><stentry>Ток фиксируется при разомкнутом контакте РУН</stentry></strow>
+        <strow><stentry>маркер батареи (мигает)</stentry><stentry>Низкий уровень заряда литиевого элемента питания</stentry></strow>
+        <strow><stentry>маркер магнитного поля</stentry><stentry>Срабатывание датчика магнитного поля</stentry></strow>
+        <strow><stentry>маркер пломбы</stentry><stentry>Срабатывание электронной пломбы клеммной крышки или корпуса</stentry></strow>
+        <strow><stentry>маркер небаланса</stentry><stentry>Обнаружен небаланс токов</stentry></strow>
+      </simpletable>
+    </section>
+  </refbody>
+</reference>

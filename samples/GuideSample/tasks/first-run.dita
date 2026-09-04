@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="first-run" xml:lang="ru-RU">
+  <title>Первый запуск</title>
+  <shortdesc>Что настроить сразу после установки.</shortdesc>
+  <taskbody>
+    <context>
+      <p>При первом запуске программа предлагает выбрать рабочую папку и язык интерфейса.</p>
+    </context>
+
+    <steps>
+      <step>
+        <cmd>Откройте <menucascade><uicontrol>Пуск</uicontrol><uicontrol>Пример</uicontrol></menucascade>.</cmd>
+      </step>
+      <step>
+        <cmd>Укажите рабочую папку.</cmd>
+        <info>Позже её можно изменить в разделе
+          <xref href="../reference/settings.dita#settings">Параметры</xref>.</info>
+      </step>
+      <step importance="optional">
+        <cmd>Включите автосохранение.</cmd>
+      </step>
+    </steps>
+
+    <result>
+      <p>Программа готова к работе.</p>
+    </result>
+  </taskbody>
+</task>

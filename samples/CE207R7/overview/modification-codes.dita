@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="modification-codes" xml:lang="ru-RU">
+  <title>Обозначение модификаций счётчика</title>
+  <shortdesc>Структура условного обозначения <keyword keyref="product-model"/> и таблицы
+    исполнений. Полностью специфично для этой модели — при переносе на другое устройство
+    топик заменяется целиком.</shortdesc>
+  <refbody>
+    <refsyn>
+      <title>Структура условного обозначения</title>
+      <codeblock>СЕ207 XX.XXX.X.XXX.XXX.XXXX
+      │   │  │   │  │   │   └─ обозначение модуля связи
+      │   │  │   │  │   └───── дополнительные функции (таблица «Дополнительные функции»)
+      │   │  │   │  └───────── интегрированные интерфейсы связи (таблица «Интерфейсы связи»)
+      │   │  │   └──────────── количество измерительных элементов: 1 или 2
+      │   │  └──────────────── номинальное фазное напряжение: 4 — 230 В
+      │   └─────────────────── базовый (максимальный) ток: 9 — 5(80) А
+      └─────────────────────── класс точности: 7 — 1/1, 8 — 1/2 (акт./реакт. энергия)</codeblock>
+      <p>Исполнение корпуса «R7» — для установки на DIN-рейку.</p>
+    </refsyn>
+
+    <table>
+      <title>Интерфейсы связи счётчика</title>
+      <tgroup cols="2">
+        <colspec colname="c1" colnum="1" colwidth="1*"/>
+        <colspec colname="c2" colnum="2" colwidth="2*"/>
+        <thead><row><entry>Обозначение</entry><entry>Интерфейс</entry></row></thead>
+        <tbody>
+          <row><entry>O*</entry><entry>Оптический порт (по умолчанию включён во все исполнения)</entry></row>
+          <row><entry>A</entry><entry>EIA-485 (RS-485)</entry></row>
+          <row><entry>P</entry><entry>PLC</entry></row>
+          <row><entry>G</entry><entry>GSM</entry></row>
+          <row><entry>N</entry><entry>Ethernet</entry></row>
+          <row><entry>R1</entry><entry>Радиоинтерфейс со встроенной антенной</entry></row>
+          <row><entry>R2</entry><entry>Радиоинтерфейс с внешней антенной</entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+
+    <table>
+      <title>Дополнительные функции счётчика</title>
+      <tgroup cols="2">
+        <colspec colname="c1" colnum="1" colwidth="1*"/>
+        <colspec colname="c2" colnum="2" colwidth="2*"/>
+        <thead><row><entry>Обозначение</entry><entry>Функция</entry></row></thead>
+        <tbody>
+          <row><entry>Q</entry><entry>Реле управления нагрузкой потребителя</entry></row>
+          <row><entry>U</entry><entry>Параметры качества электрической сети</entry></row>
+          <row><entry>V</entry><entry>Электронные пломбы</entry></row>
+          <row><entry>L</entry><entry>Подсветка ЖКИ</entry></row>
+          <row><entry>F</entry><entry>Датчик электромагнитного поля</entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+
+    <table>
+      <title>Обозначение встроенных модулей связи (LR0X* — исполнения от 1 до 9 в зависимости от версии модуля связи)</title>
+      <tgroup cols="2">
+        <colspec colname="c1" colnum="1" colwidth="1*"/>
+        <colspec colname="c2" colnum="2" colwidth="2*"/>
+        <thead><row><entry>Модуль</entry><entry>Канал связи</entry></row></thead>
+        <tbody>
+          <row><entry>PL03</entry><entry>PLC OFDM G3</entry></row>
+          <row><entry>LR0X*</entry><entry>LPWAN</entry></row>
+          <row><entry>GS04</entry><entry>GSM + 4G</entry></row>
+          <row><entry>GS01</entry><entry>GSM 2G</entry></row>
+          <row><entry>NB02</entry><entry>NB-IoT + GSM 2G</entry></row>
+          <row><entry>ZB01</entry><entry>ZigBee</entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+
+    <table>
+      <title>Перечень исполнений счётчиков</title>
+      <tgroup cols="5">
+        <colspec colname="c1" colnum="1" colwidth="2*"/>
+        <colspec colname="c2" colnum="2" colwidth="1*"/>
+        <colspec colname="c3" colnum="3" colwidth="1*"/>
+        <colspec colname="c4" colnum="4" colwidth="1*"/>
+        <colspec colname="c5" colnum="5" colwidth="1*"/>
+        <thead>
+          <row>
+            <entry>Условное обозначение</entry>
+            <entry>Класс точности</entry>
+            <entry>U ном., В</entry>
+            <entry>I баз. (макс.), А</entry>
+            <entry>Постоянная, имп/(кВт·ч)</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row><entry>СЕ207 R7.749.2.OX.X…X</entry><entry>1/1</entry><entry>230</entry><entry>5(80)</entry><entry>2000</entry></row>
+          <row><entry>СЕ207 R7.849.2.OX.X…X</entry><entry>1/2</entry><entry>230</entry><entry>5(80)</entry><entry>2000</entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+
+    <example>
+      <title>Пример записи полного обозначения</title>
+      <p><codeph>СЕ207 R7.749.2.OR1G.QUVLF LN12</codeph> — счётчик для установки на DIN-рейку
+        (R7), класса точности 1/1 (7), с номинальным напряжением 230 В (4), базовым 5 А и
+        максимальным 80 А током (9), с двумя датчиками тока (2), c оптопортом (O), с
+        интерфейсом Ethernet (N), с реле управления нагрузкой (Q), измерением ПКЭ (U),
+        контролем вскрытия крышки (V), подсветкой ЖКИ (L), датчиком магнитного поля (F), со
+        встроенным модулем связи LN01 и сменным модулем связи NB02.</p>
+    </example>
+  </refbody>
+</reference>

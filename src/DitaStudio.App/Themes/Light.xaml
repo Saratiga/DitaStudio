@@ -1,0 +1,39 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Светлая палитра. Ключи должны совпадать с Dark.xaml — их подхватывают общие стили в Controls.xaml. -->
+
+    <Color x:Key="AccentColor">#1F5FA9</Color>
+    <SolidColorBrush x:Key="Accent" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="AccentSoft" Color="#E7EFF9" />
+    <SolidColorBrush x:Key="AccentHover" Color="#D7E5F5" />
+
+    <SolidColorBrush x:Key="Surface" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="SurfaceAlt" Color="#F7F8FA" />
+    <SolidColorBrush x:Key="SurfaceSunken" Color="#F1F3F6" />
+    <SolidColorBrush x:Key="SurfaceHover" Color="#EEF1F4" />
+
+    <SolidColorBrush x:Key="Line" Color="#DFE3E8" />
+    <SolidColorBrush x:Key="LineStrong" Color="#C7CDD6" />
+
+    <SolidColorBrush x:Key="TextPrimary" Color="#1A1C1F" />
+    <SolidColorBrush x:Key="TextMuted" Color="#5B6472" />
+    <SolidColorBrush x:Key="TextDisabled" Color="#AEB4BD" />
+
+    <SolidColorBrush x:Key="Danger" Color="#C0392B" />
+    <SolidColorBrush x:Key="Warning" Color="#C58217" />
+    <SolidColorBrush x:Key="Success" Color="#2E7D32" />
+
+    <SolidColorBrush x:Key="TagBrush" Color="#8A94A6" />
+    <SolidColorBrush x:Key="AttributeNameBrush" Color="#7A3E9D" />
+    <SolidColorBrush x:Key="CodeBackground" Color="#F5F6F8" />
+
+    <SolidColorBrush x:Key="ScrollThumb" Color="#C7CDD6" />
+    <SolidColorBrush x:Key="ScrollThumbHover" Color="#9AA4B2" />
+
+    <sys:Double x:Key="EditorFontSize">14.5</sys:Double>
+    <FontFamily x:Key="UiFont">Segoe UI</FontFamily>
+    <FontFamily x:Key="MonoFont">Cascadia Mono, Consolas, Courier New</FontFamily>
+
+</ResourceDictionary>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="settings" xml:lang="ru-RU">
+  <title>Параметры</title>
+  <shortdesc>Полный список параметров конфигурации.</shortdesc>
+  <refbody>
+    <refsyn>
+      <title>Синтаксис</title>
+      <codeblock>example --config &lt;файл&gt; [--verbose] [--lang ru|en]</codeblock>
+    </refsyn>
+
+    <section>
+      <title>Параметры командной строки</title>
+      <parml>
+        <plentry>
+          <pt>--config</pt>
+          <pd>Путь к файлу конфигурации. По умолчанию <filepath>example.yaml</filepath>.</pd>
+        </plentry>
+        <plentry>
+          <pt>--verbose</pt>
+          <pd>Подробный журнал работы.</pd>
+        </plentry>
+        <plentry>
+          <pt>--lang</pt>
+          <pd>Язык интерфейса: <option>ru</option> или <option>en</option>.</pd>
+        </plentry>
+      </parml>
+    </section>
+
+    <table>
+      <title>Параметры файла конфигурации</title>
+      <tgroup cols="3">
+        <colspec colname="c1" colnum="1" colwidth="1*"/>
+        <colspec colname="c2" colnum="2" colwidth="1*"/>
+        <colspec colname="c3" colnum="3" colwidth="2*"/>
+        <thead>
+          <row>
+            <entry colname="c1">Параметр</entry>
+            <entry colname="c2">По умолчанию</entry>
+            <entry colname="c3">Описание</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry colname="c1"><parmname>workdir</parmname></entry>
+            <entry colname="c2"><filepath>~/example</filepath></entry>
+            <entry colname="c3">Рабочая папка проекта.</entry>
+          </row>
+          <row>
+            <entry colname="c1"><parmname>autosave</parmname></entry>
+            <entry colname="c2">true</entry>
+            <entry colname="c3">Сохранять изменения автоматически каждые 5 минут.</entry>
+          </row>
+          <row>
+            <entry colname="c1"><parmname>theme</parmname></entry>
+            <entry colname="c2">light</entry>
+            <entry colname="c3">Оформление интерфейса: <codeph>light</codeph> или <codeph>dark</codeph>.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+  </refbody>
+</reference>
