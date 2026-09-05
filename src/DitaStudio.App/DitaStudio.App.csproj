@@ -12,11 +12,17 @@
     <ApplicationTitle>DITA Studio</ApplicationTitle>
     <Version>1.0.0</Version>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- В WPF-проектах System.IO не входит в implicit usings. -->
     <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Как ресурс — чтобы Window.Icon="app.ico" тоже находил файл (не только сборка .exe). -->
+    <Resource Include="app.ico" />
   </ItemGroup>
 
   <ItemGroup>

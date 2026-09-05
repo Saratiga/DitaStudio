@@ -701,16 +701,123 @@ public sealed class AuthorView : ScrollViewer
                 rows.AddRange(bodyGroup.ElementChildren().Where(r => r.Name == "row"));
             }
 
-            var columns = rows.Count == 0
-                ? 1
-                : rows.Max(r => r.ElementChildren().Count(c => c.Name == "entry"));
-
-            stack.Children.Add(BuildGrid(rows, headerCount, columns, "entry"));
+            stack.Children.Add(BuildCalsGrid(tgroup, rows, headerCount));
         }
 
         var border = new Border { Child = stack, Tag = node };
         AttachSelection(border, node);
         return border;
+    }
+
+    /// <summary>Сетка CALS-таблицы с учётом объединённых ячеек (namest/nameend, morerows).
+    /// Колонка ячейки берётся из colspec (если он есть), иначе — из позиции по порядку.</summary>
+    private FrameworkElement BuildCalsGrid(DitaNode tgroup, List<DitaNode> rows, int headerCount)
+    {
+        var colNames = ReadColumnNames(tgroup, rows);
+        var columns = colNames.Count;
+
+        var grid = new Grid();
+        for (var c = 0; c < columns; c++)
+        {
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        }
+
+        for (var r = 0; r < rows.Count; r++)
+        {
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        }
+
+        // occupied[r, c] — колонка занята объединением ячейки из более ранней строки (rowspan).
+        var occupied = new bool[rows.Count, Math.Max(columns, 1)];
+
+        for (var r = 0; r < rows.Count; r++)
+        {
+            var isHeader = r < headerCount;
+            var cursor = 0;
+
+            foreach (var entry in rows[r].ElementChildren().Where(e => e.Name == "entry"))
+            {
+                while (cursor < columns && occupied[r, cursor])
+                {
+                    cursor++;
+                }
+
+                var colSpan = 1;
+                var namest = entry.GetAttribute("namest");
+                var nameend = entry.GetAttribute("nameend");
+                if (!string.IsNullOrEmpty(namest) && !string.IsNullOrEmpty(nameend))
+                {
+                    var startIdx = colNames.IndexOf(namest!);
+                    var endIdx = colNames.IndexOf(nameend!);
+                    if (startIdx >= 0 && endIdx >= startIdx)
+                    {
+                        colSpan = endIdx - startIdx + 1;
+                    }
+                }
+
+                var rowSpan = 1;
+                if (int.TryParse(entry.GetAttribute("morerows"), out var more) && more > 0)
+                {
+                    rowSpan = more + 1;
+                }
+
+                var editor = CreateEditor(entry);
+                editor.FontWeight = isHeader ? FontWeights.SemiBold : FontWeights.Normal;
+
+                var cellBorder = new Border
+                {
+                    Child = editor,
+                    BorderBrush = ContainerBorder,
+                    BorderThickness = new Thickness(cursor == 0 ? 1 : 0, r == 0 ? 1 : 0, 1, 1),
+                    Padding = new Thickness(7, 5, 7, 5),
+                    Background = isHeader ? MetaBackground : Brushes.Transparent,
+                    Tag = entry
+                };
+                AttachSelection(cellBorder, entry);
+
+                Grid.SetRow(cellBorder, r);
+                Grid.SetColumn(cellBorder, Math.Min(cursor, Math.Max(columns - 1, 0)));
+                Grid.SetColumnSpan(cellBorder, Math.Max(1, Math.Min(colSpan, columns - cursor)));
+                Grid.SetRowSpan(cellBorder, Math.Max(1, Math.Min(rowSpan, rows.Count - r)));
+                grid.Children.Add(cellBorder);
+
+                for (var rr = r; rr < Math.Min(r + rowSpan, rows.Count); rr++)
+                {
+                    for (var cc = cursor; cc < Math.Min(cursor + colSpan, columns); cc++)
+                    {
+                        occupied[rr, cc] = true;
+                    }
+                }
+
+                cursor += colSpan;
+            }
+        }
+
+        return grid;
+    }
+
+    /// <summary>Список имён колонок из colspec; если их нет — просто "c1".."cN" по числу колонок в строках.
+    /// В отличие от EditCommands.EnsureColumnNames, ничего не меняет в документе — только читает.</summary>
+    private static List<string> ReadColumnNames(DitaNode tgroup, List<DitaNode> rows)
+    {
+        var colspecs = tgroup.ElementChildren().Where(e => e.Name == "colspec").ToList();
+        if (colspecs.Count > 0)
+        {
+            var names = new List<string>(colspecs.Count);
+            for (var i = 0; i < colspecs.Count; i++)
+            {
+                var name = colspecs[i].GetAttribute("colname");
+                names.Add(string.IsNullOrEmpty(name) ? $"c{i + 1}" : name!);
+            }
+
+            return names;
+        }
+
+        var count = int.TryParse(tgroup.GetAttribute("cols"), out var cols) && cols > 0
+            ? cols
+            : rows.Count == 0 ? 1 : rows.Max(r => r.ElementChildren().Count(c => c.Name == "entry"));
+
+        return Enumerable.Range(1, Math.Max(count, 1)).Select(i => $"c{i}").ToList();
     }
 
     private FrameworkElement BuildSimpleTable(DitaNode node, int depth)
@@ -1204,6 +1311,67 @@ public sealed class AuthorView : ScrollViewer
         DocumentModified?.Invoke(this, EventArgs.Empty);
         Rebuild(FirstEditable(CurrentNode), 0);
         return true;
+    }
+
+    /// <summary>Объединяет выделенную ячейку CALS-таблицы со следующей в строке (colspan).</summary>
+    public bool MergeCurrentCellRight()
+    {
+        if (Document is null || CurrentNode is null)
+        {
+            return false;
+        }
+
+        BeforeStructuralEdit?.Invoke(this, "Объединение ячеек по горизонтали");
+        var merged = EditCommands.MergeTableCellRight(CurrentNode);
+        if (merged is null)
+        {
+            return false;
+        }
+
+        CurrentNode = merged;
+        Document.IsDirty = true;
+        DocumentModified?.Invoke(this, EventArgs.Empty);
+        Rebuild(FirstEditable(merged), 0);
+        return true;
+    }
+
+    /// <summary>Объединяет выделенную ячейку CALS-таблицы с той же колонкой строкой ниже (rowspan).</summary>
+    public bool MergeCurrentCellDown()
+    {
+        if (Document is null || CurrentNode is null)
+        {
+            return false;
+        }
+
+        BeforeStructuralEdit?.Invoke(this, "Объединение ячеек по вертикали");
+        var merged = EditCommands.MergeTableCellDown(CurrentNode);
+        if (merged is null)
+        {
+            return false;
+        }
+
+        CurrentNode = merged;
+        Document.IsDirty = true;
+        DocumentModified?.Invoke(this, EventArgs.Empty);
+        Rebuild(FirstEditable(merged), 0);
+        return true;
+    }
+
+    /// <summary>Переключает класс вывода (outputclass) на выделенном элементе — например,
+    /// разрыв страницы перед заголовком при печати. Возвращает новое состояние (включён/выключён).</summary>
+    public bool? ToggleCurrentOutputClass(string token)
+    {
+        if (Document is null || CurrentNode is null)
+        {
+            return null;
+        }
+
+        BeforeStructuralEdit?.Invoke(this, "Изменение оформления вывода");
+        var enabled = EditCommands.ToggleOutputClassToken(CurrentNode, token);
+        Document.IsDirty = true;
+        DocumentModified?.Invoke(this, EventArgs.Empty);
+        Rebuild(FirstEditable(CurrentNode), 0);
+        return enabled;
     }
 
     public bool WrapCurrentInline(string elementName)

@@ -67,6 +67,12 @@ public sealed class HtmlPublisher
         File.WriteAllText(cssPath, Assets.StyleSheet, new UTF8Encoding(false));
         written.Add(cssPath);
 
+        var customCss = LoadCustomCss(out var customCssWarning);
+        if (customCssWarning is not null)
+        {
+            warnings.Add(customCssWarning);
+        }
+
         string ImageSource(string absolute)
         {
             if (!options.CopyImages)
@@ -133,7 +139,7 @@ public sealed class HtmlPublisher
                 return id is null ? "#" : "#" + id;
             };
 
-            var entry = PublishSingleFile(tree, topics, renderOptions, options, labels);
+            var entry = PublishSingleFile(tree, topics, renderOptions, options, labels, customCss);
             written.Add(entry);
             return new PublishResult(entry, written, warnings);
         }
@@ -177,7 +183,8 @@ public sealed class HtmlPublisher
                 item.Title,
                 pageToc,
                 body + Pager(previous, next, fileNames),
-                labels);
+                labels,
+                customCss);
 
             var outPath = Path.Combine(options.OutputDirectory, fileNames[Path.GetFullPath(path)]);
             File.WriteAllText(outPath, html, new UTF8Encoding(false));
@@ -194,7 +201,7 @@ public sealed class HtmlPublisher
                     ? "<p>В карте нет топиков.</p>"
                     : $"<p><a href=\"{fileNames[Path.GetFullPath(first.TargetPath!)]}\">{HtmlRenderer.Escape(first.Title)}</a></p>")
                 .ToString();
-            File.WriteAllText(indexPath, Page(tree.Root.Title, toc, indexBody, labels), new UTF8Encoding(false));
+            File.WriteAllText(indexPath, Page(tree.Root.Title, toc, indexBody, labels, customCss), new UTF8Encoding(false));
             written.Add(indexPath);
         }
 
@@ -206,7 +213,8 @@ public sealed class HtmlPublisher
         List<MapItem> topics,
         RenderOptions renderOptions,
         PublishOptions options,
-        Labels labels)
+        Labels labels,
+        string? customCss)
     {
         var renderer = new HtmlRenderer(_project, renderOptions);
         var body = new StringBuilder();
@@ -244,7 +252,7 @@ public sealed class HtmlPublisher
             body.Append("</div>\n");
         }
 
-        var html = Page(tree.Root.Title, null, body.ToString(), labels);
+        var html = Page(tree.Root.Title, null, body.ToString(), labels, customCss);
         var outPath = Path.Combine(options.OutputDirectory, SafeFileName(tree.Root.Title) + ".html");
         File.WriteAllText(outPath, html, new UTF8Encoding(false));
         return outPath;
@@ -289,7 +297,7 @@ public sealed class HtmlPublisher
         }
 
         _ = baseDir;
-        return Page(document.Title, null, body, labels);
+        return Page(document.Title, null, body, labels, LoadCustomCss(out _));
     }
 
     private string RenderMapPreview(DitaDocument document, Labels labels)
@@ -453,7 +461,7 @@ public sealed class HtmlPublisher
         return sb.ToString();
     }
 
-    private static string Page(string title, string? toc, string body, Labels labels)
+    private static string Page(string title, string? toc, string body, Labels labels, string? customCss = null)
     {
         var sb = new StringBuilder();
         sb.Append("<!DOCTYPE html>\n<html lang=\"ru\">\n<head>\n<meta charset=\"utf-8\" />\n");
@@ -462,6 +470,11 @@ public sealed class HtmlPublisher
         sb.Append("<title>").Append(HtmlRenderer.Escape(title)).Append("</title>\n");
         sb.Append("<link rel=\"stylesheet\" href=\"style.css\" />\n");
         sb.Append("<style>\n").Append(Assets.StyleSheet).Append("\n</style>\n");
+        if (!string.IsNullOrEmpty(customCss))
+        {
+            sb.Append("<style class=\"custom-css\">\n").Append(customCss).Append("\n</style>\n");
+        }
+
         sb.Append("</head>\n<body>\n<div class=\"layout\">\n");
 
         if (toc is not null)
@@ -472,6 +485,34 @@ public sealed class HtmlPublisher
 
         sb.Append("<main>\n").Append(body).Append("\n</main>\n</div>\n</body>\n</html>\n");
         return sb.ToString();
+    }
+
+    /// <summary>Читает подключённый к проекту файл пользовательских стилей (см. DitaProject.CustomCssPath).
+    /// Возвращает null, если CSS не подключён; предупреждение — если подключён, но файл не найден.</summary>
+    private string? LoadCustomCss(out string? warning)
+    {
+        warning = null;
+        if (string.IsNullOrEmpty(_project.CustomCssPath))
+        {
+            return null;
+        }
+
+        var path = Path.Combine(_project.RootPath, _project.CustomCssPath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(path))
+        {
+            warning = $"Пользовательский файл стилей не найден: {path}";
+            return null;
+        }
+
+        try
+        {
+            return File.ReadAllText(path);
+        }
+        catch (Exception ex)
+        {
+            warning = $"Не удалось прочитать файл стилей {path}: {ex.Message}";
+            return null;
+        }
     }
 
     /// <summary>Условная фильтрация по props/platform/product/audience/otherprops.</summary>

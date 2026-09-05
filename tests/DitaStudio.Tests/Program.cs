@@ -277,6 +277,64 @@ public static class Program
         Check(document.Root.FirstElement("conbody") is null, "элемент удалён");
         undo.Undo(document);
         Check(document.Root.FirstElement("conbody") is not null, "отмена вернула элемент");
+
+        var title = document.Root.FirstElement("title")!;
+        var enabled = EditCommands.ToggleOutputClassToken(title, "page-break-before");
+        Check(enabled && title.GetAttribute("outputclass") == "page-break-before",
+            "класс вывода добавлен на заголовок");
+        var disabled = EditCommands.ToggleOutputClassToken(title, "page-break-before");
+        Check(!disabled && title.GetAttribute("outputclass") is null,
+            "повторное переключение снимает класс вывода");
+
+        EditCommands.ToggleOutputClassToken(title, "existing");
+        EditCommands.ToggleOutputClassToken(title, "page-break-before");
+        Check(title.GetAttribute("outputclass") == "existing page-break-before",
+            "класс вывода добавляется рядом с уже существующим, не заменяя его");
+
+        TableMergeTests();
+    }
+
+    private static void TableMergeTests()
+    {
+        var tableDoc = DitaDocument.Parse("""
+<reference id="r1"><title>Р</title><refbody><table><tgroup cols="3">
+<colspec colname="c1" colnum="1"/><colspec colname="c2" colnum="2"/><colspec colname="c3" colnum="3"/>
+<tbody>
+<row><entry>A1</entry><entry>B1</entry><entry>C1</entry></row>
+<row><entry>A2</entry><entry>B2</entry><entry>C2</entry></row>
+</tbody>
+</tgroup></table></refbody></reference>
+""");
+        var rows = tableDoc.Root.FindDescendant("tbody")!.ElementChildren().Where(r => r.Name == "row").ToList();
+        var row1Entries = rows[0].ElementChildren().Where(e => e.Name == "entry").ToList();
+
+        var mergedRight = EditCommands.MergeTableCellRight(row1Entries[0]);
+        Check(mergedRight is not null && mergedRight.GetAttribute("namest") == "c1" && mergedRight.GetAttribute("nameend") == "c2",
+            "объединение ячеек по горизонтали проставляет namest/nameend");
+        Check(rows[0].ElementChildren().Count(e => e.Name == "entry") == 2, "соседняя ячейка справа удалена после объединения");
+        Check(mergedRight!.InnerText == "A1 B1", "содержимое объединённых ячеек сохранено");
+
+        var row2Entries = rows[1].ElementChildren().Where(e => e.Name == "entry").ToList();
+        var thirdColumnEntry = row2Entries.Single(e => e.InnerText == "C2");
+        var mergedDown = EditCommands.MergeTableCellDown(row1Entries[2]);
+        Check(mergedDown is not null && mergedDown.GetAttribute("morerows") == "1",
+            "объединение ячеек по вертикали проставляет morerows");
+        Check(rows[1].ElementChildren().Count(e => e.Name == "entry") == 2,
+            "поглощённая нижняя ячейка удалена из строки");
+        Check(mergedDown!.InnerText == "C1 C2", "содержимое объединённой по вертикали ячейки сохранено");
+        _ = thirdColumnEntry;
+
+        // Строку нельзя опустошить целиком объединением по вертикали.
+        var lastRowSingleEntry = DitaDocument.Parse("""
+<reference id="r2"><title>Р</title><refbody><table><tgroup cols="1">
+<colspec colname="c1" colnum="1"/>
+<tbody><row><entry>X1</entry></row><row><entry>X2</entry></row></tbody>
+</tgroup></table></refbody></reference>
+""");
+        var soleRows = lastRowSingleEntry.Root.FindDescendant("tbody")!.ElementChildren().Where(r => r.Name == "row").ToList();
+        var soleEntry = soleRows[0].FirstElement("entry")!;
+        Check(EditCommands.MergeTableCellDown(soleEntry) is null,
+            "объединение по вертикали не опустошает строку целиком");
     }
 
     // -------------------------------------------------------------- проект
@@ -395,6 +453,43 @@ public static class Program
                 ExcludeConditions = { ["audience"] = new HashSet<string> { "expert" } }
             });
             Check(File.Exists(filtered.EntryFile), "сборка с условиями выполняется");
+
+            // Разрыв страницы перед заголовком — через outputclass, ставится в редакторе,
+            // проверяем, что доходит до опубликованного HTML.
+            var introPath = Path.Combine(root, "intro.dita");
+            var introDoc = project.GetDocument(introPath);
+            EditCommands.ToggleOutputClassToken(introDoc.Root.FirstElement("title")!, "page-break-before");
+            introDoc.Save(introPath);
+            project.Scan();
+
+            var withBreak = publisher.Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions
+            {
+                OutputDirectory = Path.Combine(root, "out-break"),
+                SingleFile = true
+            });
+            var breakHtml = File.ReadAllText(withBreak.EntryFile);
+            Check(breakHtml.Contains("class=\"page-break-before\""),
+                "класс разрыва страницы перед заголовком попал в публикацию");
+
+            // Пользовательский CSS: подключение, сохранение между запусками, попадание в вывод.
+            var cssPath = Path.Combine(root, "custom.css");
+            File.WriteAllText(cssPath, "h1.custom-marker { color: red; }");
+            project.SetCustomCssPath("custom.css");
+            Check(project.CustomCssPath == "custom.css", "путь к пользовательскому CSS сохранён в проекте");
+
+            var reopened = new DitaProject(root);
+            Check(reopened.CustomCssPath == "custom.css", "путь к пользовательскому CSS переживает переоткрытие проекта");
+
+            var withCss = publisher.Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions
+            {
+                OutputDirectory = Path.Combine(root, "out-css"),
+                SingleFile = true
+            });
+            var cssHtml = File.ReadAllText(withCss.EntryFile);
+            Check(cssHtml.Contains("h1.custom-marker { color: red; }"), "пользовательский CSS подключён к публикации");
+
+            project.SetCustomCssPath(null);
+            Check(project.CustomCssPath is null, "пользовательский CSS можно отключить");
         }
         finally
         {

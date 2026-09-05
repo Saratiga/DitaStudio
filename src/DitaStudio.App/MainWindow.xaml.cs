@@ -56,6 +56,8 @@ public partial class MainWindow : Window
         Bind(Key.Y, ModifierKeys.Control | ModifierKeys.Alt, () => Current?.PerformRedo());
         Bind(Key.Up, ModifierKeys.Control | ModifierKeys.Shift, () => MoveElement(true));
         Bind(Key.Down, ModifierKeys.Control | ModifierKeys.Shift, () => MoveElement(false));
+        Bind(Key.Right, ModifierKeys.Control | ModifierKeys.Alt, () => OnMergeCellRight(this, new RoutedEventArgs()));
+        Bind(Key.Down, ModifierKeys.Control | ModifierKeys.Alt, () => OnMergeCellDown(this, new RoutedEventArgs()));
     }
 
     private void UpdateStatus(string text) => StatusText.Text = text;
@@ -1097,6 +1099,68 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnMergeCellRight(object sender, RoutedEventArgs e)
+    {
+        if (Current?.Author.MergeCurrentCellRight() == true)
+        {
+            UpdateTabHeaders();
+            BuildAttributePanel();
+            UpdateStatus("Ячейки объединены по горизонтали.");
+        }
+        else
+        {
+            UpdateStatus("Выделите ячейку таблицы, у которой есть соседняя справа.");
+        }
+    }
+
+    private void OnMergeCellDown(object sender, RoutedEventArgs e)
+    {
+        if (Current?.Author.MergeCurrentCellDown() == true)
+        {
+            UpdateTabHeaders();
+            BuildAttributePanel();
+            UpdateStatus("Ячейки объединены по вертикали.");
+        }
+        else
+        {
+            UpdateStatus("Выделите ячейку таблицы, у которой есть соседняя снизу.");
+        }
+    }
+
+    private void OnTogglePageBreakBeforeTitle(object sender, RoutedEventArgs e)
+    {
+        var node = Current?.Author.CurrentNode;
+        if (node is null || node.Name != "title")
+        {
+            UpdateStatus("Выделите заголовок (title) — например, заголовок раздела или топика.");
+            return;
+        }
+
+        var enabled = Current!.Author.ToggleCurrentOutputClass("page-break-before");
+        UpdateTabHeaders();
+        BuildAttributePanel();
+        UpdateStatus(enabled == true
+            ? "Разрыв страницы перед заголовком включён."
+            : "Разрыв страницы перед заголовком выключен.");
+    }
+
+    private void OnToggleTablePageBreakAuto(object sender, RoutedEventArgs e)
+    {
+        var node = Current?.Author.CurrentNode;
+        if (node is null || node.Name != "table")
+        {
+            UpdateStatus("Выделите таблицу целиком (не отдельную ячейку).");
+            return;
+        }
+
+        var enabled = Current!.Author.ToggleCurrentOutputClass("page-break-auto");
+        UpdateTabHeaders();
+        BuildAttributePanel();
+        UpdateStatus(enabled == true
+            ? "Таблица теперь может переноситься на страницы с повтором шапки."
+            : "Таблица снова печатается как единый блок.");
+    }
+
     private void OnToggleTags(object sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem item)
@@ -1546,6 +1610,20 @@ public partial class MainWindow : Window
             _conditions = result;
             UpdateStatus($"Условия сборки обновлены: исключено значений {_conditions.Exclude.Sum(x => x.Value.Count)}.");
         }
+    }
+
+    private void OnCustomCss(object sender, RoutedEventArgs e)
+    {
+        if (_project is null)
+        {
+            Dialogs.Message("Пользовательский CSS", "Сначала откройте папку проекта.");
+            return;
+        }
+
+        Dialogs.CustomCss(_project);
+        UpdateStatus(_project.CustomCssPath is null
+            ? "Пользовательский CSS отключён."
+            : $"Пользовательский CSS: {_project.CustomCssPath}");
     }
 
     private void Publish(bool singleFile, bool exportPdf)

@@ -271,6 +271,227 @@ public static class EditCommands
         return previous;
     }
 
+    /// <summary>Добавляет или снимает один класс вывода (outputclass) — например, для управления
+    /// разрывами страниц при печати. Возвращает true, если токен теперь присутствует.</summary>
+    public static bool ToggleOutputClassToken(DitaNode node, string token)
+    {
+        var current = node.GetAttribute("outputclass") ?? string.Empty;
+        var tokens = current.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+        var hadToken = tokens.Remove(token);
+        if (!hadToken)
+        {
+            tokens.Add(token);
+        }
+
+        if (tokens.Count == 0)
+        {
+            node.RemoveAttribute("outputclass");
+        }
+        else
+        {
+            node.SetAttribute("outputclass", string.Join(' ', tokens));
+        }
+
+        return !hadToken;
+    }
+
+    // --------------------------------------------------------- таблицы (CALS)
+
+    /// <summary>Объединяет ячейку CALS-таблицы со следующей в той же строке (colspan).</summary>
+    public static DitaNode? MergeTableCellRight(DitaNode entry)
+    {
+        if (entry.Name != "entry" || entry.Parent is not { Name: "row" } row)
+        {
+            return null;
+        }
+
+        var next = NextElement(entry);
+        if (next is null || next.Name != "entry")
+        {
+            return null;
+        }
+
+        var tgroup = FindAncestor(entry, "tgroup");
+        if (tgroup is null)
+        {
+            return null;
+        }
+
+        var colNames = EnsureColumnNames(tgroup);
+        var spans = ColumnSpans(row, colNames);
+        var ownSpan = spans.FirstOrDefault(s => ReferenceEquals(s.Entry, entry));
+        var nextSpan = spans.FirstOrDefault(s => ReferenceEquals(s.Entry, next));
+        if (ownSpan.Entry is null || nextSpan.Entry is null)
+        {
+            return null;
+        }
+
+        entry.SetAttribute("namest", ownSpan.Start);
+        entry.SetAttribute("nameend", nextSpan.End);
+
+        MergeEntryContent(entry, next);
+        next.RemoveSelf();
+        return entry;
+    }
+
+    /// <summary>Объединяет ячейку CALS-таблицы с той же колонкой в следующей строке (rowspan).</summary>
+    public static DitaNode? MergeTableCellDown(DitaNode entry)
+    {
+        if (entry.Name != "entry" || entry.Parent is not { Name: "row" } row || row.Parent is null)
+        {
+            return null;
+        }
+
+        var rows = row.Parent.ElementChildren().Where(r => r.Name == "row").ToList();
+        var rowIndex = rows.FindIndex(r => ReferenceEquals(r, row));
+        if (rowIndex < 0 || rowIndex + 1 >= rows.Count)
+        {
+            return null;
+        }
+
+        var tgroup = FindAncestor(entry, "tgroup");
+        if (tgroup is null)
+        {
+            return null;
+        }
+
+        var colNames = EnsureColumnNames(tgroup);
+        var ownSpan = ColumnSpans(row, colNames).FirstOrDefault(s => ReferenceEquals(s.Entry, entry));
+        if (ownSpan.Entry is null)
+        {
+            return null;
+        }
+
+        var nextRow = rows[rowIndex + 1];
+        var target = ColumnSpans(nextRow, colNames).FirstOrDefault(s => s.Start == ownSpan.Start);
+        if (target.Entry is null)
+        {
+            return null;
+        }
+
+        // Строка обязана содержать хотя бы одну ячейку — не опустошаем её целиком.
+        if (nextRow.ElementChildren().Count(e => e.Name == "entry") <= 1)
+        {
+            return null;
+        }
+
+        var addedRows = int.TryParse(target.Entry.GetAttribute("morerows"), out var targetMore) ? targetMore : 0;
+        var ownRows = int.TryParse(entry.GetAttribute("morerows"), out var ownMore) ? ownMore : 0;
+        entry.SetAttribute("morerows", (ownRows + 1 + addedRows).ToString());
+
+        MergeEntryContent(entry, target.Entry);
+        target.Entry.RemoveSelf();
+        return entry;
+    }
+
+    /// <summary>Переносит содержимое одной ячейки в другую, разделяя пробелом, если обе непусты.</summary>
+    private static void MergeEntryContent(DitaNode target, DitaNode source)
+    {
+        var hasContent = target.Children.Any(c => c.Kind != NodeKind.Text || !string.IsNullOrWhiteSpace(c.Value));
+        if (hasContent && source.Children.Count > 0)
+        {
+            target.Add(DitaNode.Text(" "));
+        }
+
+        foreach (var child in source.Children.ToList())
+        {
+            source.Remove(child);
+            target.Add(child);
+        }
+    }
+
+    private static DitaNode? FindAncestor(DitaNode node, string name)
+    {
+        var current = node.Parent;
+        while (current is not null)
+        {
+            if (current.Name == name)
+            {
+                return current;
+            }
+
+            current = current.Parent;
+        }
+
+        return null;
+    }
+
+    /// <summary>Список имён колонок tgroup по порядку; создаёт colspec с именами c1..cN, если их не было.</summary>
+    private static List<string> EnsureColumnNames(DitaNode tgroup)
+    {
+        var colspecs = tgroup.ElementChildren().Where(e => e.Name == "colspec").ToList();
+        if (colspecs.Count == 0)
+        {
+            var count = DetectColumnCount(tgroup);
+            for (var i = 0; i < count; i++)
+            {
+                var colspec = DitaNode.Element("colspec");
+                colspec.SetAttribute("colname", $"c{i + 1}");
+                colspec.SetAttribute("colnum", (i + 1).ToString());
+                tgroup.Insert(i, colspec);
+            }
+
+            colspecs = tgroup.ElementChildren().Where(e => e.Name == "colspec").ToList();
+        }
+        else
+        {
+            for (var i = 0; i < colspecs.Count; i++)
+            {
+                if (string.IsNullOrEmpty(colspecs[i].GetAttribute("colname")))
+                {
+                    colspecs[i].SetAttribute("colname", $"c{i + 1}");
+                }
+            }
+        }
+
+        return colspecs.Select(c => c.GetAttribute("colname")!).ToList();
+    }
+
+    private static int DetectColumnCount(DitaNode tgroup)
+    {
+        if (int.TryParse(tgroup.GetAttribute("cols"), out var cols) && cols > 0)
+        {
+            return cols;
+        }
+
+        var rows = tgroup.ElementChildren()
+            .Where(e => e.Name is "thead" or "tbody")
+            .SelectMany(e => e.ElementChildren().Where(r => r.Name == "row"))
+            .ToList();
+
+        return rows.Count == 0 ? 1 : rows.Max(r => r.ElementChildren().Count(c => c.Name == "entry"));
+    }
+
+    /// <summary>Для каждой ячейки строки — её начальная и конечная колонка (с учётом уже стоящих spans).</summary>
+    private static List<(DitaNode Entry, string Start, string End)> ColumnSpans(DitaNode row, List<string> colNames)
+    {
+        var result = new List<(DitaNode, string, string)>();
+        var cursor = 0;
+        foreach (var entry in row.ElementChildren().Where(e => e.Name == "entry"))
+        {
+            string start, end;
+            var namest = entry.GetAttribute("namest");
+            var nameend = entry.GetAttribute("nameend");
+            if (!string.IsNullOrEmpty(namest) && !string.IsNullOrEmpty(nameend))
+            {
+                start = namest!;
+                end = nameend!;
+                var endIndex = colNames.IndexOf(nameend!);
+                cursor = endIndex >= 0 ? endIndex + 1 : cursor + 1;
+            }
+            else
+            {
+                var name = cursor < colNames.Count ? colNames[cursor] : $"c{cursor + 1}";
+                start = end = name;
+                cursor++;
+            }
+
+            result.Add((entry, start, end));
+        }
+
+        return result;
+    }
+
     /// <summary>Уникальный идентификатор для элемента внутри документа.</summary>
     public static string GenerateId(DitaDocument document, string prefix)
     {

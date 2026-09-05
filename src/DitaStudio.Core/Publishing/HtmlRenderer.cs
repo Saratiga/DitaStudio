@@ -93,7 +93,8 @@ public sealed class HtmlRenderer
             {
                 case "title":
                 case "glossterm":
-                    sb.Append('<').Append(H(headingLevel)).Append('>')
+                    sb.Append('<').Append(H(headingLevel)).Append(OptionalClassAttr(child))
+                      .Append('>')
                       .Append(RenderInlineChildren(child))
                       .Append("</").Append(H(headingLevel)).Append(">\n");
                     break;
@@ -513,7 +514,7 @@ public sealed class HtmlRenderer
     private string RenderSection(DitaNode node, int level)
     {
         var sb = new StringBuilder();
-        sb.Append("<section class=\"").Append(node.Name).Append('"').Append(Attrs(node)).Append(">\n");
+        sb.Append("<section").Append(MergedClassAttr(node.Name, node)).Append(IdAttr(node)).Append(">\n");
 
         var label = node.Name switch
         {
@@ -532,7 +533,7 @@ public sealed class HtmlRenderer
         var explicitTitle = node.FirstElement("title");
         if (explicitTitle is not null)
         {
-            sb.Append('<').Append(H(level + 1)).Append(" class=\"title\">")
+            sb.Append('<').Append(H(level + 1)).Append(MergedClassAttr("title", explicitTitle)).Append('>')
               .Append(RenderInlineChildren(explicitTitle))
               .Append("</").Append(H(level + 1)).Append(">\n");
         }
@@ -1011,13 +1012,13 @@ public sealed class HtmlRenderer
 
         foreach (var tgroup in node.ElementChildren().Where(e => e.Name == "tgroup"))
         {
-            sb.Append(RenderTgroup(tgroup, level));
+            sb.Append(RenderTgroup(tgroup, level, node));
         }
 
         return sb.ToString();
     }
 
-    private string RenderTgroup(DitaNode tgroup, int level)
+    private string RenderTgroup(DitaNode tgroup, int level, DitaNode table)
     {
         var colspecs = tgroup.ElementChildren().Where(e => e.Name == "colspec").ToList();
         var colNames = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -1030,7 +1031,7 @@ public sealed class HtmlRenderer
             }
         }
 
-        var sb = new StringBuilder("<table>\n");
+        var sb = new StringBuilder("<table").Append(OptionalClassAttr(table)).Append(">\n");
         if (colspecs.Count > 0)
         {
             sb.Append("<colgroup>\n");
@@ -1214,6 +1215,28 @@ public sealed class HtmlRenderer
         }
 
         return sb.ToString();
+    }
+
+    private static string IdAttr(DitaNode node)
+    {
+        var id = node.GetAttribute("id");
+        return string.IsNullOrEmpty(id) ? string.Empty : $" id=\"{Escape(id!)}\"";
+    }
+
+    /// <summary>class="..." из outputclass узла, если он задан — иначе пустая строка.</summary>
+    private static string OptionalClassAttr(DitaNode node)
+    {
+        var outputclass = node.GetAttribute("outputclass");
+        return string.IsNullOrWhiteSpace(outputclass) ? string.Empty : $" class=\"{Escape(outputclass!)}\"";
+    }
+
+    /// <summary>class="baseClass outputclass" одним атрибутом — не дублирует class, если outputclass задан.</summary>
+    private static string MergedClassAttr(string baseClass, DitaNode? node)
+    {
+        var outputclass = node?.GetAttribute("outputclass");
+        return string.IsNullOrWhiteSpace(outputclass)
+            ? $" class=\"{baseClass}\""
+            : $" class=\"{baseClass} {Escape(outputclass!)}\"";
     }
 
     public static string Escape(string value)

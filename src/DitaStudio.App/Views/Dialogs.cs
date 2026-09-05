@@ -1,7 +1,9 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Templates;
+using Microsoft.Win32;
 
 namespace DitaStudio.App.Views;
 
@@ -349,6 +351,127 @@ public static class Dialogs
         }));
 
         return window.ShowDialog() == true ? result : null;
+    }
+
+    // --------------------------------------------------- пользовательский CSS
+
+    private const string DefaultCustomCss = """
+/* Пользовательские стили публикации DITA Studio.
+   Правила из этого файла подключаются последними и могут переопределять встроенные —
+   так что достаточно переопределить только то, что нужно изменить.
+
+   Готовые классы для управления печатью и PDF (ставятся через атрибут outputclass
+   на нужном элементе — в панели «Атрибуты» или пунктами меню «Структура»):
+   - outputclass="page-break-before" на заголовке (title) — начинает новую страницу;
+   - outputclass="page-break-auto" на таблице (table) — разрешает перенос таблицы
+     между страницами с повтором строки шапки (thead) на каждой странице. */
+
+""";
+
+    public static void CustomCss(DitaProject project)
+    {
+        var panel = new StackPanel { Margin = new Thickness(20) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Файл стилей подключается к каждой публикации (HTML и PDF) в дополнение к " +
+                   "встроенным стилям — его правила применяются последними и могут их переопределять.",
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        panel.Children.Add(Label("Подключённый файл"));
+        var status = new TextBlock { FontFamily = new FontFamily("Consolas"), TextWrapping = TextWrapping.Wrap };
+        void RefreshStatus() => status.Text = project.CustomCssPath ?? "не подключён";
+        RefreshStatus();
+        panel.Children.Add(status);
+
+        Window? window = null;
+
+        var create = new Button { Content = "Создать новый файл…", Padding = new Thickness(12, 5, 12, 5) };
+        create.Click += (_, _) =>
+        {
+            var dialog = new SaveFileDialog
+            {
+                Title = "Создать файл стилей",
+                Filter = "Файлы CSS|*.css",
+                InitialDirectory = project.RootPath,
+                FileName = "custom.css"
+            };
+
+            if (dialog.ShowDialog(window) != true)
+            {
+                return;
+            }
+
+            try
+            {
+                File.WriteAllText(dialog.FileName, DefaultCustomCss);
+            }
+            catch (Exception ex)
+            {
+                Message("Пользовательский CSS", $"Не удалось создать файл: {ex.Message}");
+                return;
+            }
+
+            project.SetCustomCssPath(Path.GetRelativePath(project.RootPath, dialog.FileName).Replace('\\', '/'));
+            RefreshStatus();
+        };
+
+        var attach = new Button
+        {
+            Content = "Подключить существующий…",
+            Padding = new Thickness(12, 5, 12, 5),
+            Margin = new Thickness(8, 0, 0, 0)
+        };
+        attach.Click += (_, _) =>
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = "Выберите файл стилей",
+                Filter = "Файлы CSS|*.css",
+                InitialDirectory = project.RootPath
+            };
+
+            if (dialog.ShowDialog(window) != true)
+            {
+                return;
+            }
+
+            project.SetCustomCssPath(Path.GetRelativePath(project.RootPath, dialog.FileName).Replace('\\', '/'));
+            RefreshStatus();
+        };
+
+        var detach = new Button
+        {
+            Content = "Отключить",
+            Padding = new Thickness(12, 5, 12, 5),
+            Margin = new Thickness(8, 0, 0, 0)
+        };
+        detach.Click += (_, _) =>
+        {
+            project.SetCustomCssPath(null);
+            RefreshStatus();
+        };
+
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 14, 0, 0) };
+        buttons.Children.Add(create);
+        buttons.Children.Add(attach);
+        buttons.Children.Add(detach);
+        panel.Children.Add(buttons);
+
+        var close = new Button
+        {
+            Content = "Закрыть",
+            Padding = new Thickness(18, 5, 18, 5),
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 18, 0, 0),
+            IsDefault = true,
+            IsCancel = true
+        };
+
+        window = Shell("Пользовательский CSS", panel, 480, 300);
+        close.Click += (_, _) => window!.Close();
+        panel.Children.Add(close);
+        window.ShowDialog();
     }
 
     // ------------------------------------------------------------ о программе

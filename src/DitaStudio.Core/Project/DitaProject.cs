@@ -100,10 +100,13 @@ public sealed class DitaProject
     private readonly List<ProjectFile> _files = new();
     private readonly Dictionary<string, KeyDefinition> _keys = new(StringComparer.Ordinal);
 
+    private const string CustomCssSettingsFile = ".ditastudio-css";
+
     public DitaProject(string rootPath)
     {
         RootPath = System.IO.Path.GetFullPath(rootPath);
         Name = new DirectoryInfo(RootPath).Name;
+        LoadCustomCssSetting();
     }
 
     public string RootPath { get; }
@@ -119,6 +122,55 @@ public sealed class DitaProject
     public IEnumerable<ProjectFile> Topics => _files.Where(f => f.Kind == DitaDocumentKind.Topic);
 
     public event EventHandler? Reloaded;
+
+    // ------------------------------------------------------ пользовательский CSS
+
+    /// <summary>Путь (относительно RootPath, со слэшами вперёд) к подключённому файлу стилей публикации,
+    /// или null, если не подключён. Сохраняется рядом с проектом, переживает перезапуск редактора.</summary>
+    public string? CustomCssPath { get; private set; }
+
+    public void SetCustomCssPath(string? relativePath)
+    {
+        CustomCssPath = string.IsNullOrWhiteSpace(relativePath) ? null : relativePath.Replace('\\', '/');
+        var settingsPath = System.IO.Path.Combine(RootPath, CustomCssSettingsFile);
+        try
+        {
+            if (CustomCssPath is null)
+            {
+                if (File.Exists(settingsPath))
+                {
+                    File.Delete(settingsPath);
+                }
+            }
+            else
+            {
+                File.WriteAllText(settingsPath, CustomCssPath);
+            }
+        }
+        catch
+        {
+            // настройка не критична — молча продолжаем без сохранения на диск
+        }
+    }
+
+    private void LoadCustomCssSetting()
+    {
+        try
+        {
+            var settingsPath = System.IO.Path.Combine(RootPath, CustomCssSettingsFile);
+            if (!File.Exists(settingsPath))
+            {
+                return;
+            }
+
+            var value = File.ReadAllText(settingsPath).Trim();
+            CustomCssPath = value.Length == 0 ? null : value;
+        }
+        catch
+        {
+            CustomCssPath = null;
+        }
+    }
 
     // ------------------------------------------------------------------ обход
 

@@ -99,6 +99,14 @@ li { margin: .3em 0; }
   h1 { page-break-before: always; }
   h1:first-of-type { page-break-before: avoid; }
   table, figure, pre { page-break-inside: avoid; }
+  /* Ставится через outputclass="page-break-before" на заголовке (title) —
+     заголовок при конвертации в PDF/печати начинается с новой страницы. */
+  .page-break-before { page-break-before: always; break-before: page; }
+  /* Ставится через outputclass="page-break-auto" на table — таблица разрешает
+     разрыв внутри себя, а строка шапки (thead) повторяется на каждой странице. */
+  table.page-break-auto { page-break-inside: auto; break-inside: auto; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
 }
 @media (max-width: 900px) {
   .layout { display: block; }
