@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="insert-elements" xml:lang="ru-RU">
+  <title>Вставка таблиц, изображений и ссылок</title>
+  <shortdesc>Диалоги вставки для элементов, которые неудобно собирать по одному тегу за раз.</shortdesc>
+  <taskbody>
+    <steps>
+      <step>
+        <cmd>Таблица: поставьте курсор в тело топика и выберите вставку таблицы — в диалоге
+          задаются число строк и столбцов, наличие заголовка и заголовок таблицы.</cmd>
+      </step>
+      <step>
+        <cmd>Объединение ячеек: поставьте курсор в ячейку и нажмите <shortcut>Ctrl+Alt+→</shortcut>,
+          чтобы объединить её с соседней справа (проставляется <parmname>namest</parmname>/
+          <parmname>nameend</parmname>), или <shortcut>Ctrl+Alt+↓</shortcut> — с ячейкой снизу
+          (проставляется <parmname>morerows</parmname>).</cmd>
+        <stepresult>Содержимое поглощённых ячеек не теряется — оно переносится в объединённую
+          ячейку.</stepresult>
+      </step>
+      <step>
+        <cmd>Изображение: диалог вставки изображения открывает выбор файла и подставляет
+          относительный путь <parmname>href</parmname>; заготовку атрибута
+          <parmname>alt</parmname> нужно дополнить осмысленным описанием вручную.</cmd>
+      </step>
+      <step>
+        <cmd>Перекрёстная ссылка: диалог вставки <codeph>xref</codeph> открывает список топиков
+          проекта с фильтром по названию — выберите нужный, и путь подставится автоматически.</cmd>
+      </step>
+      <step>
+        <cmd>Ключ (<codeph>keyref</codeph>): опишите значение один раз в <codeph>keydef</codeph>
+          карты, а затем ссылайтесь на него из любого топика через
+          <codeph>&lt;keyword keyref="…"/&gt;</codeph> или через <parmname>keyref</parmname> на
+          пустом элементе — как <keyword keyref="product-name"/> в этом руководстве.</cmd>
+        <info>Текст ключа подставляется только в пустой элемент: если написать текст внутри тега
+          с <parmname>keyref</parmname>, он останется как есть и ключ подставлен не будет.</info>
+      </step>
+      <step>
+        <cmd>Сноска (<codeph>fn</codeph>): выберите <menucascade><uicontrol>Вставка</uicontrol>
+          <uicontrol>Сноска</uicontrol></menucascade> — на месте курсора появится плашка сноски;
+          её текст, как и у других непрямых инлайн-элементов, правится в режиме
+          <b>Исходный код</b> (см. <xref href="../reference/author-mode-limits.dita#author-mode-limits"
+          scope="local">Что редактируется только в исходном коде</xref>).</cmd>
+        <info>Сноски печатаются в конце того топика, где они поставлены, — то есть на той же
+          странице сайта, а не собираются в общий список по всему изданию.</info>
+      </step>
+    </steps>
+  </taskbody>
+</task>

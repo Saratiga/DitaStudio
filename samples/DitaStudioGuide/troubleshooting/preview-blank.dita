@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE troubleshooting PUBLIC "-//OASIS//DTD DITA Troubleshooting//EN" "troubleshooting.dtd">
+<troubleshooting id="preview-blank" xml:lang="ru-RU">
+  <title>Вкладка «Предпросмотр» пустая</title>
+  <shortdesc>Вместо готовой страницы вкладка «Предпросмотр» показывает пустое окно или
+    сообщение об ошибке.</shortdesc>
+  <troublebody>
+    <condition>
+      <p>При переключении на вкладку <b>Предпросмотр</b> область остаётся пустой, либо появляется
+        сообщение о невозможности загрузить компонент просмотра.</p>
+    </condition>
+
+    <troubleSolution>
+      <cause>
+        <p>Предпросмотр рисуется компонентом WebView2, которому для работы нужен установленный в
+          системе Evergreen Runtime. Запасного способа показать предпросмотр без него в редакторе
+          нет.</p>
+      </cause>
+      <remedy>
+        <title>Установить среду выполнения WebView2</title>
+        <steps>
+          <step>
+            <cmd>Установите Evergreen Runtime WebView2 с сайта Microsoft (на большинстве систем с
+              Windows 10/11 и обновлённым Edge он уже есть).</cmd>
+          </step>
+          <step>
+            <cmd>Перезапустите <keyword keyref="product-name"/> и снова откройте вкладку
+              <b>Предпросмотр</b>.</cmd>
+            <stepresult>Топик или карта отображаются так же, как после публикации в HTML.</stepresult>
+          </step>
+        </steps>
+      </remedy>
+    </troubleSolution>
+  </troublebody>
+</troubleshooting>

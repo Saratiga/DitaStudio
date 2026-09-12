@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="author-mode-limits" xml:lang="ru-RU">
+  <title>Что редактируется только в исходном коде</title>
+  <shortdesc>Режим «Автор» показывает не каждый элемент как редактируемый текст — вот по какому
+    признаку это определяется.</shortdesc>
+  <refbody>
+    <table>
+      <title>Поведение элементов в режиме «Автор»</title>
+      <tgroup cols="3">
+        <colspec colname="c1" colnum="1" colwidth="1*"/>
+        <colspec colname="c2" colnum="2" colwidth="1*"/>
+        <colspec colname="c3" colnum="3" colwidth="2*"/>
+        <thead>
+          <row>
+            <entry colname="c1">Категория</entry>
+            <entry colname="c2">Пример</entry>
+            <entry colname="c3">Поведение</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry colname="c1">Блочные элементы</entry>
+            <entry colname="c2"><codeph>p</codeph>, <codeph>note</codeph>, <codeph>table</codeph>,
+              <codeph>steps</codeph></entry>
+            <entry colname="c3">Каждый — собственная редактируемая область.</entry>
+          </row>
+          <row>
+            <entry colname="c1">Фразовые элементы с текстом</entry>
+            <entry colname="c2"><codeph>b</codeph>, <codeph>i</codeph>, <codeph>u</codeph>,
+              <codeph>codeph</codeph>, <codeph>uicontrol</codeph></entry>
+            <entry colname="c3">Редактируются прямо внутри абзаца как оформленный текст.</entry>
+          </row>
+          <row>
+            <entry colname="c1">Инлайн-элементы без своего текста</entry>
+            <entry colname="c2"><codeph>image</codeph>, <codeph>xref</codeph>, <codeph>fn</codeph>,
+              <codeph>indexterm</codeph>, фразы с <parmname>conref</parmname>/
+              <parmname>conkeyref</parmname></entry>
+            <entry colname="c3">Показываются нередактируемой «плашкой» с меткой элемента; изменить
+              атрибуты или вложенное содержимое можно только в режиме <b>Исходный код</b>.</entry>
+          </row>
+          <row>
+            <entry colname="c1">Служебные блоки</entry>
+            <entry colname="c2"><codeph>prolog</codeph>, <codeph>topicmeta</codeph>,
+              <codeph>metadata</codeph></entry>
+            <entry colname="c3">Показываются свёрнутым нередактируемым XML — правка только в
+              режиме <b>Исходный код</b>.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+  </refbody>
+</reference>

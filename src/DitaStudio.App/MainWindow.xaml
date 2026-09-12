@@ -10,6 +10,7 @@
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_Файл">
                 <MenuItem Header="Открыть папку проекта…" Click="OnOpenProject" InputGestureText="Ctrl+Shift+O" />
+                <MenuItem Header="Недавние проекты" x:Name="RecentProjectsMenu" />
                 <MenuItem Header="Создать документ…" Click="OnNewDocument" InputGestureText="Ctrl+N" />
                 <Separator />
                 <MenuItem Header="Сохранить" Click="OnSave" InputGestureText="Ctrl+S" />
@@ -36,6 +37,7 @@
                 <MenuItem Header="Нумерованный список" Click="OnInsertOl" />
                 <MenuItem Header="Примечание" Click="OnInsertNote" />
                 <MenuItem Header="Блок кода" Click="OnInsertCodeblock" />
+                <MenuItem Header="Сноска" Click="OnInsertFootnote" />
                 <MenuItem Header="Таблица…" Click="OnInsertTable" />
                 <MenuItem Header="Изображение…" Click="OnInsertImage" />
                 <MenuItem Header="Перекрёстная ссылка…" Click="OnInsertXref" />
@@ -64,9 +66,12 @@
                 <MenuItem Header="Собрать сайт HTML…" Click="OnPublishSite" InputGestureText="F5" />
                 <MenuItem Header="Собрать один HTML…" Click="OnPublishSingle" />
                 <MenuItem Header="Экспорт в PDF…" Click="OnPublishPdf" />
+                <MenuItem Header="Экспорт в DOCX…" Click="OnExportDocx" />
                 <Separator />
                 <MenuItem Header="Условия сборки…" Click="OnPublishConditions" />
+                <MenuItem Header="Импортировать условия из .ditaval…" Click="OnImportDitaval" />
                 <MenuItem Header="Пользовательский CSS…" Click="OnCustomCss" />
+                <MenuItem Header="Колонтитулы PDF…" Click="OnPdfHeaderFooter" />
             </MenuItem>
 
             <MenuItem Header="_Справка">
@@ -145,9 +150,13 @@
                             <Button Content="←" Padding="6,3" Margin="3,0,0,0" Click="OnMapOutdent" />
                             <Button Content="✕" Padding="6,3" Margin="3,0,0,0" Click="OnMapDelete" />
                         </StackPanel>
-                        <TreeView x:Name="MapTreeView" BorderThickness="0"
+                        <TreeView x:Name="MapTreeView" BorderThickness="0" AllowDrop="True"
                                   MouseDoubleClick="OnMapTreeDoubleClick"
-                                  SelectedItemChanged="OnMapTreeSelectionChanged" />
+                                  SelectedItemChanged="OnMapTreeSelectionChanged"
+                                  PreviewMouseLeftButtonDown="OnMapTreeMouseDown"
+                                  PreviewMouseMove="OnMapTreeMouseMove"
+                                  DragOver="OnMapTreeDragOver"
+                                  Drop="OnMapTreeDrop" />
                     </DockPanel>
                 </TabItem>
 
@@ -192,10 +201,17 @@
 
                     <TabItem Header="Поиск">
                         <DockPanel>
-                            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4">
-                                <TextBox x:Name="SearchBox" Width="320" Padding="4,3" KeyDown="OnSearchKeyDown" />
-                                <Button Content="Найти" Padding="10,3" Margin="4,0,0,0" Click="OnSearch" />
-                                <CheckBox x:Name="SearchElements" Content="искать имена элементов" Margin="10,0,0,0" VerticalAlignment="Center" />
+                            <StackPanel DockPanel.Dock="Top" Margin="4">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox x:Name="SearchBox" Width="320" Padding="4,3" KeyDown="OnSearchKeyDown" />
+                                    <Button Content="Найти" Padding="10,3" Margin="4,0,0,0" Click="OnSearch" />
+                                    <CheckBox x:Name="SearchElements" Content="искать имена элементов" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <CheckBox x:Name="SearchRegex" Content="регулярное выражение" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBox x:Name="ReplaceBox" Width="320" Padding="4,3" ToolTip="Текст замены (для обычного текстового поиска)" />
+                                    <Button Content="Заменить всё" Padding="10,3" Margin="4,0,0,0" Click="OnReplaceAll" />
+                                </StackPanel>
                             </StackPanel>
                             <ListView x:Name="SearchResults" BorderThickness="0" MouseDoubleClick="OnSearchResultDoubleClick">
                                 <ListView.View>

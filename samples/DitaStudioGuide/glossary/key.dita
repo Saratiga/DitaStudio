@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary Entry//EN" "glossentry.dtd">
+<glossentry id="key" xml:lang="ru-RU">
+  <glossterm>ключ</glossterm>
+  <glossdef>
+    <p>Имя, объявленное один раз в <codeph>keydef</codeph> карты и связанное с текстом или файлом.
+      Топики ссылаются на него через атрибут <parmname>keyref</parmname> — так один и тот же
+      текст (например, название продукта) можно исправить в одном месте и обновить сразу во всех
+      топиках.</p>
+  </glossdef>
+  <glossBody>
+    <glossSurfaceForm>ключ (keyref)</glossSurfaceForm>
+  </glossBody>
+</glossentry>

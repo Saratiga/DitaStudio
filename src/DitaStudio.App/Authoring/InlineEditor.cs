@@ -80,6 +80,8 @@ public sealed class InlineEditor : RichTextBox
         VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
         HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
         IsUndoEnabled = true;
+        Language = System.Windows.Markup.XmlLanguage.GetLanguage("ru-RU");
+        SpellCheck.IsEnabled = true;
 
         Build();
 

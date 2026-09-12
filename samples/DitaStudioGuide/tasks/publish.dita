@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="publish" xml:lang="ru-RU">
+  <title outputclass="page-break-before">Условия сборки и публикация</title>
+  <shortdesc>Как исключить часть содержимого из публикации по атрибутам условности и собрать
+    итоговый HTML или PDF.</shortdesc>
+  <taskbody>
+    <context>
+      <p><keyword keyref="product-name"/> умеет собирать один и тот же проект по-разному в
+        зависимости от значений атрибутов <parmname>props</parmname>,
+        <parmname>platform</parmname>, <parmname>product</parmname>, <parmname>audience</parmname>,
+        <parmname>otherprops</parmname> и <parmname>deliveryTarget</parmname>, расставленных в
+        топиках. Отдельного файла <filepath>.ditaval</filepath> для этого не нужно.</p>
+    </context>
+
+    <steps>
+      <step>
+        <cmd>Откройте <menucascade><uicontrol>Публикация</uicontrol>
+          <uicontrol>Условия сборки…</uicontrol></menucascade>.</cmd>
+        <stepresult>Диалог сканирует проект и строит список фактически использованных значений
+          условных атрибутов — отметьте те, что нужно исключить из сборки, и при необходимости
+          включите показ черновых комментариев (<codeph>draft-comment</codeph>).</stepresult>
+      </step>
+      <step>
+        <cmd>Подтверждённые условия сохраняются вместе с проектом и применяются автоматически
+          при следующей сборке — переоткрывать диалог заново после перезапуска редактора не
+          нужно.</cmd>
+      </step>
+      <step>
+        <cmd>Если условия уже описаны в стандартном файле <filepath>.ditaval</filepath> (например,
+          из другого инструмента), выберите <menucascade><uicontrol>Публикация</uicontrol>
+          <uicontrol>Импортировать условия из .ditaval…</uicontrol></menucascade> — правила
+          исключения (<parmname>action="exclude"</parmname>) добавятся к уже отмеченным.</cmd>
+        <info>Другие действия DITAVAL (<parmname>include</parmname>, <parmname>flag</parmname>,
+          <parmname>passthrough</parmname>) не поддерживаются и при импорте пропускаются.</info>
+      </step>
+      <step>
+        <cmd>Выберите способ публикации в меню <uicontrol>Публикация</uicontrol>: «Собрать сайт
+          HTML» (<shortcut>F5</shortcut>) — многостраничный сайт с оглавлением, «Собрать один
+          HTML» — всё содержимое карты в одном файле, «Экспорт в PDF» — тот же HTML, напечатанный
+          в PDF.</cmd>
+      </step>
+      <step>
+        <cmd>По умолчанию PDF печатается без колонтитулов. Чтобы включить их или задать свой текст,
+          откройте <menucascade><uicontrol>Публикация</uicontrol>
+          <uicontrol>Колонтитулы PDF…</uicontrol></menucascade>: отметьте
+          <uicontrol>Показывать колонтитулы</uicontrol> и впишите текст шапки и подвала — номер
+          страницы и их общее число добавляются автоматически.</cmd>
+        <info>Свой текст колонтитулов работает только при печати через компонент WebView2 — он
+          включается автоматически, как и в случаях, когда в системе не установлен Microsoft Edge
+          или Google Chrome.</info>
+      </step>
+      <step>
+        <cmd>Разрыв страницы перед заголовком и перенос таблицы между страницами задаются через
+          атрибут <parmname>outputclass</parmname> в панели «Атрибуты» (или пунктами меню
+          «Структура»): значение <codeph>page-break-before</codeph> на <codeph>title</codeph> и
+          <codeph>page-break-auto</codeph> на <codeph>table</codeph>.</cmd>
+        <stepxmp>Заголовок этой задачи начинает новую страницу печати именно так — можно
+          проверить, открыв документ в режиме <b>Исходный код</b>.</stepxmp>
+      </step>
+      <step>
+        <cmd>Чтобы изменить оформление публикации, подключите файл стилей через
+          <menucascade><uicontrol>Публикация</uicontrol>
+          <uicontrol>Пользовательский CSS…</uicontrol></menucascade> — путь к файлу тоже
+          сохраняется вместе с проектом.</cmd>
+      </step>
+    </steps>
+
+    <result>
+      <p>Готовая публикация лежит в выбранной папке вывода; при ошибке экспорта в PDF см.
+        <xref href="../troubleshooting/pdf-export.dita#pdf-export">PDF не экспортируется</xref>.</p>
+    </result>
+  </taskbody>
+</task>

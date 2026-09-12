@@ -6,6 +6,9 @@ using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 using DitaStudio.Core.Templates;
 using DitaStudio.Core.Validation;
+using DitaStudio.Docx;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace DitaStudio.Tests;
 
@@ -29,6 +32,7 @@ public static class Program
         TemplateTests();
         EditingTests();
         ProjectTests();
+        DocxTests();
 
         Console.WriteLine();
         Console.WriteLine($"Пройдено проверок: {_passed}");
@@ -490,6 +494,190 @@ public static class Program
 
             project.SetCustomCssPath(null);
             Check(project.CustomCssPath is null, "пользовательский CSS можно отключить");
+
+            // Условия сборки: сохранение между запусками и отключение.
+            project.SetConditions(new Dictionary<string, HashSet<string>>
+            {
+                ["platform"] = new HashSet<string> { "windows", "linux" }
+            }, showDraftComments: true);
+            Check(project.ExcludedConditionValues["platform"].SetEquals(new[] { "windows", "linux" }),
+                "исключённые значения условий сохранены в проекте");
+            Check(project.ShowDraftComments, "флаг показа черновых комментариев сохранён в проекте");
+
+            var reopenedConditions = new DitaProject(root);
+            Check(reopenedConditions.ExcludedConditionValues["platform"].SetEquals(new[] { "windows", "linux" }),
+                "условия сборки переживают переоткрытие проекта");
+            Check(reopenedConditions.ShowDraftComments, "флаг черновых комментариев переживает переоткрытие проекта");
+
+            project.SetConditions(new Dictionary<string, HashSet<string>>(), showDraftComments: false);
+            Check(project.ExcludedConditionValues.Count == 0, "условия сборки можно сбросить");
+            Check(!new DitaProject(root).ShowDraftComments, "сброс условий сборки сохраняется на диске");
+
+            // Колонтитулы PDF: сохранение между запусками и отключение.
+            project.SetPdfHeaderFooter(true, "Заголовок документа", "© 2026");
+            Check(project.PdfShowHeaderFooter, "флаг колонтитулов сохранён в проекте");
+            Check(project.PdfHeaderText == "Заголовок документа", "текст шапки сохранён в проекте");
+
+            var reopenedHeaderFooter = new DitaProject(root);
+            Check(reopenedHeaderFooter.PdfShowHeaderFooter, "колонтитулы переживают переоткрытие проекта");
+            Check(reopenedHeaderFooter.PdfFooterText == "© 2026", "текст подвала переживает переоткрытие проекта");
+
+            project.SetPdfHeaderFooter(false, null, null);
+            Check(!new DitaProject(root).PdfShowHeaderFooter, "отключение колонтитулов сохраняется на диске");
+
+            // Поиск: обычный текст и регулярное выражение.
+            var plainHits = project.Search("продукте");
+            Check(plainHits.Count == 1, $"обычный поиск нашёл совпадений: {plainHits.Count}");
+
+            var regexHits = project.Search(@"прод\w+", regex: true);
+            Check(regexHits.Count == 1, $"поиск по regex нашёл совпадений: {regexHits.Count}");
+
+            var badRegexHits = project.Search("[", regex: true);
+            Check(badRegexHits.Count == 0, "некорректный regex не роняет поиск");
+
+            // Замена: обычный текст и регулярное выражение, с сохранением между документами.
+            var plainReplace = project.ReplaceAll("Коротко о продукте.", "Кратко о товаре.");
+            Check(plainReplace.ReplacementCount == 1, "обычная замена нашла одно вхождение");
+            Check(plainReplace.ChangedFiles.Count == 1, "обычная замена затронула один файл");
+            Check(project.GetDocument(Path.Combine(root, "intro.dita")).Root
+                    .FindDescendant("shortdesc")!.InnerText.Contains("Кратко о товаре."),
+                "обычная замена применилась к тексту документа");
+
+            // Замена работает по отдельным текстовым узлам, не сквозь дочерние элементы — регулярное
+            // выражение здесь не пересекает границу с вложенным <b>Готово</b>.
+            var regexReplace = project.ReplaceAll(@"Наж\w+", "Кликните", regex: true);
+            Check(regexReplace.ReplacementCount == 1, "regex-замена нашла одно вхождение");
+            Check(project.GetDocument(Path.Combine(root, "install.dita")).Root
+                    .FindDescendant("steps")!.InnerText.Contains("Кликните Готово"),
+                "regex-замена изменила текстовый узел");
+
+            // Импорт условий сборки из .ditaval.
+            var ditavalPath = Path.Combine(root, "profile.ditaval");
+            File.WriteAllText(ditavalPath, """
+<?xml version="1.0" encoding="UTF-8"?>
+<val>
+  <prop action="exclude" att="platform" val="linux"/>
+  <prop action="include" val="tip"/>
+</val>
+""");
+            var ditavalRules = DitavalReader.ReadExcludeRules(ditavalPath);
+            Check(ditavalRules.TryGetValue("platform", out var linuxRule) && linuxRule.Contains("linux"),
+                "правило exclude из .ditaval прочитано");
+            Check(ditavalRules.Count == 1, "правило include из .ditaval пропущено как неподдерживаемое");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------- DOCX
+
+    private static void DocxTests()
+    {
+        Section("Экспорт в DOCX");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "intro.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="intro">
+  <title>Введение<fn>Сноска про введение.</fn></title>
+  <conbody>
+    <p>Смотрите <xref href="install.dita#install">установку</xref>. Ключ: <keyword keyref="product-name"/>.</p>
+    <table>
+      <tgroup cols="2">
+        <colspec colname="c1" colnum="1" colwidth="1*"/>
+        <colspec colname="c2" colnum="2" colwidth="1*"/>
+        <thead><row><entry colname="c1">A</entry><entry colname="c2">B</entry></row></thead>
+        <tbody>
+          <row><entry colname="c1" morerows="1">R1</entry><entry colname="c2">X</entry></row>
+          <row><entry colname="c2">Y</entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+    <note type="tip">Совет.</note>
+  </conbody>
+</concept>
+""");
+
+            File.WriteAllText(Path.Combine(root, "install.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<task id="install">
+  <title>Установка</title>
+  <taskbody>
+    <steps>
+      <step><cmd>Первый шаг</cmd></step>
+      <step><cmd>Второй шаг</cmd></step>
+    </steps>
+  </taskbody>
+</task>
+""");
+
+            File.WriteAllText(Path.Combine(root, "guide.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>Тест DOCX</title>
+  <keydef keys="product-name"><topicmeta><keywords><keyword>Пример</keyword></keywords></topicmeta></keydef>
+  <topicref href="intro.dita"/>
+  <topicref href="install.dita"/>
+</map>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+
+            var outFile = Path.Combine(root, "out.docx");
+            var publisher = new DocxPublisher(project);
+            var result = publisher.Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+
+            Check(result.Warnings.Count == 0, "экспорт в DOCX прошёл без предупреждений: " + string.Join("; ", result.Warnings));
+            Check(File.Exists(outFile), "файл .docx создан");
+
+            using var doc = WordprocessingDocument.Open(outFile, false);
+            var body = doc.MainDocumentPart!.Document.Body!;
+            var text = body.InnerText;
+
+            Check(text.Contains("Пример"), "ключ product-name подставлен в DOCX");
+            Check(text.Contains("Установка"), "заголовок второго топика попал в DOCX");
+
+            var footnotesPart = doc.MainDocumentPart.FootnotesPart;
+            var realFootnotes = footnotesPart?.Footnotes?.Elements<Footnote>().Count(f => (f.Id?.Value ?? 0) > 0) ?? 0;
+            Check(realFootnotes == 1, $"настоящая сноска Word создана: {realFootnotes}");
+            Check(body.Descendants<FootnoteReference>().Count() == 1, "ссылка на сноску вставлена в текст");
+
+            var hyperlinks = body.Descendants<Hyperlink>().ToList();
+            Check(hyperlinks.Count == 1 && hyperlinks[0].Anchor is not null,
+                "перекрёстная ссылка стала внутренней гиперссылкой на закладку");
+
+            var table = body.Descendants<Table>().First();
+            var rows = table.Elements<TableRow>().ToList();
+            Check(rows.Count == 3, "в таблице три строки (шапка + 2 строки тела)");
+
+            var bodyRow1Cells = rows[1].Elements<TableCell>().ToList();
+            var bodyRow2Cells = rows[2].Elements<TableCell>().ToList();
+            Check(bodyRow1Cells[0].TableCellProperties?.GetFirstChild<VerticalMerge>()?.Val?.Value == MergedCellValues.Restart,
+                "объединение ячеек по вертикали начато (Restart)");
+            Check(bodyRow2Cells.Count == 2 &&
+                  bodyRow2Cells[0].TableCellProperties?.GetFirstChild<VerticalMerge>()?.Val?.Value == MergedCellValues.Continue,
+                "вторая строка таблицы получила ячейку-продолжение объединения");
+
+            var tocField = body.Descendants<SimpleField>().FirstOrDefault(f => f.Instruction?.Value?.Contains("TOC") == true);
+            Check(tocField is not null, "поле оглавления (TOC) добавлено");
+
+            var headings = body.Elements<Paragraph>()
+                .Count(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value?.StartsWith("Heading") == true);
+            Check(headings == 2, $"оба топика получили заголовки-абзацы: {headings}");
         }
         finally
         {

@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\DitaStudio.Core\DitaStudio.Core.csproj" />
+    <ProjectReference Include="..\..\src\DitaStudio.Docx\DitaStudio.Docx.csproj" />
   </ItemGroup>
 
 </Project>

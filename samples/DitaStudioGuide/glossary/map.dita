@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary Entry//EN" "glossentry.dtd">
+<glossentry id="map" xml:lang="ru-RU">
+  <glossterm>карта</glossterm>
+  <glossdef>
+    <p>Файл <filepath>.ditamap</filepath>, который собирает топики в структуру издания: задаёт
+      порядок разделов, вложенность, ключи (<codeph>keydef</codeph>) и заголовки разделов, не
+      привязанные ни к одному топику.</p>
+  </glossdef>
+  <glossBody>
+    <glossSurfaceForm>карта (ditamap)</glossSurfaceForm>
+  </glossBody>
+</glossentry>

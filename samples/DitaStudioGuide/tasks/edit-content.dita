@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="edit-content" xml:lang="ru-RU">
+  <title>Редактирование текста и структуры</title>
+  <shortdesc>Основные приёмы работы в режиме «Автор»: набор текста, форматирование, списки и
+    шаги.</shortdesc>
+  <taskbody>
+    <context>
+      <p>Откройте любой топик проекта и переключитесь на вкладку <b>Автор</b> над областью
+        редактирования.</p>
+    </context>
+
+    <steps>
+      <step>
+        <cmd>Наберите текст абзаца обычным образом. <uicontrol>Enter</uicontrol> в конце абзаца
+          создаёт следующий абзац (или следующий шаг списка), <uicontrol>Enter</uicontrol> в
+          середине разбивает текст на два блока по позиции курсора.</cmd>
+      </step>
+      <step>
+        <cmd><uicontrol>Backspace</uicontrol> в начале пустого или короткого блока объединяет его
+          с предыдущим — оба действия проверяются по модели содержимого и не выполнятся, если
+          результат окажется невалидным.</cmd>
+      </step>
+      <step>
+        <cmd>В списке или в шагах задачи <uicontrol>Tab</uicontrol> и <uicontrol>Shift+Tab</uicontrol>
+          повышают и понижают уровень вложенности — например, превращают шаг в подшаг.</cmd>
+      </step>
+      <step>
+        <cmd>Выделите часть текста и примените оформление: <shortcut>Ctrl+B</shortcut> —
+          полужирный, <shortcut>Ctrl+I</shortcut> — курсив, <shortcut>Ctrl+U</shortcut> —
+          подчёркнутый, <shortcut>Ctrl+`</shortcut> — код, <shortcut>Ctrl+Shift+U</shortcut> —
+          элемент интерфейса (<codeph>uicontrol</codeph>). <shortcut>Ctrl+Shift+Space</shortcut>
+          снимает оформление.</cmd>
+      </step>
+      <step>
+        <cmd>Чтобы вставить новый элемент, откройте палитру вставки справа
+          (<shortcut>Ctrl+E</shortcut>) — в ней показаны только элементы, допустимые в текущей
+          позиции курсора; список можно отфильтровать вводом текста.</cmd>
+      </step>
+      <step>
+        <cmd>Переставить или удалить элемент можно без мыши: <shortcut>Ctrl+Shift+↑</shortcut> и
+          <shortcut>Ctrl+Shift+↓</shortcut> двигают элемент вверх и вниз, удаление — через меню
+          «Структура» (с подтверждением).</cmd>
+      </step>
+    </steps>
+
+    <result>
+      <p>Документ остаётся валидным на каждом шаге — редактор просто не даст выполнить операцию,
+        которая сломает структуру. Заодно работает проверка орфографии: слова с ошибкой
+        подчёркиваются волнистой линией, правый клик по слову предлагает варианты замены.</p>
+    </result>
+
+    <postreq>
+      <p>Про вставку таблиц, изображений и ссылок — в задаче
+        <xref href="insert-elements.dita#insert-elements">Вставка таблиц, изображений и
+        ссылок</xref>.</p>
+    </postreq>
+  </taskbody>
+</task>

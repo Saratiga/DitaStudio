@@ -353,6 +353,51 @@ public static class Dialogs
         return window.ShowDialog() == true ? result : null;
     }
 
+    // ------------------------------------------------------- колонтитулы PDF
+
+    public sealed record PdfHeaderFooterResult(bool Show, string HeaderText, string FooterText);
+
+    public static PdfHeaderFooterResult? PdfHeaderFooter(DitaProject project)
+    {
+        var panel = new StackPanel { Margin = new Thickness(20) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Колонтитулы поддерживаются только при печати через WebView2 — это происходит " +
+                   "автоматически, если задан свой текст или если в системе не установлен Edge/Chrome. " +
+                   "Иначе PDF печатается без колонтитулов, как и раньше.",
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 12)
+        });
+
+        var show = new CheckBox { Content = "Показывать колонтитулы", IsChecked = project.PdfShowHeaderFooter };
+        panel.Children.Add(show);
+
+        panel.Children.Add(Label("Текст в шапке"));
+        var header = new TextBox { Text = project.PdfHeaderText ?? string.Empty, Padding = new Thickness(4, 3, 4, 3) };
+        panel.Children.Add(header);
+
+        panel.Children.Add(Label("Текст в подвале"));
+        var footer = new TextBox { Text = project.PdfFooterText ?? string.Empty, Padding = new Thickness(4, 3, 4, 3) };
+        panel.Children.Add(footer);
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Номер страницы и общее число страниц добавляются автоматически справа в подвале.",
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = ThemeManager.Brush("TextMuted"),
+            Margin = new Thickness(0, 6, 0, 0)
+        });
+
+        PdfHeaderFooterResult? result = null;
+        var window = Shell("Колонтитулы PDF", panel, 440, 320);
+        panel.Children.Add(Buttons(window, () =>
+        {
+            result = new PdfHeaderFooterResult(show.IsChecked == true, header.Text, footer.Text);
+        }));
+
+        return window.ShowDialog() == true ? result : null;
+    }
+
     // --------------------------------------------------- пользовательский CSS
 
     private const string DefaultCustomCss = """

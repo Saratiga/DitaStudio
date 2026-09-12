@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320">
+  <g font-family="Segoe UI,sans-serif" font-size="12" fill="#1a1c1f">
+    <rect x="10" y="10" width="620" height="24" fill="#eef4fb" stroke="#1f5fa9" stroke-width="1.5"/>
+    <text x="20" y="26" font-size="11">Файл  Правка  Вставка  Структура  Публикация  Справка</text>
+
+    <rect x="10" y="42" width="150" height="238" fill="#f7f8fa" stroke="#5b6472" stroke-width="1.5"/>
+    <text x="20" y="60" font-weight="bold">Дерево проекта</text>
+    <text x="20" y="80">concepts/</text>
+    <text x="20" y="98">tasks/</text>
+    <text x="20" y="116">reference/</text>
+    <text x="20" y="134">Карта</text>
+
+    <rect x="168" y="42" width="300" height="180" fill="#fff" stroke="#1a1c1f" stroke-width="1.5"/>
+    <text x="178" y="60" font-weight="bold">Документ</text>
+    <line x1="168" y1="70" x2="468" y2="70" stroke="#c8ccd4"/>
+    <text x="178" y="86" font-size="11">Автор | Исходный код | Предпросмотр</text>
+    <rect x="178" y="96" width="280" height="30" fill="#eef4fb" stroke="#1f5fa9"/>
+    <text x="186" y="115" font-size="11">Абзац — своя область редактирования</text>
+    <rect x="178" y="132" width="280" height="30" fill="#fdf3e2" stroke="#c58217"/>
+    <text x="186" y="151" font-size="11">Примечание (note)</text>
+    <rect x="178" y="168" width="280" height="30" fill="#f7f8fa" stroke="#5b6472"/>
+    <text x="186" y="187" font-size="11">Изображение — плашка (правка в коде)</text>
+
+    <rect x="476" y="42" width="154" height="180" fill="#f7f8fa" stroke="#5b6472" stroke-width="1.5"/>
+    <text x="486" y="60" font-weight="bold">Палитра / атрибуты</text>
+    <text x="486" y="80" font-size="11">p, note, table…</text>
+    <text x="486" y="98" font-size="11">Структура ▸</text>
+
+    <rect x="10" y="230" width="620" height="50" fill="#eef4fb" stroke="#1f5fa9" stroke-width="1.5"/>
+    <text x="20" y="248" font-weight="bold">Строка состояния</text>
+    <text x="20" y="266" font-size="11">/task/taskbody/steps/step[2]/cmd</text>
+  </g>
+  <text x="320" y="305" font-family="Segoe UI,sans-serif" font-size="11" text-anchor="middle" fill="#8a94a6">Упрощённая схема окна: дерево проекта слева, три вкладки документа посередине, палитра и атрибуты справа</text>
+</svg>

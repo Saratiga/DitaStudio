@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary Entry//EN" "glossentry.dtd">
+<glossentry id="topic" xml:lang="ru-RU">
+  <glossterm>топик</glossterm>
+  <glossdef>
+    <p>Минимальная самостоятельная единица содержимого DITA — один XML-файл определённого типа
+      (концепция, задача, справка, устранение неполадки, статья глоссария), который можно
+      переиспользовать в разных картах.</p>
+  </glossdef>
+</glossentry>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="open-project" xml:lang="ru-RU">
+  <title>Открытие и создание проекта</title>
+  <shortdesc>Как открыть папку с DITA-проектом, быстро вернуться к недавнему проекту и создать
+    новый документ по шаблону.</shortdesc>
+  <taskbody>
+    <context>
+      <p conref="../concepts/overview.dita#overview/project-is-folder"/>
+    </context>
+
+    <steps>
+      <step>
+        <cmd>Откройте проект: <menucascade><uicontrol>Файл</uicontrol>
+          <uicontrol>Открыть папку проекта…</uicontrol></menucascade> (<shortcut>Ctrl+Shift+O</shortcut>)
+          и выберите папку, где лежат карта и топики.</cmd>
+      </step>
+      <step>
+        <cmd>Чтобы быстро вернуться к одному из последних проектов, откройте
+          <menucascade><uicontrol>Файл</uicontrol><uicontrol>Недавние проекты</uicontrol></menucascade>
+          и выберите папку из списка.</cmd>
+        <info>Список хранит до восьми последних папок и переживает перезапуск редактора; папки,
+          которые больше не существуют на диске, в списке не показываются.</info>
+      </step>
+      <step>
+        <cmd>Чтобы создать документ, выберите <menucascade><uicontrol>Файл</uicontrol>
+          <uicontrol>Создать документ…</uicontrol></menucascade> (<shortcut>Ctrl+N</shortcut>).</cmd>
+        <choicetable>
+          <chhead>
+            <choptionhd>Шаг диалога</choptionhd>
+            <chdeschd>Что происходит</chdeschd>
+          </chhead>
+          <chrow>
+            <choption>Тип документа</choption>
+            <chdesc>Выбирается заготовка: концепция, задача, справка, устранение неполадки,
+              статья глоссария или карта.</chdesc>
+          </chrow>
+          <chrow>
+            <choption>Заголовок</choption>
+            <chdesc>Имя файла и <codeph>id</codeph> корневого элемента предлагаются автоматически
+              из заголовка (кириллица транслитерируется).</chdesc>
+          </chrow>
+        </choicetable>
+      </step>
+    </steps>
+
+    <result>
+      <p>Проект открыт, дерево файлов слева и список карт на вкладке «Карта» заполнены — можно
+        переходить к <xref href="edit-content.dita#edit-content">редактированию содержимого</xref>.</p>
+    </result>
+  </taskbody>
+</task>

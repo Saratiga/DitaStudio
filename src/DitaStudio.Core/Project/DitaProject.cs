@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Schema;
 using DitaStudio.Core.Validation;
@@ -101,12 +102,16 @@ public sealed class DitaProject
     private readonly Dictionary<string, KeyDefinition> _keys = new(StringComparer.Ordinal);
 
     private const string CustomCssSettingsFile = ".ditastudio-css";
+    private const string ConditionsSettingsFile = ".ditastudio-conditions";
+    private const string PdfHeaderFooterSettingsFile = ".ditastudio-pdf-header";
 
     public DitaProject(string rootPath)
     {
         RootPath = System.IO.Path.GetFullPath(rootPath);
         Name = new DirectoryInfo(RootPath).Name;
         LoadCustomCssSetting();
+        LoadConditionsSetting();
+        LoadPdfHeaderFooterSetting();
     }
 
     public string RootPath { get; }
@@ -169,6 +174,164 @@ public sealed class DitaProject
         catch
         {
             CustomCssPath = null;
+        }
+    }
+
+    // ------------------------------------------------------ условия сборки
+
+    /// <summary>Значения атрибутов условной публикации (props/platform/product/audience/otherprops/
+    /// deliveryTarget), исключаемые при сборке. Сохраняется рядом с проектом, переживает перезапуск редактора.</summary>
+    public IReadOnlyDictionary<string, HashSet<string>> ExcludedConditionValues { get; private set; } =
+        new Dictionary<string, HashSet<string>>();
+
+    public bool ShowDraftComments { get; private set; }
+
+    public void SetConditions(Dictionary<string, HashSet<string>> exclude, bool showDraftComments)
+    {
+        ExcludedConditionValues = exclude;
+        ShowDraftComments = showDraftComments;
+
+        var settingsPath = System.IO.Path.Combine(RootPath, ConditionsSettingsFile);
+        try
+        {
+            if (exclude.Sum(kv => kv.Value.Count) == 0 && !showDraftComments)
+            {
+                if (File.Exists(settingsPath))
+                {
+                    File.Delete(settingsPath);
+                }
+
+                return;
+            }
+
+            var lines = new List<string> { showDraftComments ? "1" : "0" };
+            foreach (var (attribute, values) in exclude)
+            {
+                foreach (var value in values)
+                {
+                    lines.Add($"{attribute}={value}");
+                }
+            }
+
+            File.WriteAllLines(settingsPath, lines);
+        }
+        catch
+        {
+            // условия сборки не критичны — молча продолжаем без сохранения на диск
+        }
+    }
+
+    private void LoadConditionsSetting()
+    {
+        try
+        {
+            var settingsPath = System.IO.Path.Combine(RootPath, ConditionsSettingsFile);
+            if (!File.Exists(settingsPath))
+            {
+                return;
+            }
+
+            var lines = File.ReadAllLines(settingsPath);
+            if (lines.Length == 0)
+            {
+                return;
+            }
+
+            ShowDraftComments = lines[0].Trim() == "1";
+
+            var exclude = new Dictionary<string, HashSet<string>>();
+            foreach (var line in lines.Skip(1))
+            {
+                var separator = line.IndexOf('=');
+                if (separator <= 0)
+                {
+                    continue;
+                }
+
+                var attribute = line[..separator];
+                var value = line[(separator + 1)..];
+                if (!exclude.TryGetValue(attribute, out var values))
+                {
+                    values = new HashSet<string>();
+                    exclude[attribute] = values;
+                }
+
+                values.Add(value);
+            }
+
+            ExcludedConditionValues = exclude;
+        }
+        catch
+        {
+            ExcludedConditionValues = new Dictionary<string, HashSet<string>>();
+            ShowDraftComments = false;
+        }
+    }
+
+    // -------------------------------------------------------- колонтитулы PDF
+
+    /// <summary>Показывать ли колонтитулы при экспорте в PDF. По умолчанию — нет (как и раньше).
+    /// Сохраняется вместе с проектом, переживает перезапуск редактора.</summary>
+    public bool PdfShowHeaderFooter { get; private set; }
+
+    /// <summary>Текст в шапке страницы (поддерживается только при печати через WebView2).</summary>
+    public string? PdfHeaderText { get; private set; }
+
+    /// <summary>Текст в подвале страницы (поддерживается только при печати через WebView2).</summary>
+    public string? PdfFooterText { get; private set; }
+
+    public void SetPdfHeaderFooter(bool show, string? headerText, string? footerText)
+    {
+        PdfShowHeaderFooter = show;
+        PdfHeaderText = headerText;
+        PdfFooterText = footerText;
+
+        var settingsPath = System.IO.Path.Combine(RootPath, PdfHeaderFooterSettingsFile);
+        try
+        {
+            if (!show && string.IsNullOrEmpty(headerText) && string.IsNullOrEmpty(footerText))
+            {
+                if (File.Exists(settingsPath))
+                {
+                    File.Delete(settingsPath);
+                }
+
+                return;
+            }
+
+            File.WriteAllLines(settingsPath, new[]
+            {
+                show ? "1" : "0",
+                headerText ?? string.Empty,
+                footerText ?? string.Empty
+            });
+        }
+        catch
+        {
+            // настройка колонтитулов не критична — молча продолжаем без сохранения на диск
+        }
+    }
+
+    private void LoadPdfHeaderFooterSetting()
+    {
+        try
+        {
+            var settingsPath = System.IO.Path.Combine(RootPath, PdfHeaderFooterSettingsFile);
+            if (!File.Exists(settingsPath))
+            {
+                return;
+            }
+
+            var lines = File.ReadAllLines(settingsPath);
+            PdfShowHeaderFooter = lines.Length > 0 && lines[0].Trim() == "1";
+            PdfHeaderText = lines.Length > 1 ? lines[1] : string.Empty;
+            PdfFooterText = lines.Length > 2 ? lines[2] : string.Empty;
+        }
+        catch
+        {
+            PdfShowHeaderFooter = false;
+            PdfHeaderText = null;
+            PdfFooterText = null;
         }
     }
 
@@ -404,7 +567,22 @@ public sealed class DitaProject
 
     public sealed record SearchHit(ProjectFile File, DitaNode Node, string Context);
 
-    public IReadOnlyList<SearchHit> Search(string query, bool caseSensitive = false, bool elementNames = false)
+    public sealed record ReplaceResult(int ReplacementCount, IReadOnlyList<ProjectFile> ChangedFiles);
+
+    private static Regex? TryBuildRegex(string pattern, bool caseSensitive)
+    {
+        try
+        {
+            return new Regex(pattern, caseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase);
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+    }
+
+    public IReadOnlyList<SearchHit> Search(string query, bool caseSensitive = false, bool elementNames = false,
+        bool regex = false)
     {
         var result = new List<SearchHit>();
         if (string.IsNullOrWhiteSpace(query))
@@ -413,6 +591,15 @@ public sealed class DitaProject
         }
 
         var comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        Regex? pattern = null;
+        if (regex)
+        {
+            pattern = TryBuildRegex(query, caseSensitive);
+            if (pattern is null)
+            {
+                return result;
+            }
+        }
 
         foreach (var file in _files)
         {
@@ -426,7 +613,8 @@ public sealed class DitaProject
             {
                 if (elementNames)
                 {
-                    if (node.Kind == NodeKind.Element && node.Name.Equals(query, comparison))
+                    var isMatch = pattern?.IsMatch(node.Name) ?? node.Name.Equals(query, comparison);
+                    if (node.Kind == NodeKind.Element && isMatch)
                     {
                         result.Add(new SearchHit(file, node, node.Path));
                     }
@@ -439,20 +627,126 @@ public sealed class DitaProject
                     continue;
                 }
 
-                var index = node.Value.IndexOf(query, comparison);
-                if (index < 0)
+                int index;
+                int matchLength;
+                if (pattern is not null)
                 {
-                    continue;
+                    var match = pattern.Match(node.Value);
+                    if (!match.Success)
+                    {
+                        continue;
+                    }
+
+                    index = match.Index;
+                    matchLength = match.Length;
+                }
+                else
+                {
+                    index = node.Value.IndexOf(query, comparison);
+                    if (index < 0)
+                    {
+                        continue;
+                    }
+
+                    matchLength = query.Length;
                 }
 
                 var start = Math.Max(0, index - 30);
-                var length = Math.Min(node.Value.Length - start, query.Length + 60);
+                var length = Math.Min(node.Value.Length - start, matchLength + 60);
                 var context = node.Value.Substring(start, length).Replace('\n', ' ').Trim();
                 result.Add(new SearchHit(file, node.Parent ?? node, context));
             }
         }
 
         return result;
+    }
+
+    /// <summary>Заменяет все вхождения запроса во всех текстовых узлах проекта. Изменённые
+    /// документы помечаются как несохранённые (IsDirty) — запись на диск делает пользователь
+    /// (Ctrl+Shift+S), как и после любой другой структурной правки.</summary>
+    public ReplaceResult ReplaceAll(string query, string replacement, bool caseSensitive = false, bool regex = false)
+    {
+        var changed = new List<ProjectFile>();
+        var count = 0;
+        if (string.IsNullOrEmpty(query))
+        {
+            return new ReplaceResult(0, changed);
+        }
+
+        var comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        Regex? pattern = null;
+        if (regex)
+        {
+            pattern = TryBuildRegex(query, caseSensitive);
+            if (pattern is null)
+            {
+                return new ReplaceResult(0, changed);
+            }
+        }
+
+        foreach (var file in _files)
+        {
+            var doc = TryGetDocument(file.FullPath);
+            if (doc is null)
+            {
+                continue;
+            }
+
+            var fileChanged = false;
+            foreach (var node in doc.Root.DescendantsAndSelf())
+            {
+                if (node.Kind != NodeKind.Text)
+                {
+                    continue;
+                }
+
+                if (pattern is not null)
+                {
+                    var matches = pattern.Matches(node.Value);
+                    if (matches.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    node.Value = pattern.Replace(node.Value, replacement);
+                    count += matches.Count;
+                }
+                else
+                {
+                    var occurrences = CountOccurrences(node.Value, query, comparison);
+                    if (occurrences == 0)
+                    {
+                        continue;
+                    }
+
+                    node.Value = node.Value.Replace(query, replacement, comparison);
+                    count += occurrences;
+                }
+
+                fileChanged = true;
+            }
+
+            if (fileChanged)
+            {
+                doc.IsDirty = true;
+                changed.Add(file);
+            }
+        }
+
+        return new ReplaceResult(count, changed);
+    }
+
+    private static int CountOccurrences(string text, string query, StringComparison comparison)
+    {
+        var count = 0;
+        var index = 0;
+        while ((index = text.IndexOf(query, index, comparison)) >= 0)
+        {
+            count++;
+            index += query.Length;
+        }
+
+        return count;
     }
 
     // ------------------------------------------------------------- проверка

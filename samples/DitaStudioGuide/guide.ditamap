@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE map PUBLIC "-//OASIS//DTD DITA Map//EN" "map.dtd">
+<map xml:lang="ru-RU">
+  <title>Руководство пользователя DITA Studio</title>
+
+  <keydef keys="product-name">
+    <topicmeta>
+      <keywords>
+        <keyword>DITA Studio</keyword>
+      </keywords>
+    </topicmeta>
+  </keydef>
+
+  <topicref href="concepts/overview.dita">
+    <topicref href="concepts/author-mode.dita"/>
+  </topicref>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Работа с проектом</navtitle>
+    </topicmeta>
+    <topicref href="tasks/open-project.dita"/>
+    <topicref href="tasks/edit-content.dita"/>
+    <topicref href="tasks/insert-elements.dita"/>
+    <topicref href="tasks/validate-and-search.dita"/>
+    <topicref href="tasks/publish.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Справочные материалы</navtitle>
+    </topicmeta>
+    <topicref href="reference/keyboard-shortcuts.dita"/>
+    <topicref href="reference/author-mode-limits.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Устранение неполадок</navtitle>
+    </topicmeta>
+    <topicref href="troubleshooting/pdf-export.dita"/>
+    <topicref href="troubleshooting/preview-blank.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Глоссарий</navtitle>
+    </topicmeta>
+    <topicref href="glossary/topic.dita"/>
+    <topicref href="glossary/map.dita"/>
+    <topicref href="glossary/key.dita"/>
+  </topichead>
+</map>

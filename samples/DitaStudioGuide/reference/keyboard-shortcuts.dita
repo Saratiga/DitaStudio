@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="keyboard-shortcuts" xml:lang="ru-RU">
+  <title>Сочетания клавиш</title>
+  <shortdesc>Все горячие клавиши, зарегистрированные в главном окне редактора.</shortdesc>
+  <refbody>
+    <table>
+      <title>Файл и правка</title>
+      <tgroup cols="2">
+        <colspec colname="c1" colnum="1" colwidth="1*"/>
+        <colspec colname="c2" colnum="2" colwidth="2*"/>
+        <thead>
+          <row>
+            <entry colname="c1">Сочетание</entry>
+            <entry colname="c2">Действие</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row><entry><shortcut>Ctrl+Shift+O</shortcut></entry><entry>Открыть папку проекта</entry></row>
+          <row><entry><shortcut>Ctrl+N</shortcut></entry><entry>Создать документ</entry></row>
+          <row><entry><shortcut>Ctrl+S</shortcut></entry><entry>Сохранить документ</entry></row>
+          <row><entry><shortcut>Ctrl+Shift+S</shortcut></entry><entry>Сохранить всё</entry></row>
+          <row><entry><shortcut>Ctrl+W</shortcut></entry><entry>Закрыть вкладку</entry></row>
+          <row><entry><shortcut>Ctrl+Alt+Z</shortcut></entry><entry>Отменить структурное изменение</entry></row>
+          <row><entry><shortcut>Ctrl+Alt+Y</shortcut></entry><entry>Повторить структурное изменение</entry></row>
+          <row><entry><shortcut>Ctrl+Shift+F</shortcut></entry><entry>Найти в проекте</entry></row>
+          <row><entry><shortcut>F7</shortcut></entry><entry>Проверить проект</entry></row>
+          <row><entry><shortcut>F1</shortcut></entry><entry>Справка по элементу под курсором</entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+
+    <table outputclass="page-break-auto">
+      <title>Структура и форматирование</title>
+      <tgroup cols="2">
+        <colspec colname="c1" colnum="1" colwidth="1*"/>
+        <colspec colname="c2" colnum="2" colwidth="2*"/>
+        <thead>
+          <row>
+            <entry colname="c1">Сочетание</entry>
+            <entry colname="c2">Действие</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row><entry><shortcut>Ctrl+E</shortcut></entry><entry>Фокус на палитре вставки</entry></row>
+          <row><entry><shortcut>Ctrl+Shift+↑</shortcut></entry><entry>Переместить элемент вверх</entry></row>
+          <row><entry><shortcut>Ctrl+Shift+↓</shortcut></entry><entry>Переместить элемент вниз</entry></row>
+          <row><entry><shortcut>Ctrl+Alt+→</shortcut></entry><entry>Объединить ячейку таблицы с соседней справа</entry></row>
+          <row><entry><shortcut>Ctrl+Alt+↓</shortcut></entry><entry>Объединить ячейку таблицы с ячейкой снизу</entry></row>
+          <row><entry><shortcut>Ctrl+B</shortcut></entry><entry>Полужирный</entry></row>
+          <row><entry><shortcut>Ctrl+I</shortcut></entry><entry>Курсив</entry></row>
+          <row><entry><shortcut>Ctrl+U</shortcut></entry><entry>Подчёркнутый</entry></row>
+          <row><entry><shortcut>Ctrl+`</shortcut></entry><entry>Код (<codeph>codeph</codeph>)</entry></row>
+          <row><entry><shortcut>Ctrl+Shift+U</shortcut></entry><entry>Элемент интерфейса (<codeph>uicontrol</codeph>)</entry></row>
+          <row><entry><shortcut>Ctrl+Shift+Space</shortcut></entry><entry>Снять оформление</entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+
+    <table>
+      <title>Публикация</title>
+      <tgroup cols="2">
+        <colspec colname="c1" colnum="1" colwidth="1*"/>
+        <colspec colname="c2" colnum="2" colwidth="2*"/>
+        <thead>
+          <row>
+            <entry colname="c1">Сочетание</entry>
+            <entry colname="c2">Действие</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row><entry><shortcut>F5</shortcut></entry><entry>Собрать сайт HTML</entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+  </refbody>
+</reference>

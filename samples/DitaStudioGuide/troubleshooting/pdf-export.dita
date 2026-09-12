@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE troubleshooting PUBLIC "-//OASIS//DTD DITA Troubleshooting//EN" "troubleshooting.dtd">
+<troubleshooting id="pdf-export" xml:lang="ru-RU">
+  <title>PDF не экспортируется</title>
+  <shortdesc>Команда «Экспорт в PDF» завершается ошибкой или не создаёт файл.</shortdesc>
+  <troublebody>
+    <condition>
+      <p>После выбора <menucascade><uicontrol>Публикация</uicontrol>
+        <uicontrol>Экспорт в PDF</uicontrol></menucascade> файл не появляется в папке вывода, либо
+        редактор сообщает, что не может найти браузер.</p>
+    </condition>
+
+    <troubleSolution>
+      <cause>
+        <p>Экспорт в PDF устроен как печать собранного HTML в файл через установленный на
+          компьютере Microsoft Edge или Google Chrome — собственного движка PDF в редакторе нет.
+          Если ни один из этих браузеров не установлен, экспорт не может выполниться.</p>
+      </cause>
+      <remedy>
+        <title>Установить или обновить браузер</title>
+        <steps>
+          <step>
+            <cmd>Установите Microsoft Edge или Google Chrome (обычно уже есть в Windows).</cmd>
+          </step>
+          <step>
+            <cmd>Повторите <menucascade><uicontrol>Публикация</uicontrol>
+              <uicontrol>Экспорт в PDF</uicontrol></menucascade>.</cmd>
+            <stepresult>Файл PDF появляется в выбранной папке вывода.</stepresult>
+          </step>
+        </steps>
+      </remedy>
+    </troubleSolution>
+  </troublebody>
+</troubleshooting>
