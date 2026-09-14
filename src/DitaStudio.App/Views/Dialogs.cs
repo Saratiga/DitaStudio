@@ -240,6 +240,355 @@ public static class Dialogs
         return window.ShowDialog() == true ? result : null;
     }
 
+    // ------------------------------------------------ таблица соответствий
+
+    /// <summary>Одна ячейка таблицы соответствий (reltable) — не более одного topicref на
+    /// ячейку; DITA допускает несколько, но для редактора этого достаточно (частый случай на
+    /// практике). Пустая ячейка (File == null) — допустимо, relcell может быть пустой.</summary>
+    public sealed class RelTableCell
+    {
+        public ProjectFile? File { get; set; }
+
+        public string? TopicId { get; set; }
+    }
+
+    public static List<List<RelTableCell>>? EditRelTable(DitaProject project, List<List<RelTableCell>> initialRows)
+    {
+        var rows = initialRows.Count > 0
+            ? initialRows.Select(r => r.Select(c => new RelTableCell { File = c.File, TopicId = c.TopicId }).ToList()).ToList()
+            : new List<List<RelTableCell>> { new() { new RelTableCell(), new RelTableCell() } };
+
+        var panel = new StackPanel { Margin = new Thickness(16) };
+        panel.Children.Add(new TextBlock
+        {
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = ThemeManager.Brush("TextMuted"),
+            Margin = new Thickness(0, 0, 0, 10),
+            Text = "Каждая строка связывает между собой топики из разных столбцов — при публикации " +
+                   "они попадут друг другу в «Смотрите также». Топики одного столбца друг с другом не связываются."
+        });
+
+        var grid = new Grid();
+        var scroller = new ScrollViewer
+        {
+            Content = grid,
+            MaxHeight = 340,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+        };
+
+        void Rebuild()
+        {
+            grid.Children.Clear();
+            grid.RowDefinitions.Clear();
+            grid.ColumnDefinitions.Clear();
+
+            var cols = rows.Count == 0 ? 0 : rows.Max(r => r.Count);
+            for (var c = 0; c < cols; c++)
+            {
+                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(160) });
+            }
+
+            for (var r = 0; r < rows.Count; r++)
+            {
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                for (var c = 0; c < rows[r].Count; c++)
+                {
+                    var cell = rows[r][c];
+                    var cellPanel = new DockPanel { Margin = new Thickness(3) };
+
+                    if (cell.File is not null)
+                    {
+                        var clear = new Button
+                        {
+                            Content = "✕",
+                            FontSize = 10,
+                            Padding = new Thickness(4, 0, 4, 0),
+                            BorderThickness = new Thickness(0),
+                            Background = Brushes.Transparent,
+                            ToolTip = "Очистить ячейку"
+                        };
+                        clear.Click += (_, _) =>
+                        {
+                            cell.File = null;
+                            cell.TopicId = null;
+                            Rebuild();
+                        };
+                        DockPanel.SetDock(clear, Dock.Right);
+                        cellPanel.Children.Add(clear);
+                    }
+
+                    var pick = new Button
+                    {
+                        Content = cell.File?.Title ?? "+ выбрать топик",
+                        Padding = new Thickness(6, 4, 6, 4),
+                        HorizontalContentAlignment = HorizontalAlignment.Left
+                    };
+                    pick.Click += (_, _) =>
+                    {
+                        var picked = InsertXref(project, null);
+                        if (picked is not null)
+                        {
+                            cell.File = picked.File;
+                            cell.TopicId = picked.TopicId;
+                            Rebuild();
+                        }
+                    };
+                    cellPanel.Children.Add(pick);
+
+                    Grid.SetRow(cellPanel, r);
+                    Grid.SetColumn(cellPanel, c);
+                    grid.Children.Add(cellPanel);
+                }
+            }
+        }
+
+        Rebuild();
+
+        var addRow = new Button { Content = "+ Строка", Padding = new Thickness(10, 4, 10, 4) };
+        addRow.Click += (_, _) =>
+        {
+            var width = rows.Count > 0 ? rows[0].Count : 2;
+            rows.Add(Enumerable.Range(0, width).Select(_ => new RelTableCell()).ToList());
+            Rebuild();
+        };
+
+        var addCol = new Button { Content = "+ Столбец", Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(6, 0, 0, 0) };
+        addCol.Click += (_, _) =>
+        {
+            foreach (var row in rows)
+            {
+                row.Add(new RelTableCell());
+            }
+
+            Rebuild();
+        };
+
+        var removeRow = new Button { Content = "− Строка", Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(6, 0, 0, 0) };
+        removeRow.Click += (_, _) =>
+        {
+            if (rows.Count > 1)
+            {
+                rows.RemoveAt(rows.Count - 1);
+                Rebuild();
+            }
+        };
+
+        var removeCol = new Button { Content = "− Столбец", Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(6, 0, 0, 0) };
+        removeCol.Click += (_, _) =>
+        {
+            if (rows.Count > 0 && rows[0].Count > 1)
+            {
+                foreach (var row in rows)
+                {
+                    row.RemoveAt(row.Count - 1);
+                }
+
+                Rebuild();
+            }
+        };
+
+        var toolbar = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
+        toolbar.Children.Add(addRow);
+        toolbar.Children.Add(addCol);
+        toolbar.Children.Add(removeRow);
+        toolbar.Children.Add(removeCol);
+
+        panel.Children.Add(toolbar);
+        panel.Children.Add(scroller);
+
+        List<List<RelTableCell>>? result = null;
+        var window = Shell("Таблица соответствий", panel, 640, 560);
+        panel.Children.Add(Buttons(window, () => { result = rows; }));
+
+        return window.ShowDialog() == true ? result : null;
+    }
+
+    // ------------------------------------------------------------ рефакторинг
+
+    public static string? RenameId(string currentId)
+    {
+        var panel = new StackPanel { Margin = new Thickness(16) };
+        panel.Children.Add(Label("Текущий id"));
+        panel.Children.Add(new TextBlock { Text = currentId, FontFamily = new FontFamily("Consolas"), Margin = new Thickness(0, 0, 0, 8) });
+        panel.Children.Add(Label("Новый id"));
+        var box = new TextBox { Text = currentId, Padding = new Thickness(4, 3, 4, 3) };
+        panel.Children.Add(box);
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Ссылки на этот id (href, conref) во всём проекте будут обновлены автоматически.",
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = ThemeManager.Brush("TextMuted"),
+            Margin = new Thickness(0, 8, 0, 0)
+        });
+
+        string? result = null;
+        var window = Shell("Переименовать id", panel, 420, 260);
+        panel.Children.Add(Buttons(window, () =>
+        {
+            var value = box.Text.Trim();
+            if (value.Length > 0)
+            {
+                result = value;
+            }
+        }, "Переименовать"));
+
+        box.Focus();
+        box.SelectAll();
+        return window.ShowDialog() == true ? result : null;
+    }
+
+    public static string? RenameFile(string currentRelativePath)
+    {
+        var panel = new StackPanel { Margin = new Thickness(16) };
+        panel.Children.Add(Label("Текущий путь (относительно проекта)"));
+        panel.Children.Add(new TextBlock
+        {
+            Text = currentRelativePath,
+            FontFamily = new FontFamily("Consolas"),
+            Margin = new Thickness(0, 0, 0, 8)
+        });
+        panel.Children.Add(Label("Новый путь"));
+        var box = new TextBox { Text = currentRelativePath, Padding = new Thickness(4, 3, 4, 3) };
+        panel.Children.Add(box);
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Можно указать другую папку через «/» — она будет создана при необходимости. " +
+                   "Ссылки на этот файл (href, conref) во всём проекте будут пересчитаны автоматически.",
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = ThemeManager.Brush("TextMuted"),
+            Margin = new Thickness(0, 8, 0, 0)
+        });
+
+        string? result = null;
+        var window = Shell("Переименовать / переместить файл", panel, 460, 280);
+        panel.Children.Add(Buttons(window, () =>
+        {
+            var value = box.Text.Trim();
+            if (value.Length > 0)
+            {
+                result = value;
+            }
+        }, "Перенести"));
+
+        box.Focus();
+        box.SelectAll();
+        return window.ShowDialog() == true ? result : null;
+    }
+
+    public sealed class ExtractToConrefResult
+    {
+        public ProjectFile? TargetFile { get; set; }
+
+        public string? NewFileName { get; set; }
+
+        public string ElementId { get; set; } = string.Empty;
+    }
+
+    public static ExtractToConrefResult? ExtractToConref(DitaProject project, string suggestedId)
+    {
+        var root = new DockPanel { Margin = new Thickness(16) };
+
+        root.Children.Add(new TextBlock
+        {
+            Text = "Содержимое элемента переносится в целевой топик целиком, а на исходном месте " +
+                   "остаётся пустая ссылка conref — редактировать текст затем нужно в целевом топике.",
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 10)
+        });
+        DockPanel.SetDock(root.Children[0], Dock.Top);
+
+        var idLabel = Label("id вынесенного элемента");
+        DockPanel.SetDock(idLabel, Dock.Top);
+        root.Children.Add(idLabel);
+        var idBox = new TextBox { Text = suggestedId, Padding = new Thickness(4, 3, 4, 3), Margin = new Thickness(0, 0, 0, 10) };
+        DockPanel.SetDock(idBox, Dock.Top);
+        root.Children.Add(idBox);
+
+        var existingRadio = new RadioButton { Content = "В существующий топик", IsChecked = true, GroupName = "target" };
+        var newRadio = new RadioButton { Content = "В новый файл", GroupName = "target", Margin = new Thickness(0, 4, 0, 0) };
+        DockPanel.SetDock(existingRadio, Dock.Top);
+        DockPanel.SetDock(newRadio, Dock.Top);
+        root.Children.Add(existingRadio);
+
+        var newFileBox = new TextBox
+        {
+            Text = "reusable/shared.dita",
+            Padding = new Thickness(4, 3, 4, 3),
+            Margin = new Thickness(20, 4, 0, 10),
+            IsEnabled = false
+        };
+        DockPanel.SetDock(newFileBox, Dock.Top);
+
+        var filter = new TextBox { Padding = new Thickness(4, 3, 4, 3), Margin = new Thickness(0, 8, 0, 4) };
+        var list = new ListBox { DisplayMemberPath = "RelativePath" };
+        var topics = project.Files.Where(f => f.Kind == Core.Model.DitaDocumentKind.Topic).ToList();
+        list.ItemsSource = topics;
+        filter.TextChanged += (_, _) =>
+        {
+            var query = filter.Text.Trim();
+            list.ItemsSource = query.Length == 0
+                ? topics
+                : topics.Where(t => t.RelativePath.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                                     t.Title.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
+        };
+        DockPanel.SetDock(filter, Dock.Top);
+
+        existingRadio.Checked += (_, _) =>
+        {
+            list.IsEnabled = true;
+            filter.IsEnabled = true;
+            newFileBox.IsEnabled = false;
+        };
+        newRadio.Checked += (_, _) =>
+        {
+            list.IsEnabled = false;
+            filter.IsEnabled = false;
+            newFileBox.IsEnabled = true;
+        };
+
+        root.Children.Add(newRadio);
+        root.Children.Add(newFileBox);
+        root.Children.Add(filter);
+        root.Children.Add(list);
+
+        ExtractToConrefResult? result = null;
+        var window = Shell("Вынести в conref", root, 520, 560);
+        var buttons = Buttons(window, () =>
+        {
+            var id = idBox.Text.Trim();
+            if (id.Length == 0)
+            {
+                return;
+            }
+
+            if (existingRadio.IsChecked == true)
+            {
+                if (list.SelectedItem is not ProjectFile file)
+                {
+                    return;
+                }
+
+                result = new ExtractToConrefResult { TargetFile = file, ElementId = id };
+            }
+            else
+            {
+                var name = newFileBox.Text.Trim();
+                if (name.Length == 0)
+                {
+                    return;
+                }
+
+                result = new ExtractToConrefResult { NewFileName = name, ElementId = id };
+            }
+        }, "Вынести");
+        DockPanel.SetDock(buttons, Dock.Bottom);
+        root.Children.Add(buttons);
+
+        idBox.Focus();
+        return window.ShowDialog() == true ? result : null;
+    }
+
     // ------------------------------------------------------------- условия
 
     public sealed record ConditionsResult(Dictionary<string, HashSet<string>> Exclude, bool ShowDraftComments);

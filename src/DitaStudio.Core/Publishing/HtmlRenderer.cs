@@ -21,6 +21,14 @@ public sealed class RenderOptions
     public Func<DitaNode, bool>? Filter { get; set; }
 
     public bool NumberFiguresAndTables { get; set; } = true;
+
+    /// <summary>Цепочка имён областей ключей (keyscope) для топика, который сейчас рендерится —
+    /// см. MapItem.KeyScopeChain. Публикатор обновляет её перед каждым RenderTopic.</summary>
+    public IReadOnlyList<string>? CurrentKeyScope { get; set; }
+
+    /// <summary>Связанные топики из таблицы соответствий (reltable) для топика, который сейчас
+    /// рендерится — см. MapTree.RelatedLinks. Публикатор обновляет перед каждым RenderTopic.</summary>
+    public IReadOnlyList<MapTree.RelatedLink>? RelatedTopics { get; set; }
 }
 
 /// <summary>
@@ -149,7 +157,33 @@ public sealed class HtmlRenderer
         }
 
         sb.Append(RenderFootnotes());
+        sb.Append(RenderReltableLinks());
         sb.Append("</article>\n");
+        return sb.ToString();
+    }
+
+    /// <summary>Автоматический блок «Смотрите также» из таблицы соответствий (reltable) —
+    /// отдельно от авторского related-links, который топик мог указать в разметке сам.</summary>
+    private string RenderReltableLinks()
+    {
+        if (_options.RelatedTopics is null || _options.RelatedTopics.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var sb = new StringBuilder("<nav class=\"related-links reltable-links\">\n<h2>")
+            .Append(Escape(L.RelatedLinks)).Append("</h2>\n<ul>\n");
+
+        foreach (var link in _options.RelatedTopics)
+        {
+            var reference = new DitaReference(link.Path, link.TopicId, null, link.Path);
+            var title = TitleOf(reference) ?? System.IO.Path.GetFileNameWithoutExtension(link.Path);
+            var target = _options.TopicLink?.Invoke(link.Path, link.TopicId) ?? "#";
+            sb.Append("<li><a href=\"").Append(Escape(target)).Append("\">")
+              .Append(Escape(title)).Append("</a></li>\n");
+        }
+
+        sb.Append("</ul>\n</nav>\n");
         return sb.ToString();
     }
 
@@ -157,9 +191,12 @@ public sealed class HtmlRenderer
     {
         var savedFootnotes = _footnotes;
         var savedHref = _currentTopicHref;
+        var savedRelated = _options.RelatedTopics;
+        _options.RelatedTopics = null; // связи reltable относятся к topicref карты, а не к вложенным топикам файла
         var html = RenderTopic(document, topic, Math.Min(level, 6));
         _footnotes = savedFootnotes;
         _currentTopicHref = savedHref;
+        _options.RelatedTopics = savedRelated;
         return html;
     }
 
@@ -489,7 +526,7 @@ public sealed class HtmlRenderer
             return null;
         }
 
-        return _project.ResolveKey(keyref!.Split('/')[0])?.KeyText;
+        return _project.ResolveKey(keyref!.Split('/')[0], _options.CurrentKeyScope)?.KeyText;
     }
 
     private string RenderAbbreviatedForm(DitaNode node)
@@ -500,7 +537,7 @@ public sealed class HtmlRenderer
             return string.Empty;
         }
 
-        var keyDef = _project.ResolveKey(keyref!);
+        var keyDef = _project.ResolveKey(keyref!, _options.CurrentKeyScope);
         if (keyDef?.ResolvedPath is not null && File.Exists(keyDef.ResolvedPath))
         {
             var doc = _project.TryGetDocument(keyDef.ResolvedPath);
@@ -696,7 +733,7 @@ public sealed class HtmlRenderer
         var href = node.GetAttribute("href");
         if (string.IsNullOrWhiteSpace(href))
         {
-            var keyDef = node.GetAttribute("keyref") is { } k ? _project.ResolveKey(k) : null;
+            var keyDef = node.GetAttribute("keyref") is { } k ? _project.ResolveKey(k, _options.CurrentKeyScope) : null;
             href = keyDef?.Href;
         }
 
@@ -747,7 +784,7 @@ public sealed class HtmlRenderer
 
         if (!string.IsNullOrWhiteSpace(keyref))
         {
-            var keyDef = _project.ResolveKey(keyref!.Split('/')[0]);
+            var keyDef = _project.ResolveKey(keyref!.Split('/')[0], _options.CurrentKeyScope);
             if (keyDef is not null)
             {
                 label = keyDef.KeyText;
@@ -1302,23 +1339,7 @@ public sealed class HtmlRenderer
 
     // ------------------------------------------------------------ служебное
 
-    private string Attrs(DitaNode node)
-    {
-        var sb = new StringBuilder();
-        var id = node.GetAttribute("id");
-        if (!string.IsNullOrEmpty(id))
-        {
-            sb.Append(" id=\"").Append(Escape(id!)).Append('"');
-        }
-
-        var outputclass = node.GetAttribute("outputclass");
-        if (!string.IsNullOrEmpty(outputclass))
-        {
-            sb.Append(" class=\"").Append(Escape(outputclass!)).Append('"');
-        }
-
-        return sb.ToString();
-    }
+    private string Attrs(DitaNode node) => IdAttr(node) + BuildClassAttr(null, node);
 
     private static string IdAttr(DitaNode node)
     {
@@ -1327,19 +1348,34 @@ public sealed class HtmlRenderer
     }
 
     /// <summary>class="..." из outputclass узла, если он задан — иначе пустая строка.</summary>
-    private static string OptionalClassAttr(DitaNode node)
-    {
-        var outputclass = node.GetAttribute("outputclass");
-        return string.IsNullOrWhiteSpace(outputclass) ? string.Empty : $" class=\"{Escape(outputclass!)}\"";
-    }
+    private static string OptionalClassAttr(DitaNode node) => BuildClassAttr(null, node);
 
     /// <summary>class="baseClass outputclass" одним атрибутом — не дублирует class, если outputclass задан.</summary>
-    private static string MergedClassAttr(string baseClass, DitaNode? node)
+    private static string MergedClassAttr(string baseClass, DitaNode? node) => BuildClassAttr(baseClass, node);
+
+    /// <summary>Собирает class="..." из базового класса, outputclass узла и класса rev-changed,
+    /// если у элемента задан непустой атрибут rev — полоска на полях при публикации, штатный
+    /// DITA-механизм пометки изменений (не полноценный track changes с историей правок).</summary>
+    private static string BuildClassAttr(string? baseClass, DitaNode? node)
     {
+        var classes = new List<string>();
+        if (!string.IsNullOrEmpty(baseClass))
+        {
+            classes.Add(baseClass!);
+        }
+
         var outputclass = node?.GetAttribute("outputclass");
-        return string.IsNullOrWhiteSpace(outputclass)
-            ? $" class=\"{baseClass}\""
-            : $" class=\"{baseClass} {Escape(outputclass!)}\"";
+        if (!string.IsNullOrWhiteSpace(outputclass))
+        {
+            classes.Add(outputclass!);
+        }
+
+        if (!string.IsNullOrWhiteSpace(node?.GetAttribute("rev")))
+        {
+            classes.Add("rev-changed");
+        }
+
+        return classes.Count == 0 ? string.Empty : $" class=\"{Escape(string.Join(' ', classes))}\"";
     }
 
     public static string Escape(string value)

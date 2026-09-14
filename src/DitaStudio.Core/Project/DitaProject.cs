@@ -99,7 +99,7 @@ public sealed class DitaProject
 
     private readonly Dictionary<string, DitaDocument> _cache = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<ProjectFile> _files = new();
-    private readonly Dictionary<string, KeyDefinition> _keys = new(StringComparer.Ordinal);
+    private readonly KeySpace _rootKeySpace = new();
 
     private const string CustomCssSettingsFile = ".ditastudio-css";
     private const string ConditionsSettingsFile = ".ditastudio-conditions";
@@ -120,7 +120,8 @@ public sealed class DitaProject
 
     public IReadOnlyList<ProjectFile> Files => _files;
 
-    public IReadOnlyDictionary<string, KeyDefinition> Keys => _keys;
+    /// <summary>Ключи корневой области (не внутри keyscope) — то, что видно из панели ключей.</summary>
+    public IReadOnlyDictionary<string, KeyDefinition> Keys => _rootKeySpace.Keys;
 
     public IEnumerable<ProjectFile> Maps => _files.Where(f => f.Kind == DitaDocumentKind.Map);
 
@@ -504,9 +505,19 @@ public sealed class DitaProject
 
     // ---------------------------------------------------------------- ключи
 
+    /// <summary>Область видимости ключей (keyscope): свои ключи плюс именованные дочерние
+    /// области. Несколько имён keyscope на одном узле — алиасы одной и той же области.</summary>
+    private sealed class KeySpace
+    {
+        public Dictionary<string, KeyDefinition> Keys { get; } = new(StringComparer.Ordinal);
+
+        public Dictionary<string, KeySpace> Scopes { get; } = new(StringComparer.Ordinal);
+    }
+
     public void RebuildKeySpace()
     {
-        _keys.Clear();
+        _rootKeySpace.Keys.Clear();
+        _rootKeySpace.Scopes.Clear();
         foreach (var map in Maps.ToList())
         {
             var doc = TryGetDocument(map.FullPath);
@@ -515,14 +526,25 @@ public sealed class DitaProject
                 continue;
             }
 
-            CollectKeys(doc, doc.Root, map.FullPath, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+            CollectKeys(doc, doc.Root, map.FullPath, new HashSet<string>(StringComparer.OrdinalIgnoreCase), _rootKeySpace);
         }
     }
 
-    private void CollectKeys(DitaDocument mapDoc, DitaNode node, string mapPath, HashSet<string> visited)
+    private void CollectKeys(DitaDocument mapDoc, DitaNode node, string mapPath, HashSet<string> visited, KeySpace space)
     {
         foreach (var child in node.ElementChildren())
         {
+            var childSpace = space;
+            var keyscope = child.GetAttribute("keyscope");
+            if (!string.IsNullOrWhiteSpace(keyscope))
+            {
+                childSpace = new KeySpace();
+                foreach (var name in keyscope!.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    space.Scopes[name] = childSpace;
+                }
+            }
+
             var keys = child.GetAttribute("keys");
             if (!string.IsNullOrWhiteSpace(keys))
             {
@@ -530,16 +552,16 @@ public sealed class DitaProject
                 var resolved = href is null ? null : RefResolver.ResolvePath(mapPath, href);
                 foreach (var key in keys!.Split(' ', StringSplitOptions.RemoveEmptyEntries))
                 {
-                    if (!_keys.ContainsKey(key))
+                    if (!childSpace.Keys.ContainsKey(key))
                     {
-                        _keys[key] = new KeyDefinition(
+                        childSpace.Keys[key] = new KeyDefinition(
                             key, href, resolved, child, mapPath,
                             child.GetAttribute("scope"), child.GetAttribute("format"));
                     }
                 }
             }
 
-            // Вложенные карты добавляют свои ключи.
+            // Вложенные карты добавляют свои ключи в ту же область (свою — если задан keyscope).
             if (child.Name == "mapref" || (child.GetAttribute("format") == "ditamap"))
             {
                 var href = child.GetAttribute("href");
@@ -551,17 +573,68 @@ public sealed class DitaProject
                         var sub = TryGetDocument(target);
                         if (sub is not null)
                         {
-                            CollectKeys(sub, sub.Root, target, visited);
+                            CollectKeys(sub, sub.Root, target, visited, childSpace);
                         }
                     }
                 }
             }
 
-            CollectKeys(mapDoc, child, mapPath, visited);
+            CollectKeys(mapDoc, child, mapPath, visited, childSpace);
         }
     }
 
-    public KeyDefinition? ResolveKey(string key) => _keys.TryGetValue(key, out var d) ? d : null;
+    /// <summary>Разрешает ключ в корневой области (без учёта keyscope) — как раньше.</summary>
+    public KeyDefinition? ResolveKey(string key) => ResolveKey(key, null);
+
+    /// <summary>Разрешает ключ с учётом области (keyscope), в которой находится ссылающийся
+    /// топик (см. MapItem.KeyScopeChain) — так у веток с одинаковыми именами ключей могут быть
+    /// разные значения. Ключ вида "область.ключ" ищется строго в указанной области (без подъёма
+    /// наверх); ключ без точки ищется от ближайшей области цепочки к корневой — первое совпадение
+    /// побеждает. Без цепочки (null) — как <see cref="ResolveKey(string)"/>, только в корне.</summary>
+    public KeyDefinition? ResolveKey(string key, IReadOnlyList<string>? scopeChain)
+    {
+        if (key.Contains('.'))
+        {
+            var segments = key.Split('.');
+            var space = _rootKeySpace;
+            for (var i = 0; i < segments.Length - 1; i++)
+            {
+                if (!space.Scopes.TryGetValue(segments[i], out space!))
+                {
+                    return null;
+                }
+            }
+
+            return space.Keys.TryGetValue(segments[^1], out var qualified) ? qualified : null;
+        }
+
+        if (scopeChain is null || scopeChain.Count == 0)
+        {
+            return _rootKeySpace.Keys.TryGetValue(key, out var rootDef) ? rootDef : null;
+        }
+
+        var chain = new List<KeySpace> { _rootKeySpace };
+        var current = _rootKeySpace;
+        foreach (var name in scopeChain)
+        {
+            if (!current.Scopes.TryGetValue(name, out current!))
+            {
+                break;
+            }
+
+            chain.Add(current);
+        }
+
+        for (var i = chain.Count - 1; i >= 0; i--)
+        {
+            if (chain[i].Keys.TryGetValue(key, out var def))
+            {
+                return def;
+            }
+        }
+
+        return null;
+    }
 
     // ---------------------------------------------------------------- поиск
 

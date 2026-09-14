@@ -6,6 +6,7 @@ using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Templates;
 using Microsoft.Win32;
 
 namespace DitaStudio.App;
@@ -268,6 +269,119 @@ public partial class MainWindow
         }
     }
 
+    private void OnRenameId(object sender, RoutedEventArgs e)
+    {
+        var pane = Current;
+        var node = pane?.Author.CurrentNode;
+        if (_project is null || pane?.FilePath is null || node is null)
+        {
+            UpdateStatus("Поставьте курсор в элемент.");
+            return;
+        }
+
+        var oldId = node.GetAttribute("id");
+        if (string.IsNullOrWhiteSpace(oldId))
+        {
+            UpdateStatus("У элемента нет id — задайте его в панели «Атрибуты», затем переименовывайте.");
+            return;
+        }
+
+        var newId = Dialogs.RenameId(oldId!);
+        if (string.IsNullOrWhiteSpace(newId) || newId == oldId)
+        {
+            return;
+        }
+
+        foreach (var p in _panes.Values)
+        {
+            p.CommitPendingEdits();
+        }
+
+        var result = RefactorService.RenameId(_project, pane.FilePath, oldId!, newId!);
+        ApplyRefactorResult(result);
+        UpdateStatus($"id «{oldId}» переименован в «{newId}». Обновлено ссылок: {result.UpdatedReferences}.");
+    }
+
+    private void OnExtractToConref(object sender, RoutedEventArgs e)
+    {
+        var pane = Current;
+        var node = pane?.Author.CurrentNode;
+        if (_project is null || pane?.FilePath is null || node is null || node.Parent is null)
+        {
+            UpdateStatus("Поставьте курсор в элемент.");
+            return;
+        }
+
+        var suggestedId = node.GetAttribute("id");
+        if (string.IsNullOrWhiteSpace(suggestedId))
+        {
+            suggestedId = DocumentTemplates.SuggestId(node.InnerText, node.Name);
+        }
+
+        var dialogResult = Dialogs.ExtractToConref(_project, suggestedId!);
+        if (dialogResult is null)
+        {
+            return;
+        }
+
+        foreach (var p in _panes.Values)
+        {
+            p.CommitPendingEdits();
+        }
+
+        RefactorResult result;
+        try
+        {
+            result = RefactorService.ExtractToConref(
+                _project, pane.FilePath, node, dialogResult.ElementId,
+                dialogResult.TargetFile?.FullPath, dialogResult.NewFileName);
+        }
+        catch (IOException ex)
+        {
+            Dialogs.Message("Вынесение в conref", ex.Message);
+            return;
+        }
+
+        if (result.UpdatedReferences == 0)
+        {
+            Dialogs.Message("Вынесение в conref", "Не удалось перенести элемент — проверьте цель.");
+            return;
+        }
+
+        ApplyRefactorResult(result);
+        if (dialogResult.TargetFile is null)
+        {
+            _project.Scan();
+            BuildProjectTree();
+        }
+
+        UpdateStatus($"Элемент вынесен в conref (id «{dialogResult.ElementId}»).");
+    }
+
+    /// <summary>Общий хвост для рефакторинг-операций: документы, открытые во вкладках, просто
+    /// помечаются несохранёнными и перерисовываются (пользователь сохранит сам, как обычную
+    /// правку); закрытые документы сохраняются на диск сразу — иначе несохранённые изменения
+    /// в файлах, которые никто сейчас не видит, легко потерять или забыть.</summary>
+    private void ApplyRefactorResult(RefactorResult result)
+    {
+        foreach (var doc in result.ChangedDocuments)
+        {
+            var openPane = _panes.Values.FirstOrDefault(p => ReferenceEquals(p.Document, doc));
+            if (openPane is not null)
+            {
+                openPane.Document.IsDirty = true;
+                openPane.ReloadViews();
+            }
+            else if (doc.FilePath is not null)
+            {
+                doc.Save(doc.FilePath);
+            }
+        }
+
+        UpdateTabHeaders();
+        BuildAttributePanel();
+    }
+
     private void OnMergeCellRight(object sender, RoutedEventArgs e)
     {
         if (Current?.Author.MergeCurrentCellRight() == true)
@@ -328,6 +442,23 @@ public partial class MainWindow
         UpdateStatus(enabled == true
             ? "Таблица теперь может переноситься на страницы с повтором шапки."
             : "Таблица снова печатается как единый блок.");
+    }
+
+    private void OnToggleRevChanged(object sender, RoutedEventArgs e)
+    {
+        var node = Current?.Author.CurrentNode;
+        if (node is null)
+        {
+            UpdateStatus("Поставьте курсор в элемент, который нужно отметить как изменённый.");
+            return;
+        }
+
+        var enabled = Current!.Author.ToggleCurrentRev();
+        UpdateTabHeaders();
+        BuildAttributePanel();
+        UpdateStatus(enabled == true
+            ? "Элемент отмечен как изменённый (rev) — при публикации появится полоса на полях."
+            : "Отметка об изменении снята.");
     }
 
     private void OnToggleTags(object sender, RoutedEventArgs e)
