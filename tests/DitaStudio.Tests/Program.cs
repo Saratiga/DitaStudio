@@ -35,6 +35,7 @@ public static class Program
         EditingTests();
         ProjectTests();
         KeyScopeTests();
+        ValidationAndAnchorFixTests();
         RelTableTests();
         RevChangeTests();
         RefactorTests();
@@ -694,6 +695,84 @@ public static class Program
                 Check(docxText.Contains("Выпуск А") && docxText.Contains("Выпуск Б"),
                     "области ключей учитываются и при экспорте в DOCX");
             }
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    private static void ValidationAndAnchorFixTests()
+    {
+        Section("Исправления: валидация keyscope-ключей и якоря вложенных элементов");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "a.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="a">
+  <title>A</title>
+  <conbody>
+    <p>Издание: <keyword keyref="edition"/>.</p>
+    <note id="warn1">Предупреждение.</note>
+  </conbody>
+</concept>
+""");
+            File.WriteAllText(Path.Combine(root, "b.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="b">
+  <title>B</title>
+  <conbody>
+    <p>См. также <xref href="a.dita#a/warn1">предупреждение</xref>.</p>
+  </conbody>
+</concept>
+""");
+            File.WriteAllText(Path.Combine(root, "map.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>Тест исправлений</title>
+  <topicref keyscope="branch-a">
+    <keydef keys="edition"><topicmeta><keywords><keyword>Выпуск А</keyword></keywords></topicmeta></keydef>
+    <topicref href="a.dita"/>
+  </topicref>
+  <topicref href="b.dita"/>
+</map>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+
+            // --- ложные ошибки валидации для keyscope-ключей ---
+            var issues = project.ValidateAll();
+            Check(!issues.Any(i => i.Message.Contains("\"edition\"")),
+                $"keyref на ключ, объявленный только внутри keyscope, не считается необъявленным: " +
+                $"{string.Join("; ", issues.Where(i => i.Message.Contains("edition")).Select(i => i.Message))}");
+            Check(project.KeyExistsAnywhere("edition"), "KeyExistsAnywhere находит ключ во вложенной области");
+            Check(!project.KeyExistsAnywhere("no-such-key"), "KeyExistsAnywhere не даёт ложных срабатываний");
+
+            // --- якорь для xref на элемент внутри другого топика в однофайловой сборке ---
+            var publisher = new HtmlPublisher(project);
+            var result = publisher.Publish(Path.Combine(root, "map.ditamap"), new PublishOptions
+            {
+                OutputDirectory = Path.Combine(root, "out"),
+                SingleFile = true
+            });
+
+            var html = File.ReadAllText(result.EntryFile);
+            var hrefMatch = Regex.Match(html, "href=\"#(a--warn1)\"");
+            Check(hrefMatch.Success, $"xref на a.dita#a/warn1 ссылается на префиксованный якорь: найдено в HTML? {hrefMatch.Success}");
+            Check(hrefMatch.Success && html.Contains($"id=\"{hrefMatch.Groups[1].Value}\""),
+                $"целевой элемент действительно имеет такой id в выводе (якорь не битый)");
         }
         finally
         {

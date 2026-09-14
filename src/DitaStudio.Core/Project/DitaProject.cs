@@ -636,6 +636,52 @@ public sealed class DitaProject
         return null;
     }
 
+    /// <summary>Сколько всего ключей в проекте, считая вложенные keyscope-области — в отличие от
+    /// Keys (только корневая область). Разница между ними — повод показать в UI подсказку, что
+    /// часть ключей объявлена внутри keyscope и не попадает в плоский список.</summary>
+    public int TotalKeyCount => CountKeys(_rootKeySpace, new HashSet<KeySpace>());
+
+    private static int CountKeys(KeySpace space, HashSet<KeySpace> visited)
+    {
+        var count = space.Keys.Count;
+        foreach (var child in space.Scopes.Values)
+        {
+            if (visited.Add(child))
+            {
+                count += CountKeys(child, visited);
+            }
+        }
+
+        return count;
+    }
+
+    /// <summary>Есть ли такой ключ хоть в какой-то области проекта (корневой или вложенной по
+    /// keyscope)? В отличие от ResolveKey не требует знания конкретной цепочки областей — для
+    /// проверки "ключ вообще существует" при валидации ссылок вне контекста карты, где топик
+    /// может встречаться сразу в нескольких ветках с разными областями.</summary>
+    public bool KeyExistsAnywhere(string key)
+    {
+        return key.Contains('.') ? ResolveKey(key) is not null : KeyExistsInSpace(_rootKeySpace, key);
+    }
+
+    private static bool KeyExistsInSpace(KeySpace space, string key)
+    {
+        if (space.Keys.ContainsKey(key))
+        {
+            return true;
+        }
+
+        foreach (var child in space.Scopes.Values)
+        {
+            if (KeyExistsInSpace(child, key))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     // ---------------------------------------------------------------- поиск
 
     public sealed record SearchHit(ProjectFile File, DitaNode Node, string Context);

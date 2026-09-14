@@ -18,6 +18,7 @@ public static class DiffWindow
             Height = 720,
             WindowStartupLocation = WindowStartupLocation.CenterScreen
         };
+        ThemeManager.ApplyTitleBar(window);
 
         var outer = new DockPanel();
 

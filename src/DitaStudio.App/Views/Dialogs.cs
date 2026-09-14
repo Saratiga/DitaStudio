@@ -12,7 +12,7 @@ public static class Dialogs
 {
     private static Window Shell(string title, UIElement content, double width = 460, double height = 320)
     {
-        return new Window
+        var window = new Window
         {
             Title = title,
             Width = width,
@@ -23,6 +23,8 @@ public static class Dialogs
             Content = content,
             ShowInTaskbar = false
         };
+        ThemeManager.ApplyTitleBar(window);
+        return window;
     }
 
     private static StackPanel Buttons(Window window, Action onOk, string okText = "ОК")

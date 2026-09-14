@@ -128,6 +128,7 @@ public sealed class HtmlPublisher
 
         if (options.SingleFile)
         {
+            renderOptions.SingleFileAnchors = true;
             renderOptions.TopicLink = (path, id) =>
             {
                 var full = Path.GetFullPath(path);
@@ -369,7 +370,7 @@ public sealed class HtmlPublisher
         return result;
     }
 
-    private static string AnchorFor(string fullPath, string? id)
+    internal static string AnchorFor(string fullPath, string? id)
     {
         var basePart = SafeFileName(Path.GetFileNameWithoutExtension(fullPath));
         return id is null ? basePart : $"{basePart}--{id}";

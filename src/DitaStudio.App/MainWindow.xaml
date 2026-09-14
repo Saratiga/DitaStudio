@@ -156,16 +156,16 @@
                     <DockPanel>
                         <ComboBox x:Name="MapSelector" DockPanel.Dock="Top" Margin="4"
                                   SelectionChanged="OnMapSelected" DisplayMemberPath="RelativePath" />
-                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4,0,4,4">
-                            <Button Content="+ Топик" Padding="6,3" Click="OnMapAddTopicref" ToolTip="Добавить ссылку на топик" />
-                            <Button Content="+ Раздел" Padding="6,3" Margin="3,0,0,0" Click="OnMapAddTopichead" />
-                            <Button Content="↑" Padding="6,3" Margin="3,0,0,0" Click="OnMapMoveUp" />
-                            <Button Content="↓" Padding="6,3" Margin="3,0,0,0" Click="OnMapMoveDown" />
-                            <Button Content="→" Padding="6,3" Margin="3,0,0,0" Click="OnMapIndent" ToolTip="Сделать вложенным" />
-                            <Button Content="←" Padding="6,3" Margin="3,0,0,0" Click="OnMapOutdent" />
-                            <Button Content="✕" Padding="6,3" Margin="3,0,0,0" Click="OnMapDelete" />
-                            <Button Content="Таблица соответствий…" Padding="6,3" Margin="10,0,0,0" Click="OnEditRelTable" />
-                        </StackPanel>
+                        <WrapPanel DockPanel.Dock="Top" Margin="4,0,4,4">
+                            <Button Content="+ Топик" Padding="6,3" Margin="0,0,3,3" Click="OnMapAddTopicref" ToolTip="Добавить ссылку на топик" />
+                            <Button Content="+ Раздел" Padding="6,3" Margin="0,0,3,3" Click="OnMapAddTopichead" />
+                            <Button Content="↑" Padding="6,3" Margin="0,0,3,3" Click="OnMapMoveUp" />
+                            <Button Content="↓" Padding="6,3" Margin="0,0,3,3" Click="OnMapMoveDown" />
+                            <Button Content="→" Padding="6,3" Margin="0,0,3,3" Click="OnMapIndent" ToolTip="Сделать вложенным" />
+                            <Button Content="←" Padding="6,3" Margin="0,0,3,3" Click="OnMapOutdent" />
+                            <Button Content="✕" Padding="6,3" Margin="0,0,3,3" Click="OnMapDelete" />
+                            <Button Content="Таблица соответствий…" Padding="6,3" Margin="0,0,3,3" Click="OnEditRelTable" />
+                        </WrapPanel>
                         <TreeView x:Name="MapTreeView" BorderThickness="0" AllowDrop="True"
                                   MouseDoubleClick="OnMapTreeDoubleClick"
                                   SelectedItemChanged="OnMapTreeSelectionChanged"
@@ -177,14 +177,19 @@
                 </TabItem>
 
                 <TabItem Header="Ключи">
-                    <ListView x:Name="KeysList" BorderThickness="0" MouseDoubleClick="OnKeyDoubleClick">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn Header="Ключ" Width="110" DisplayMemberBinding="{Binding Key}" />
-                                <GridViewColumn Header="Цель" Width="160" DisplayMemberBinding="{Binding Href}" />
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
+                    <DockPanel>
+                        <TextBlock x:Name="ScopedKeysHint" DockPanel.Dock="Bottom" Margin="8,4,8,8"
+                                   FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource TextMuted}"
+                                   Visibility="Collapsed" />
+                        <ListView x:Name="KeysList" BorderThickness="0" MouseDoubleClick="OnKeyDoubleClick">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Ключ" Width="110" DisplayMemberBinding="{Binding Key}" />
+                                    <GridViewColumn Header="Цель" Width="160" DisplayMemberBinding="{Binding Href}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </DockPanel>
                 </TabItem>
             </TabControl>
 

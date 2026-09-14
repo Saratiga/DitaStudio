@@ -43,13 +43,20 @@ public partial class MainWindow
     private void OnToggleTheme(object sender, RoutedEventArgs e)
     {
         ThemeManager.Toggle();
+        ThemeManager.ApplyTitleBar(this);
 
-        // Раскрашенные в коде части (дерево проекта, карта, структура, атрибуты) не следят
-        // за DynamicResource сами по себе — перестраиваем их, чтобы цвета подхватились сразу.
+        // Раскрашенные в коде части (дерево проекта, карта, структура, атрибуты, открытые
+        // документы в режиме «Автор») не следят за DynamicResource сами по себе — перестраиваем
+        // их, чтобы цвета подхватились сразу.
         BuildProjectTree();
         BuildMapTree();
         BuildOutline();
         BuildAttributePanel();
         BuildPalette();
+
+        foreach (var pane in _panes.Values)
+        {
+            pane.Author.Rebuild();
+        }
     }
 }

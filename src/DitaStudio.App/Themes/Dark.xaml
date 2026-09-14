@@ -2,8 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <!-- Тёмная палитра. Холст документа в режиме «Автор» намеренно остаётся светлым (лист бумаги) —
-         тема красит только раму: меню, панели, вкладки, дерево, списки. -->
+    <!-- Тёмная палитра. -->
 
     <Color x:Key="AccentColor">#4C8DDA</Color>
     <SolidColorBrush x:Key="Accent" Color="{StaticResource AccentColor}" />
@@ -29,6 +28,15 @@
     <SolidColorBrush x:Key="TagBrush" Color="#7D8590" />
     <SolidColorBrush x:Key="AttributeNameBrush" Color="#C792EA" />
     <SolidColorBrush x:Key="CodeBackground" Color="#2A2C30" />
+
+    <!-- Режим «Автор»: холст красится через Surface/Line/Accent/TextPrimary выше — своя палитра
+         нужна только для оттенков, которых нет в общей теме (note/warn-плашки, чип фразового элемента). -->
+    <SolidColorBrush x:Key="EditorTag" Color="#7D8A9E" />
+    <SolidColorBrush x:Key="EditorNoteBackground" Color="#1E2A38" />
+    <SolidColorBrush x:Key="EditorWarnBackground" Color="#3A2E14" />
+    <SolidColorBrush x:Key="EditorChipBackground" Color="#253247" />
+    <SolidColorBrush x:Key="EditorChipBorder" Color="#3D5573" />
+    <SolidColorBrush x:Key="EditorChipText" Color="#9DC0EC" />
 
     <SolidColorBrush x:Key="ScrollThumb" Color="#4B4F57" />
     <SolidColorBrush x:Key="ScrollThumbHover" Color="#6B7078" />
