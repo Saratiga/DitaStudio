@@ -478,6 +478,7 @@ public partial class MainWindow
     private void OnUndo(object sender, RoutedEventArgs e)
     {
         Current?.PerformUndo();
+        UpdateStatus("Отменено.");
         UpdateTabHeaders();
         BuildOutline();
     }
@@ -485,6 +486,7 @@ public partial class MainWindow
     private void OnRedo(object sender, RoutedEventArgs e)
     {
         Current?.PerformRedo();
+        UpdateStatus("Повторено.");
         UpdateTabHeaders();
         BuildOutline();
     }

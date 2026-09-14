@@ -299,7 +299,7 @@ public static class RefResolver
             if (!string.IsNullOrWhiteSpace(keyref))
             {
                 var key = keyref!.Split('/')[0];
-                if (project.ResolveKey(key) is null)
+                if (!project.KeyExistsAnywhere(key))
                 {
                     issues.Add(new ValidationIssue(
                         IssueSeverity.Error,

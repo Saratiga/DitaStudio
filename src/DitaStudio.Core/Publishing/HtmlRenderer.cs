@@ -29,6 +29,12 @@ public sealed class RenderOptions
     /// <summary>Связанные топики из таблицы соответствий (reltable) для топика, который сейчас
     /// рендерится — см. MapTree.RelatedLinks. Публикатор обновляет перед каждым RenderTopic.</summary>
     public IReadOnlyList<MapTree.RelatedLink>? RelatedTopics { get; set; }
+
+    /// <summary>Однофайловая сборка: все топики живут в одном HTML, поэтому голый id элемента
+    /// (например, note id="warn1") может повторяться в разных топиках. Когда включено, id элементов
+    /// и вложенных топиков получают тот же префикс "имяФайла--", что и HtmlPublisher.AnchorFor —
+    /// иначе xref на file.dita#topicId/elementId целится в несуществующий якорь.</summary>
+    public bool SingleFileAnchors { get; set; }
 }
 
 /// <summary>
@@ -88,7 +94,7 @@ public sealed class HtmlRenderer
         sb.Append("<article class=\"").Append(cls).Append('"');
         if (!string.IsNullOrEmpty(id))
         {
-            sb.Append(" id=\"").Append(Escape(id!)).Append('"');
+            sb.Append(" id=\"").Append(Escape(PrefixedId(id!))).Append('"');
         }
 
         sb.Append(">\n");
@@ -1341,11 +1347,18 @@ public sealed class HtmlRenderer
 
     private string Attrs(DitaNode node) => IdAttr(node) + BuildClassAttr(null, node);
 
-    private static string IdAttr(DitaNode node)
+    private string IdAttr(DitaNode node)
     {
         var id = node.GetAttribute("id");
-        return string.IsNullOrEmpty(id) ? string.Empty : $" id=\"{Escape(id!)}\"";
+        return string.IsNullOrEmpty(id) ? string.Empty : $" id=\"{Escape(PrefixedId(id!))}\"";
     }
+
+    /// <summary>Добавляет префикс "имяФайла--" к id элемента в однофайловой сборке — см.
+    /// RenderOptions.SingleFileAnchors. В постраничной сборке id остаются как есть.</summary>
+    private string PrefixedId(string id) =>
+        _options.SingleFileAnchors && _document.FilePath is not null
+            ? HtmlPublisher.AnchorFor(_document.FilePath, id)
+            : id;
 
     /// <summary>class="..." из outputclass узла, если он задан — иначе пустая строка.</summary>
     private static string OptionalClassAttr(DitaNode node) => BuildClassAttr(null, node);

@@ -553,10 +553,12 @@
     <!-- ============================================================ Прокрутка -->
 
     <Style x:Key="ScrollBarThumbStyle" TargetType="Thumb">
+        <Setter Property="MinHeight" Value="24" />
+        <Setter Property="MinWidth" Value="24" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Thumb">
-                    <Border x:Name="Bar" Background="{DynamicResource ScrollThumb}" CornerRadius="4" />
+                    <Border x:Name="Bar" Background="{DynamicResource ScrollThumb}" CornerRadius="5" Margin="3" />
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bar" Property="Background" Value="{DynamicResource ScrollThumbHover}" />
@@ -579,14 +581,18 @@
         </Setter>
     </Style>
 
+    <!-- Ширина/высота с запасом под Margin=3 у большого пальца — сама дорожка (SurfaceSunken)
+         всегда видна на всю длину, так что видно, сколько всего можно прокрутить, а не только
+         где сейчас большой палец. MinLength у большого пальца не даёт ему стать точкой на
+         длинных документах. -->
     <Style TargetType="ScrollBar">
-        <Setter Property="Width" Value="10" />
-        <Setter Property="Height" Value="10" />
+        <Setter Property="Width" Value="14" />
+        <Setter Property="Height" Value="14" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ScrollBar">
-                    <Grid>
+                    <Border Background="{DynamicResource Line}" CornerRadius="7">
                         <Track x:Name="PART_Track" IsDirectionReversed="True" Focusable="False">
                             <Track.DecreaseRepeatButton>
                                 <RepeatButton Style="{StaticResource ScrollBarPageButtonStyle}" Command="ScrollBar.PageUpCommand" />
@@ -595,10 +601,10 @@
                                 <RepeatButton Style="{StaticResource ScrollBarPageButtonStyle}" Command="ScrollBar.PageDownCommand" />
                             </Track.IncreaseRepeatButton>
                             <Track.Thumb>
-                                <Thumb Style="{StaticResource ScrollBarThumbStyle}" Margin="2" />
+                                <Thumb Style="{StaticResource ScrollBarThumbStyle}" />
                             </Track.Thumb>
                         </Track>
-                    </Grid>
+                    </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="Orientation" Value="Horizontal">
                             <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False" />

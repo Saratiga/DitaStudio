@@ -1,4 +1,6 @@
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media;
 
 namespace DitaStudio.App;
@@ -25,6 +27,36 @@ public static class ThemeManager
     public static void Toggle() => Apply(Current == Theme.Light ? Theme.Dark : Theme.Light, save: true);
 
     public static Brush Brush(string key) => (Brush)Application.Current.Resources[key];
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int valueSize);
+
+    /// <summary>Красит системную (не WPF-рисованную) рамку окна в тёмный режим через DWM —
+    /// Controls.xaml раскрашивает только содержимое, заголовок остаётся Windows-нативным.
+    /// Вызывать после создания окна и повторно при переключении темы.</summary>
+    public static void ApplyTitleBar(Window window)
+    {
+        var handle = new WindowInteropHelper(window).Handle;
+        if (handle != IntPtr.Zero)
+        {
+            SetTitleBarDark(handle, Current == Theme.Dark);
+        }
+        else
+        {
+            window.SourceInitialized += (_, _) =>
+                SetTitleBarDark(new WindowInteropHelper(window).Handle, Current == Theme.Dark);
+        }
+    }
+
+    private static void SetTitleBarDark(IntPtr handle, bool dark)
+    {
+        var value = dark ? 1 : 0;
+        // 20 = DWMWA_USE_IMMERSIVE_DARK_MODE (Windows 10 20H1+/11); 19 — старые сборки Windows 10.
+        if (DwmSetWindowAttribute(handle, 20, ref value, sizeof(int)) != 0)
+        {
+            DwmSetWindowAttribute(handle, 19, ref value, sizeof(int));
+        }
+    }
 
     private static void Apply(Theme theme, bool save)
     {

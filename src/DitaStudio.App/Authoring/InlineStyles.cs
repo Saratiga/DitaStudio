@@ -10,18 +10,11 @@ public static class InlineStyles
 {
     public static readonly FontFamily Mono = new("Cascadia Mono, Consolas, Courier New");
 
-    private static readonly Brush CodeBackground = new SolidColorBrush(Color.FromRgb(0xF2, 0xF4, 0xF7));
-    private static readonly Brush LinkBrush = new SolidColorBrush(Color.FromRgb(0x1F, 0x5F, 0xA9));
-    private static readonly Brush TermBrush = new SolidColorBrush(Color.FromRgb(0x5B, 0x3E, 0x8C));
-    private static readonly Brush KeywordBrush = new SolidColorBrush(Color.FromRgb(0x1B, 0x5E, 0x20));
-
-    static InlineStyles()
-    {
-        CodeBackground.Freeze();
-        LinkBrush.Freeze();
-        TermBrush.Freeze();
-        KeywordBrush.Freeze();
-    }
+    // Читаются из текущей темы при каждой перестройке — см. AuthorView.TagBrush и соседей.
+    private static Brush CodeBackground => ThemeManager.Brush("CodeBackground");
+    private static Brush LinkBrush => ThemeManager.Brush("Accent");
+    private static Brush TermBrush => ThemeManager.Brush("AttributeNameBrush");
+    private static Brush KeywordBrush => ThemeManager.Brush("Success");
 
     /// <summary>Применяет оформление к прогону текста по имени элемента DITA.</summary>
     public static void Apply(Run run, string elementName)

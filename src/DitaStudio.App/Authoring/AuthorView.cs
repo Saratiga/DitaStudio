@@ -21,34 +21,27 @@ public sealed class AuthorView : ScrollViewer
     private readonly Dictionary<DitaNode, InlineEditor> _editors = new();
     private readonly List<InlineEditor> _order = new();
 
-    private static readonly Brush TagBrush = new SolidColorBrush(Color.FromRgb(0x9A, 0xA4, 0xB2));
-    private static readonly Brush ContainerBorder = new SolidColorBrush(Color.FromRgb(0xE4, 0xE8, 0xEE));
-    private static readonly Brush SelectedBorder = new SolidColorBrush(Color.FromRgb(0x1F, 0x5F, 0xA9));
-    private static readonly Brush NoteBackground = new SolidColorBrush(Color.FromRgb(0xEE, 0xF4, 0xFB));
-    private static readonly Brush WarnBackground = new SolidColorBrush(Color.FromRgb(0xFD, 0xF3, 0xE2));
-    private static readonly Brush CodeBackground = new SolidColorBrush(Color.FromRgb(0xF5, 0xF6, 0xF8));
-    private static readonly Brush MetaBackground = new SolidColorBrush(Color.FromRgb(0xFA, 0xFB, 0xFC));
+    // Читаются из текущей темы при каждой перестройке (не кэшируются/не замораживаются), чтобы
+    // переключение темы подхватывалось перестройкой — см. MainWindow.OnToggleTheme.
+    private static Brush TagBrush => ThemeManager.Brush("EditorTag");
+    private static Brush ContainerBorder => ThemeManager.Brush("Line");
+    private static Brush SelectedBorder => ThemeManager.Brush("Accent");
+    private static Brush NoteBackground => ThemeManager.Brush("EditorNoteBackground");
+    private static Brush WarnBackground => ThemeManager.Brush("EditorWarnBackground");
+    private static Brush CodeBackground => ThemeManager.Brush("CodeBackground");
+    private static Brush MetaBackground => ThemeManager.Brush("SurfaceAlt");
+    private static Brush EditorText => ThemeManager.Brush("TextPrimary");
+    private static Brush EditorTextMuted => ThemeManager.Brush("TextMuted");
 
     private DitaNode? _current;
     private Border? _currentBorder;
-
-    static AuthorView()
-    {
-        TagBrush.Freeze();
-        ContainerBorder.Freeze();
-        SelectedBorder.Freeze();
-        NoteBackground.Freeze();
-        WarnBackground.Freeze();
-        CodeBackground.Freeze();
-        MetaBackground.Freeze();
-    }
 
     public AuthorView()
     {
         Content = _panel;
         VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
-        Background = Brushes.White;
+        Background = ThemeManager.Brush("Surface");
         Padding = new Thickness(0);
     }
 
@@ -95,6 +88,7 @@ public sealed class AuthorView : ScrollViewer
 
     public void Rebuild(DitaNode? focusNode = null, int caretOffset = 0)
     {
+        Background = ThemeManager.Brush("Surface");
         _editors.Clear();
         _order.Clear();
         _panel.Children.Clear();
@@ -253,7 +247,7 @@ public sealed class AuthorView : ScrollViewer
                 Text = headerText,
                 FontWeight = FontWeights.SemiBold,
                 FontSize = 13,
-                Foreground = new SolidColorBrush(Color.FromRgb(0x3A, 0x44, 0x54)),
+                Foreground = EditorText,
                 Margin = new Thickness(0, 2, 0, 4)
             });
         }
@@ -283,7 +277,7 @@ public sealed class AuthorView : ScrollViewer
                 var markerBlock = new TextBlock
                 {
                     Text = marker,
-                    Foreground = new SolidColorBrush(Color.FromRgb(0x5B, 0x64, 0x72)),
+                    Foreground = EditorTextMuted,
                     HorizontalAlignment = HorizontalAlignment.Right,
                     Margin = new Thickness(0, 2, 8, 0)
                 };
@@ -343,7 +337,7 @@ public sealed class AuthorView : ScrollViewer
             case "shortdesc":
                 editor.FontSize = 15;
                 editor.FontStyle = FontStyles.Italic;
-                editor.Foreground = new SolidColorBrush(Color.FromRgb(0x4B, 0x54, 0x62));
+                editor.Foreground = EditorTextMuted;
                 editor.Margin = new Thickness(0, 0, 0, 10);
                 break;
 
@@ -365,7 +359,7 @@ public sealed class AuthorView : ScrollViewer
             case "stepresult":
             case "info":
             case "stepxmp":
-                editor.Foreground = new SolidColorBrush(Color.FromRgb(0x3E, 0x47, 0x55));
+                editor.Foreground = EditorTextMuted;
                 editor.Margin = new Thickness(0, 2, 0, 0);
                 break;
         }
@@ -433,7 +427,8 @@ public sealed class AuthorView : ScrollViewer
         var editor = new InlineEditor(node)
         {
             FontSize = 14.5,
-            FontFamily = new FontFamily("Segoe UI")
+            FontFamily = new FontFamily("Segoe UI"),
+            Foreground = EditorText
         };
 
         editor.ContentChanged += (_, _) =>
@@ -611,12 +606,12 @@ public sealed class AuthorView : ScrollViewer
                 Text = "// " + node.Value.Trim(),
                 FontFamily = InlineStyles.Mono,
                 FontSize = 11.5,
-                Foreground = new SolidColorBrush(Color.FromRgb(0x7C, 0x8A, 0x5A)),
+                Foreground = EditorTextMuted,
                 TextWrapping = TextWrapping.Wrap
             },
             Margin = new Thickness(0, 3, 0, 3),
             Padding = new Thickness(6, 3, 6, 3),
-            Background = new SolidColorBrush(Color.FromRgb(0xFB, 0xFC, 0xF3))
+            Background = MetaBackground
         };
     }
 
@@ -630,9 +625,9 @@ public sealed class AuthorView : ScrollViewer
                 FontFamily = InlineStyles.Mono,
                 FontSize = 11.5,
                 TextWrapping = TextWrapping.Wrap,
-                Foreground = new SolidColorBrush(Color.FromRgb(0xC0, 0x39, 0x2B))
+                Foreground = ThemeManager.Brush("Danger")
             },
-            BorderBrush = new SolidColorBrush(Color.FromRgb(0xC0, 0x39, 0x2B)),
+            BorderBrush = ThemeManager.Brush("Danger"),
             BorderThickness = new Thickness(2, 0, 0, 0),
             Padding = new Thickness(8, 4, 4, 4),
             Margin = new Thickness(0, 4, 0, 4),

@@ -241,6 +241,12 @@ public partial class MainWindow
     private void BuildKeysList()
     {
         KeysList.ItemsSource = _project?.Keys.Values.OrderBy(k => k.Key, StringComparer.Ordinal).ToList();
+
+        var hidden = (_project?.TotalKeyCount ?? 0) - (_project?.Keys.Count ?? 0);
+        ScopedKeysHint.Visibility = hidden > 0 ? Visibility.Visible : Visibility.Collapsed;
+        ScopedKeysHint.Text = hidden > 0
+            ? $"Показаны только ключи корневой области. Ещё {hidden} — внутри keyscope-областей карты."
+            : string.Empty;
     }
 
     private void OnKeyDoubleClick(object sender, MouseButtonEventArgs e)

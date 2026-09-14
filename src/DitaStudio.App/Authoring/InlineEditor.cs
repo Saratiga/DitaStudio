@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -54,19 +55,13 @@ public sealed class InlineEditor : RichTextBox
         public IReadOnlyList<DitaNode> Chain { get; }
     }
 
-    private static readonly Brush ChipBackground = new SolidColorBrush(Color.FromRgb(0xEA, 0xEF, 0xF7));
-    private static readonly Brush ChipBorder = new SolidColorBrush(Color.FromRgb(0xB9, 0xC6, 0xDC));
-    private static readonly Brush ChipText = new SolidColorBrush(Color.FromRgb(0x2C, 0x4A, 0x73));
+    // Читаются из текущей темы при каждой перестройке — см. AuthorView.TagBrush и соседей.
+    private static Brush ChipBackground => ThemeManager.Brush("EditorChipBackground");
+    private static Brush ChipBorder => ThemeManager.Brush("EditorChipBorder");
+    private static Brush ChipText => ThemeManager.Brush("EditorChipText");
 
     private bool _building;
     private bool _dirty;
-
-    static InlineEditor()
-    {
-        ChipBackground.Freeze();
-        ChipBorder.Freeze();
-        ChipText.Freeze();
-    }
 
     public InlineEditor(DitaNode node)
     {
@@ -228,7 +223,11 @@ public sealed class InlineEditor : RichTextBox
                 return "ˣ сноска";
 
             case "indexterm":
-                return $"☰ {node.InnerText.Trim()}";
+            {
+                var parts = new List<string>();
+                CollectIndextermText(node, parts);
+                return $"☰ {string.Join(" / ", parts)}";
+            }
 
             case "abbreviated-form":
                 return $"◆ {node.GetAttribute("keyref")}";
@@ -247,6 +246,22 @@ public sealed class InlineEditor : RichTextBox
     }
 
     private static string Trim(string value) => value.Length <= 24 ? value : value[..24] + "…";
+
+    /// <summary>Термин indexterm и вложенные подпункты — отдельными кусками, а не InnerText одной
+    /// строкой (иначе «Установка» и вложенный подпункт «первый запуск» слипаются в одно слово).</summary>
+    private static void CollectIndextermText(DitaNode node, List<string> parts)
+    {
+        var direct = string.Concat(node.Children.Where(c => c.Kind == NodeKind.Text).Select(c => c.Value)).Trim();
+        if (direct.Length > 0)
+        {
+            parts.Add(direct);
+        }
+
+        foreach (var child in node.ElementChildren().Where(c => c.Name == "indexterm"))
+        {
+            CollectIndextermText(child, parts);
+        }
+    }
 
     // --------------------------------------------------------------- запись
 

@@ -29,6 +29,15 @@
     <SolidColorBrush x:Key="AttributeNameBrush" Color="#7A3E9D" />
     <SolidColorBrush x:Key="CodeBackground" Color="#F5F6F8" />
 
+    <!-- Режим «Автор»: холст красится через Surface/Line/Accent/TextPrimary выше — своя палитра
+         нужна только для оттенков, которых нет в общей теме (note/warn-плашки, чип фразового элемента). -->
+    <SolidColorBrush x:Key="EditorTag" Color="#9AA4B2" />
+    <SolidColorBrush x:Key="EditorNoteBackground" Color="#EEF4FB" />
+    <SolidColorBrush x:Key="EditorWarnBackground" Color="#FDF3E2" />
+    <SolidColorBrush x:Key="EditorChipBackground" Color="#EAEFF7" />
+    <SolidColorBrush x:Key="EditorChipBorder" Color="#B9C6DC" />
+    <SolidColorBrush x:Key="EditorChipText" Color="#2C4A73" />
+
     <SolidColorBrush x:Key="ScrollThumb" Color="#C7CDD6" />
     <SolidColorBrush x:Key="ScrollThumbHover" Color="#9AA4B2" />
 

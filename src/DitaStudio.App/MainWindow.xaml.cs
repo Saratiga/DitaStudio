@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         RegisterShortcuts();
+        ThemeManager.ApplyTitleBar(this);
         ThemeMenuItem.IsChecked = ThemeManager.Current == ThemeManager.Theme.Dark;
         RefreshRecentProjectsMenu();
         UpdateStatus("Откройте папку с проектом DITA: Файл → Открыть папку проекта.");
