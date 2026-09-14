@@ -90,10 +90,12 @@ public sealed class MapItem
 /// </summary>
 public sealed class MapTree
 {
-    private MapTree(MapItem root, string mapPath)
+    private MapTree(MapItem root, string mapPath, Dictionary<string, List<RelatedLink>> relatedLinks)
     {
         Root = root;
         MapPath = mapPath;
+        RelatedLinks = relatedLinks.ToDictionary(
+            kv => kv.Key, kv => (IReadOnlyList<RelatedLink>)kv.Value, StringComparer.OrdinalIgnoreCase);
     }
 
     public MapItem Root { get; }
@@ -106,6 +108,11 @@ public sealed class MapTree
     public IEnumerable<MapItem> PublicationOrder =>
         Items.Where(i => !i.IsResourceOnly && i.TargetPath is not null && !i.IsBroken);
 
+    /// <summary>Связи из таблиц соответствий (reltable), ключ — абсолютный путь топика. Топики
+    /// в одной строке reltable, но в разных ячейках, взаимно связываются; топики одной ячейки
+    /// друг с другом не связываются (это одна "роль" в строке).</summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<RelatedLink>> RelatedLinks { get; }
+
     public static MapTree Build(DitaProject project, string mapPath)
     {
         var doc = project.GetDocument(mapPath);
@@ -115,8 +122,9 @@ public sealed class MapTree
         };
 
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { System.IO.Path.GetFullPath(mapPath) };
-        AddChildren(project, doc, doc.Root, root, mapPath, visited, 0);
-        return new MapTree(root, mapPath);
+        var relatedLinks = new Dictionary<string, List<RelatedLink>>(StringComparer.OrdinalIgnoreCase);
+        AddChildren(project, doc, doc.Root, root, mapPath, visited, 0, relatedLinks);
+        return new MapTree(root, mapPath, relatedLinks);
     }
 
     private static void AddChildren(
@@ -126,7 +134,8 @@ public sealed class MapTree
         MapItem parentItem,
         string mapPath,
         HashSet<string> visited,
-        int depth)
+        int depth,
+        Dictionary<string, List<RelatedLink>> relatedLinks)
     {
         if (depth > 24)
         {
@@ -135,7 +144,13 @@ public sealed class MapTree
 
         foreach (var child in parentNode.ElementChildren())
         {
-            if (child.Name is "topicmeta" or "title" or "reltable" or "data" or "data-about" or "ditavalmeta")
+            if (child.Name == "reltable")
+            {
+                CollectRelTable(child, mapPath, relatedLinks);
+                continue;
+            }
+
+            if (child.Name is "topicmeta" or "title" or "data" or "data-about" or "ditavalmeta")
             {
                 continue;
             }
@@ -155,15 +170,86 @@ public sealed class MapTree
                     if (subDoc is not null)
                     {
                         item.Title = string.IsNullOrEmpty(item.Title) ? subDoc.Title : item.Title;
-                        AddChildren(project, subDoc, subDoc.Root, item, full, visited, depth + 1);
+                        AddChildren(project, subDoc, subDoc.Root, item, full, visited, depth + 1, relatedLinks);
                     }
 
                     visited.Remove(full);
                 }
             }
 
-            AddChildren(project, mapDoc, child, item, mapPath, visited, depth + 1);
+            AddChildren(project, mapDoc, child, item, mapPath, visited, depth + 1, relatedLinks);
         }
+    }
+
+    // ------------------------------------------------------- таблицы соответствий
+
+    /// <summary>Один целевой топик из связи reltable.</summary>
+    public sealed record RelatedLink(string Path, string? TopicId);
+
+    private static void CollectRelTable(
+        DitaNode reltable, string mapPath, Dictionary<string, List<RelatedLink>> relatedLinks)
+    {
+        foreach (var relrow in reltable.ElementChildren().Where(n => n.Name == "relrow"))
+        {
+            var cells = relrow.ElementChildren().Where(n => n.Name == "relcell")
+                .Select(cell => cell.ElementChildren()
+                    .Where(n => n.Name == "topicref")
+                    .Select(tr => ResolveRelRef(mapPath, tr))
+                    .Where(r => r is not null)
+                    .Select(r => r!.Value)
+                    .ToList())
+                .Where(refs => refs.Count > 0)
+                .ToList();
+
+            for (var i = 0; i < cells.Count; i++)
+            {
+                for (var j = 0; j < cells.Count; j++)
+                {
+                    if (i == j)
+                    {
+                        continue;
+                    }
+
+                    foreach (var from in cells[i])
+                    {
+                        foreach (var to in cells[j])
+                        {
+                            AddRelatedLink(relatedLinks, from, new RelatedLink(to.Path, to.TopicId));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void AddRelatedLink(
+        Dictionary<string, List<RelatedLink>> relatedLinks, (string Path, string? TopicId) from, RelatedLink to)
+    {
+        var key = System.IO.Path.GetFullPath(from.Path);
+        if (!relatedLinks.TryGetValue(key, out var list))
+        {
+            list = new List<RelatedLink>();
+            relatedLinks[key] = list;
+        }
+
+        if (!list.Any(l => string.Equals(l.Path, to.Path, StringComparison.OrdinalIgnoreCase) && l.TopicId == to.TopicId))
+        {
+            list.Add(to);
+        }
+    }
+
+    /// <summary>Разрешает topicref внутри relcell в путь топика — только по href (без keyref,
+    /// как и остальная упрощённая модель редактора reltable в этой версии).</summary>
+    private static (string Path, string? TopicId)? ResolveRelRef(string mapPath, DitaNode topicref)
+    {
+        var href = topicref.GetAttribute("href");
+        if (string.IsNullOrWhiteSpace(href) || RefResolver.IsExternal(href!))
+        {
+            return null;
+        }
+
+        var reference = RefResolver.Parse(mapPath, href!);
+        return reference.Path is null ? null : (reference.Path, reference.TopicId);
     }
 
     private static void ResolveTarget(DitaProject project, MapItem item, string mapPath)

@@ -30,6 +30,10 @@ public sealed class DocxRenderOptions
     /// <summary>Цепочка имён областей ключей (keyscope) для топика, который сейчас рендерится —
     /// см. MapItem.KeyScopeChain. Публикатор обновляет её перед каждым RenderTopic.</summary>
     public IReadOnlyList<string>? CurrentKeyScope { get; set; }
+
+    /// <summary>Связанные топики из таблицы соответствий (reltable) для топика, который сейчас
+    /// рендерится — см. MapTree.RelatedLinks. Публикатор обновляет перед каждым RenderTopic.</summary>
+    public IReadOnlyList<MapTree.RelatedLink>? RelatedTopics { get; set; }
 }
 
 /// <summary>
@@ -78,6 +82,7 @@ public sealed class DocxRenderer
     public void RenderTopic(DitaDocument document, DitaNode topic, W.Body body, int headingLevel, string? bookmarkName)
     {
         _document = document;
+        var isTopLevel = bookmarkName is not null; // вложенные топики файла вызываются с bookmarkName == null
         var def = _catalog.Get(topic.Name);
         var isGlossary = def?.ClassAttr.Contains("glossentry/") == true;
 
@@ -169,7 +174,42 @@ public sealed class DocxRenderer
             }
         }
 
+        if (isTopLevel)
+        {
+            foreach (var block in RenderReltableLinks())
+            {
+                body.Append(block);
+            }
+        }
+
         _ = isGlossary;
+    }
+
+    /// <summary>Автоматический блок «Смотрите также» из таблицы соответствий (reltable) —
+    /// отдельно от авторского related-links, который топик мог указать в разметке сам.</summary>
+    private IEnumerable<OpenXmlCompositeElement> RenderReltableLinks()
+    {
+        if (_options.RelatedTopics is null || _options.RelatedTopics.Count == 0)
+        {
+            yield break;
+        }
+
+        yield return StyledParagraph(new List<OpenXmlElement> { new W.Run(new W.Text(L.RelatedLinks)) }, bold: true);
+
+        foreach (var link in _options.RelatedTopics)
+        {
+            var reference = new DitaReference(link.Path, link.TopicId, null, link.Path);
+            var title = TitleOf(reference) ?? Path.GetFileNameWithoutExtension(link.Path);
+            var bookmark = _options.TopicBookmark?.Invoke(link.Path, link.TopicId);
+
+            OpenXmlElement run = bookmark is not null
+                ? new W.Hyperlink(new W.Run(new W.Text(title))) { Anchor = bookmark, History = true }
+                : new W.Run(new W.Text(title));
+
+            var paragraph = new W.Paragraph(new W.ParagraphProperties(new W.Indentation { Left = "227" }));
+            paragraph.Append(run);
+            yield return paragraph;
+        }
     }
 
     // ====================================================================== блоки
@@ -1481,7 +1521,18 @@ public sealed class DocxRenderer
         .Split(' ', StringSplitOptions.RemoveEmptyEntries)
         .Contains(token, StringComparer.Ordinal);
 
-    private static OpenXmlCompositeElement WithOutputClass(W.Paragraph paragraph, DitaNode node) => paragraph;
+    /// <summary>Полоса на полях у абзаца с непустым атрибутом rev — штатная DITA-пометка
+    /// изменений (не полноценный track changes с историей правок), см. HtmlRenderer.BuildClassAttr.</summary>
+    private static OpenXmlCompositeElement WithOutputClass(W.Paragraph paragraph, DitaNode node)
+    {
+        if (!string.IsNullOrWhiteSpace(node.GetAttribute("rev")))
+        {
+            EnsureParagraphProperties(paragraph).Append(new W.ParagraphBorders(
+                new W.LeftBorder { Val = W.BorderValues.Single, Size = 18, Color = "D4380D", Space = 4 }));
+        }
+
+        return paragraph;
+    }
 
     private static W.Paragraph Paragraph(List<OpenXmlElement> runs) => new(runs.ToArray());
 

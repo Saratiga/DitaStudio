@@ -1374,6 +1374,25 @@ public sealed class AuthorView : ScrollViewer
         return enabled;
     }
 
+    /// <summary>Отмечает/снимает пометку изменения (атрибут rev) на текущем элементе — штатный
+    /// DITA-механизм ревизий; при публикации рисуется полосой на полях (см. BuildClassAttr в
+    /// HtmlRenderer). Не полноценный track changes — просто «здесь что-то менялось».</summary>
+    public bool? ToggleCurrentRev()
+    {
+        if (Document is null || CurrentNode is null)
+        {
+            return null;
+        }
+
+        BeforeStructuralEdit?.Invoke(this, "Отметка изменения (rev)");
+        var hasRev = !string.IsNullOrWhiteSpace(CurrentNode.GetAttribute("rev"));
+        CurrentNode.SetAttribute("rev", hasRev ? null : "changed");
+        Document.IsDirty = true;
+        DocumentModified?.Invoke(this, EventArgs.Empty);
+        Rebuild(FirstEditable(CurrentNode), 0);
+        return !hasRev;
+    }
+
     public bool WrapCurrentInline(string elementName)
     {
         if (CurrentNode is null || !_editors.TryGetValue(CurrentNode, out var editor))

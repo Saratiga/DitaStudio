@@ -162,6 +162,82 @@ public partial class MainWindow
         }
     }
 
+    private void OnProjectTreeRightClick(object sender, MouseButtonEventArgs e)
+    {
+        // TreeView сам по себе не выделяет узел по правому клику — делаем это вручную,
+        // чтобы контекстное меню относилось к узлу под курсором, а не к прошлому выделению.
+        if (FindTreeViewItem(e.OriginalSource as DependencyObject) is { } item)
+        {
+            item.IsSelected = true;
+        }
+    }
+
+    private void OnProjectFileMove(object sender, RoutedEventArgs e)
+    {
+        if (_project is null || ProjectTree.SelectedItem is not TreeViewItem { Tag: ProjectFile file })
+        {
+            return;
+        }
+
+        var newRelative = Dialogs.RenameFile(file.RelativePath);
+        if (string.IsNullOrWhiteSpace(newRelative))
+        {
+            return;
+        }
+
+        var newFull = Path.GetFullPath(Path.Combine(_project.RootPath, newRelative));
+        if (string.Equals(newFull, file.FullPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (File.Exists(newFull))
+        {
+            if (!Dialogs.Confirm("Перенос файла", $"Файл {newRelative} уже существует. Заменить?"))
+            {
+                return;
+            }
+
+            File.Delete(newFull);
+        }
+
+        foreach (var pane in _panes.Values)
+        {
+            pane.CommitPendingEdits();
+        }
+
+        RefactorResult result;
+        try
+        {
+            result = RefactorService.MoveFile(_project, file.FullPath, newFull);
+        }
+        catch (IOException ex)
+        {
+            Dialogs.Message("Перенос файла", ex.Message);
+            return;
+        }
+
+        if (_panes.TryGetValue(file.FullPath, out var movedPane))
+        {
+            _panes.Remove(file.FullPath);
+            _panes[newFull] = movedPane;
+            foreach (var tab in DocumentTabs.Items.OfType<TabItem>())
+            {
+                if (ReferenceEquals(tab.Content, movedPane))
+                {
+                    tab.Tag = newFull;
+                }
+            }
+        }
+
+        ApplyRefactorResult(result);
+        _project.Scan();
+        BuildProjectTree();
+        BuildMapSelector();
+        BuildKeysList();
+        UpdateStatus($"Файл перенесён: {file.RelativePath} → {newRelative}. Обновлено ссылок: {result.UpdatedReferences}.");
+    }
+
     private void BuildKeysList()
     {
         KeysList.ItemsSource = _project?.Keys.Values.OrderBy(k => k.Key, StringComparer.Ordinal).ToList();

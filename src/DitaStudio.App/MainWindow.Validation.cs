@@ -12,6 +12,25 @@ public partial class MainWindow
 {
     private void OnValidateProject(object sender, RoutedEventArgs e) => ValidateProject();
 
+    private void OnCompareFiles(object sender, RoutedEventArgs e)
+    {
+        var filter = "Файлы DITA (*.dita;*.ditamap;*.xml)|*.dita;*.ditamap;*.xml|Все файлы (*.*)|*.*";
+        var left = new Microsoft.Win32.OpenFileDialog { Title = "Сравнить — первый файл", Filter = filter };
+        if (left.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        var right = new Microsoft.Win32.OpenFileDialog { Title = "Сравнить — второй файл", Filter = filter };
+        if (right.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        // Сравнение читает файлы с диска — несохранённые правки в открытых вкладках не видны.
+        DiffWindow.Show(left.FileName, right.FileName);
+    }
+
     private void ValidateProject()
     {
         if (_project is null)

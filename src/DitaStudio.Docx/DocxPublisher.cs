@@ -92,6 +92,9 @@ public sealed class DocxPublisher
 
             var bookmarkName = bookmarks[BookmarkKey(item.TargetPath!, item.TargetTopicId)];
             renderOptions.CurrentKeyScope = item.KeyScopeChain;
+            renderOptions.RelatedTopics = tree.RelatedLinks.TryGetValue(Path.GetFullPath(item.TargetPath!), out var related)
+                ? related
+                : null;
             renderer.RenderTopic(expanded, topicNode, body, Math.Clamp(item.Level, 1, 6), bookmarkName);
         }
 

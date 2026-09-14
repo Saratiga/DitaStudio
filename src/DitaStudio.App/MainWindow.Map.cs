@@ -361,4 +361,114 @@ public partial class MainWindow
             grand.Insert(index, node);
             return true;
         }, "Вынос из вложения");
+
+    // ------------------------------------------------ таблица соответствий
+
+    private void OnEditRelTable(object sender, RoutedEventArgs e)
+    {
+        if (_project is null || MapSelector.SelectedItem is not ProjectFile map)
+        {
+            return;
+        }
+
+        var pane = OpenMapPane();
+        if (pane is null)
+        {
+            return;
+        }
+
+        var existingReltable = pane.Document.Root.FirstElement("reltable");
+        var initialRows = ParseRelTable(_project, existingReltable, map.FullPath);
+
+        var rows = Dialogs.EditRelTable(_project, initialRows);
+        if (rows is null)
+        {
+            return;
+        }
+
+        pane.PushUndo("Таблица соответствий");
+
+        var newReltable = BuildRelTableNode(rows, map.FullPath);
+        if (existingReltable is not null)
+        {
+            existingReltable.ReplaceWith(newReltable);
+        }
+        else
+        {
+            pane.Document.Root.Add(newReltable);
+        }
+
+        pane.Document.IsDirty = true;
+        pane.ReloadViews();
+        UpdateTabHeaders();
+        UpdateStatus("Таблица соответствий обновлена.");
+    }
+
+    private static List<List<Dialogs.RelTableCell>> ParseRelTable(DitaProject project, DitaNode? reltable, string mapPath)
+    {
+        var rows = new List<List<Dialogs.RelTableCell>>();
+        if (reltable is null)
+        {
+            return rows;
+        }
+
+        foreach (var relrow in reltable.ElementChildren().Where(n => n.Name == "relrow"))
+        {
+            var row = new List<Dialogs.RelTableCell>();
+            foreach (var relcell in relrow.ElementChildren().Where(n => n.Name == "relcell"))
+            {
+                var topicref = relcell.FirstElement("topicref");
+                var href = topicref?.GetAttribute("href");
+                var cell = new Dialogs.RelTableCell();
+
+                if (!string.IsNullOrWhiteSpace(href))
+                {
+                    var reference = RefResolver.Parse(mapPath, href!);
+                    if (reference.Path is not null)
+                    {
+                        cell.File = project.Files.FirstOrDefault(
+                            f => string.Equals(f.FullPath, reference.Path, StringComparison.OrdinalIgnoreCase));
+                        cell.TopicId = reference.TopicId;
+                    }
+                }
+
+                row.Add(cell);
+            }
+
+            rows.Add(row);
+        }
+
+        return rows;
+    }
+
+    private static DitaNode BuildRelTableNode(List<List<Dialogs.RelTableCell>> rows, string mapPath)
+    {
+        var reltable = DitaNode.Element("reltable");
+        foreach (var row in rows)
+        {
+            var relrow = DitaNode.Element("relrow");
+            foreach (var cell in row)
+            {
+                var relcell = DitaNode.Element("relcell");
+                if (cell.File is not null)
+                {
+                    var topicref = DitaNode.Element("topicref");
+                    var href = RefResolver.MakeRelative(mapPath, cell.File.FullPath);
+                    if (!string.IsNullOrEmpty(cell.TopicId))
+                    {
+                        href += "#" + cell.TopicId;
+                    }
+
+                    topicref.SetAttribute("href", href);
+                    relcell.Add(topicref);
+                }
+
+                relrow.Add(relcell);
+            }
+
+            reltable.Add(relrow);
+        }
+
+        return reltable;
+    }
 }

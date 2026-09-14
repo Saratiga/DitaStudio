@@ -60,6 +60,8 @@ pre, .codeblock, .screen, .msgblock, .pre, .lines {
 .menucascade > .uicontrol + .uicontrol::before { content: " → "; font-weight: 400; }
 .term { font-style: italic; }
 .note { background: var(--note-bg); border-left: 4px solid var(--accent); padding: 10px 14px; margin: 1em 0; border-radius: 0 6px 6px 0; }
+/* Полоса на полях у элементов с непустым атрибутом rev — штатная DITA-пометка изменений. */
+.rev-changed { border-left: 3px solid #d4380d; padding-left: 8px; }
 .note .label { font-weight: 600; margin-right: .4em; }
 .note.caution, .note.attention, .note.warning, .note.notice { background: var(--warn-bg); border-left-color: #c58217; }
 .note.danger { background: var(--danger-bg); border-left-color: #c0392b; }

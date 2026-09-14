@@ -1,4 +1,6 @@
 using System.Text;
+using System.Text.RegularExpressions;
+using DitaStudio.Core.Diff;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
@@ -33,6 +35,11 @@ public static class Program
         EditingTests();
         ProjectTests();
         KeyScopeTests();
+        RelTableTests();
+        RevChangeTests();
+        RefactorTests();
+        ExtractToConrefTests();
+        DiffTests();
         DocxTests();
 
         Console.WriteLine();
@@ -699,6 +706,370 @@ public static class Program
                 // временные файлы удалятся системой
             }
         }
+    }
+
+    // -------------------------------------------------- таблицы соответствий
+
+    private static void RelTableTests()
+    {
+        Section("Таблицы соответствий (reltable)");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "concept.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="concept"><title>Обзор</title><conbody><p>Текст.</p></conbody></concept>
+""");
+            File.WriteAllText(Path.Combine(root, "task.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<task id="task"><title>Установка</title><taskbody><steps><step><cmd>Шаг.</cmd></step></steps></taskbody></task>
+""");
+            File.WriteAllText(Path.Combine(root, "ref.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<reference id="ref"><title>Параметры</title><refbody><section><p>Текст.</p></section></refbody></reference>
+""");
+
+            File.WriteAllText(Path.Combine(root, "map.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>Тест таблицы соответствий</title>
+  <topicref href="concept.dita"/>
+  <topicref href="task.dita"/>
+  <topicref href="ref.dita"/>
+  <reltable>
+    <relrow>
+      <relcell><topicref href="concept.dita"/></relcell>
+      <relcell><topicref href="task.dita"/></relcell>
+    </relrow>
+    <relrow>
+      <relcell><topicref href="task.dita"/></relcell>
+      <relcell><topicref href="ref.dita"/></relcell>
+    </relrow>
+  </reltable>
+</map>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+
+            var tree = MapTree.Build(project, Path.Combine(root, "map.ditamap"));
+            var conceptPath = Path.GetFullPath(Path.Combine(root, "concept.dita"));
+            var taskPath = Path.GetFullPath(Path.Combine(root, "task.dita"));
+            var refPath = Path.GetFullPath(Path.Combine(root, "ref.dita"));
+
+            Check(tree.RelatedLinks.TryGetValue(conceptPath, out var conceptLinks) &&
+                  conceptLinks.Count == 1 && string.Equals(conceptLinks[0].Path, taskPath, StringComparison.OrdinalIgnoreCase),
+                "обзор связан с задачей (одна строка reltable)");
+            Check(tree.RelatedLinks.TryGetValue(taskPath, out var taskLinks) && taskLinks.Count == 2,
+                $"задача встречается в двух строках — связана с обоими соседями: {taskLinks?.Count}");
+            Check(tree.RelatedLinks.TryGetValue(refPath, out var refLinks) &&
+                  refLinks.Count == 1 && string.Equals(refLinks[0].Path, taskPath, StringComparison.OrdinalIgnoreCase),
+                "справка связана с задачей (вторая строка reltable)");
+            Check(!tree.RelatedLinks.ContainsKey(conceptPath) || !conceptLinks!.Any(l => string.Equals(l.Path, refPath, StringComparison.OrdinalIgnoreCase)),
+                "обзор и справка не связаны напрямую — они в разных строках reltable");
+
+            var publisher = new HtmlPublisher(project);
+            var result = publisher.Publish(Path.Combine(root, "map.ditamap"), new PublishOptions
+            {
+                OutputDirectory = Path.Combine(root, "out"),
+                SingleFile = true
+            });
+
+            var html = File.ReadAllText(result.EntryFile);
+            Check(html.Contains("reltable-links"), "автоматический блок related-links из reltable попал в публикацию");
+            Check(Regex.Matches(html, "reltable-links").Count == 3,
+                $"блок сгенерирован для каждого из трёх топиков: {Regex.Matches(html, "reltable-links").Count}");
+
+            var docxOut = Path.Combine(root, "out.docx");
+            new DocxPublisher(project).Publish(Path.Combine(root, "map.ditamap"), new PublishOptions(), docxOut);
+            using (var doc = WordprocessingDocument.Open(docxOut, false))
+            {
+                var hyperlinks = doc.MainDocumentPart!.Document.Body!.Descendants<Hyperlink>().Count(h => h.Anchor is not null);
+                Check(hyperlinks >= 4, $"reltable-связи стали внутренними гиперссылками и в DOCX: {hyperlinks}");
+            }
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    // ------------------------------------------------- пометка изменений (rev)
+
+    private static void RevChangeTests()
+    {
+        Section("Пометка изменений (rev)");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "topic.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="topic">
+  <title>Тема</title>
+  <conbody>
+    <p rev="v2">Изменённый абзац.</p>
+    <p>Обычный абзац.</p>
+  </conbody>
+</concept>
+""");
+            File.WriteAllText(Path.Combine(root, "map.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>Тест rev</title>
+  <topicref href="topic.dita"/>
+</map>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+
+            var publisher = new HtmlPublisher(project);
+            var result = publisher.Publish(Path.Combine(root, "map.ditamap"), new PublishOptions
+            {
+                OutputDirectory = Path.Combine(root, "out"),
+                SingleFile = true
+            });
+
+            var html = File.ReadAllText(result.EntryFile);
+            Check(html.Contains("rev-changed"), "класс rev-changed попал в публикацию");
+            Check(Regex.IsMatch(html, "<p class=\"rev-changed\">Изменённый абзац\\."),
+                "класс rev-changed стоит именно на изменённом абзаце");
+            Check(!Regex.IsMatch(html, "<p class=\"rev-changed\">Обычный абзац\\."),
+                "обычный абзац класс rev-changed не получил");
+
+            var docxOut = Path.Combine(root, "out.docx");
+            new DocxPublisher(project).Publish(Path.Combine(root, "map.ditamap"), new PublishOptions(), docxOut);
+            using (var doc = WordprocessingDocument.Open(docxOut, false))
+            {
+                var hasRevBorder = doc.MainDocumentPart!.Document.Body!.Descendants<LeftBorder>()
+                    .Any(b => b.Color?.Value == "D4380D");
+                Check(hasRevBorder, "полоса на полях у изменённого абзаца попала и в DOCX");
+            }
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    // -------------------------------------------------------------- рефакторинг
+
+    private static void RefactorTests()
+    {
+        Section("Рефакторинг: переименование id и перенос файла");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            var aPath = Path.Combine(root, "a.dita");
+            var bPath = Path.Combine(root, "b.dita");
+
+            File.WriteAllText(aPath, """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="a">
+  <title>A</title>
+  <conbody>
+    <p id="para1">Текст с <xref href="b.dita#topic-b/elem1">ссылкой на элемент</xref>.</p>
+  </conbody>
+</concept>
+""");
+            File.WriteAllText(bPath, """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="topic-b">
+  <title>B</title>
+  <conbody>
+    <p id="elem1">Целевой абзац.</p>
+    <p>Топик <xref href="a.dita#a">A</xref>, абзац <xref href="a.dita#a/para1">para1</xref>.</p>
+  </conbody>
+</concept>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+
+            // --- переименование id элемента (elementId в фрагменте) ---
+            var renameElem = RefactorService.RenameId(project, aPath, "para1", "intro-note");
+            Check(renameElem.UpdatedReferences == 1, $"переименование elementId обновило одну ссылку: {renameElem.UpdatedReferences}");
+            Check(project.GetDocument(aPath).Root.FindDescendant("p")?.GetAttribute("id") == "intro-note",
+                "сам элемент переименован");
+            var bDoc1 = project.GetDocument(bPath);
+            var xrefToElem = bDoc1.Root.DescendantsAndSelf().First(n => n.GetAttribute("href")?.Contains("para1") == true || n.GetAttribute("href")?.Contains("intro-note") == true);
+            Check(xrefToElem.GetAttribute("href") == "a.dita#a/intro-note", $"ссылка на элемент обновлена: {xrefToElem.GetAttribute("href")}");
+            var xrefToTopicOnly = bDoc1.Root.DescendantsAndSelf().First(n => n.GetAttribute("href") == "a.dita#a");
+            Check(xrefToTopicOnly is not null, "ссылка на сам топик (без elementId) не пострадала от переименования абзаца");
+
+            // --- переименование id топика (topicId в фрагменте) ---
+            var renameTopic = RefactorService.RenameId(project, bPath, "topic-b", "topic-beta");
+            Check(renameTopic.UpdatedReferences == 1, $"переименование topicId обновило одну ссылку: {renameTopic.UpdatedReferences}");
+            var aDoc = project.GetDocument(aPath);
+            var xrefToTopic = aDoc.Root.DescendantsAndSelf().First(n => n.Name == "xref");
+            Check(xrefToTopic.GetAttribute("href") == "b.dita#topic-beta/elem1",
+                $"ссылка на топик обновлена с сохранением elementId: {xrefToTopic.GetAttribute("href")}");
+
+            // Сохраняем на диск перед проверкой переноса файла.
+            project.GetDocument(aPath).Save(aPath);
+            project.GetDocument(bPath).Save(bPath);
+
+            // --- перенос файла в подпапку ---
+            var newBPath = Path.Combine(root, "sub", "b.dita");
+            var move = RefactorService.MoveFile(project, bPath, newBPath);
+            Check(File.Exists(newBPath), "файл физически перенесён по новому пути");
+            Check(!File.Exists(bPath), "старый файл удалён");
+            Check(move.ChangedDocuments.Count == 2, $"перенос затронул исходный и ссылающийся документ: {move.ChangedDocuments.Count}");
+
+            foreach (var changedDoc in move.ChangedDocuments)
+            {
+                changedDoc.Save(changedDoc.FilePath);
+            }
+
+            project.Scan();
+
+            var aText = File.ReadAllText(aPath);
+            Check(aText.Contains("href=\"sub/b.dita#topic-beta/elem1\""),
+                "входящая ссылка на перенесённый файл пересчитана с учётом новой папки");
+
+            var bText = File.ReadAllText(newBPath);
+            Check(bText.Contains("href=\"../a.dita#a\""),
+                "исходящая ссылка перенесённого файла пересчитана от нового расположения");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    private static void ExtractToConrefTests()
+    {
+        Section("Рефакторинг: вынесение в conref");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            var aPath = Path.Combine(root, "a.dita");
+            var bPath = Path.Combine(root, "b.dita");
+
+            File.WriteAllText(aPath, """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="topic-a">
+  <title>A</title>
+  <conbody>
+    <note id="warn1">Общее предупреждение.</note>
+  </conbody>
+</concept>
+""");
+            File.WriteAllText(bPath, """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="topic-b">
+  <title>B</title>
+  <conbody>
+    <p>Текст.</p>
+  </conbody>
+</concept>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+
+            // --- вынесение в существующий топик ---
+            var noteInA = project.GetDocument(aPath).Root.FindDescendant("note")!;
+            var result = RefactorService.ExtractToConref(project, aPath, noteInA, "warn1", bPath, null);
+            Check(result.UpdatedReferences == 1, "вынесение в существующий топик выполнено");
+            Check(result.ChangedDocuments.Count == 2, $"затронуты оба документа: {result.ChangedDocuments.Count}");
+            foreach (var changedDoc in result.ChangedDocuments)
+            {
+                changedDoc.Save(changedDoc.FilePath!);
+            }
+
+            var stub = File.ReadAllText(aPath);
+            Check(stub.Contains("<note conref=\"b.dita#topic-b/warn1\"") && !stub.Contains("Общее предупреждение"),
+                $"на исходном месте осталась пустая ссылка conref: {stub}");
+            var target = File.ReadAllText(bPath);
+            Check(target.Contains("<note id=\"warn1\">Общее предупреждение.</note>"),
+                $"содержимое перенесено в целевой топик: {target}");
+
+            // --- вынесение в новый файл ---
+            project.Scan();
+            var pInB = project.GetDocument(bPath).Root.FindDescendant("p")!;
+            var newFileResult = RefactorService.ExtractToConref(
+                project, bPath, pInB, "shared_text", null, "shared/reuse.dita");
+            Check(newFileResult.UpdatedReferences == 1, "вынесение в новый файл выполнено");
+            var newFilePath = Path.Combine(root, "shared", "reuse.dita");
+            Check(File.Exists(newFilePath), "новый файл создан на диске");
+            foreach (var changedDoc in newFileResult.ChangedDocuments)
+            {
+                changedDoc.Save(changedDoc.FilePath!);
+            }
+
+            var newFileText = File.ReadAllText(newFilePath);
+            Check(newFileText.Contains("<p id=\"shared_text\">Текст.</p>") && !newFileText.Contains("<p></p>"),
+                $"содержимое перенесено в новый файл без плейсхолдера: {newFileText}");
+            var bText = File.ReadAllText(bPath);
+            Check(bText.Contains("conref=\"shared/reuse.dita#"), $"ссылка на новый файл проставлена: {bText}");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    private static void DiffTests()
+    {
+        Section("Сравнение файлов (построчный diff)");
+
+        var same = XmlDiff.Compare("a\nb\nc", "a\nb\nc");
+        Check(same.All(d => d.Kind == DiffKind.Equal), "идентичный текст — все строки совпадают");
+
+        var changed = XmlDiff.Compare("a\nb\nc", "a\nX\nc");
+        Check(changed.Count(d => d.Kind == DiffKind.Removed) == 1 && changed.Count(d => d.Kind == DiffKind.Added) == 1,
+            $"изменённая строка — одно удаление и одно добавление: {string.Join(",", changed.Select(d => d.Kind))}");
+        Check(changed[0].Kind == DiffKind.Equal && changed[^1].Kind == DiffKind.Equal,
+            "общие строки вокруг изменения остались Equal");
+
+        var addedOnly = XmlDiff.Compare("a\nc", "a\nb\nc");
+        Check(addedOnly.Count(d => d.Kind == DiffKind.Added) == 1 && addedOnly.Count(d => d.Kind == DiffKind.Removed) == 0,
+            "добавленная строка распознана без ложного удаления");
+
+        var removedOnly = XmlDiff.Compare("a\nb\nc", "a\nc");
+        Check(removedOnly.Count(d => d.Kind == DiffKind.Removed) == 1 && removedOnly.Count(d => d.Kind == DiffKind.Added) == 0,
+            "удалённая строка распознана без ложного добавления");
     }
 
     // ---------------------------------------------------------------- DOCX

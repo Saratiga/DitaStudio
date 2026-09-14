@@ -27,6 +27,8 @@
                 <MenuItem Header="Найти в проекте…" Click="OnFocusSearch" InputGestureText="Ctrl+Shift+F" />
                 <MenuItem Header="Проверить проект" Click="OnValidateProject" InputGestureText="F7" />
                 <MenuItem Header="Проверить документ" Click="OnValidateDocument" />
+                <Separator />
+                <MenuItem Header="Сравнить файлы…" Click="OnCompareFiles" />
             </MenuItem>
 
             <MenuItem Header="_Вставка">
@@ -52,12 +54,18 @@
                 <MenuItem Header="Переместить вверх" Click="OnMoveUp" InputGestureText="Ctrl+Shift+Up" />
                 <MenuItem Header="Переместить вниз" Click="OnMoveDown" InputGestureText="Ctrl+Shift+Down" />
                 <MenuItem Header="Удалить элемент" Click="OnDeleteElement" />
+                <MenuItem Header="Переименовать id…" Click="OnRenameId"
+                          ToolTip="Обновляет ссылки (href, conref) на этот id по всему проекту" />
+                <MenuItem Header="Вынести в conref…" Click="OnExtractToConref"
+                          ToolTip="Переносит элемент в другой топик, оставляя на месте ссылку conref" />
                 <Separator />
                 <MenuItem Header="Объединить ячейку со следующей" Click="OnMergeCellRight" InputGestureText="Ctrl+Alt+Right" />
                 <MenuItem Header="Объединить ячейку со строкой ниже" Click="OnMergeCellDown" InputGestureText="Ctrl+Alt+Down" />
                 <Separator />
                 <MenuItem Header="Разрыв страницы перед заголовком (печать)" Click="OnTogglePageBreakBeforeTitle" />
                 <MenuItem Header="Таблица: разрешить перенос с повтором шапки (печать)" Click="OnToggleTablePageBreakAuto" />
+                <MenuItem Header="Отметить как изменённое (rev)" Click="OnToggleRevChanged"
+                          ToolTip="Полоса на полях при публикации — штатная DITA-пометка ревизии, не полноценная история правок" />
                 <Separator />
                 <MenuItem Header="Показывать имена элементов" IsCheckable="True" IsChecked="True" Click="OnToggleTags" />
             </MenuItem>
@@ -133,7 +141,14 @@
                             <Button Content="Создать…" Padding="8,3" Margin="4,0,0,0" Click="OnNewDocument" />
                         </StackPanel>
                         <TreeView x:Name="ProjectTree" BorderThickness="0"
-                                  MouseDoubleClick="OnProjectTreeDoubleClick" />
+                                  MouseDoubleClick="OnProjectTreeDoubleClick"
+                                  PreviewMouseRightButtonDown="OnProjectTreeRightClick">
+                            <TreeView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Переименовать / переместить файл…" Click="OnProjectFileMove" />
+                                </ContextMenu>
+                            </TreeView.ContextMenu>
+                        </TreeView>
                     </DockPanel>
                 </TabItem>
 
@@ -149,6 +164,7 @@
                             <Button Content="→" Padding="6,3" Margin="3,0,0,0" Click="OnMapIndent" ToolTip="Сделать вложенным" />
                             <Button Content="←" Padding="6,3" Margin="3,0,0,0" Click="OnMapOutdent" />
                             <Button Content="✕" Padding="6,3" Margin="3,0,0,0" Click="OnMapDelete" />
+                            <Button Content="Таблица соответствий…" Padding="6,3" Margin="10,0,0,0" Click="OnEditRelTable" />
                         </StackPanel>
                         <TreeView x:Name="MapTreeView" BorderThickness="0" AllowDrop="True"
                                   MouseDoubleClick="OnMapTreeDoubleClick"
