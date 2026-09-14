@@ -133,7 +133,7 @@ public sealed class HtmlPublisher
                 var full = Path.GetFullPath(path);
                 if (fileNames.TryGetValue(full, out _))
                 {
-                    return "#" + AnchorFor(full, id);
+                    return "#" + AnchorFor(full, id ?? RootIdOf(full));
                 }
 
                 return id is null ? "#" : "#" + id;
@@ -223,7 +223,8 @@ public sealed class HtmlPublisher
         body.Append("<nav class=\"toc-inline\">\n<h2>").Append(HtmlRenderer.Escape(labels.Contents)).Append("</h2>\n<ul>\n");
         foreach (var item in topics)
         {
-            var anchor = AnchorFor(Path.GetFullPath(item.TargetPath!), item.TargetTopicId);
+            var full = Path.GetFullPath(item.TargetPath!);
+            var anchor = AnchorFor(full, item.TargetTopicId ?? RootIdOf(full));
             body.Append("<li style=\"margin-left:").Append(Math.Max(0, item.Level - 1) * 16).Append("px\">")
                 .Append("<a href=\"#").Append(anchor).Append("\">")
                 .Append(HtmlRenderer.Escape(item.Title)).Append("</a></li>\n");
@@ -244,13 +245,15 @@ public sealed class HtmlPublisher
                 ? expanded.Root
                 : RefResolver.FindById(expanded.Root, item.TargetTopicId) ?? expanded.Root;
 
-            var anchor = AnchorFor(Path.GetFullPath(item.TargetPath!), item.TargetTopicId);
+            var anchor = AnchorFor(Path.GetFullPath(item.TargetPath!), item.TargetTopicId ?? doc.Root.GetAttribute("id"));
             var level = Math.Clamp(item.Level, 1, 5);
             body.Append("<div class=\"topic-chunk").Append(level == 1 ? " chapter-heading" : string.Empty)
                 .Append("\" id=\"").Append(anchor).Append("\">\n");
             body.Append(renderer.RenderTopic(expanded, topicNode, level));
             body.Append("</div>\n");
         }
+
+        body.Append(renderer.RenderIndexSection());
 
         var html = Page(tree.Root.Title, null, body.ToString(), labels, customCss);
         var outPath = Path.Combine(options.OutputDirectory, SafeFileName(tree.Root.Title) + ".html");
@@ -365,6 +368,12 @@ public sealed class HtmlPublisher
         var basePart = SafeFileName(Path.GetFileNameWithoutExtension(fullPath));
         return id is null ? basePart : $"{basePart}--{id}";
     }
+
+    /// <summary>Id корневого элемента топика — используется как запасной идентификатор для
+    /// якоря, когда ссылка на файл не повторяет id в фрагменте (обычный случай для topicref
+    /// без "#…" в href), чтобы такой self-anchor совпадал с id, который получит div-обёртка
+    /// топика в однофайловой сборке.</summary>
+    private string? RootIdOf(string fullPath) => _project.TryGetDocument(fullPath)?.Root.GetAttribute("id");
 
     private static string SafeFileName(string name)
     {

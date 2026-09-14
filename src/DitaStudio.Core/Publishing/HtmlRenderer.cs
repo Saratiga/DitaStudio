@@ -35,6 +35,8 @@ public sealed class HtmlRenderer
 
     private DitaDocument _document = null!;
     private List<DitaNode> _footnotes = new();
+    private readonly List<(IReadOnlyList<string> Path, string? Href)> _indexTerms = new();
+    private string? _currentTopicHref;
     private int _figureNumber;
     private int _tableNumber;
 
@@ -74,6 +76,7 @@ public sealed class HtmlRenderer
             : "topic";
 
         var id = topic.GetAttribute("id");
+        _currentTopicHref = _options.TopicLink?.Invoke(document.FilePath ?? string.Empty, id);
         sb.Append("<article class=\"").Append(cls).Append('"');
         if (!string.IsNullOrEmpty(id))
         {
@@ -152,9 +155,11 @@ public sealed class HtmlRenderer
 
     private string RenderNestedTopic(DitaDocument document, DitaNode topic, int level)
     {
-        var saved = _footnotes;
+        var savedFootnotes = _footnotes;
+        var savedHref = _currentTopicHref;
         var html = RenderTopic(document, topic, Math.Min(level, 6));
-        _footnotes = saved;
+        _footnotes = savedFootnotes;
+        _currentTopicHref = savedHref;
         return html;
     }
 
@@ -324,6 +329,8 @@ public sealed class HtmlRenderer
                 return string.Empty;
 
             case "indexterm":
+                return CollectIndexTerm(node);
+
             case "data":
             case "data-about":
             case "resourceid":
@@ -426,6 +433,7 @@ public sealed class HtmlRenderer
             case "fn":
                 return RenderFootnoteRef(node);
             case "indexterm":
+                return CollectIndexTerm(node);
             case "index-see":
             case "index-see-also":
             case "sort-as":
@@ -861,6 +869,101 @@ public sealed class HtmlRenderer
 
         sb.Append("</ul>\n</nav>\n");
         return sb.ToString();
+    }
+
+    // ------------------------------------------------------- предметный указатель
+
+    public bool HasIndexTerms => _indexTerms.Count > 0;
+
+    /// <summary>Отмечает вхождение и рекурсивно собирает вложенные indexterm (подпункты) — сам
+    /// термин в тексте топика не выводится, только накапливается для <see cref="RenderIndexSection"/>.</summary>
+    private string CollectIndexTerm(DitaNode node)
+    {
+        CollectIndexTermPath(node, Array.Empty<string>());
+        return string.Empty;
+    }
+
+    private void CollectIndexTermPath(DitaNode node, IReadOnlyList<string> parentPath)
+    {
+        var ownText = string.Concat(node.Children.Where(c => c.Kind == NodeKind.Text).Select(c => c.Value)).Trim();
+        var path = ownText.Length > 0 ? parentPath.Append(ownText).ToList() : parentPath;
+        if (ownText.Length > 0)
+        {
+            _indexTerms.Add((path, _currentTopicHref));
+        }
+
+        foreach (var child in node.ElementChildren().Where(c => c.Name == "indexterm"))
+        {
+            CollectIndexTermPath(child, path);
+        }
+    }
+
+    private sealed class IndexNode
+    {
+        public List<string> Hrefs { get; } = new();
+
+        public SortedDictionary<string, IndexNode> Children { get; } = new(StringComparer.Ordinal);
+    }
+
+    /// <summary>Алфавитный указатель по всем indexterm, встреченным с начала публикации
+    /// (счётчик не сбрасывается между топиками, в отличие от сносок) — вызывается один раз в
+    /// конце публикации. Ссылки ведут на топик, где стоит термин (не на точное место в тексте).</summary>
+    public string RenderIndexSection()
+    {
+        if (_indexTerms.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var root = new IndexNode();
+        foreach (var (path, href) in _indexTerms)
+        {
+            var node = root;
+            foreach (var segment in path)
+            {
+                if (!node.Children.TryGetValue(segment, out var child))
+                {
+                    child = new IndexNode();
+                    node.Children[segment] = child;
+                }
+
+                node = child;
+            }
+
+            if (href is not null)
+            {
+                node.Hrefs.Add(href);
+            }
+        }
+
+        var sb = new StringBuilder("<div class=\"index-terms\">\n<h2>").Append(Escape(L.Index)).Append("</h2>\n");
+        AppendIndexNode(sb, root);
+        sb.Append("</div>\n");
+        return sb.ToString();
+    }
+
+    private void AppendIndexNode(StringBuilder sb, IndexNode node)
+    {
+        if (node.Children.Count == 0)
+        {
+            return;
+        }
+
+        sb.Append("<ul>\n");
+        foreach (var (term, child) in node.Children)
+        {
+            sb.Append("<li>").Append(Escape(term));
+            foreach (var (href, i) in child.Hrefs.Distinct().Select((h, i) => (h, i)))
+            {
+                sb.Append(i == 0 ? " " : ", ").Append("<a href=\"").Append(Escape(href)).Append("\">")
+                  .Append(i + 1).Append("</a>");
+            }
+
+            AppendIndexNode(sb, child);
+            sb.Append("</li>\n");
+        }
+
+        sb.Append("</ul>\n");
     }
 
     private string RenderFootnoteRef(DitaNode node)
