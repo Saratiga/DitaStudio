@@ -359,7 +359,8 @@ public static class Program
   <shortdesc>Коротко о продукте.</shortdesc>
   <conbody>
     <p id="reusable">Общий фрагмент.</p>
-    <p>Смотрите <xref href="install.dita#install">установку</xref>.</p>
+    <p>Смотрите <xref href="install.dita#install">установку</xref>.
+      Термин<indexterm>Ключевое слово<indexterm>Подраздел</indexterm></indexterm>.</p>
   </conbody>
 </concept>
 """);
@@ -449,6 +450,22 @@ public static class Program
             var singleHtml = File.ReadAllText(single.EntryFile);
             Check(singleHtml.Contains("Введение") && singleHtml.Contains("Установка"),
                 "оба топика вошли в единый файл");
+
+            // Указатель: термин с подпунктом собирается в конце публикации, ссылка ведёт на
+            // реальный id топика (а не на "intro--install", которого нет в разметке).
+            Check(singleHtml.Contains("class=\"index-terms\""), "секция указателя добавлена в публикацию");
+            Check(singleHtml.Contains("Ключевое слово") && singleHtml.Contains("Подраздел"),
+                "термин и подпункт указателя попали в публикацию");
+            var indexHref = System.Text.RegularExpressions.Regex.Match(singleHtml, "Ключевое слово ?<a href=\"#([^\"]+)\"").Groups[1].Value;
+            Check(indexHref.Length > 0 && singleHtml.Contains($"id=\"{indexHref}\""),
+                $"ссылка указателя ведёт на существующий id: {indexHref}");
+
+            // Тот же самый баг ломал обычные xref с "#id", повторяющим id корня топика.
+            var xrefHref = System.Text.RegularExpressions.Regex.Match(singleHtml, "установку</a>").Success
+                ? System.Text.RegularExpressions.Regex.Match(singleHtml, "href=\"#([^\"]+)\">установку</a>").Groups[1].Value
+                : string.Empty;
+            Check(xrefHref.Length > 0 && singleHtml.Contains($"id=\"{xrefHref}\""),
+                $"перекрёстная ссылка с #id топика ведёт на существующий id: {xrefHref}");
 
             var filtered = publisher.Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions
             {

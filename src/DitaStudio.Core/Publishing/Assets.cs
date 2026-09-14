@@ -83,6 +83,9 @@ li { margin: .3em 0; }
 .related-links h2 { font-size: 16px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .related-links ul { list-style: none; padding-left: 0; }
 .footnotes { margin-top: 2.5em; border-top: 1px solid var(--line); padding-top: .8em; font-size: .9em; color: var(--muted); }
+.index-terms { margin-top: 2.5em; border-top: 1px solid var(--line); padding-top: .8em; }
+.index-terms ul { list-style: none; padding-left: 1.2em; }
+.index-terms > ul { padding-left: 0; }
 .fn-ref { vertical-align: super; font-size: .78em; text-decoration: none; }
 .draft-comment { background: #fff7c2; border: 1px dashed #d4b106; padding: 8px 12px; margin: 1em 0; font-size: .92em; }
 .hazard { border: 2px solid #c0392b; padding: 12px 14px; margin: 1.2em 0; border-radius: 6px; }
