@@ -32,6 +32,7 @@ public static class Program
         TemplateTests();
         EditingTests();
         ProjectTests();
+        KeyScopeTests();
         DocxTests();
 
         Console.WriteLine();
@@ -581,6 +582,111 @@ public static class Program
             Check(ditavalRules.TryGetValue("platform", out var linuxRule) && linuxRule.Contains("linux"),
                 "правило exclude из .ditaval прочитано");
             Check(ditavalRules.Count == 1, "правило include из .ditaval пропущено как неподдерживаемое");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    // ------------------------------------------------------------ keyscope
+
+    private static void KeyScopeTests()
+    {
+        Section("Области ключей (keyscope)");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "topic-a.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="topic-a">
+  <title>Топик А</title>
+  <conbody>
+    <p>Текущее издание: <keyword keyref="edition"/>.</p>
+  </conbody>
+</concept>
+""");
+
+            File.WriteAllText(Path.Combine(root, "topic-b.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="topic-b">
+  <title>Топик Б</title>
+  <conbody>
+    <p>Текущее издание: <keyword keyref="edition"/>.</p>
+  </conbody>
+</concept>
+""");
+
+            File.WriteAllText(Path.Combine(root, "topic-c.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="topic-c">
+  <title>Топик В</title>
+  <conbody>
+    <p>Издание ветки А (по явному пути): <keyword keyref="branch-a.edition"/>.</p>
+  </conbody>
+</concept>
+""");
+
+            File.WriteAllText(Path.Combine(root, "map.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>Тест областей ключей</title>
+  <topicref keyscope="branch-a">
+    <keydef keys="edition"><topicmeta><keywords><keyword>Выпуск А</keyword></keywords></topicmeta></keydef>
+    <topicref href="topic-a.dita"/>
+  </topicref>
+  <topicref keyscope="branch-b">
+    <keydef keys="edition"><topicmeta><keywords><keyword>Выпуск Б</keyword></keywords></topicmeta></keydef>
+    <topicref href="topic-b.dita"/>
+  </topicref>
+  <topicref href="topic-c.dita"/>
+</map>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+
+            // Без цепочки областей — ключ виден, только если определён в корне (здесь не определён).
+            Check(project.ResolveKey("edition") is null, "неквалифицированный ключ вне области не резолвится в корне");
+            Check(project.ResolveKey("branch-a.edition")?.KeyText == "Выпуск А", "явно квалифицированный ключ резолвится напрямую");
+            Check(project.ResolveKey("branch-b.edition")?.KeyText == "Выпуск Б", "явно квалифицированный ключ второй ветки резолвится напрямую");
+            Check(project.ResolveKey("edition", new[] { "branch-a" })?.KeyText == "Выпуск А",
+                "ключ резолвится с учётом переданной цепочки области");
+            Check(project.ResolveKey("edition", new[] { "no-such-scope" }) is null,
+                "несуществующая область не приводит к ложному совпадению");
+
+            var publisher = new HtmlPublisher(project);
+            var result = publisher.Publish(Path.Combine(root, "map.ditamap"), new PublishOptions
+            {
+                OutputDirectory = Path.Combine(root, "out"),
+                SingleFile = true
+            });
+
+            var html = File.ReadAllText(result.EntryFile);
+            Check(html.Contains("Выпуск А") && html.Contains("Выпуск Б"),
+                "у двух веток с одинаковым именем ключа разные значения попали в публикацию");
+            Check(html.Contains("Издание ветки А (по явному пути): ") && html.Contains(">Выпуск А<"),
+                "топик вне области достаёт значение чужой ветки по явному пути branch-a.edition");
+
+            var docxOut = Path.Combine(root, "out.docx");
+            var docxResult = new DocxPublisher(project).Publish(Path.Combine(root, "map.ditamap"),
+                new PublishOptions(), docxOut);
+            using (var doc = WordprocessingDocument.Open(docxOut, false))
+            {
+                var docxText = doc.MainDocumentPart!.Document.Body!.InnerText;
+                Check(docxText.Contains("Выпуск А") && docxText.Contains("Выпуск Б"),
+                    "области ключей учитываются и при экспорте в DOCX");
+            }
         }
         finally
         {

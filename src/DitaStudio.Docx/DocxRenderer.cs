@@ -26,6 +26,10 @@ public sealed class DocxRenderOptions
     public Func<string, string?, string?>? TopicBookmark { get; set; }
 
     public List<string> Warnings { get; } = new();
+
+    /// <summary>Цепочка имён областей ключей (keyscope) для топика, который сейчас рендерится —
+    /// см. MapItem.KeyScopeChain. Публикатор обновляет её перед каждым RenderTopic.</summary>
+    public IReadOnlyList<string>? CurrentKeyScope { get; set; }
 }
 
 /// <summary>
@@ -1248,7 +1252,7 @@ public sealed class DocxRenderer
             return null;
         }
 
-        return _project.ResolveKey(keyref!.Split('/')[0])?.KeyText;
+        return _project.ResolveKey(keyref!.Split('/')[0], _options.CurrentKeyScope)?.KeyText;
     }
 
     private IEnumerable<OpenXmlElement> RenderXref(DitaNode node)
@@ -1261,7 +1265,7 @@ public sealed class DocxRenderer
 
         if (!string.IsNullOrWhiteSpace(keyref))
         {
-            var keyDef = _project.ResolveKey(keyref!.Split('/')[0]);
+            var keyDef = _project.ResolveKey(keyref!.Split('/')[0], _options.CurrentKeyScope);
             if (keyDef is not null)
             {
                 label = keyDef.KeyText;
@@ -1401,7 +1405,7 @@ public sealed class DocxRenderer
         var href = node.GetAttribute("href");
         if (string.IsNullOrWhiteSpace(href))
         {
-            var keyDef = node.GetAttribute("keyref") is { } k ? _project.ResolveKey(k) : null;
+            var keyDef = node.GetAttribute("keyref") is { } k ? _project.ResolveKey(k, _options.CurrentKeyScope) : null;
             href = keyDef?.Href;
         }
 

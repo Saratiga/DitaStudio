@@ -45,6 +45,30 @@ public sealed class MapItem
     /// <summary>Глубина вложенности (0 — корень карты).</summary>
     public int Level => Parent is null ? 0 : Parent.Level + 1;
 
+    /// <summary>Цепочка имён областей ключей (keyscope) от корня карты до этого узла — по одному
+    /// (первому) имени на каждый уровень, где задан атрибут. Передаётся в
+    /// <see cref="DitaProject.ResolveKey(string, IReadOnlyList{string}?)"/>, чтобы ключи внутри
+    /// разных веток карты могли иметь разные значения при одинаковом имени.</summary>
+    public IReadOnlyList<string> KeyScopeChain
+    {
+        get
+        {
+            var own = Node.GetAttribute("keyscope");
+            var ownName = string.IsNullOrWhiteSpace(own)
+                ? null
+                : own!.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+
+            var parentChain = Parent?.KeyScopeChain ?? Array.Empty<string>();
+            if (ownName is null)
+            {
+                return parentChain;
+            }
+
+            var chain = new List<string>(parentChain) { ownName };
+            return chain;
+        }
+    }
+
     public IEnumerable<MapItem> DescendantsAndSelf()
     {
         yield return this;
@@ -149,7 +173,7 @@ public sealed class MapTree
 
         if (string.IsNullOrWhiteSpace(href) && !string.IsNullOrWhiteSpace(keyref))
         {
-            var keyDef = project.ResolveKey(keyref!.Split('/')[0]);
+            var keyDef = project.ResolveKey(keyref!.Split('/')[0], item.Parent?.KeyScopeChain);
             if (keyDef?.ResolvedPath is not null)
             {
                 item.TargetPath = keyDef.ResolvedPath;

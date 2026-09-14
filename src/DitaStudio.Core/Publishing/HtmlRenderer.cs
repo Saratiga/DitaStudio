@@ -21,6 +21,10 @@ public sealed class RenderOptions
     public Func<DitaNode, bool>? Filter { get; set; }
 
     public bool NumberFiguresAndTables { get; set; } = true;
+
+    /// <summary>Цепочка имён областей ключей (keyscope) для топика, который сейчас рендерится —
+    /// см. MapItem.KeyScopeChain. Публикатор обновляет её перед каждым RenderTopic.</summary>
+    public IReadOnlyList<string>? CurrentKeyScope { get; set; }
 }
 
 /// <summary>
@@ -489,7 +493,7 @@ public sealed class HtmlRenderer
             return null;
         }
 
-        return _project.ResolveKey(keyref!.Split('/')[0])?.KeyText;
+        return _project.ResolveKey(keyref!.Split('/')[0], _options.CurrentKeyScope)?.KeyText;
     }
 
     private string RenderAbbreviatedForm(DitaNode node)
@@ -500,7 +504,7 @@ public sealed class HtmlRenderer
             return string.Empty;
         }
 
-        var keyDef = _project.ResolveKey(keyref!);
+        var keyDef = _project.ResolveKey(keyref!, _options.CurrentKeyScope);
         if (keyDef?.ResolvedPath is not null && File.Exists(keyDef.ResolvedPath))
         {
             var doc = _project.TryGetDocument(keyDef.ResolvedPath);
@@ -696,7 +700,7 @@ public sealed class HtmlRenderer
         var href = node.GetAttribute("href");
         if (string.IsNullOrWhiteSpace(href))
         {
-            var keyDef = node.GetAttribute("keyref") is { } k ? _project.ResolveKey(k) : null;
+            var keyDef = node.GetAttribute("keyref") is { } k ? _project.ResolveKey(k, _options.CurrentKeyScope) : null;
             href = keyDef?.Href;
         }
 
@@ -747,7 +751,7 @@ public sealed class HtmlRenderer
 
         if (!string.IsNullOrWhiteSpace(keyref))
         {
-            var keyDef = _project.ResolveKey(keyref!.Split('/')[0]);
+            var keyDef = _project.ResolveKey(keyref!.Split('/')[0], _options.CurrentKeyScope);
             if (keyDef is not null)
             {
                 label = keyDef.KeyText;

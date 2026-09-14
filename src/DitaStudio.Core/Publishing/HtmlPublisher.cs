@@ -174,6 +174,7 @@ public sealed class HtmlPublisher
                 ? expanded.Root
                 : RefResolver.FindById(expanded.Root, item.TargetTopicId) ?? expanded.Root;
 
+            renderOptions.CurrentKeyScope = item.KeyScopeChain;
             var body = renderer.RenderTopic(expanded, topicNode);
             var pageToc = BuildToc(tree, fileNames, item);
             var previous = i > 0 ? topics[i - 1] : null;
@@ -249,6 +250,7 @@ public sealed class HtmlPublisher
             var level = Math.Clamp(item.Level, 1, 5);
             body.Append("<div class=\"topic-chunk").Append(level == 1 ? " chapter-heading" : string.Empty)
                 .Append("\" id=\"").Append(anchor).Append("\">\n");
+            renderOptions.CurrentKeyScope = item.KeyScopeChain;
             body.Append(renderer.RenderTopic(expanded, topicNode, level));
             body.Append("</div>\n");
         }

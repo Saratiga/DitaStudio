@@ -91,6 +91,7 @@ public sealed class DocxPublisher
                 : RefResolver.FindById(expanded.Root, item.TargetTopicId) ?? expanded.Root;
 
             var bookmarkName = bookmarks[BookmarkKey(item.TargetPath!, item.TargetTopicId)];
+            renderOptions.CurrentKeyScope = item.KeyScopeChain;
             renderer.RenderTopic(expanded, topicNode, body, Math.Clamp(item.Level, 1, 6), bookmarkName);
         }
 
