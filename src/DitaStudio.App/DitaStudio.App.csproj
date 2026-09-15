@@ -10,7 +10,7 @@
     <RootNamespace>DitaStudio.App</RootNamespace>
     <AssemblyName>DitaStudio</AssemblyName>
     <ApplicationTitle>DITA Studio</ApplicationTitle>
-    <Version>1.0.0</Version>
+    <Version>0.1.0</Version>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
