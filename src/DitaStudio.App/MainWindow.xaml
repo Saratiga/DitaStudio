@@ -1,6 +1,7 @@
 <Window x:Class="DitaStudio.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:DitaStudio.App.ViewModels"
         Title="DITA Studio" Height="820" Width="1440"
         Icon="app.ico"
         WindowStartupLocation="CenterScreen">
@@ -13,9 +14,9 @@
                 <MenuItem Header="Недавние проекты" x:Name="RecentProjectsMenu" />
                 <MenuItem Header="Создать документ…" Click="OnNewDocument" InputGestureText="Ctrl+N" />
                 <Separator />
-                <MenuItem Header="Сохранить" Click="OnSave" InputGestureText="Ctrl+S" />
-                <MenuItem Header="Сохранить всё" Click="OnSaveAll" InputGestureText="Ctrl+Shift+S" />
-                <MenuItem Header="Закрыть вкладку" Click="OnCloseTab" InputGestureText="Ctrl+W" />
+                <MenuItem Header="Сохранить" Command="{Binding Documents.SaveCurrentCommand}" InputGestureText="Ctrl+S" />
+                <MenuItem Header="Сохранить всё" Command="{Binding Documents.SaveAllCommand}" InputGestureText="Ctrl+Shift+S" />
+                <MenuItem Header="Закрыть вкладку" Command="{Binding Documents.CloseCurrentTabCommand}" InputGestureText="Ctrl+W" />
                 <Separator />
                 <MenuItem Header="Выход" Click="OnExit" />
             </MenuItem>
@@ -94,7 +95,7 @@
             <ToolBar>
                 <Button Style="{StaticResource ToolButton}" Content="📂" Click="OnOpenProject" ToolTip="Открыть папку проекта (Ctrl+Shift+O)" />
                 <Button Style="{StaticResource ToolButton}" Content="➕" Click="OnNewDocument" ToolTip="Создать документ (Ctrl+N)" />
-                <Button Style="{StaticResource ToolButton}" Content="💾" Click="OnSave" ToolTip="Сохранить (Ctrl+S)" />
+                <Button Style="{StaticResource ToolButton}" Content="💾" Command="{Binding Documents.SaveCurrentCommand}" ToolTip="Сохранить (Ctrl+S)" />
                 <Separator />
                 <Button Style="{StaticResource ToolButton}" Content="↩" Click="OnUndo" ToolTip="Отменить структурное изменение (Ctrl+Alt+Z)" />
                 <Button Style="{StaticResource ToolButton}" Content="↪" Click="OnRedo" ToolTip="Повторить (Ctrl+Alt+Y)" />
@@ -202,7 +203,25 @@
                     <RowDefinition Height="200" MinHeight="80" />
                 </Grid.RowDefinitions>
 
-                <TabControl Grid.Row="0" x:Name="DocumentTabs" SelectionChanged="OnDocumentTabChanged" />
+                <TabControl Grid.Row="0" x:Name="DocumentTabs"
+                            ItemsSource="{Binding Documents.Tabs}"
+                            SelectedItem="{Binding Documents.SelectedTab}">
+                    <TabControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:TabViewModel}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+                                <Button Content="✕" FontSize="10" Padding="4,0,4,0" Margin="8,0,0,0"
+                                        BorderThickness="0" Background="Transparent"
+                                        Command="{Binding CloseCommand}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </TabControl.ItemTemplate>
+                    <TabControl.ContentTemplate>
+                        <DataTemplate DataType="{x:Type vm:TabViewModel}">
+                            <ContentControl Content="{Binding Pane}" />
+                        </DataTemplate>
+                    </TabControl.ContentTemplate>
+                </TabControl>
 
                 <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" />
 

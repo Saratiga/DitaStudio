@@ -27,7 +27,13 @@ public partial class MainWindow : Window
         ViewModel = new MainViewModel(_panes)
         {
             OpenDocument = OpenDocument,
-            UpdateTabHeaders = UpdateTabHeaders
+            UpdateTabHeaders = UpdateTabHeaders,
+            RefreshEditorContext = () =>
+            {
+                OnEditorSelectionChanged();
+                BuildOutline();
+            },
+            RefreshProjectKeys = BuildKeysList
         };
         DataContext = ViewModel;
         InitializeComponent();
@@ -57,7 +63,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private DocumentPane? Current => DocumentTabs.SelectedItem is TabItem { Content: DocumentPane pane } ? pane : null;
+    private DocumentPane? Current => ViewModel.Current;
 
     private void RegisterShortcuts()
     {
@@ -68,11 +74,11 @@ public partial class MainWindow : Window
             InputBindings.Add(new KeyBinding(command, key, modifiers));
         }
 
-        Bind(Key.S, ModifierKeys.Control, () => SaveCurrent());
-        Bind(Key.S, ModifierKeys.Control | ModifierKeys.Shift, SaveAll);
+        InputBindings.Add(new KeyBinding(ViewModel.Documents.SaveCurrentCommand, Key.S, ModifierKeys.Control));
+        InputBindings.Add(new KeyBinding(ViewModel.Documents.SaveAllCommand, Key.S, ModifierKeys.Control | ModifierKeys.Shift));
         Bind(Key.N, ModifierKeys.Control, NewDocument);
         Bind(Key.O, ModifierKeys.Control | ModifierKeys.Shift, OpenProject);
-        Bind(Key.W, ModifierKeys.Control, CloseCurrentTab);
+        InputBindings.Add(new KeyBinding(ViewModel.Documents.CloseCurrentTabCommand, Key.W, ModifierKeys.Control));
         Bind(Key.F5, ModifierKeys.None, () => PublishSite());
         InputBindings.Add(new KeyBinding(ViewModel.Validation.ValidateProjectCommand, Key.F7, ModifierKeys.None));
         InputBindings.Add(new KeyBinding(ViewModel.Help.ShowElementHelpCommand, Key.F1, ModifierKeys.None));

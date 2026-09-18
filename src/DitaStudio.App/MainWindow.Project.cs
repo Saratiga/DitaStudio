@@ -30,7 +30,7 @@ public partial class MainWindow
         _project = new DitaProject(path);
         ViewModel.Project = _project;
         _panes.Clear();
-        DocumentTabs.Items.Clear();
+        ViewModel.Documents.Tabs.Clear();
 
         try
         {
@@ -222,11 +222,11 @@ public partial class MainWindow
         {
             _panes.Remove(file.FullPath);
             _panes[newFull] = movedPane;
-            foreach (var tab in DocumentTabs.Items.OfType<TabItem>())
+            foreach (var tab in ViewModel.Documents.Tabs)
             {
-                if (ReferenceEquals(tab.Content, movedPane))
+                if (ReferenceEquals(tab.Pane, movedPane))
                 {
-                    tab.Tag = newFull;
+                    tab.FullPath = newFull;
                 }
             }
         }

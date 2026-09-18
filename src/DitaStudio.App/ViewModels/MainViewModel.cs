@@ -12,11 +12,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string statusText = "Готово";
 
-    // До миграции области Documents (шаг 5 спеки) актуальное значение сюда
-    // проставляет OnDocumentTabChanged в MainWindow.Documents.cs — это
-    // временный мост, а не источник истины.
-    [ObservableProperty]
-    private DocumentPane? current;
+    // Производное от Documents.SelectedTab — сама вкладка теперь источник
+    // истины (шаг 5 спеки), не отдельное наблюдаемое поле.
+    public DocumentPane? Current => Documents.SelectedTab?.Pane;
 
     // До миграции области Project (шаг 6 спеки) актуальное значение сюда
     // проставляет LoadProject в MainWindow.Project.cs.
@@ -24,13 +22,16 @@ public partial class MainViewModel : ObservableObject
     private DitaProject? project;
 
     // Тот же экземпляр словаря, что MainWindow.xaml.cs держит в _panes — не
-    // копия, поэтому не нуждается в отдельном мосте на изменение содержимого.
-    public IReadOnlyDictionary<string, DocumentPane> Panes { get; }
+    // копия. DocumentsViewModel пишет в него напрямую (Add/Remove), поэтому
+    // тип — мутируемый Dictionary, а не IReadOnlyDictionary.
+    public Dictionary<string, DocumentPane> Panes { get; }
 
-    // Временные мосты к ещё не мигрированной области Documents. Заменяются
-    // на прямые вызовы VM-команд, когда область мигрирует (шаг 5 спеки).
+    // Временные мосты к ещё не мигрированным областям Project/SidePanels.
+    // Заменяются на прямые вызовы VM-команд, когда области мигрируют.
     public Action? UpdateTabHeaders { get; set; }
     public Func<string, DocumentPane?>? OpenDocument { get; set; }
+    public Action? RefreshEditorContext { get; set; }
+    public Action? RefreshProjectKeys { get; set; }
 
     // Индекс вкладки нижней панели (Проверка/Поиск/Журнал сборки) — общий для
     // нескольких VM, поэтому живёт здесь, а не в одной из них.
@@ -48,10 +49,12 @@ public partial class MainViewModel : ObservableObject
     public HelpViewModel Help { get; }
     public SearchViewModel Search { get; }
     public ValidationViewModel Validation { get; }
+    public DocumentsViewModel Documents { get; }
 
-    public MainViewModel(IReadOnlyDictionary<string, DocumentPane> panes)
+    public MainViewModel(Dictionary<string, DocumentPane> panes)
     {
         Panes = panes;
+        Documents = new DocumentsViewModel(this);
         Help = new HelpViewModel(this);
         Search = new SearchViewModel(this);
         Validation = new ValidationViewModel(this);
