@@ -62,6 +62,12 @@ private string? _lastOutputDirectory;
   области переключается с лямбд на `KeyBinding(viewModel.XxxCommand, ...)`.
   Отдельным шагом не делается — правится по ходу миграции той области,
   чью команду затрагивает конкретный шорткат.
+- Разметка каждой области переезжает в свой `UserControl` в
+  `src/DitaStudio.App/Views/` (рядом с уже существующими `DocumentPane`,
+  `DiffWindow`, `Dialogs`). `DataContext` дочернего `UserControl`
+  проставляется биндингом от родителя: `<views:ProjectView
+  DataContext="{Binding ProjectViewModel}"/>`. Без DI-контейнера — прямые
+  свойства на `MainViewModel`, минимум кода. См. «Разбивка XAML» ниже.
 
 ## Особый случай: Documents / `Current`
 
@@ -83,31 +89,63 @@ private string? _lastOutputDirectory;
 по правому клику. Это самая рискованная часть миграции Project — тестируется
 через `tools/UiHarness` (открыть/раскрыть дерево, дважды кликнуть по файлу).
 
+## Разбивка XAML на UserControl
+
+`MainWindow.xaml` (287 строк) уже физически размечен по тем же границам,
+что и VM — разбивка почти без домыслов:
+
+| Область XAML | Новый UserControl | Чья VM |
+|---|---|---|
+| Вкладки «Проект» + «Ключи» (левая колонка) | `ProjectView.xaml` | `ProjectViewModel` |
+| Вкладка «Карта» (левая колонка) | `MapView.xaml` | `MapViewModel` |
+| Вкладка «Проверка» (нижние вкладки) | `ValidationView.xaml` | `ValidationViewModel` |
+| Вкладка «Поиск» (нижние вкладки) | `SearchView.xaml` | `SearchViewModel` |
+| Вкладка «Журнал сборки» (нижние вкладки) | `BuildLogView.xaml` | `PublishViewModel` |
+| Вкладки «Атрибуты»/«Вставка»/«Структура» (правая колонка) | `SidePanelsView.xaml` | `SidePanelsViewModel` (все три вкладки — одна VM, как сейчас один файл) |
+| `DocumentTabs` (центр) | остаётся в `MainWindow.xaml`, но `TabControl.ItemsSource="{Binding DocumentsViewModel.Tabs}"` вместо ручного `Items.Add` | `DocumentsViewModel` |
+
+Меню и `ToolBarTray` — сквозные (например, File-меню зовёт команды и
+Project, и Documents), остаются в `MainWindow.xaml`, команды биндятся
+через точку: `Command="{Binding ProjectViewModel.OpenProjectCommand}"`.
+`StatusBar` — тривиален, биндится на `MainViewModel.StatusText`.
+
+У Help нет своего экрана (только пункты меню + диалог «О программе») —
+для него `UserControl` не нужен.
+
 ## Порядок миграции
 
 От простого/изолированного к сложному/связанному — риск растёт
 постепенно:
 
 1. **Help** (62 стр.) — обкатка паттерна: пакет, `DataContext`, первый
-   `[RelayCommand]`, первый биндинг.
-2. **Search** (102) — плюс `ObservableCollection` для результатов поиска.
-3. **Validation** (112) — список проблем с двойным кликом (та же форма,
-   что Search).
-4. **SidePanels** (344) — outline/атрибуты/палитра, завязано на `Current` —
+   `[RelayCommand]`, первый биндинг. Без `UserControl` (см. выше).
+2. **Search** (102) — `SearchView.xaml` + `ObservableCollection` для
+   результатов поиска.
+3. **Validation** (112) — `ValidationView.xaml`, список проблем с двойным
+   кликом (та же форма, что Search).
+4. **SidePanels** (344) — `SidePanelsView.xaml`, завязано на `Current` —
    первая проверка связи между VM.
-5. **Documents** (295) — вкладки, `_panes`, Save/SaveAll/New/Close;
-   вводится `TabViewModel` и производный `Current` (см. выше).
-6. **Project** (259) — `_project`, дерево (см. выше), `LoadProject`.
-7. **Publish** (295) — зависит от `_project` (из шага 6) и `_conditions`.
+5. **Documents** (295) — `DocumentTabs` переводится на
+   `ItemsSource="{Binding Tabs}"`; вводится `TabViewModel` и производный
+   `Current` (см. выше).
+6. **Project** (259) — `ProjectView.xaml`, дерево (см. выше),
+   `LoadProject`.
+7. **Publish** (295) — `BuildLogView.xaml`; зависит от `_project`
+   (из шага 6) и `_conditions`.
 8. **Insert** (493) — самый длинный файл, но по сути десятки однотипных
    `OnInsertXxx` → `[RelayCommand]`. Широко, не глубоко — ниже риск,
-   чем размер файла намекает.
-9. **Map** (474) — последним: drag-drop (`_mapDragCandidate`/
-   `_mapDragStart`), reltable-редактор — больше всего интерактивного
-   состояния, паттерн к этому моменту обкатан на восьми областях.
+   чем размер файла намекает. Своего экрана нет — команды только для
+   меню/тулбара, `UserControl` не нужен.
+9. **Map** (474) — `MapView.xaml`, последним: drag-drop
+   (`_mapDragCandidate`/`_mapDragStart`), reltable-редактор — больше всего
+   интерактивного состояния, паттерн к этому моменту обкатан на восьми
+   областях.
 
-Каждый шаг — отдельная ветка/коммит:
-перенос полей+команд в VM → правка XAML этой области → удаление старого
+Каждый шаг — отдельная ветка/коммит: перенос полей+команд в VM → перенос
+разметки этой области в новый `AreaView.xaml` (`UserControl`), если он
+есть по таблице выше → правка `MainWindow.xaml` (вставить `<views:AreaView
+DataContext="{Binding AreaViewModel}"/>` на старое место, командные
+биндинги в меню/тулбаре — на точечный путь) → удаление старого
 code-behind → сборка + прогон тестов + UI smoke → коммит.
 
 ## Тестирование
