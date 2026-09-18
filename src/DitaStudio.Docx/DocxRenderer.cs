@@ -391,6 +391,14 @@ public sealed class DocxRenderer
                 yield return StyledParagraph(RenderInlineRuns(node), bold: true);
                 yield break;
 
+            case "info":
+            case "stepxmp":
+            case "stepresult":
+            case "steptroubleshooting":
+            case "tutorialinfo":
+                yield return Paragraph(RenderInlineRuns(node));
+                yield break;
+
             case "related-links":
                 foreach (var block in RenderRelatedLinks(node))
                 {

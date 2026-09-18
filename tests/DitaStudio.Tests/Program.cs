@@ -1192,6 +1192,7 @@ public static class Program
     <steps>
       <step><cmd>Первый шаг</cmd></step>
       <step><cmd>Второй шаг</cmd></step>
+      <step><cmd>Третий шаг</cmd><info>Пояснение без обёртки p.</info><stepresult>Результат без обёртки p.</stepresult></step>
     </steps>
   </taskbody>
 </task>
@@ -1223,6 +1224,8 @@ public static class Program
 
             Check(text.Contains("Пример"), "ключ product-name подставлен в DOCX");
             Check(text.Contains("Установка"), "заголовок второго топика попал в DOCX");
+            Check(text.Contains("Пояснение без обёртки p."), "info с голым текстом (без <p>) не потерян в DOCX");
+            Check(text.Contains("Результат без обёртки p."), "stepresult с голым текстом (без <p>) не потерян в DOCX");
 
             var footnotesPart = doc.MainDocumentPart.FootnotesPart;
             var realFootnotes = footnotesPart?.Footnotes?.Elements<Footnote>().Count(f => (f.Id?.Value ?? 0) > 0) ?? 0;
