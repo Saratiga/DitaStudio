@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using DitaStudio.App.Views;
+using DitaStudio.Core.Project;
 
 namespace DitaStudio.App.ViewModels;
 
@@ -17,10 +18,27 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private DocumentPane? current;
 
-    public HelpViewModel Help { get; }
+    // До миграции области Project (шаг 6 спеки) актуальное значение сюда
+    // проставляет LoadProject в MainWindow.Project.cs.
+    [ObservableProperty]
+    private DitaProject? project;
 
-    public MainViewModel()
+    // Тот же экземпляр словаря, что MainWindow.xaml.cs держит в _panes — не
+    // копия, поэтому не нуждается в отдельном мосте на изменение содержимого.
+    public IReadOnlyDictionary<string, DocumentPane> Panes { get; }
+
+    // Временные мосты к ещё не мигрированной области Documents. Заменяются
+    // на прямые вызовы VM-команд, когда область мигрирует (шаг 5 спеки).
+    public Action? UpdateTabHeaders { get; set; }
+    public Func<string, DocumentPane?>? OpenDocument { get; set; }
+
+    public HelpViewModel Help { get; }
+    public SearchViewModel Search { get; }
+
+    public MainViewModel(IReadOnlyDictionary<string, DocumentPane> panes)
     {
+        Panes = panes;
         Help = new HelpViewModel(this);
+        Search = new SearchViewModel(this);
     }
 }

@@ -28,6 +28,7 @@ public partial class MainWindow
     private void LoadProject(string path)
     {
         _project = new DitaProject(path);
+        ViewModel.Project = _project;
         _panes.Clear();
         DocumentTabs.Items.Clear();
 

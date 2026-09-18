@@ -224,17 +224,21 @@
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Top" Margin="4">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBox x:Name="SearchBox" Width="320" Padding="4,3" KeyDown="OnSearchKeyDown" />
-                                    <Button Content="Найти" Padding="10,3" Margin="4,0,0,0" Click="OnSearch" />
-                                    <CheckBox x:Name="SearchElements" Content="искать имена элементов" Margin="10,0,0,0" VerticalAlignment="Center" />
-                                    <CheckBox x:Name="SearchRegex" Content="регулярное выражение" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <TextBox x:Name="SearchBox" Width="320" Padding="4,3" Text="{Binding Search.SearchText, UpdateSourceTrigger=PropertyChanged}">
+                                        <TextBox.InputBindings>
+                                            <KeyBinding Key="Return" Command="{Binding Search.RunCommand}" />
+                                        </TextBox.InputBindings>
+                                    </TextBox>
+                                    <Button Content="Найти" Padding="10,3" Margin="4,0,0,0" Command="{Binding Search.RunCommand}" />
+                                    <CheckBox Content="искать имена элементов" Margin="10,0,0,0" VerticalAlignment="Center" IsChecked="{Binding Search.SearchElements}" />
+                                    <CheckBox Content="регулярное выражение" Margin="10,0,0,0" VerticalAlignment="Center" IsChecked="{Binding Search.SearchRegex}" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                    <TextBox x:Name="ReplaceBox" Width="320" Padding="4,3" ToolTip="Текст замены (для обычного текстового поиска)" />
-                                    <Button Content="Заменить всё" Padding="10,3" Margin="4,0,0,0" Click="OnReplaceAll" />
+                                    <TextBox Width="320" Padding="4,3" ToolTip="Текст замены (для обычного текстового поиска)" Text="{Binding Search.ReplaceText, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Button Content="Заменить всё" Padding="10,3" Margin="4,0,0,0" Command="{Binding Search.ReplaceAllCommand}" />
                                 </StackPanel>
                             </StackPanel>
-                            <ListView x:Name="SearchResults" BorderThickness="0" MouseDoubleClick="OnSearchResultDoubleClick">
+                            <ListView ItemsSource="{Binding Search.Results}" SelectedItem="{Binding Search.SelectedResult}" BorderThickness="0" MouseDoubleClick="OnSearchResultDoubleClick">
                                 <ListView.View>
                                     <GridView>
                                         <GridViewColumn Header="Файл" Width="260" DisplayMemberBinding="{Binding File.RelativePath}" />

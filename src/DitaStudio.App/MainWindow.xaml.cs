@@ -20,10 +20,15 @@ public partial class MainWindow : Window
     private Dialogs.ConditionsResult? _conditions;
     private string? _lastOutputDirectory;
 
-    public MainViewModel ViewModel { get; } = new();
+    public MainViewModel ViewModel { get; }
 
     public MainWindow()
     {
+        ViewModel = new MainViewModel(_panes)
+        {
+            OpenDocument = OpenDocument,
+            UpdateTabHeaders = UpdateTabHeaders
+        };
         DataContext = ViewModel;
         InitializeComponent();
         RegisterShortcuts();
