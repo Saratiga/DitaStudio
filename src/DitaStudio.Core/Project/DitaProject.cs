@@ -187,6 +187,33 @@ public sealed class DitaProject
 
     public bool ShowDraftComments { get; private set; }
 
+    /// <summary>Объединяет правила исключения (например, импортированные из .ditaval) с уже
+    /// имеющимися — по каждому атрибуту объединяет множества значений. Возвращает, сколько
+    /// новых значений реально добавилось (для сообщения пользователю).</summary>
+    public static int MergeExcludeConditions(
+        Dictionary<string, HashSet<string>> target, IReadOnlyDictionary<string, HashSet<string>> additional)
+    {
+        var addedCount = 0;
+        foreach (var (attribute, values) in additional)
+        {
+            if (!target.TryGetValue(attribute, out var set))
+            {
+                set = new HashSet<string>();
+                target[attribute] = set;
+            }
+
+            foreach (var value in values)
+            {
+                if (set.Add(value))
+                {
+                    addedCount++;
+                }
+            }
+        }
+
+        return addedCount;
+    }
+
     public void SetConditions(Dictionary<string, HashSet<string>> exclude, bool showDraftComments)
     {
         ExcludedConditionValues = exclude;

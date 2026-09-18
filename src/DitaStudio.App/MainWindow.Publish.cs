@@ -122,23 +122,7 @@ public partial class MainWindow
         }
 
         var merged = new Dictionary<string, HashSet<string>>(_conditions?.Exclude ?? new Dictionary<string, HashSet<string>>());
-        var importedValues = 0;
-        foreach (var (attribute, values) in imported)
-        {
-            if (!merged.TryGetValue(attribute, out var set))
-            {
-                set = new HashSet<string>();
-                merged[attribute] = set;
-            }
-
-            foreach (var value in values)
-            {
-                if (set.Add(value))
-                {
-                    importedValues++;
-                }
-            }
-        }
+        var importedValues = DitaProject.MergeExcludeConditions(merged, imported);
 
         _conditions = new Dialogs.ConditionsResult(merged, _conditions?.ShowDraftComments ?? false);
         _project.SetConditions(merged, _conditions.ShowDraftComments);

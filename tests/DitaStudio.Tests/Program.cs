@@ -591,6 +591,22 @@ public static class Program
             Check(ditavalRules.TryGetValue("platform", out var linuxRule) && linuxRule.Contains("linux"),
                 "правило exclude из .ditaval прочитано");
             Check(ditavalRules.Count == 1, "правило include из .ditaval пропущено как неподдерживаемое");
+
+            // Слияние правил исключения (используется при импорте .ditaval поверх уже заданных условий).
+            var existingExclude = new Dictionary<string, HashSet<string>>
+            {
+                ["platform"] = new HashSet<string> { "windows" },
+                ["audience"] = new HashSet<string> { "expert" }
+            };
+            var addedCount = DitaProject.MergeExcludeConditions(existingExclude, ditavalRules);
+            Check(addedCount == 1, $"слияние вернуло число реально добавленных значений: {addedCount}");
+            Check(existingExclude["platform"].SetEquals(new[] { "windows", "linux" }),
+                "слияние объединило значения по общему атрибуту, не затерев старое");
+            Check(existingExclude["audience"].SetEquals(new[] { "expert" }),
+                "слияние не тронуло атрибут, которого нет в импортируемых правилах");
+
+            var noNewValues = DitaProject.MergeExcludeConditions(existingExclude, ditavalRules);
+            Check(noNewValues == 0, "повторное слияние тех же правил не добавляет новых значений");
         }
         finally
         {
