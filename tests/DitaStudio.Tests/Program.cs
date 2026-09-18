@@ -42,6 +42,7 @@ public static class Program
         ExtractToConrefTests();
         DiffTests();
         DocxTests();
+        ListAndStepsDispatchTests();
 
         Console.WriteLine();
         Console.WriteLine($"Пройдено проверок: {_passed}");
@@ -1266,5 +1267,163 @@ public static class Program
                 // временные файлы удалятся системой
             }
         }
+    }
+
+    // ------------------------------------------- списки и шаги (диспетчер рендера)
+
+    /// <summary>
+    /// Характеризационные проверки для веток switch, которые сознательно НЕ объединены
+    /// общей категорией (ul/sl/choices, steps/steps-unordered, li/step) — HtmlRenderer и
+    /// DocxRenderer расходятся тут по возможностям формата. Фиксируют текущее поведение,
+    /// чтобы следующий шаг унификации диспетчера не сломал его молча.
+    /// </summary>
+    private static void ListAndStepsDispatchTests()
+    {
+        Section("Списки и шаги: защита перед унификацией диспетчера рендера");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "lists.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="lists">
+  <title>Списки</title>
+  <conbody>
+    <ul>
+      <li>Обычный пункт<ul><li>Вложенный пункт</li></ul></li>
+    </ul>
+    <ol>
+      <li>Пункт по порядку</li>
+    </ol>
+    <sl>
+      <sli>Простой пункт</sli>
+    </sl>
+    <choices>
+      <choice>Вариант выбора</choice>
+    </choices>
+  </conbody>
+</concept>
+""");
+
+            File.WriteAllText(Path.Combine(root, "steps.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<task id="steps-task">
+  <title>Шаги</title>
+  <taskbody>
+    <steps>
+      <step>
+        <cmd>Первый шаг</cmd>
+        <info><p>Пояснение к шагу</p></info>
+        <substeps>
+          <substep><cmd>Подшаг А</cmd></substep>
+        </substeps>
+        <stepresult><p>Результат первого шага</p></stepresult>
+      </step>
+    </steps>
+    <steps-unordered>
+      <step><cmd>Проверить диск</cmd></step>
+    </steps-unordered>
+  </taskbody>
+</task>
+""");
+
+            File.WriteAllText(Path.Combine(root, "coverage.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>Тест покрытия списков и шагов</title>
+  <topicref href="lists.dita"/>
+  <topicref href="steps.dita"/>
+</map>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+
+            // --- HTML ---
+            var htmlPublisher = new HtmlPublisher(project);
+            var htmlResult = htmlPublisher.Publish(Path.Combine(root, "coverage.ditamap"), new PublishOptions
+            {
+                OutputDirectory = Path.Combine(root, "out-html"),
+                SingleFile = true
+            });
+            var html = File.ReadAllText(htmlResult.EntryFile);
+
+            Check(html.Contains("<li>Обычный пункт"), "html: <li> обычного ul отрисован");
+            Check(html.Contains("<li>Вложенный пункт</li>"), "html: вложенный список внутри <li> дошёл до вывода");
+            Check(html.Contains("<ul class=\"sl\""), "html: <sl> обёрнут в <ul class=\"sl\">");
+            Check(html.Contains("<li>Простой пункт</li>"), "html: <sli> отрисован как <li>");
+            Check(html.Contains("<ul class=\"choices\""), "html: <choices> обёрнут в <ul class=\"choices\">");
+            Check(html.Contains("<li>Вариант выбора</li>"), "html: <choice> отрисован как <li>");
+            Check(html.Contains("<li>Пункт по порядку</li>"), "html: <li> обычного ol отрисован");
+
+            Check(Regex.Matches(html, "Порядок действий").Count == 2,
+                "html: заголовок шагов сгенерирован и для <steps>, и для <steps-unordered>");
+            Check(html.Contains("<ol class=\"steps\""), "html: <steps> обёрнут в <ol class=\"steps\">");
+            Check(html.Contains("<ul class=\"steps\""), "html: <steps-unordered> обёрнут в <ul class=\"steps\">");
+            Check(html.Contains("<div class=\"cmd\">Первый шаг</div>"), "html: <cmd> отрисован своим div");
+            Check(html.Contains("<div class=\"info\">") && html.Contains("Пояснение к шагу"),
+                "html: <info> отрисован своим div");
+            Check(html.Contains("<div class=\"stepresult\">") && html.Contains("Результат первого шага"),
+                "html: <stepresult> отрисован своим div");
+            Check(html.Contains("Подшаг А"), "html: <substeps>/<substep> дошли до вывода");
+            Check(html.Contains("Проверить диск"), "html: шаг внутри <steps-unordered> отрисован");
+
+            // --- DOCX ---
+            var docxOut = Path.Combine(root, "out.docx");
+            new DocxPublisher(project).Publish(Path.Combine(root, "coverage.ditamap"), new PublishOptions(), docxOut);
+
+            using var doc = WordprocessingDocument.Open(docxOut, false);
+            var body = doc.MainDocumentPart!.Document.Body!;
+            var text = body.InnerText;
+
+            Check(text.Contains("Обычный пункт") && text.Contains("Вложенный пункт"), "docx: ul и вложенный ul отрисованы");
+            Check(text.Contains("Простой пункт"), "docx: sl отрисован");
+            Check(text.Contains("Вариант выбора"), "docx: choices отрисован");
+            Check(text.Contains("Пункт по порядку"), "docx: ol отрисован");
+            Check(text.Contains("Первый шаг") && text.Contains("Пояснение к шагу") && text.Contains("Результат первого шага"),
+                "docx: cmd/info/stepresult шага отрисованы");
+            Check(text.Contains("Подшаг А"), "docx: substeps/substep отрисованы");
+            Check(text.Contains("Проверить диск"), "docx: шаг внутри steps-unordered отрисован");
+
+            var bulletGroup = new[] { "Обычный пункт", "Простой пункт", "Вариант выбора", "Проверить диск" }
+                .Select(t => FindNumberingAbstractId(doc, t)).ToList();
+            var decimalGroup = new[] { "Пункт по порядку", "Первый шаг", "Подшаг А" }
+                .Select(t => FindNumberingAbstractId(doc, t)).ToList();
+
+            Check(bulletGroup.All(id => id is not null) && bulletGroup.Distinct().Count() == 1,
+                $"docx: ul/sl/choices/steps-unordered используют одно и то же маркированное оформление списка: [{string.Join(",", bulletGroup)}]");
+            Check(decimalGroup.All(id => id is not null) && decimalGroup.Distinct().Count() == 1,
+                $"docx: ol/steps/substeps используют одно и то же нумерованное оформление списка: [{string.Join(",", decimalGroup)}]");
+            Check(bulletGroup[0] != decimalGroup[0],
+                "docx: маркированный и нумерованный список используют разное оформление (ordered-флаг не перепутан)");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    private static int? FindNumberingAbstractId(WordprocessingDocument doc, string paragraphText)
+    {
+        var body = doc.MainDocumentPart!.Document.Body!;
+        var paragraph = body.Descendants<Paragraph>().FirstOrDefault(p => p.InnerText.Contains(paragraphText));
+        var numId = paragraph?.ParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value;
+        if (numId is null)
+        {
+            return null;
+        }
+
+        var numbering = doc.MainDocumentPart.NumberingDefinitionsPart!.Numbering!;
+        return numbering.Elements<NumberingInstance>()
+            .FirstOrDefault(n => n.NumberID?.Value == numId)?.AbstractNumId?.Val?.Value;
     }
 }

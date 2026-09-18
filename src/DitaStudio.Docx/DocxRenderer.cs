@@ -237,19 +237,9 @@ public sealed class DocxRenderer
             yield break;
         }
 
-        switch (node.Name)
+        switch (BlockElementCategoryMap.Of(node.Name))
         {
-            case "p":
-                yield return WithOutputClass(Paragraph(RenderInlineRuns(node)), node);
-                yield break;
-
-            case "div":
-            case "bodydiv":
-            case "conbodydiv":
-            case "refbodydiv":
-            case "sectiondiv":
-            case "itemgroup":
-            case "equation-block":
+            case BlockElementCategory.ContainerDiv:
                 foreach (var block in RenderChildrenBlocks(node, level))
                 {
                     yield return block;
@@ -257,28 +247,7 @@ public sealed class DocxRenderer
 
                 yield break;
 
-            case "section":
-            case "example":
-            case "refsyn":
-            case "prereq":
-            case "context":
-            case "result":
-            case "postreq":
-            case "tasktroubleshooting":
-            case "condition":
-            case "cause":
-            case "remedy":
-            case "troubleSolution":
-            case "steps-informal":
-            case "lcIntro":
-            case "lcObjectives":
-            case "lcSummary":
-            case "lcReview":
-            case "lcNextSteps":
-            case "lcPrereqs":
-            case "lcResources":
-            case "lcAudience":
-            case "lcDuration":
+            case BlockElementCategory.ContainerSection:
                 foreach (var block in RenderSection(node, level))
                 {
                     yield return block;
@@ -286,9 +255,26 @@ public sealed class DocxRenderer
 
                 yield break;
 
-            case "ul":
-            case "sl":
-            case "choices":
+            case BlockElementCategory.Preformatted:
+                yield return RenderPre(node);
+                yield break;
+
+            case BlockElementCategory.Figure:
+                foreach (var block in RenderFigure(node, level))
+                {
+                    yield return block;
+                }
+
+                yield break;
+
+            case BlockElementCategory.SimpleTable:
+                yield return RenderSimpleTable(node);
+                yield break;
+
+            case BlockElementCategory.Skip:
+                yield break;
+
+            case BlockElementCategory.ListUnordered:
                 foreach (var block in RenderList(node, level, numId: null, ilvl: 0, ordered: false))
                 {
                     yield return block;
@@ -296,18 +282,24 @@ public sealed class DocxRenderer
 
                 yield break;
 
-            case "ol":
-                foreach (var block in RenderList(node, level, numId: null, ilvl: 0, ordered: true))
+            case BlockElementCategory.StepsGroup:
+                yield return GeneratedTitle(L.Steps);
+                foreach (var block in RenderList(node, level, numId: null, ilvl: 0, ordered: node.Name == "steps"))
                 {
                     yield return block;
                 }
 
                 yield break;
+        }
 
-            case "steps":
-            case "steps-unordered":
-                yield return GeneratedTitle(L.Steps);
-                foreach (var block in RenderList(node, level, numId: null, ilvl: 0, ordered: node.Name == "steps"))
+        switch (node.Name)
+        {
+            case "p":
+                yield return WithOutputClass(Paragraph(RenderInlineRuns(node)), node);
+                yield break;
+
+            case "ol":
+                foreach (var block in RenderList(node, level, numId: null, ilvl: 0, ordered: true))
                 {
                     yield return block;
                 }
@@ -338,36 +330,12 @@ public sealed class DocxRenderer
                 yield return StyledParagraph(RenderInlineRuns(node), italic: true, indent: true);
                 yield break;
 
-            case "pre":
-            case "codeblock":
-            case "screen":
-            case "msgblock":
-            case "lines":
-                yield return RenderPre(node);
-                yield break;
-
-            case "fig":
-            case "equation-figure":
-            case "imagemap":
-                foreach (var block in RenderFigure(node, level))
-                {
-                    yield return block;
-                }
-
-                yield break;
-
             case "table":
                 foreach (var block in RenderTable(node))
                 {
                     yield return block;
                 }
 
-                yield break;
-
-            case "simpletable":
-            case "properties":
-            case "choicetable":
-                yield return RenderSimpleTable(node);
                 yield break;
 
             case "draft-comment":
@@ -378,13 +346,7 @@ public sealed class DocxRenderer
 
                 yield break;
 
-            case "required-cleanup":
             case "indexterm":
-            case "data":
-            case "data-about":
-            case "resourceid":
-            case "titlealts":
-            case "prolog":
                 yield break;
 
             case "title":

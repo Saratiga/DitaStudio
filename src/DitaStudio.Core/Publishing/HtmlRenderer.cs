@@ -239,53 +239,46 @@ public sealed class HtmlRenderer
             return string.Empty;
         }
 
+        switch (BlockElementCategoryMap.Of(node.Name))
+        {
+            case BlockElementCategory.ContainerDiv:
+                return $"<div class=\"{node.Name}\"{Attrs(node)}>{RenderChildren(node, level)}</div>\n";
+            case BlockElementCategory.ContainerSection:
+                return RenderSection(node, level);
+            case BlockElementCategory.Preformatted:
+                return $"<pre class=\"{node.Name}\"{Attrs(node)}>{RenderPreContent(node)}</pre>\n";
+            case BlockElementCategory.Figure:
+                return RenderFigure(node, level);
+            case BlockElementCategory.SimpleTable:
+                return RenderSimpleTable(node, level);
+            case BlockElementCategory.Skip:
+                return string.Empty;
+            case BlockElementCategory.ListUnordered:
+            {
+                var listClass = node.Name switch
+                {
+                    "sl" => " class=\"sl\"",
+                    "choices" => " class=\"choices\"",
+                    _ => string.Empty
+                };
+                return $"<ul{listClass}{Attrs(node)}>\n{RenderChildren(node, level)}</ul>\n";
+            }
+            case BlockElementCategory.StepsGroup:
+            {
+                var ordered = node.Name == "steps";
+                var tag = ordered ? "ol" : "ul";
+                return GeneratedTitle(L.Steps) + $"<{tag} class=\"steps\"{Attrs(node)}>\n{RenderChildren(node, level)}</{tag}>\n";
+            }
+        }
+
         switch (node.Name)
         {
             // ------------------------------------------------------- блоки
             case "p":
                 return $"<p{Attrs(node)}>{RenderInlineChildren(node)}</p>\n";
 
-            case "div":
-            case "bodydiv":
-            case "conbodydiv":
-            case "refbodydiv":
-            case "sectiondiv":
-            case "itemgroup":
-            case "equation-block":
-                return $"<div class=\"{node.Name}\"{Attrs(node)}>{RenderChildren(node, level)}</div>\n";
-
-            case "section":
-            case "example":
-            case "refsyn":
-            case "prereq":
-            case "context":
-            case "result":
-            case "postreq":
-            case "tasktroubleshooting":
-            case "condition":
-            case "cause":
-            case "remedy":
-            case "troubleSolution":
-            case "steps-informal":
-            case "lcIntro":
-            case "lcObjectives":
-            case "lcSummary":
-            case "lcReview":
-            case "lcNextSteps":
-            case "lcPrereqs":
-            case "lcResources":
-            case "lcAudience":
-            case "lcDuration":
-                return RenderSection(node, level);
-
-            case "ul":
-                return $"<ul{Attrs(node)}>\n{RenderChildren(node, level)}</ul>\n";
-
             case "ol":
                 return $"<ol{Attrs(node)}>\n{RenderChildren(node, level)}</ol>\n";
-
-            case "sl":
-                return $"<ul class=\"sl\"{Attrs(node)}>\n{RenderChildren(node, level)}</ul>\n";
 
             case "li":
             case "sli":
@@ -293,19 +286,8 @@ public sealed class HtmlRenderer
             case "stepsection":
                 return $"<li{Attrs(node)}>{RenderInlineChildren(node)}</li>\n";
 
-            case "choices":
-                return $"<ul class=\"choices\"{Attrs(node)}>\n{RenderChildren(node, level)}</ul>\n";
-
-            case "steps":
-                return GeneratedTitle(L.Steps) +
-                       $"<ol class=\"steps\"{Attrs(node)}>\n{RenderChildren(node, level)}</ol>\n";
-
             case "substeps":
                 return $"<ol class=\"steps\"{Attrs(node)}>\n{RenderChildren(node, level)}</ol>\n";
-
-            case "steps-unordered":
-                return GeneratedTitle(L.Steps) +
-                       $"<ul class=\"steps\"{Attrs(node)}>\n{RenderChildren(node, level)}</ul>\n";
 
             case "step":
             case "substep":
@@ -336,25 +318,8 @@ public sealed class HtmlRenderer
             case "lq":
                 return $"<blockquote{Attrs(node)}>{RenderInlineChildren(node)}</blockquote>\n";
 
-            case "pre":
-            case "codeblock":
-            case "screen":
-            case "msgblock":
-            case "lines":
-                return $"<pre class=\"{node.Name}\"{Attrs(node)}>{RenderPreContent(node)}</pre>\n";
-
-            case "fig":
-            case "equation-figure":
-            case "imagemap":
-                return RenderFigure(node, level);
-
             case "table":
                 return RenderTable(node, level);
-
-            case "simpletable":
-            case "properties":
-            case "choicetable":
-                return RenderSimpleTable(node, level);
 
             case "object":
                 return RenderObject(node);
@@ -368,18 +333,8 @@ public sealed class HtmlRenderer
                     ? $"<div class=\"draft-comment\">{RenderInlineChildren(node)}</div>\n"
                     : string.Empty;
 
-            case "required-cleanup":
-                return string.Empty;
-
             case "indexterm":
                 return CollectIndexTerm(node);
-
-            case "data":
-            case "data-about":
-            case "resourceid":
-            case "titlealts":
-            case "prolog":
-                return string.Empty;
 
             case "title":
                 return $"<div class=\"title\">{RenderInlineChildren(node)}</div>\n";
