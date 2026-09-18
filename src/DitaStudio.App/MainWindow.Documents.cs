@@ -104,6 +104,7 @@ public partial class MainWindow
             return;
         }
 
+        ViewModel.Current = Current;
         OnEditorSelectionChanged();
         BuildOutline();
     }

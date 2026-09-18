@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using DitaStudio.App.ViewModels;
 using DitaStudio.App.Views;
 using DitaStudio.Core.Project;
 
@@ -19,8 +20,11 @@ public partial class MainWindow : Window
     private Dialogs.ConditionsResult? _conditions;
     private string? _lastOutputDirectory;
 
+    public MainViewModel ViewModel { get; } = new();
+
     public MainWindow()
     {
+        DataContext = ViewModel;
         InitializeComponent();
         RegisterShortcuts();
         ThemeManager.ApplyTitleBar(this);
@@ -66,7 +70,7 @@ public partial class MainWindow : Window
         Bind(Key.W, ModifierKeys.Control, CloseCurrentTab);
         Bind(Key.F5, ModifierKeys.None, () => PublishSite());
         Bind(Key.F7, ModifierKeys.None, ValidateProject);
-        Bind(Key.F1, ModifierKeys.None, ShowElementHelp);
+        InputBindings.Add(new KeyBinding(ViewModel.Help.ShowElementHelpCommand, Key.F1, ModifierKeys.None));
         Bind(Key.E, ModifierKeys.Control, FocusPalette);
         Bind(Key.F, ModifierKeys.Control | ModifierKeys.Shift, FocusSearch);
         Bind(Key.Z, ModifierKeys.Control | ModifierKeys.Alt, () => Current?.PerformUndo());
@@ -77,5 +81,5 @@ public partial class MainWindow : Window
         Bind(Key.Down, ModifierKeys.Control | ModifierKeys.Alt, () => OnMergeCellDown(this, new RoutedEventArgs()));
     }
 
-    private void UpdateStatus(string text) => StatusText.Text = text;
+    private void UpdateStatus(string text) => ViewModel.StatusText = text;
 }

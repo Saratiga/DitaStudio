@@ -83,10 +83,10 @@
             </MenuItem>
 
             <MenuItem Header="_Справка">
-                <MenuItem Header="Об элементе под курсором" Click="OnElementHelp" InputGestureText="F1" />
+                <MenuItem Header="Об элементе под курсором" Command="{Binding Help.ShowElementHelpCommand}" InputGestureText="F1" />
                 <MenuItem x:Name="ThemeMenuItem" Header="Тёмная тема" IsCheckable="True" Click="OnToggleTheme" />
                 <Separator />
-                <MenuItem Header="О программе" Click="OnAbout" />
+                <MenuItem Header="О программе" Command="{Binding Help.AboutCommand}" />
             </MenuItem>
         </Menu>
 
@@ -117,7 +117,7 @@
 
         <StatusBar DockPanel.Dock="Bottom">
             <StatusBarItem>
-                <TextBlock x:Name="StatusText" Text="Готово" />
+                <TextBlock Text="{Binding StatusText}" />
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
                 <TextBlock x:Name="ContextText" Foreground="{DynamicResource TextMuted}" />
