@@ -23,7 +23,7 @@ public partial class MainWindow
     private void UpdateContextText()
     {
         var node = Current?.Author.CurrentNode;
-        ContextText.Text = node is null ? string.Empty : node.Path;
+        ViewModel.ContextText = node is null ? string.Empty : node.Path;
     }
 
     private void BuildAttributePanel()

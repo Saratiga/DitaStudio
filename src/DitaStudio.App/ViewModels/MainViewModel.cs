@@ -37,6 +37,14 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private int bottomTabIndex;
 
+    // Путь текущего элемента в статус-баре. Остальная часть правой панели
+    // (атрибуты/палитра/структура) — императивное построение WPF-дерева,
+    // вызываемое из многих мест (Insert/Documents/Help) — сознательно
+    // оставлено в MainWindow.SidePanels.cs, не мигрируется сейчас (тот же
+    // класс риска, что построение дерева проекта в спеке).
+    [ObservableProperty]
+    private string contextText = string.Empty;
+
     public HelpViewModel Help { get; }
     public SearchViewModel Search { get; }
     public ValidationViewModel Validation { get; }

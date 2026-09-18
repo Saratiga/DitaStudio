@@ -120,7 +120,7 @@
                 <TextBlock Text="{Binding StatusText}" />
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
-                <TextBlock x:Name="ContextText" Foreground="{DynamicResource TextMuted}" />
+                <TextBlock Text="{Binding ContextText}" Foreground="{DynamicResource TextMuted}" />
             </StatusBarItem>
         </StatusBar>
 
