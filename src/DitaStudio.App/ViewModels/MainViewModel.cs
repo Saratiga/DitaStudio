@@ -32,13 +32,20 @@ public partial class MainViewModel : ObservableObject
     public Action? UpdateTabHeaders { get; set; }
     public Func<string, DocumentPane?>? OpenDocument { get; set; }
 
+    // Индекс вкладки нижней панели (Проверка/Поиск/Журнал сборки) — общий для
+    // нескольких VM, поэтому живёт здесь, а не в одной из них.
+    [ObservableProperty]
+    private int bottomTabIndex;
+
     public HelpViewModel Help { get; }
     public SearchViewModel Search { get; }
+    public ValidationViewModel Validation { get; }
 
     public MainViewModel(IReadOnlyDictionary<string, DocumentPane> panes)
     {
         Panes = panes;
         Help = new HelpViewModel(this);
         Search = new SearchViewModel(this);
+        Validation = new ValidationViewModel(this);
     }
 }

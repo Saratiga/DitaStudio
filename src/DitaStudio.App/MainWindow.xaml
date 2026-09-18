@@ -25,10 +25,10 @@
                 <MenuItem Header="Повторить" Click="OnRedo" InputGestureText="Ctrl+Alt+Y" />
                 <Separator />
                 <MenuItem Header="Найти в проекте…" Click="OnFocusSearch" InputGestureText="Ctrl+Shift+F" />
-                <MenuItem Header="Проверить проект" Click="OnValidateProject" InputGestureText="F7" />
-                <MenuItem Header="Проверить документ" Click="OnValidateDocument" />
+                <MenuItem Header="Проверить проект" Command="{Binding Validation.ValidateProjectCommand}" InputGestureText="F7" />
+                <MenuItem Header="Проверить документ" Command="{Binding Validation.ValidateDocumentCommand}" />
                 <Separator />
-                <MenuItem Header="Сравнить файлы…" Click="OnCompareFiles" />
+                <MenuItem Header="Сравнить файлы…" Command="{Binding Validation.CompareFilesCommand}" />
             </MenuItem>
 
             <MenuItem Header="_Вставка">
@@ -110,7 +110,7 @@
                 <Button Style="{StaticResource ToolButton}" Content="⇔" Click="OnMergeCellRight" ToolTip="Объединить ячейку таблицы со следующей (Ctrl+Alt+→)" />
                 <Button Style="{StaticResource ToolButton}" Content="⇕" Click="OnMergeCellDown" ToolTip="Объединить ячейку таблицы со строкой ниже (Ctrl+Alt+↓)" />
                 <Separator />
-                <Button Style="{StaticResource ToolButton}" Content="✔" Click="OnValidateProject" ToolTip="Проверить проект (F7)" />
+                <Button Style="{StaticResource ToolButton}" Content="✔" Command="{Binding Validation.ValidateProjectCommand}" ToolTip="Проверить проект (F7)" />
                 <Button Style="{StaticResource ToolButton}" Content="▶" Click="OnPublishSite" ToolTip="Собрать сайт HTML (F5)" />
             </ToolBar>
         </ToolBarTray>
@@ -206,9 +206,9 @@
 
                 <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" />
 
-                <TabControl Grid.Row="2" x:Name="BottomTabs">
+                <TabControl Grid.Row="2" x:Name="BottomTabs" SelectedIndex="{Binding BottomTabIndex}">
                     <TabItem Header="Проверка">
-                        <ListView x:Name="IssuesList" BorderThickness="0" MouseDoubleClick="OnIssueDoubleClick">
+                        <ListView ItemsSource="{Binding Validation.Issues}" SelectedItem="{Binding Validation.SelectedIssue}" BorderThickness="0" MouseDoubleClick="OnIssueDoubleClick">
                             <ListView.View>
                                 <GridView>
                                     <GridViewColumn Header="Уровень" Width="110" DisplayMemberBinding="{Binding SeverityText}" />

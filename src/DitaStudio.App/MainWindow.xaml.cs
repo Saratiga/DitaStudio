@@ -74,7 +74,7 @@ public partial class MainWindow : Window
         Bind(Key.O, ModifierKeys.Control | ModifierKeys.Shift, OpenProject);
         Bind(Key.W, ModifierKeys.Control, CloseCurrentTab);
         Bind(Key.F5, ModifierKeys.None, () => PublishSite());
-        Bind(Key.F7, ModifierKeys.None, ValidateProject);
+        InputBindings.Add(new KeyBinding(ViewModel.Validation.ValidateProjectCommand, Key.F7, ModifierKeys.None));
         InputBindings.Add(new KeyBinding(ViewModel.Help.ShowElementHelpCommand, Key.F1, ModifierKeys.None));
         Bind(Key.E, ModifierKeys.Control, FocusPalette);
         Bind(Key.F, ModifierKeys.Control | ModifierKeys.Shift, FocusSearch);
