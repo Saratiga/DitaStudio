@@ -5,73 +5,21 @@ using System.Windows.Media;
 using DitaStudio.App.Views;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
-using Microsoft.Win32;
 
 namespace DitaStudio.App;
 
-// Открытие/сканирование папки проекта, дерево файлов, список ключей.
+// Дерево файлов проекта (императивное построение WPF-дерева) и перенос/
+// переименование файла. Открытие/сканирование проекта и список ключей — в
+// ViewModels/ProjectViewModel.cs.
 public partial class MainWindow
 {
-    private void OnOpenProject(object sender, RoutedEventArgs e) => OpenProject();
+    // Открытие/сканирование проекта и список ключей — в
+    // ViewModels/ProjectViewModel.cs. Эти два — тонкие пасс-through, нужны
+    // не мигрированным местам (RefreshRecentProjectsMenu, Documents.NewDocument),
+    // которые зовут их как соседний метод MainWindow.
+    private void LoadProject(string path) => ViewModel.ProjectPanel.LoadProject(path);
 
-    private void OpenProject()
-    {
-        var dialog = new OpenFolderDialog { Title = "Выберите папку с проектом DITA" };
-        if (dialog.ShowDialog(this) != true)
-        {
-            return;
-        }
-
-        LoadProject(dialog.FolderName);
-    }
-
-    private void LoadProject(string path)
-    {
-        _project = new DitaProject(path);
-        ViewModel.Project = _project;
-        _panes.Clear();
-        ViewModel.Documents.Tabs.Clear();
-
-        try
-        {
-            _project.Scan();
-        }
-        catch (Exception ex)
-        {
-            Dialogs.Message("Проект", $"Не удалось прочитать папку: {ex.Message}");
-            return;
-        }
-
-        Title = $"DITA Studio — {_project.Name}";
-        _conditions = new Dialogs.ConditionsResult(
-            _project.ExcludedConditionValues.ToDictionary(kv => kv.Key, kv => new HashSet<string>(kv.Value)),
-            _project.ShowDraftComments);
-        BuildProjectTree();
-        BuildMapSelector();
-        BuildKeysList();
-        RecentProjects.Add(path);
-        RefreshRecentProjectsMenu();
-        UpdateStatus($"Проект открыт: {_project.Files.Count} файлов, {_project.Keys.Count} ключей.");
-    }
-
-    private void OnRescanProject(object sender, RoutedEventArgs e)
-    {
-        if (_project is null)
-        {
-            return;
-        }
-
-        foreach (var pane in _panes.Values)
-        {
-            pane.CommitPendingEdits();
-        }
-
-        _project.Scan();
-        BuildProjectTree();
-        BuildMapSelector();
-        BuildKeysList();
-        UpdateStatus($"Проект обновлён: {_project.Files.Count} файлов.");
-    }
+    private void BuildKeysList() => ViewModel.ProjectPanel.RefreshKeysList();
 
     private void BuildProjectTree()
     {
@@ -239,22 +187,6 @@ public partial class MainWindow
         UpdateStatus($"Файл перенесён: {file.RelativePath} → {newRelative}. Обновлено ссылок: {result.UpdatedReferences}.");
     }
 
-    private void BuildKeysList()
-    {
-        KeysList.ItemsSource = _project?.Keys.Values.OrderBy(k => k.Key, StringComparer.Ordinal).ToList();
-
-        var hidden = (_project?.TotalKeyCount ?? 0) - (_project?.Keys.Count ?? 0);
-        ScopedKeysHint.Visibility = hidden > 0 ? Visibility.Visible : Visibility.Collapsed;
-        ScopedKeysHint.Text = hidden > 0
-            ? $"Показаны только ключи корневой области. Ещё {hidden} — внутри keyscope-областей карты."
-            : string.Empty;
-    }
-
-    private void OnKeyDoubleClick(object sender, MouseButtonEventArgs e)
-    {
-        if (KeysList.SelectedItem is KeyDefinition key && key.ResolvedPath is not null && File.Exists(key.ResolvedPath))
-        {
-            OpenDocument(key.ResolvedPath);
-        }
-    }
+    private void OnKeyDoubleClick(object sender, MouseButtonEventArgs e) =>
+        ViewModel.ProjectPanel.OpenSelectedKeyCommand.Execute(null);
 }

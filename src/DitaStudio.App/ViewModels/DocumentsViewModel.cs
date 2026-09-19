@@ -126,7 +126,7 @@ public partial class DocumentsViewModel : ObservableObject
         }
 
         _main.Project?.RebuildKeySpace();
-        _main.RefreshProjectKeys?.Invoke();
+        _main.ProjectPanel.RefreshKeysList();
         tab!.RefreshTitle();
         _main.StatusText = $"Сохранено: {Path.GetFileName(pane.FilePath ?? pane.Title)}";
     }
@@ -154,7 +154,7 @@ public partial class DocumentsViewModel : ObservableObject
         }
 
         _main.Project?.RebuildKeySpace();
-        _main.RefreshProjectKeys?.Invoke();
+        _main.ProjectPanel.RefreshKeysList();
         _main.StatusText = $"Сохранено файлов: {saved}";
     }
 

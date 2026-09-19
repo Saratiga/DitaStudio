@@ -16,22 +16,33 @@ public partial class MainViewModel : ObservableObject
     // истины (шаг 5 спеки), не отдельное наблюдаемое поле.
     public DocumentPane? Current => Documents.SelectedTab?.Pane;
 
-    // До миграции области Project (шаг 6 спеки) актуальное значение сюда
-    // проставляет LoadProject в MainWindow.Project.cs.
+    // Открытый проект. Источник истины теперь ProjectViewModel.LoadProject.
     [ObservableProperty]
     private DitaProject? project;
+
+    // Условия сборки — используются ProjectViewModel (начальные значения при
+    // открытии проекта) и ещё не мигрированным MainWindow.Publish.cs.
+    [ObservableProperty]
+    private Dialogs.ConditionsResult? conditions;
+
+    // Заголовок окна. По умолчанию — как раньше в XAML, дальше ProjectViewModel
+    // подставляет имя открытого проекта.
+    [ObservableProperty]
+    private string windowTitle = "DITA Studio";
 
     // Тот же экземпляр словаря, что MainWindow.xaml.cs держит в _panes — не
     // копия. DocumentsViewModel пишет в него напрямую (Add/Remove), поэтому
     // тип — мутируемый Dictionary, а не IReadOnlyDictionary.
     public Dictionary<string, DocumentPane> Panes { get; }
 
-    // Временные мосты к ещё не мигрированным областям Project/SidePanels.
+    // Временные мосты к ещё не мигрированным областям Map/SidePanels.
     // Заменяются на прямые вызовы VM-команд, когда области мигрируют.
     public Action? UpdateTabHeaders { get; set; }
     public Func<string, DocumentPane?>? OpenDocument { get; set; }
     public Action? RefreshEditorContext { get; set; }
-    public Action? RefreshProjectKeys { get; set; }
+    public Action? RefreshProjectTree { get; set; }
+    public Action? RefreshMapSelector { get; set; }
+    public Action? RefreshRecentProjectsMenu { get; set; }
 
     // Индекс вкладки нижней панели (Проверка/Поиск/Журнал сборки) — общий для
     // нескольких VM, поэтому живёт здесь, а не в одной из них.
@@ -51,6 +62,9 @@ public partial class MainViewModel : ObservableObject
     public ValidationViewModel Validation { get; }
     public DocumentsViewModel Documents { get; }
 
+    // Не "Project" — это имя уже занято открытым DitaProject выше.
+    public ProjectViewModel ProjectPanel { get; }
+
     public MainViewModel(Dictionary<string, DocumentPane> panes)
     {
         Panes = panes;
@@ -58,5 +72,6 @@ public partial class MainViewModel : ObservableObject
         Help = new HelpViewModel(this);
         Search = new SearchViewModel(this);
         Validation = new ValidationViewModel(this);
+        ProjectPanel = new ProjectViewModel(this);
     }
 }

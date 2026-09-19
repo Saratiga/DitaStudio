@@ -13,11 +13,21 @@ namespace DitaStudio.App;
 public partial class MainWindow : Window
 {
     private readonly Dictionary<string, DocumentPane> _panes = new(StringComparer.OrdinalIgnoreCase);
-    private DitaProject? _project;
+
+    // Не поля — тонкие проходы к MainViewModel, чтобы Map/Insert/Publish/
+    // SidePanels (ещё не мигрированы) продолжали читать/писать их по имени,
+    // как раньше.
+    private DitaProject? _project => ViewModel.Project;
+
+    private Dialogs.ConditionsResult? _conditions
+    {
+        get => ViewModel.Conditions;
+        set => ViewModel.Conditions = value;
+    }
+
     private MapTree? _mapTree;
     private MapItem? _mapDragCandidate;
     private Point _mapDragStart;
-    private Dialogs.ConditionsResult? _conditions;
     private string? _lastOutputDirectory;
 
     public MainViewModel ViewModel { get; }
@@ -33,7 +43,9 @@ public partial class MainWindow : Window
                 OnEditorSelectionChanged();
                 BuildOutline();
             },
-            RefreshProjectKeys = BuildKeysList
+            RefreshProjectTree = BuildProjectTree,
+            RefreshMapSelector = BuildMapSelector,
+            RefreshRecentProjectsMenu = RefreshRecentProjectsMenu
         };
         DataContext = ViewModel;
         InitializeComponent();
@@ -77,7 +89,7 @@ public partial class MainWindow : Window
         InputBindings.Add(new KeyBinding(ViewModel.Documents.SaveCurrentCommand, Key.S, ModifierKeys.Control));
         InputBindings.Add(new KeyBinding(ViewModel.Documents.SaveAllCommand, Key.S, ModifierKeys.Control | ModifierKeys.Shift));
         Bind(Key.N, ModifierKeys.Control, NewDocument);
-        Bind(Key.O, ModifierKeys.Control | ModifierKeys.Shift, OpenProject);
+        InputBindings.Add(new KeyBinding(ViewModel.ProjectPanel.OpenProjectCommand, Key.O, ModifierKeys.Control | ModifierKeys.Shift));
         InputBindings.Add(new KeyBinding(ViewModel.Documents.CloseCurrentTabCommand, Key.W, ModifierKeys.Control));
         Bind(Key.F5, ModifierKeys.None, () => PublishSite());
         InputBindings.Add(new KeyBinding(ViewModel.Validation.ValidateProjectCommand, Key.F7, ModifierKeys.None));
