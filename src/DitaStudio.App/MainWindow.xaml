@@ -76,15 +76,15 @@
             </MenuItem>
 
             <MenuItem Header="_Публикация">
-                <MenuItem Header="Собрать сайт HTML…" Click="OnPublishSite" InputGestureText="F5" />
-                <MenuItem Header="Собрать один HTML…" Click="OnPublishSingle" />
-                <MenuItem Header="Экспорт в PDF…" Click="OnPublishPdf" />
-                <MenuItem Header="Экспорт в DOCX…" Click="OnExportDocx" />
+                <MenuItem Header="Собрать сайт HTML…" Command="{Binding Publish.PublishSiteCommand}" InputGestureText="F5" />
+                <MenuItem Header="Собрать один HTML…" Command="{Binding Publish.PublishSingleCommand}" />
+                <MenuItem Header="Экспорт в PDF…" Command="{Binding Publish.PublishPdfCommand}" />
+                <MenuItem Header="Экспорт в DOCX…" Command="{Binding Publish.ExportDocxCommand}" />
                 <Separator />
-                <MenuItem Header="Условия сборки…" Click="OnPublishConditions" />
-                <MenuItem Header="Импортировать условия из .ditaval…" Click="OnImportDitaval" />
-                <MenuItem Header="Пользовательский CSS…" Click="OnCustomCss" />
-                <MenuItem Header="Колонтитулы PDF…" Click="OnPdfHeaderFooter" />
+                <MenuItem Header="Условия сборки…" Command="{Binding Publish.PublishConditionsCommand}" />
+                <MenuItem Header="Импортировать условия из .ditaval…" Command="{Binding Publish.ImportDitavalCommand}" />
+                <MenuItem Header="Пользовательский CSS…" Command="{Binding Publish.CustomCssCommand}" />
+                <MenuItem Header="Колонтитулы PDF…" Command="{Binding Publish.PdfHeaderFooterCommand}" />
             </MenuItem>
 
             <MenuItem Header="_Справка">
@@ -116,7 +116,7 @@
                 <Button Style="{StaticResource ToolButton}" Content="⇕" Click="OnMergeCellDown" ToolTip="Объединить ячейку таблицы со строкой ниже (Ctrl+Alt+↓)" />
                 <Separator />
                 <Button Style="{StaticResource ToolButton}" Content="✔" Command="{Binding Validation.ValidateProjectCommand}" ToolTip="Проверить проект (F7)" />
-                <Button Style="{StaticResource ToolButton}" Content="▶" Click="OnPublishSite" ToolTip="Собрать сайт HTML (F5)" />
+                <Button Style="{StaticResource ToolButton}" Content="▶" Command="{Binding Publish.PublishSiteCommand}" ToolTip="Собрать сайт HTML (F5)" />
             </ToolBar>
         </ToolBarTray>
 
@@ -274,10 +274,11 @@
                     </TabItem>
 
                     <TabItem Header="Журнал сборки">
-                        <TextBox x:Name="BuildLog" IsReadOnly="True" BorderThickness="0"
+                        <TextBox IsReadOnly="True" BorderThickness="0"
                                  FontFamily="Consolas" FontSize="12"
                                  VerticalScrollBarVisibility="Auto" TextWrapping="NoWrap"
-                                 HorizontalScrollBarVisibility="Auto" />
+                                 HorizontalScrollBarVisibility="Auto"
+                                 Text="{Binding Publish.BuildLogText, Mode=OneWay}" />
                     </TabItem>
                 </TabControl>
             </Grid>

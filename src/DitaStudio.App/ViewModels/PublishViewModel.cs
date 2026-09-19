@@ -1,27 +1,45 @@
-using System.Windows;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using DitaStudio.App;
 using DitaStudio.App.Views;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Docx;
 using Microsoft.Win32;
 
-namespace DitaStudio.App;
+namespace DitaStudio.App.ViewModels;
 
-// Публикация: сборка HTML-сайта/одного файла, экспорт в PDF (с колонтитулами через WebView2)
-// и в DOCX, условия сборки (в т.ч. импорт .ditaval), пользовательский CSS.
-public partial class MainWindow
+// Публикация: сборка HTML-сайта/одного файла, экспорт в PDF (с колонтитулами
+// через WebView2) и в DOCX, условия сборки (в т.ч. импорт .ditaval),
+// пользовательский CSS.
+public partial class PublishViewModel : ObservableObject
 {
-    private void OnPublishSite(object sender, RoutedEventArgs e) => PublishSite();
+    private readonly MainViewModel _main;
+    private string? _lastOutputDirectory;
 
+    [ObservableProperty]
+    private string buildLogText = string.Empty;
+
+    public PublishViewModel(MainViewModel main)
+    {
+        _main = main;
+    }
+
+    [RelayCommand]
     private void PublishSite() => Publish(singleFile: false, exportPdf: false);
 
-    private void OnPublishSingle(object sender, RoutedEventArgs e) => Publish(singleFile: true, exportPdf: false);
+    [RelayCommand]
+    private void PublishSingle() => Publish(singleFile: true, exportPdf: false);
 
-    private void OnPublishPdf(object sender, RoutedEventArgs e) => Publish(singleFile: true, exportPdf: true);
+    [RelayCommand]
+    private void PublishPdf() => Publish(singleFile: true, exportPdf: true);
 
-    private void OnExportDocx(object sender, RoutedEventArgs e)
+    [RelayCommand]
+    private void ExportDocx()
     {
-        if (_project is null || MapSelector.SelectedItem is not ProjectFile map)
+        var project = _main.Project;
+        var map = _main.GetSelectedMap?.Invoke();
+        if (project is null || map is null)
         {
             Dialogs.Message("Экспорт в DOCX", "Выберите карту на вкладке «Карта».");
             return;
@@ -34,78 +52,82 @@ public partial class MainWindow
             Title = "Экспорт в DOCX",
             Filter = "Документ Word|*.docx",
             FileName = Path.GetFileNameWithoutExtension(map.FullPath) + ".docx",
-            InitialDirectory = _lastOutputDirectory ?? _project.RootPath
+            InitialDirectory = _lastOutputDirectory ?? project.RootPath
         };
 
-        if (dialog.ShowDialog(this) != true)
+        if (dialog.ShowDialog() != true)
         {
             return;
         }
 
         var options = new PublishOptions
         {
-            ShowDraftComments = _conditions?.ShowDraftComments ?? false,
+            ShowDraftComments = _main.Conditions?.ShowDraftComments ?? false,
             Language = "ru"
         };
 
-        if (_conditions is not null)
+        if (_main.Conditions is not null)
         {
-            foreach (var (attribute, values) in _conditions.Exclude)
+            foreach (var (attribute, values) in _main.Conditions.Exclude)
             {
                 options.ExcludeConditions[attribute] = values;
             }
         }
 
-        BottomTabs.SelectedIndex = 2;
-        BuildLog.Text = $"Сборка DOCX по карте {map.RelativePath}…\n";
+        _main.BottomTabIndex = 2;
+        BuildLogText = $"Сборка DOCX по карте {map.RelativePath}…\n";
 
         try
         {
-            var publisher = new DocxPublisher(_project);
+            var publisher = new DocxPublisher(project);
             var result = publisher.Publish(map.FullPath, options, dialog.FileName);
 
             foreach (var warning in result.Warnings)
             {
-                BuildLog.AppendText("Предупреждение: " + warning + "\n");
+                BuildLogText += "Предупреждение: " + warning + "\n";
             }
 
-            BuildLog.AppendText("Результат: " + result.OutputFile + "\n");
-            UpdateStatus("DOCX собран: " + result.OutputFile);
+            BuildLogText += "Результат: " + result.OutputFile + "\n";
+            _main.StatusText = "DOCX собран: " + result.OutputFile;
             OpenInShell(result.OutputFile);
         }
         catch (Exception ex)
         {
-            BuildLog.AppendText("Ошибка: " + ex.Message + "\n");
+            BuildLogText += "Ошибка: " + ex.Message + "\n";
             Dialogs.Message("Экспорт в DOCX", ex.Message);
         }
     }
 
-    private void OnPublishConditions(object sender, RoutedEventArgs e)
+    [RelayCommand]
+    private void PublishConditions()
     {
-        if (_project is null)
+        var project = _main.Project;
+        if (project is null)
         {
             return;
         }
 
-        var result = Dialogs.PublishConditions(_project, _conditions);
+        var result = Dialogs.PublishConditions(project, _main.Conditions);
         if (result is not null)
         {
-            _conditions = result;
-            _project.SetConditions(result.Exclude, result.ShowDraftComments);
-            UpdateStatus($"Условия сборки обновлены: исключено значений {_conditions.Exclude.Sum(x => x.Value.Count)}.");
+            _main.Conditions = result;
+            project.SetConditions(result.Exclude, result.ShowDraftComments);
+            _main.StatusText = $"Условия сборки обновлены: исключено значений {_main.Conditions.Exclude.Sum(x => x.Value.Count)}.";
         }
     }
 
-    private void OnImportDitaval(object sender, RoutedEventArgs e)
+    [RelayCommand]
+    private void ImportDitaval()
     {
-        if (_project is null)
+        var project = _main.Project;
+        if (project is null)
         {
             Dialogs.Message("Условия сборки", "Сначала откройте папку проекта.");
             return;
         }
 
         var dialog = new OpenFileDialog { Title = "Импорт условий из .ditaval", Filter = "Файлы DITAVAL|*.ditaval|Все файлы|*.*" };
-        if (dialog.ShowDialog(this) != true)
+        if (dialog.ShowDialog() != true)
         {
             return;
         }
@@ -121,51 +143,55 @@ public partial class MainWindow
             return;
         }
 
-        var merged = new Dictionary<string, HashSet<string>>(_conditions?.Exclude ?? new Dictionary<string, HashSet<string>>());
+        var merged = new Dictionary<string, HashSet<string>>(_main.Conditions?.Exclude ?? new Dictionary<string, HashSet<string>>());
         var importedValues = DitaProject.MergeExcludeConditions(merged, imported);
 
-        _conditions = new Dialogs.ConditionsResult(merged, _conditions?.ShowDraftComments ?? false);
-        _project.SetConditions(merged, _conditions.ShowDraftComments);
-        UpdateStatus($"Из .ditaval импортировано правил исключения: {importedValues}.");
+        _main.Conditions = new Dialogs.ConditionsResult(merged, _main.Conditions?.ShowDraftComments ?? false);
+        project.SetConditions(merged, _main.Conditions.ShowDraftComments);
+        _main.StatusText = $"Из .ditaval импортировано правил исключения: {importedValues}.";
     }
 
-    private void OnPdfHeaderFooter(object sender, RoutedEventArgs e)
+    [RelayCommand]
+    private void PdfHeaderFooter()
     {
-        if (_project is null)
+        var project = _main.Project;
+        if (project is null)
         {
             Dialogs.Message("Колонтитулы PDF", "Сначала откройте папку проекта.");
             return;
         }
 
-        var result = Dialogs.PdfHeaderFooter(_project);
+        var result = Dialogs.PdfHeaderFooter(project);
         if (result is null)
         {
             return;
         }
 
-        _project.SetPdfHeaderFooter(result.Show, result.HeaderText, result.FooterText);
-        UpdateStatus(result.Show ? "Колонтитулы PDF включены." : "Колонтитулы PDF отключены.");
+        project.SetPdfHeaderFooter(result.Show, result.HeaderText, result.FooterText);
+        _main.StatusText = result.Show ? "Колонтитулы PDF включены." : "Колонтитулы PDF отключены.";
     }
 
-    private void OnCustomCss(object sender, RoutedEventArgs e)
+    [RelayCommand]
+    private void CustomCss()
     {
-        if (_project is null)
+        var project = _main.Project;
+        if (project is null)
         {
             Dialogs.Message("Пользовательский CSS", "Сначала откройте папку проекта.");
             return;
         }
 
-        Dialogs.CustomCss(_project);
-        UpdateStatus(_project.CustomCssPath is null
+        Dialogs.CustomCss(project);
+        _main.StatusText = project.CustomCssPath is null
             ? "Пользовательский CSS отключён."
-            : $"Пользовательский CSS: {_project.CustomCssPath}");
+            : $"Пользовательский CSS: {project.CustomCssPath}";
     }
 
     /// <summary>Сбрасывает несохранённые правки во всех открытых вкладках на диск и пересобирает
     /// пространство ключей — общий первый шаг перед любой публикацией (HTML/PDF/DOCX).</summary>
     private void SaveAllPanesAndRebuildKeySpace()
     {
-        foreach (var pane in _panes.Values)
+        foreach (var pane in _main.Panes.Values)
         {
             pane.CommitPendingEdits();
             if (pane.IsDirty)
@@ -174,12 +200,14 @@ public partial class MainWindow
             }
         }
 
-        _project!.RebuildKeySpace();
+        _main.Project!.RebuildKeySpace();
     }
 
     private async void Publish(bool singleFile, bool exportPdf)
     {
-        if (_project is null || MapSelector.SelectedItem is not ProjectFile map)
+        var project = _main.Project;
+        var map = _main.GetSelectedMap?.Invoke();
+        if (project is null || map is null)
         {
             Dialogs.Message("Публикация", "Выберите карту на вкладке «Карта».");
             return;
@@ -190,10 +218,10 @@ public partial class MainWindow
         var dialog = new OpenFolderDialog
         {
             Title = "Куда сохранить публикацию",
-            DefaultDirectory = _lastOutputDirectory ?? Path.Combine(_project.RootPath, "out")
+            DefaultDirectory = _lastOutputDirectory ?? Path.Combine(project.RootPath, "out")
         };
 
-        if (dialog.ShowDialog(this) != true)
+        if (dialog.ShowDialog() != true)
         {
             return;
         }
@@ -204,78 +232,78 @@ public partial class MainWindow
         {
             OutputDirectory = dialog.FolderName,
             SingleFile = singleFile,
-            ShowDraftComments = _conditions?.ShowDraftComments ?? false,
+            ShowDraftComments = _main.Conditions?.ShowDraftComments ?? false,
             Language = "ru"
         };
 
-        if (_conditions is not null)
+        if (_main.Conditions is not null)
         {
-            foreach (var (attribute, values) in _conditions.Exclude)
+            foreach (var (attribute, values) in _main.Conditions.Exclude)
             {
                 options.ExcludeConditions[attribute] = values;
             }
         }
 
-        BottomTabs.SelectedIndex = 2;
-        BuildLog.Text = $"Сборка карты {map.RelativePath}…\n";
+        _main.BottomTabIndex = 2;
+        BuildLogText = $"Сборка карты {map.RelativePath}…\n";
 
         try
         {
-            var publisher = new HtmlPublisher(_project);
+            var publisher = new HtmlPublisher(project);
             var result = publisher.Publish(map.FullPath, options);
 
-            BuildLog.AppendText($"Файлов записано: {result.Files.Count}\n");
+            BuildLogText += $"Файлов записано: {result.Files.Count}\n";
             foreach (var warning in result.Warnings)
             {
-                BuildLog.AppendText("Предупреждение: " + warning + "\n");
+                BuildLogText += "Предупреждение: " + warning + "\n";
             }
 
-            BuildLog.AppendText("Результат: " + result.EntryFile + "\n");
+            BuildLogText += "Результат: " + result.EntryFile + "\n";
 
             if (exportPdf)
             {
                 var pdfPath = Path.ChangeExtension(result.EntryFile, ".pdf");
-                BuildLog.AppendText("Печать в PDF…\n");
-                var error = await ExportPdfAsync(result.EntryFile, pdfPath);
+                BuildLogText += "Печать в PDF…\n";
+                var error = await ExportPdfAsync(project, result.EntryFile, pdfPath);
                 if (error is null)
                 {
-                    BuildLog.AppendText("PDF готов: " + pdfPath + "\n");
-                    UpdateStatus("PDF собран: " + pdfPath);
+                    BuildLogText += "PDF готов: " + pdfPath + "\n";
+                    _main.StatusText = "PDF собран: " + pdfPath;
                     OpenInShell(pdfPath);
                     return;
                 }
 
-                BuildLog.AppendText("PDF: " + error + "\n");
+                BuildLogText += "PDF: " + error + "\n";
                 Dialogs.Message("Экспорт в PDF", error);
             }
 
-            UpdateStatus("Публикация готова: " + result.EntryFile);
+            _main.StatusText = "Публикация готова: " + result.EntryFile;
             OpenInShell(result.EntryFile);
         }
         catch (Exception ex)
         {
-            BuildLog.AppendText("Ошибка: " + ex.Message + "\n");
+            BuildLogText += "Ошибка: " + ex.Message + "\n";
             Dialogs.Message("Публикация", ex.Message);
         }
     }
 
     /// <summary>Выбирает способ печати в PDF: через WebView2 (нужен для своих колонтитулов и как
     /// запасной путь без Edge/Chrome), иначе — обычная CLI-печать браузером без колонтитулов.</summary>
-    private async Task<string?> ExportPdfAsync(string htmlPath, string pdfPath)
+    private async Task<string?> ExportPdfAsync(DitaProject project, string htmlPath, string pdfPath)
     {
-        var showHeaderFooter = _project?.PdfShowHeaderFooter ?? false;
+        var showHeaderFooter = project.PdfShowHeaderFooter;
         var browserAvailable = PdfExporter.IsAvailable;
 
         if (showHeaderFooter || !browserAvailable)
         {
             var error = await WebView2PdfExporter.ExportAsync(htmlPath, pdfPath, showHeaderFooter,
-                _project?.PdfHeaderText, _project?.PdfFooterText);
+                project.PdfHeaderText, project.PdfFooterText);
             if (error is null || !browserAvailable)
             {
                 return error;
             }
 
-            BuildLog.AppendText($"WebView2: {error} — печатаем через установленный браузер без колонтитулов.\n");
+            BuildLogText += $"WebView2: {error} — печатаем через установленный браузер без колонтитулов.\n";
         }
 
         return PdfExporter.ExportToPdf(htmlPath, pdfPath);

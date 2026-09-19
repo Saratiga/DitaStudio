@@ -8,8 +8,8 @@ using DitaStudio.Core.Project;
 namespace DitaStudio.App;
 
 // Общая часть окна: поля состояния, конструктор, горячие клавиши. Остальные обработчики
-// разложены по темам в MainWindow.*.cs (partial class) — Project/Documents/SidePanels/Insert/
-// Validation/Search/Map/Publish/Help.
+// разложены по темам в MainWindow.*.cs (partial class) — Project/Documents/SidePanels/Insert/Map.
+// Publish/Validation/Search/Help — на VM, см. ViewModels/.
 public partial class MainWindow : Window
 {
     private readonly Dictionary<string, DocumentPane> _panes = new(StringComparer.OrdinalIgnoreCase);
@@ -28,7 +28,6 @@ public partial class MainWindow : Window
     private MapTree? _mapTree;
     private MapItem? _mapDragCandidate;
     private Point _mapDragStart;
-    private string? _lastOutputDirectory;
 
     public MainViewModel ViewModel { get; }
 
@@ -45,7 +44,8 @@ public partial class MainWindow : Window
             },
             RefreshProjectTree = BuildProjectTree,
             RefreshMapSelector = BuildMapSelector,
-            RefreshRecentProjectsMenu = RefreshRecentProjectsMenu
+            RefreshRecentProjectsMenu = RefreshRecentProjectsMenu,
+            GetSelectedMap = () => MapSelector.SelectedItem as ProjectFile
         };
         DataContext = ViewModel;
         InitializeComponent();
@@ -91,7 +91,7 @@ public partial class MainWindow : Window
         Bind(Key.N, ModifierKeys.Control, NewDocument);
         InputBindings.Add(new KeyBinding(ViewModel.ProjectPanel.OpenProjectCommand, Key.O, ModifierKeys.Control | ModifierKeys.Shift));
         InputBindings.Add(new KeyBinding(ViewModel.Documents.CloseCurrentTabCommand, Key.W, ModifierKeys.Control));
-        Bind(Key.F5, ModifierKeys.None, () => PublishSite());
+        InputBindings.Add(new KeyBinding(ViewModel.Publish.PublishSiteCommand, Key.F5, ModifierKeys.None));
         InputBindings.Add(new KeyBinding(ViewModel.Validation.ValidateProjectCommand, Key.F7, ModifierKeys.None));
         InputBindings.Add(new KeyBinding(ViewModel.Help.ShowElementHelpCommand, Key.F1, ModifierKeys.None));
         Bind(Key.E, ModifierKeys.Control, FocusPalette);
