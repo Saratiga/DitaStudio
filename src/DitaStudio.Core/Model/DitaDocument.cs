@@ -117,59 +117,16 @@ public sealed class DitaDocument
             switch (reader.NodeType)
             {
                 case XmlNodeType.XmlDeclaration:
-                    var enc = reader.GetAttribute("encoding");
-                    if (!string.IsNullOrEmpty(enc))
-                    {
-                        doc.XmlEncoding = enc!;
-                    }
-
+                    ReadXmlDeclaration(reader, doc);
                     break;
 
                 case XmlNodeType.DocumentType:
-                    doc.DoctypeName = reader.Name;
-                    doc.DoctypePublicId = reader.GetAttribute("PUBLIC");
-                    doc.DoctypeSystemId = reader.GetAttribute("SYSTEM");
+                    ReadDoctype(reader, doc);
                     break;
 
                 case XmlNodeType.Element:
-                {
-                    var el = DitaNode.Element(reader.LocalName);
-                    el.Line = info.HasLineInfo() ? info.LineNumber : 0;
-                    el.Column = info.HasLineInfo() ? info.LinePosition : 0;
-
-                    if (reader.HasAttributes)
-                    {
-                        while (reader.MoveToNextAttribute())
-                        {
-                            if (reader.Name.StartsWith("xmlns", StringComparison.Ordinal))
-                            {
-                                continue;
-                            }
-
-                            el.SetAttribute(reader.Name, reader.Value);
-                        }
-
-                        reader.MoveToElement();
-                    }
-
-                    var empty = reader.IsEmptyElement;
-
-                    if (stack.Count == 0)
-                    {
-                        root ??= el;
-                    }
-                    else
-                    {
-                        stack.Peek().Add(el);
-                    }
-
-                    if (!empty)
-                    {
-                        stack.Push(el);
-                    }
-
+                    ReadElement(reader, info, stack, ref root);
                     break;
-                }
 
                 case XmlNodeType.EndElement:
                     if (stack.Count > 0)
@@ -183,63 +140,16 @@ public sealed class DitaDocument
                 case XmlNodeType.CDATA:
                 case XmlNodeType.SignificantWhitespace:
                 case XmlNodeType.Whitespace:
-                {
-                    if (stack.Count == 0)
-                    {
-                        break;
-                    }
-
-                    var parent = stack.Peek();
-                    var value = reader.Value;
-                    if (reader.NodeType is XmlNodeType.Whitespace)
-                    {
-                        // Пробельный узел значим только внутри смешанного содержимого.
-                        var def = DitaCatalog.Default.Get(parent.Name);
-                        if (def is null || !def.IsMixed)
-                        {
-                            break;
-                        }
-                    }
-
-                    parent.Add(DitaNode.Text(value));
+                    ReadText(reader, stack);
                     break;
-                }
 
                 case XmlNodeType.Comment:
-                {
-                    var c = DitaNode.Comment(reader.Value);
-                    if (stack.Count == 0)
-                    {
-                        if (root is null)
-                        {
-                            doc.Prolog.Add(c);
-                        }
-                    }
-                    else
-                    {
-                        stack.Peek().Add(c);
-                    }
-
+                    ReadComment(reader, doc, stack, root);
                     break;
-                }
 
                 case XmlNodeType.ProcessingInstruction:
-                {
-                    var pi = DitaNode.Pi(reader.Name, reader.Value);
-                    if (stack.Count == 0)
-                    {
-                        if (root is null)
-                        {
-                            doc.Prolog.Add(pi);
-                        }
-                    }
-                    else
-                    {
-                        stack.Peek().Add(pi);
-                    }
-
+                    ReadProcessingInstruction(reader, doc, stack, root);
                     break;
-                }
             }
         }
 
@@ -250,6 +160,114 @@ public sealed class DitaDocument
 
         doc.Root = root;
         return doc;
+    }
+
+    private static void ReadXmlDeclaration(XmlReader reader, DitaDocument doc)
+    {
+        var enc = reader.GetAttribute("encoding");
+        if (!string.IsNullOrEmpty(enc))
+        {
+            doc.XmlEncoding = enc!;
+        }
+    }
+
+    private static void ReadDoctype(XmlReader reader, DitaDocument doc)
+    {
+        doc.DoctypeName = reader.Name;
+        doc.DoctypePublicId = reader.GetAttribute("PUBLIC");
+        doc.DoctypeSystemId = reader.GetAttribute("SYSTEM");
+    }
+
+    private static void ReadElement(XmlReader reader, IXmlLineInfo info, Stack<DitaNode> stack, ref DitaNode? root)
+    {
+        var el = DitaNode.Element(reader.LocalName);
+        el.Line = info.HasLineInfo() ? info.LineNumber : 0;
+        el.Column = info.HasLineInfo() ? info.LinePosition : 0;
+
+        if (reader.HasAttributes)
+        {
+            while (reader.MoveToNextAttribute())
+            {
+                if (reader.Name.StartsWith("xmlns", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                el.SetAttribute(reader.Name, reader.Value);
+            }
+
+            reader.MoveToElement();
+        }
+
+        var empty = reader.IsEmptyElement;
+
+        if (stack.Count == 0)
+        {
+            root ??= el;
+        }
+        else
+        {
+            stack.Peek().Add(el);
+        }
+
+        if (!empty)
+        {
+            stack.Push(el);
+        }
+    }
+
+    private static void ReadText(XmlReader reader, Stack<DitaNode> stack)
+    {
+        if (stack.Count == 0)
+        {
+            return;
+        }
+
+        var parent = stack.Peek();
+        var value = reader.Value;
+        if (reader.NodeType is XmlNodeType.Whitespace)
+        {
+            // Пробельный узел значим только внутри смешанного содержимого.
+            var def = DitaCatalog.Default.Get(parent.Name);
+            if (def is null || !def.IsMixed)
+            {
+                return;
+            }
+        }
+
+        parent.Add(DitaNode.Text(value));
+    }
+
+    private static void ReadComment(XmlReader reader, DitaDocument doc, Stack<DitaNode> stack, DitaNode? root)
+    {
+        var c = DitaNode.Comment(reader.Value);
+        if (stack.Count == 0)
+        {
+            if (root is null)
+            {
+                doc.Prolog.Add(c);
+            }
+        }
+        else
+        {
+            stack.Peek().Add(c);
+        }
+    }
+
+    private static void ReadProcessingInstruction(XmlReader reader, DitaDocument doc, Stack<DitaNode> stack, DitaNode? root)
+    {
+        var pi = DitaNode.Pi(reader.Name, reader.Value);
+        if (stack.Count == 0)
+        {
+            if (root is null)
+            {
+                doc.Prolog.Add(pi);
+            }
+        }
+        else
+        {
+            stack.Peek().Add(pi);
+        }
     }
 
     // ------------------------------------------------------------------ запись
