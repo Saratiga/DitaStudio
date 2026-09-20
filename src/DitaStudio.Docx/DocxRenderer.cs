@@ -370,32 +370,45 @@ public sealed class DocxRenderer
                 yield break;
 
             default:
-                var def = _catalog.Get(node.Name);
-                if (def is null)
+                foreach (var block in RenderByDisplayKind(node, level))
                 {
-                    yield return Paragraph(RenderInlineRuns(node));
-                    yield break;
+                    yield return block;
                 }
 
-                switch (def.Display)
-                {
-                    case DisplayKind.Inline:
-                    case DisplayKind.Empty:
-                        yield return Paragraph(RenderInlineRunsForNode(node).ToList());
-                        yield break;
-                    case DisplayKind.Meta:
-                        yield break;
-                    case DisplayKind.Preformatted:
-                        yield return RenderPre(node);
-                        yield break;
-                    default:
-                        foreach (var block in RenderChildrenBlocks(node, level))
-                        {
-                            yield return block;
-                        }
+                yield break;
+        }
+    }
 
-                        yield break;
+    /// <summary>Резервный путь для имён, не перечисленных явно ни в одном switch выше — по
+    /// их display-kind из каталога (для элементов, которых каталог вообще не знает, — как
+    /// обычный абзац).</summary>
+    private IEnumerable<OpenXmlCompositeElement> RenderByDisplayKind(DitaNode node, int level)
+    {
+        var def = _catalog.Get(node.Name);
+        if (def is null)
+        {
+            yield return Paragraph(RenderInlineRuns(node));
+            yield break;
+        }
+
+        switch (def.Display)
+        {
+            case DisplayKind.Inline:
+            case DisplayKind.Empty:
+                yield return Paragraph(RenderInlineRunsForNode(node).ToList());
+                yield break;
+            case DisplayKind.Meta:
+                yield break;
+            case DisplayKind.Preformatted:
+                yield return RenderPre(node);
+                yield break;
+            default:
+                foreach (var block in RenderChildrenBlocks(node, level))
+                {
+                    yield return block;
                 }
+
+                yield break;
         }
     }
 
