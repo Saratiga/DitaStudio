@@ -1133,6 +1133,7 @@ public sealed class DocxRenderer
             case "userinput":
             case "varname":
             case "coderef":
+            case "shortcut":
                 foreach (var r in Styled(node, monospace: true)) yield return r;
                 yield break;
             case "uicontrol":
@@ -1157,9 +1158,6 @@ public sealed class DocxRenderer
 
                 yield break;
             }
-            case "shortcut":
-                foreach (var r in Styled(node, monospace: true)) yield return r;
-                yield break;
             case "q":
                 yield return new W.Run(new W.Text("«"));
                 foreach (var r in RenderInlineRunsForChildren(node)) yield return r;
@@ -1183,21 +1181,9 @@ public sealed class DocxRenderer
             case "sort-as":
             case "draft-comment" when !_options.ShowDraftComments:
                 yield break;
-            case "keyword":
-            case "term":
-            case "text":
-            {
-                var keyText = KeyTextFor(node);
-                if (keyText is not null && node.Children.Count == 0)
-                {
-                    yield return new W.Run(new W.Text(keyText) { Space = SpaceProcessingModeValues.Preserve });
-                    yield break;
-                }
-
-                foreach (var r in RenderInlineRunsForChildren(node)) yield return r;
-                yield break;
-            }
-
+            // "keyword"/"term"/"text" не перечислены явно — совпадают с default
+            // (KeyTextFor + рекурсия по детям), отдельная ветка была байт-в-байт
+            // дублем default и ничего не меняла.
             default:
             {
                 var keyText = KeyTextFor(node);
