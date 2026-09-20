@@ -221,33 +221,7 @@ public sealed class DitaValidator
 
         if (def.IsTopicType)
         {
-            if (string.IsNullOrWhiteSpace(root.GetAttribute("id")))
-            {
-                issues.Add(new ValidationIssue(
-                    IssueSeverity.Warning,
-                    "У топика нет атрибута @id — на него нельзя сослаться из карты и из других топиков.",
-                    root,
-                    document.FilePath));
-            }
-
-            var title = root.FirstElement("title") ?? root.FirstElement("glossterm");
-            if (title is null || string.IsNullOrWhiteSpace(title.InnerText))
-            {
-                issues.Add(new ValidationIssue(
-                    IssueSeverity.Error,
-                    "Пустой заголовок топика.",
-                    title ?? root,
-                    document.FilePath));
-            }
-
-            if (root.FirstElement("shortdesc") is null && root.FirstElement("abstract") is null)
-            {
-                issues.Add(new ValidationIssue(
-                    IssueSeverity.Info,
-                    "Нет краткого описания (shortdesc) — оно используется в подсказках ссылок и в поиске.",
-                    root,
-                    document.FilePath));
-            }
+            ValidateTopicStyle(root, document, issues);
         }
 
         foreach (var node in root.DescendantsAndSelf())
@@ -257,35 +231,71 @@ public sealed class DitaValidator
                 continue;
             }
 
-            if (node.Name is "p" or "li" or "cmd" or "title" or "entry" or "stentry" &&
-                node.Children.Count == 0)
-            {
-                issues.Add(new ValidationIssue(
-                    IssueSeverity.Warning,
-                    $"Пустой элемент <{node.Name}>.",
-                    node,
-                    document.FilePath));
-            }
+            ValidateNodeStyle(node, document, issues);
+        }
+    }
 
-            if (node.Name == "image" && string.IsNullOrWhiteSpace(node.GetAttribute("href")) &&
-                string.IsNullOrWhiteSpace(node.GetAttribute("keyref")))
-            {
-                issues.Add(new ValidationIssue(
-                    IssueSeverity.Error,
-                    "У изображения не задан ни @href, ни @keyref.",
-                    node,
-                    document.FilePath));
-            }
+    private static void ValidateTopicStyle(DitaNode root, DitaDocument document, List<ValidationIssue> issues)
+    {
+        if (string.IsNullOrWhiteSpace(root.GetAttribute("id")))
+        {
+            issues.Add(new ValidationIssue(
+                IssueSeverity.Warning,
+                "У топика нет атрибута @id — на него нельзя сослаться из карты и из других топиков.",
+                root,
+                document.FilePath));
+        }
 
-            if (node.Name == "image" && string.IsNullOrWhiteSpace(node.GetAttribute("alt")) &&
-                node.FirstElement("alt") is null)
-            {
-                issues.Add(new ValidationIssue(
-                    IssueSeverity.Info,
-                    "У изображения нет альтернативного текста.",
-                    node,
-                    document.FilePath));
-            }
+        var title = root.FirstElement("title") ?? root.FirstElement("glossterm");
+        if (title is null || string.IsNullOrWhiteSpace(title.InnerText))
+        {
+            issues.Add(new ValidationIssue(
+                IssueSeverity.Error,
+                "Пустой заголовок топика.",
+                title ?? root,
+                document.FilePath));
+        }
+
+        if (root.FirstElement("shortdesc") is null && root.FirstElement("abstract") is null)
+        {
+            issues.Add(new ValidationIssue(
+                IssueSeverity.Info,
+                "Нет краткого описания (shortdesc) — оно используется в подсказках ссылок и в поиске.",
+                root,
+                document.FilePath));
+        }
+    }
+
+    private static void ValidateNodeStyle(DitaNode node, DitaDocument document, List<ValidationIssue> issues)
+    {
+        if (node.Name is "p" or "li" or "cmd" or "title" or "entry" or "stentry" &&
+            node.Children.Count == 0)
+        {
+            issues.Add(new ValidationIssue(
+                IssueSeverity.Warning,
+                $"Пустой элемент <{node.Name}>.",
+                node,
+                document.FilePath));
+        }
+
+        if (node.Name == "image" && string.IsNullOrWhiteSpace(node.GetAttribute("href")) &&
+            string.IsNullOrWhiteSpace(node.GetAttribute("keyref")))
+        {
+            issues.Add(new ValidationIssue(
+                IssueSeverity.Error,
+                "У изображения не задан ни @href, ни @keyref.",
+                node,
+                document.FilePath));
+        }
+
+        if (node.Name == "image" && string.IsNullOrWhiteSpace(node.GetAttribute("alt")) &&
+            node.FirstElement("alt") is null)
+        {
+            issues.Add(new ValidationIssue(
+                IssueSeverity.Info,
+                "У изображения нет альтернативного текста.",
+                node,
+                document.FilePath));
         }
     }
 }
