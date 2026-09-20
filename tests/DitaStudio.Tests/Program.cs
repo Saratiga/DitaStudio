@@ -43,6 +43,7 @@ public static class Program
         ExtractToConrefTests();
         DiffTests();
         GitHistoryTests();
+        SvnHistoryTests();
         DocxTests();
         ListAndStepsDispatchTests();
 
@@ -1292,20 +1293,20 @@ public static class Program
 
         try
         {
-            RunGitOrSkip(root, "init");
+            RunExternalOrSkip("git", root, "init");
             if (!Directory.Exists(Path.Combine(root, ".git")))
             {
                 Console.WriteLine("  (git недоступен в окружении — раздел пропущен)");
                 return;
             }
 
-            RunGitOrSkip(root, "config", "user.email", "test@example.com");
-            RunGitOrSkip(root, "config", "user.name", "Test");
+            RunExternalOrSkip("git", root, "config", "user.email", "test@example.com");
+            RunExternalOrSkip("git", root, "config", "user.name", "Test");
 
             var tracked = Path.Combine(root, "topic.dita");
             File.WriteAllText(tracked, "версия из коммита");
-            RunGitOrSkip(root, "add", "topic.dita");
-            RunGitOrSkip(root, "commit", "-m", "начальный коммит");
+            RunExternalOrSkip("git", root, "add", "topic.dita");
+            RunExternalOrSkip("git", root, "commit", "-m", "начальный коммит");
 
             File.WriteAllText(tracked, "рабочая копия, ещё не закоммичена");
 
@@ -1333,11 +1334,75 @@ public static class Program
         }
     }
 
-    private static void RunGitOrSkip(string workingDirectory, params string[] arguments)
+    private static void SvnHistoryTests()
+    {
+        Section("Сравнение с историей SVN");
+
+        var repoPath = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N") + "-svn-repo");
+        var wcPath = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N") + "-svn-wc");
+
+        try
+        {
+            RunExternalOrSkip("svnadmin", Path.GetTempPath(), "create", repoPath);
+            if (!Directory.Exists(Path.Combine(repoPath, "conf")))
+            {
+                Check(!SvnHistory.IsInRepository(Path.Combine(Path.GetTempPath(), "nonexistent.dita")),
+                    "svn недоступен — IsInRepository не падает, возвращает false");
+                Console.WriteLine("  (svn недоступен в окружении — остальные проверки раздела пропущены)");
+                return;
+            }
+
+            Directory.CreateDirectory(wcPath);
+            var repoUrl = "file:///" + repoPath.Replace('\\', '/');
+            RunExternalOrSkip("svn", wcPath, "checkout", repoUrl, ".");
+            if (!Directory.Exists(Path.Combine(wcPath, ".svn")))
+            {
+                Console.WriteLine("  (svn checkout не удался — остальные проверки раздела пропущены)");
+                return;
+            }
+
+            var tracked = Path.Combine(wcPath, "topic.dita");
+            File.WriteAllText(tracked, "версия из репозитория");
+            RunExternalOrSkip("svn", wcPath, "add", "topic.dita");
+            RunExternalOrSkip("svn", wcPath, "commit", "-m", "начальный коммит");
+
+            File.WriteAllText(tracked, "рабочая копия, ещё не закоммичена");
+
+            var baseContent = SvnHistory.ReadRevision(tracked);
+            Check(baseContent?.Trim() == "версия из репозитория", "ReadRevision вернул содержимое BASE, а не рабочей копии");
+            Check(SvnHistory.IsInRepository(tracked), "файл под версионным контролем распознан");
+
+            var untracked = Path.Combine(wcPath, "untracked.dita");
+            File.WriteAllText(untracked, "не в истории");
+            Check(SvnHistory.ReadRevision(untracked) is null, "неотслеживаемый файл — ReadRevision возвращает null");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(repoPath, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+
+            try
+            {
+                Directory.Delete(wcPath, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    private static void RunExternalOrSkip(string executable, string workingDirectory, params string[] arguments)
     {
         try
         {
-            var info = new System.Diagnostics.ProcessStartInfo("git")
+            var info = new System.Diagnostics.ProcessStartInfo(executable)
             {
                 WorkingDirectory = workingDirectory,
                 RedirectStandardOutput = true,
@@ -1355,7 +1420,7 @@ public static class Program
         }
         catch
         {
-            // git не установлен — GitHistoryTests сам обнаружит отсутствие .git и пропустит раздел
+            // клиент не установлен — вызывающий тест сам обнаружит отсутствие результата и пропустит раздел
         }
     }
 

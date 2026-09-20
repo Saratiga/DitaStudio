@@ -115,6 +115,33 @@ public partial class ValidationViewModel : ObservableObject
         DiffWindow.Show(tempPath, path);
     }
 
+    /// <summary>Сравнивает открытый документ с версией BASE из SVN — через `svn cat`, без
+    /// клиентской библиотеки. Требует svn в PATH и файл под версионным контролем.</summary>
+    [RelayCommand]
+    private void CompareWithSvnBase()
+    {
+        var path = _main.Current?.FilePath;
+        if (path is null)
+        {
+            Dialogs.Message("Сравнение с SVN", "Откройте документ.");
+            return;
+        }
+
+        var baseContent = SvnHistory.ReadRevision(path);
+        if (baseContent is null)
+        {
+            Dialogs.Message("Сравнение с SVN",
+                "Файл не найден в истории SVN: не под версионным контролем, или svn не установлен.");
+            return;
+        }
+
+        // Несохранённые правки в текущей вкладке diff не увидит — как и обычное «Сравнить файлы…».
+        var tempPath = Path.Combine(Path.GetTempPath(), $"ditastudio-svn-base-{Path.GetFileName(path)}");
+        File.WriteAllText(tempPath, baseContent);
+
+        DiffWindow.Show(tempPath, path);
+    }
+
     private void ShowIssues(IReadOnlyList<ValidationIssue> issues)
     {
         Issues.Clear();

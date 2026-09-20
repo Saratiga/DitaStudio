@@ -35,6 +35,7 @@
                 <Separator />
                 <MenuItem Header="Сравнить файлы…" Command="{Binding Validation.CompareFilesCommand}" />
                 <MenuItem Header="Сравнить с последним коммитом (git)" Command="{Binding Validation.CompareWithGitHeadCommand}" />
+                <MenuItem Header="Сравнить с версией BASE (svn)" Command="{Binding Validation.CompareWithSvnBaseCommand}" />
             </MenuItem>
 
             <MenuItem Header="_Вставка">
