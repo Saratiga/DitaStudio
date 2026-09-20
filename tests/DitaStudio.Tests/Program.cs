@@ -5,6 +5,7 @@ using DitaStudio.Core.Diff;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Localization;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Plugins;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
@@ -45,6 +46,7 @@ public static class Program
         TrackChangesTests();
         XliffTests();
         DtdCatalogLoaderTests();
+        PluginLoaderTests();
         DitavalFlagTests();
         RefactorTests();
         ExtractToConrefTests();
@@ -1406,6 +1408,52 @@ public static class Program
                 // временные файлы удалятся системой
             }
         }
+    }
+
+    private static void PluginLoaderTests()
+    {
+        Section("Плагины: загрузка сборки через AssemblyLoadContext");
+
+        // tests/TestPlugin — не настоящий плагин, а компилируемая solution'ом заглушка (Private=false
+        // на ссылке на DitaStudio.Core, как и полагается настоящему плагину) — единственный способ
+        // проверить, что typeof(T).IsAssignableFrom(type) реально работает через границу отдельно
+        // загруженной сборки, а не просто на бумаге.
+        var testPluginDir = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "TestPlugin", "bin", "Debug", "net8.0");
+        var testPluginDll = Path.Combine(testPluginDir, "TestPlugin.dll");
+
+        if (!File.Exists(testPluginDll))
+        {
+            Console.WriteLine($"  (TestPlugin.dll не найден по {testPluginDll} — раздел пропущен; соберите весь DitaStudio.sln)");
+            return;
+        }
+
+        var rules = PluginLoader.Load<IValidationRulePlugin>(testPluginDir);
+        Check(rules.Warnings.Count == 0, "загрузка настоящей .dll без предупреждений: " + string.Join("; ", rules.Warnings));
+        Check(rules.Instances.Count == 1, $"найдена ровно одна конкретная реализация IValidationRulePlugin (абстрактный класс пропущен): {rules.Instances.Count}");
+
+        var rule = rules.Instances.FirstOrDefault();
+        Check(rule?.Name == "TestPlugin.NoteFlaggingRule", $"Name загруженного плагина: '{rule?.Name}'");
+
+        var doc = DitaDocument.Parse("""
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="topic">
+  <title>Тема</title>
+  <conbody>
+    <note>Предупреждение.</note>
+    <p>Обычный абзац.</p>
+  </conbody>
+</concept>
+""");
+        var issues = rule?.Check(doc).ToList() ?? new List<ValidationIssue>();
+        Check(issues.Count == 1 && issues[0].Message.Contains("из тестового плагина"),
+            "плагин из отдельно загруженной сборки реально выполняется и находит note в документе хоста");
+
+        var formats = PluginLoader.Load<IPublishFormatPlugin>(testPluginDir);
+        Check(formats.Instances.Count == 1 && formats.Instances[0].Name == "TestPlugin.NoopPublishFormat",
+            "PluginLoader.Load<T> фильтрует ровно по запрошенному контракту, даже когда в той же сборке есть реализации другого");
+
+        var missing = PluginLoader.Load<IValidationRulePlugin>(Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N")));
+        Check(missing.Instances.Count == 0 && missing.Warnings.Count == 0, "несуществующая папка плагинов — пустой результат без ошибок");
     }
 
     private static void DitavalFlagTests()

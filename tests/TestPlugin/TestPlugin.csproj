@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Не настоящий плагин для распространения — существует только для теста PluginLoaderTests
+       (DitaStudio.Tests): подтверждает, что настоящая динамическая загрузка .dll через
+       AssemblyLoadContext работает и типы совпадают с хостом. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Private=false — не копировать DitaStudio.Core.dll в вывод плагина. Настоящий плагин так
+         же ссылается на хост без копирования: тогда PluginLoader резолвит DitaStudio.Core через
+         уже загруженную в хосте сборку, и типы (интерфейсы) совпадают. -->
+    <ProjectReference Include="..\..\src\DitaStudio.Core\DitaStudio.Core.csproj" Private="false" />
+  </ItemGroup>
+
+</Project>
