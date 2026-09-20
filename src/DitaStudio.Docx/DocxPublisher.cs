@@ -1,3 +1,4 @@
+using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
@@ -155,9 +156,16 @@ public sealed class DocxPublisher
         return result;
     }
 
-    /// <summary>Условная фильтрация по props/platform/product/audience/otherprops — как в HtmlPublisher.</summary>
+    /// <summary>Условная фильтрация по props/platform/product/audience/otherprops — как в
+    /// HtmlPublisher, плюс track changes: помеченное на удаление (status="deleted") в DOCX не
+    /// попадает — экспорт всегда отдаёт финальный вид, без markup-режима предпросмотра.</summary>
     private static bool IsIncluded(DitaNode node, PublishOptions options)
     {
+        if (TrackChanges.IsDeleted(node))
+        {
+            return false;
+        }
+
         if (options.ExcludeConditions.Count == 0)
         {
             return true;

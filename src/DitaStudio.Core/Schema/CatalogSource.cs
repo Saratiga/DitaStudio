@@ -20,7 +20,7 @@ public static partial class CatalogSource
 
     private const string Groups = """
 # ------------------------------------------------------------------ атрибуты
-@group univ-atts = id#ID conref conrefend conaction(mark|pushafter|pushbefore|pushreplace) conkeyref props base platform product audience otherprops deliveryTarget importance(obsolete|deprecated|optional|default|low|normal|high|recommended|required|urgent) rev status(new|changed|deleted|unchanged) translate(yes|no) xml:lang dir(lro|ltr|rlo|rtl) outputclass class
+@group univ-atts = id#ID conref conrefend conaction(mark|pushafter|pushbefore|pushreplace) conkeyref props base platform product audience otherprops deliveryTarget importance(obsolete|deprecated|optional|default|low|normal|high|recommended|required|urgent) rev status(new|changed|deleted|unchanged) translate(yes|no) xml:lang dir(lro|ltr|rlo|rtl) outputclass class tcauthor tcdate
 @group link-atts = href keyref scope(local|peer|external) type format
 @group display-atts = scale(50|60|70|80|90|100|110|120|140|160|180|200) frame(all|bottom|none|sides|top|topbot) expanse(column|page|spread|textline)
 
@@ -35,6 +35,8 @@ public static partial class CatalogSource
 @attrdef audience :: Условие: аудитория
 @attrdef otherprops :: Условие: прочие признаки
 @attrdef rev :: Метка редакции для подсветки изменений
+@attrdef tcauthor :: Track changes: кто внёс правку (используется вместе со status="new"/"deleted")
+@attrdef tcdate :: Track changes: когда внесена правка (ISO-дата)
 @attrdef translate :: Переводить ли содержимое элемента
 @attrdef outputclass :: Класс для оформления в выходном формате
 @attrdef scope :: Расположение цели ссылки

@@ -1,4 +1,5 @@
 using System.Text;
+using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
@@ -1354,6 +1355,15 @@ public sealed class HtmlRenderer
         if (!string.IsNullOrWhiteSpace(node?.GetAttribute("rev")))
         {
             classes.Add("rev-changed");
+        }
+
+        if (node is not null && TrackChanges.IsInserted(node))
+        {
+            classes.Add("tc-inserted");
+        }
+        else if (node is not null && TrackChanges.IsDeleted(node))
+        {
+            classes.Add("tc-deleted");
         }
 
         var flag = node is null ? null : ResolveFlagRule(node);

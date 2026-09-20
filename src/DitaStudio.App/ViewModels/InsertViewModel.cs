@@ -480,6 +480,70 @@ public partial class InsertViewModel : ObservableObject
             : "Отметка об изменении снята.";
     }
 
+    [RelayCommand]
+    private void MarkTrackedInserted()
+    {
+        var node = _main.Current?.Author.CurrentNode;
+        if (node is null)
+        {
+            _main.StatusText = "Поставьте курсор в элемент, который нужно пометить как вставленный.";
+            return;
+        }
+
+        _main.Current!.Author.MarkCurrentInserted();
+        _main.Documents.RefreshAllTabTitles();
+        _main.RefreshAttributePanel?.Invoke();
+        _main.StatusText = "Элемент помечен как вставленный (track changes).";
+    }
+
+    [RelayCommand]
+    private void MarkTrackedDeleted()
+    {
+        var node = _main.Current?.Author.CurrentNode;
+        if (node is null)
+        {
+            _main.StatusText = "Поставьте курсор в элемент, который нужно пометить как удалённый.";
+            return;
+        }
+
+        _main.Current!.Author.MarkCurrentDeleted();
+        _main.Documents.RefreshAllTabTitles();
+        _main.RefreshAttributePanel?.Invoke();
+        _main.StatusText = "Элемент помечен как удалённый (track changes) — скрыт из публикации, виден зачёркнутым в предпросмотре.";
+    }
+
+    [RelayCommand]
+    private void AcceptTrackedChange()
+    {
+        var node = _main.Current?.Author.CurrentNode;
+        if (node is null || !TrackChanges.IsTracked(node))
+        {
+            _main.StatusText = "Поставьте курсор в элемент с отслеживаемой правкой.";
+            return;
+        }
+
+        _main.Current!.Author.AcceptCurrentTrackedChange();
+        _main.Documents.RefreshAllTabTitles();
+        _main.RefreshAttributePanel?.Invoke();
+        _main.StatusText = "Правка принята.";
+    }
+
+    [RelayCommand]
+    private void RejectTrackedChange()
+    {
+        var node = _main.Current?.Author.CurrentNode;
+        if (node is null || !TrackChanges.IsTracked(node))
+        {
+            _main.StatusText = "Поставьте курсор в элемент с отслеживаемой правкой.";
+            return;
+        }
+
+        _main.Current!.Author.RejectCurrentTrackedChange();
+        _main.Documents.RefreshAllTabTitles();
+        _main.RefreshAttributePanel?.Invoke();
+        _main.StatusText = "Правка отклонена.";
+    }
+
     partial void OnShowElementTagsChanged(bool value)
     {
         foreach (var pane in _main.Panes.Values)

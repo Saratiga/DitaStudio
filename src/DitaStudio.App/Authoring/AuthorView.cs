@@ -1408,6 +1408,76 @@ public sealed class AuthorView : ScrollViewer
         return !hasRev;
     }
 
+    /// <summary>Track changes: помечает текущий элемент как вставленный (status="new") — виден
+    /// в предпросмотре подсвеченным, из итоговой публикации не исключается (это реальное
+    /// содержимое, которое автор добавил). См. <see cref="TrackChanges"/>.</summary>
+    public void MarkCurrentInserted()
+    {
+        if (Document is null || CurrentNode is null)
+        {
+            return;
+        }
+
+        BeforeStructuralEdit?.Invoke(this, "Пометка вставки (track changes)");
+        TrackChanges.MarkInserted(CurrentNode, Environment.UserName);
+        Document.IsDirty = true;
+        DocumentModified?.Invoke(this, EventArgs.Empty);
+        Rebuild(FirstEditable(CurrentNode), 0);
+    }
+
+    /// <summary>Track changes: помечает текущий элемент как удалённый (status="deleted") — узел
+    /// физически остаётся в документе (зачёркнутым в предпросмотре) до Accept/Reject, из итоговой
+    /// публикации исключается сразу. См. <see cref="TrackChanges"/>.</summary>
+    public void MarkCurrentDeleted()
+    {
+        if (Document is null || CurrentNode is null)
+        {
+            return;
+        }
+
+        BeforeStructuralEdit?.Invoke(this, "Пометка удаления (track changes)");
+        TrackChanges.MarkDeleted(CurrentNode, Environment.UserName);
+        Document.IsDirty = true;
+        DocumentModified?.Invoke(this, EventArgs.Empty);
+        Rebuild(FirstEditable(CurrentNode), 0);
+    }
+
+    /// <summary>Принимает track changes-правку на текущем элементе: вставка остаётся без пометки,
+    /// удаление физически убирается из документа.</summary>
+    public void AcceptCurrentTrackedChange()
+    {
+        if (Document is null || CurrentNode is null || !TrackChanges.IsTracked(CurrentNode))
+        {
+            return;
+        }
+
+        BeforeStructuralEdit?.Invoke(this, "Принятие правки (track changes)");
+        var node = CurrentNode;
+        var wasDeleted = TrackChanges.IsDeleted(node);
+        TrackChanges.Accept(node);
+        Document.IsDirty = true;
+        DocumentModified?.Invoke(this, EventArgs.Empty);
+        Rebuild(wasDeleted ? null : FirstEditable(node), 0);
+    }
+
+    /// <summary>Отклоняет track changes-правку на текущем элементе: вставка убирается из
+    /// документа, удаление восстанавливается без пометки.</summary>
+    public void RejectCurrentTrackedChange()
+    {
+        if (Document is null || CurrentNode is null || !TrackChanges.IsTracked(CurrentNode))
+        {
+            return;
+        }
+
+        BeforeStructuralEdit?.Invoke(this, "Отклонение правки (track changes)");
+        var node = CurrentNode;
+        var wasInserted = TrackChanges.IsInserted(node);
+        TrackChanges.Reject(node);
+        Document.IsDirty = true;
+        DocumentModified?.Invoke(this, EventArgs.Empty);
+        Rebuild(wasInserted ? null : FirstEditable(node), 0);
+    }
+
     public bool WrapCurrentInline(string elementName)
     {
         if (CurrentNode is null || !_editors.TryGetValue(CurrentNode, out var editor))

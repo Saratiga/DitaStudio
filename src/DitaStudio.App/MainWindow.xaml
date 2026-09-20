@@ -76,6 +76,11 @@
                 <MenuItem Header="Отметить как изменённое (rev)" Command="{Binding Insert.ToggleRevChangedCommand}"
                           ToolTip="Полоса на полях при публикации — штатная DITA-пометка ревизии, не полноценная история правок" />
                 <Separator />
+                <MenuItem Header="Track changes: пометить как вставленное" Command="{Binding Insert.MarkTrackedInsertedCommand}" />
+                <MenuItem Header="Track changes: пометить как удалённое" Command="{Binding Insert.MarkTrackedDeletedCommand}" />
+                <MenuItem Header="Track changes: принять правку" Command="{Binding Insert.AcceptTrackedChangeCommand}" />
+                <MenuItem Header="Track changes: отклонить правку" Command="{Binding Insert.RejectTrackedChangeCommand}" />
+                <Separator />
                 <MenuItem Header="Показывать имена элементов" IsCheckable="True" IsChecked="{Binding Insert.ShowElementTags, Mode=TwoWay}" />
             </MenuItem>
 
