@@ -561,52 +561,78 @@ public sealed class DitaProject
     {
         foreach (var child in node.ElementChildren())
         {
-            var childSpace = space;
-            var keyscope = child.GetAttribute("keyscope");
-            if (!string.IsNullOrWhiteSpace(keyscope))
-            {
-                childSpace = new KeySpace();
-                foreach (var name in keyscope!.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-                {
-                    space.Scopes[name] = childSpace;
-                }
-            }
-
-            var keys = child.GetAttribute("keys");
-            if (!string.IsNullOrWhiteSpace(keys))
-            {
-                var href = child.GetAttribute("href");
-                var resolved = href is null ? null : RefResolver.ResolvePath(mapPath, href);
-                foreach (var key in keys!.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-                {
-                    if (!childSpace.Keys.ContainsKey(key))
-                    {
-                        childSpace.Keys[key] = new KeyDefinition(
-                            key, href, resolved, child, mapPath,
-                            child.GetAttribute("scope"), child.GetAttribute("format"));
-                    }
-                }
-            }
-
-            // Вложенные карты добавляют свои ключи в ту же область (свою — если задан keyscope).
-            if (child.Name == "mapref" || (child.GetAttribute("format") == "ditamap"))
-            {
-                var href = child.GetAttribute("href");
-                if (!string.IsNullOrWhiteSpace(href))
-                {
-                    var target = RefResolver.ResolvePath(mapPath, href!);
-                    if (target is not null && File.Exists(target) && visited.Add(target))
-                    {
-                        var sub = TryGetDocument(target);
-                        if (sub is not null)
-                        {
-                            CollectKeys(sub, sub.Root, target, visited, childSpace);
-                        }
-                    }
-                }
-            }
-
+            var childSpace = ResolveChildKeySpace(child, space);
+            RegisterKeys(child, mapPath, childSpace);
+            CollectKeysFromNestedMap(child, mapPath, visited, childSpace);
             CollectKeys(mapDoc, child, mapPath, visited, childSpace);
+        }
+    }
+
+    /// <summary>Если у узла задан keyscope — заводит для него новую область и регистрирует её
+    /// под всеми именами-алиасами в родительской; иначе ключи узла идут в ту же область.</summary>
+    private static KeySpace ResolveChildKeySpace(DitaNode child, KeySpace space)
+    {
+        var keyscope = child.GetAttribute("keyscope");
+        if (string.IsNullOrWhiteSpace(keyscope))
+        {
+            return space;
+        }
+
+        var childSpace = new KeySpace();
+        foreach (var name in keyscope!.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            space.Scopes[name] = childSpace;
+        }
+
+        return childSpace;
+    }
+
+    private static void RegisterKeys(DitaNode child, string mapPath, KeySpace childSpace)
+    {
+        var keys = child.GetAttribute("keys");
+        if (string.IsNullOrWhiteSpace(keys))
+        {
+            return;
+        }
+
+        var href = child.GetAttribute("href");
+        var resolved = href is null ? null : RefResolver.ResolvePath(mapPath, href);
+        foreach (var key in keys!.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!childSpace.Keys.ContainsKey(key))
+            {
+                childSpace.Keys[key] = new KeyDefinition(
+                    key, href, resolved, child, mapPath,
+                    child.GetAttribute("scope"), child.GetAttribute("format"));
+            }
+        }
+    }
+
+    /// <summary>Вложенные карты добавляют свои ключи в ту же область (свою — если у узла задан
+    /// keyscope).</summary>
+    private void CollectKeysFromNestedMap(DitaNode child, string mapPath, HashSet<string> visited, KeySpace childSpace)
+    {
+        if (child.Name != "mapref" && child.GetAttribute("format") != "ditamap")
+        {
+            return;
+        }
+
+        var href = child.GetAttribute("href");
+        if (string.IsNullOrWhiteSpace(href))
+        {
+            return;
+        }
+
+        var target = RefResolver.ResolvePath(mapPath, href!);
+        if (target is null || !File.Exists(target) || !visited.Add(target))
+        {
+            return;
+        }
+
+        var sub = TryGetDocument(target);
+        if (sub is not null)
+        {
+            CollectKeys(sub, sub.Root, target, visited, childSpace);
         }
     }
 
