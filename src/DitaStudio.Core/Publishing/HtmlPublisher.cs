@@ -1,5 +1,4 @@
 using System.Text;
-using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 
@@ -127,7 +126,7 @@ public sealed class HtmlPublisher
             Labels = labels,
             ShowDraftComments = options.ShowDraftComments,
             ImageSource = ImageSource,
-            Filter = node => IsIncluded(node, options, showTrackedDeletions: false),
+            Filter = node => PublishFilter.IsIncluded(node, options),
             FlagRules = options.FlagConditions
         };
 
@@ -288,7 +287,7 @@ public sealed class HtmlPublisher
             TopicLink = (path, id) => id is null ? new Uri(path).AbsoluteUri : new Uri(path).AbsoluteUri + "#" + id,
             // В отличие от Publish() — предпросмотр показывает помеченное на удаление содержимое
             // (зачёркнутым, см. .tc-deleted), чтобы правку можно было принять/отклонить осознанно.
-            Filter = node => IsIncluded(node, options, showTrackedDeletions: true),
+            Filter = node => PublishFilter.IsIncluded(node, options, showTrackedDeletions: true),
             FlagRules = options.FlagConditions
         };
 
@@ -539,36 +538,4 @@ public sealed class HtmlPublisher
         }
     }
 
-    /// <summary>Условная фильтрация по props/platform/product/audience/otherprops, плюс track
-    /// changes: содержимое, помеченное на удаление (status="deleted"), в итоговую публикацию не
-    /// попадает — только в предпросмотр (showTrackedDeletions), где его можно принять/отклонить.</summary>
-    private static bool IsIncluded(DitaNode node, PublishOptions options, bool showTrackedDeletions)
-    {
-        if (!showTrackedDeletions && TrackChanges.IsDeleted(node))
-        {
-            return false;
-        }
-
-        if (options.ExcludeConditions.Count == 0)
-        {
-            return true;
-        }
-
-        foreach (var (attribute, excluded) in options.ExcludeConditions)
-        {
-            var value = node.GetAttribute(attribute);
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                continue;
-            }
-
-            var tokens = value!.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (tokens.Length > 0 && tokens.All(excluded.Contains))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
 }

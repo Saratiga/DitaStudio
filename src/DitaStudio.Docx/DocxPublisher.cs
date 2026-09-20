@@ -1,4 +1,3 @@
-using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
@@ -71,7 +70,7 @@ public sealed class DocxPublisher
         {
             Labels = labels,
             ShowDraftComments = options.ShowDraftComments,
-            Filter = node => IsIncluded(node, options),
+            Filter = node => PublishFilter.IsIncluded(node, options),
             TopicBookmark = (path, id) => bookmarks.TryGetValue(BookmarkKey(path, id), out var name) ? name : null
         };
         var renderer = new DocxRenderer(_project, mainPart, numberingPart, renderOptions);
@@ -154,39 +153,6 @@ public sealed class DocxPublisher
         }
 
         return result;
-    }
-
-    /// <summary>Условная фильтрация по props/platform/product/audience/otherprops — как в
-    /// HtmlPublisher, плюс track changes: помеченное на удаление (status="deleted") в DOCX не
-    /// попадает — экспорт всегда отдаёт финальный вид, без markup-режима предпросмотра.</summary>
-    private static bool IsIncluded(DitaNode node, PublishOptions options)
-    {
-        if (TrackChanges.IsDeleted(node))
-        {
-            return false;
-        }
-
-        if (options.ExcludeConditions.Count == 0)
-        {
-            return true;
-        }
-
-        foreach (var (attribute, excluded) in options.ExcludeConditions)
-        {
-            var value = node.GetAttribute(attribute);
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                continue;
-            }
-
-            var tokens = value!.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (tokens.Length > 0 && tokens.All(excluded.Contains))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private static W.Paragraph BuildTocParagraph(Labels labels)
