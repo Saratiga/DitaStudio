@@ -8,8 +8,8 @@ using DitaStudio.Core.Project;
 namespace DitaStudio.App;
 
 // Общая часть окна: поля состояния, конструктор, горячие клавиши. Остальные обработчики
-// разложены по темам в MainWindow.*.cs (partial class) — Project/Documents/SidePanels/Insert/Map.
-// Publish/Validation/Search/Help — на VM, см. ViewModels/.
+// разложены по темам в MainWindow.*.cs (partial class) — Project/Documents/SidePanels/Map.
+// Publish/Validation/Search/Help/Insert — на VM, см. ViewModels/.
 public partial class MainWindow : Window
 {
     private readonly Dictionary<string, DocumentPane> _panes = new(StringComparer.OrdinalIgnoreCase);
@@ -45,7 +45,10 @@ public partial class MainWindow : Window
             RefreshProjectTree = BuildProjectTree,
             RefreshMapSelector = BuildMapSelector,
             RefreshRecentProjectsMenu = RefreshRecentProjectsMenu,
-            GetSelectedMap = () => MapSelector.SelectedItem as ProjectFile
+            GetSelectedMap = () => MapSelector.SelectedItem as ProjectFile,
+            RefreshOutline = BuildOutline,
+            RefreshAttributePanel = BuildAttributePanel,
+            ApplyRefactorResult = ApplyRefactorResult
         };
         DataContext = ViewModel;
         InitializeComponent();
@@ -98,10 +101,10 @@ public partial class MainWindow : Window
         Bind(Key.F, ModifierKeys.Control | ModifierKeys.Shift, FocusSearch);
         Bind(Key.Z, ModifierKeys.Control | ModifierKeys.Alt, () => Current?.PerformUndo());
         Bind(Key.Y, ModifierKeys.Control | ModifierKeys.Alt, () => Current?.PerformRedo());
-        Bind(Key.Up, ModifierKeys.Control | ModifierKeys.Shift, () => MoveElement(true));
-        Bind(Key.Down, ModifierKeys.Control | ModifierKeys.Shift, () => MoveElement(false));
-        Bind(Key.Right, ModifierKeys.Control | ModifierKeys.Alt, () => OnMergeCellRight(this, new RoutedEventArgs()));
-        Bind(Key.Down, ModifierKeys.Control | ModifierKeys.Alt, () => OnMergeCellDown(this, new RoutedEventArgs()));
+        InputBindings.Add(new KeyBinding(ViewModel.Insert.MoveUpCommand, Key.Up, ModifierKeys.Control | ModifierKeys.Shift));
+        InputBindings.Add(new KeyBinding(ViewModel.Insert.MoveDownCommand, Key.Down, ModifierKeys.Control | ModifierKeys.Shift));
+        InputBindings.Add(new KeyBinding(ViewModel.Insert.MergeCellRightCommand, Key.Right, ModifierKeys.Control | ModifierKeys.Alt));
+        InputBindings.Add(new KeyBinding(ViewModel.Insert.MergeCellDownCommand, Key.Down, ModifierKeys.Control | ModifierKeys.Alt));
     }
 
     private void UpdateStatus(string text) => ViewModel.StatusText = text;

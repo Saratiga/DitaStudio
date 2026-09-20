@@ -26,8 +26,8 @@
             </MenuItem>
 
             <MenuItem Header="_Правка">
-                <MenuItem Header="Отменить структурное изменение" Click="OnUndo" InputGestureText="Ctrl+Alt+Z" />
-                <MenuItem Header="Повторить" Click="OnRedo" InputGestureText="Ctrl+Alt+Y" />
+                <MenuItem Header="Отменить структурное изменение" Command="{Binding Insert.UndoCommand}" InputGestureText="Ctrl+Alt+Z" />
+                <MenuItem Header="Повторить" Command="{Binding Insert.RedoCommand}" InputGestureText="Ctrl+Alt+Y" />
                 <Separator />
                 <MenuItem Header="Найти в проекте…" Click="OnFocusSearch" InputGestureText="Ctrl+Shift+F" />
                 <MenuItem Header="Проверить проект" Command="{Binding Validation.ValidateProjectCommand}" InputGestureText="F7" />
@@ -39,40 +39,40 @@
             <MenuItem Header="_Вставка">
                 <MenuItem Header="Элемент…" Click="OnFocusPalette" InputGestureText="Ctrl+E" />
                 <Separator />
-                <MenuItem Header="Абзац" Click="OnInsertParagraph" />
-                <MenuItem Header="Маркированный список" Click="OnInsertUl" />
-                <MenuItem Header="Нумерованный список" Click="OnInsertOl" />
-                <MenuItem Header="Примечание" Click="OnInsertNote" />
-                <MenuItem Header="Блок кода" Click="OnInsertCodeblock" />
-                <MenuItem Header="Сноска" Click="OnInsertFootnote" />
-                <MenuItem Header="Таблица…" Click="OnInsertTable" />
-                <MenuItem Header="Изображение…" Click="OnInsertImage" />
-                <MenuItem Header="Перекрёстная ссылка…" Click="OnInsertXref" />
+                <MenuItem Header="Абзац" Command="{Binding Insert.InsertParagraphCommand}" />
+                <MenuItem Header="Маркированный список" Command="{Binding Insert.InsertUlCommand}" />
+                <MenuItem Header="Нумерованный список" Command="{Binding Insert.InsertOlCommand}" />
+                <MenuItem Header="Примечание" Command="{Binding Insert.InsertNoteCommand}" />
+                <MenuItem Header="Блок кода" Command="{Binding Insert.InsertCodeblockCommand}" />
+                <MenuItem Header="Сноска" Command="{Binding Insert.InsertFootnoteCommand}" />
+                <MenuItem Header="Таблица…" Command="{Binding Insert.InsertTableCommand}" />
+                <MenuItem Header="Изображение…" Command="{Binding Insert.InsertImageCommand}" />
+                <MenuItem Header="Перекрёстная ссылка…" Command="{Binding Insert.InsertXrefCommand}" />
                 <Separator />
-                <MenuItem Header="Полужирный" Click="OnFormatBold" InputGestureText="Ctrl+B" />
-                <MenuItem Header="Курсив" Click="OnFormatItalic" InputGestureText="Ctrl+I" />
-                <MenuItem Header="Код в строке" Click="OnFormatCode" />
-                <MenuItem Header="Элемент интерфейса" Click="OnFormatUicontrol" />
+                <MenuItem Header="Полужирный" Command="{Binding Insert.FormatBoldCommand}" InputGestureText="Ctrl+B" />
+                <MenuItem Header="Курсив" Command="{Binding Insert.FormatItalicCommand}" InputGestureText="Ctrl+I" />
+                <MenuItem Header="Код в строке" Command="{Binding Insert.FormatCodeCommand}" />
+                <MenuItem Header="Элемент интерфейса" Command="{Binding Insert.FormatUicontrolCommand}" />
             </MenuItem>
 
             <MenuItem Header="_Структура">
-                <MenuItem Header="Переместить вверх" Click="OnMoveUp" InputGestureText="Ctrl+Shift+Up" />
-                <MenuItem Header="Переместить вниз" Click="OnMoveDown" InputGestureText="Ctrl+Shift+Down" />
-                <MenuItem Header="Удалить элемент" Click="OnDeleteElement" />
-                <MenuItem Header="Переименовать id…" Click="OnRenameId"
+                <MenuItem Header="Переместить вверх" Command="{Binding Insert.MoveUpCommand}" InputGestureText="Ctrl+Shift+Up" />
+                <MenuItem Header="Переместить вниз" Command="{Binding Insert.MoveDownCommand}" InputGestureText="Ctrl+Shift+Down" />
+                <MenuItem Header="Удалить элемент" Command="{Binding Insert.DeleteElementCommand}" />
+                <MenuItem Header="Переименовать id…" Command="{Binding Insert.RenameIdCommand}"
                           ToolTip="Обновляет ссылки (href, conref) на этот id по всему проекту" />
-                <MenuItem Header="Вынести в conref…" Click="OnExtractToConref"
+                <MenuItem Header="Вынести в conref…" Command="{Binding Insert.ExtractToConrefCommand}"
                           ToolTip="Переносит элемент в другой топик, оставляя на месте ссылку conref" />
                 <Separator />
-                <MenuItem Header="Объединить ячейку со следующей" Click="OnMergeCellRight" InputGestureText="Ctrl+Alt+Right" />
-                <MenuItem Header="Объединить ячейку со строкой ниже" Click="OnMergeCellDown" InputGestureText="Ctrl+Alt+Down" />
+                <MenuItem Header="Объединить ячейку со следующей" Command="{Binding Insert.MergeCellRightCommand}" InputGestureText="Ctrl+Alt+Right" />
+                <MenuItem Header="Объединить ячейку со строкой ниже" Command="{Binding Insert.MergeCellDownCommand}" InputGestureText="Ctrl+Alt+Down" />
                 <Separator />
-                <MenuItem Header="Разрыв страницы перед заголовком (печать)" Click="OnTogglePageBreakBeforeTitle" />
-                <MenuItem Header="Таблица: разрешить перенос с повтором шапки (печать)" Click="OnToggleTablePageBreakAuto" />
-                <MenuItem Header="Отметить как изменённое (rev)" Click="OnToggleRevChanged"
+                <MenuItem Header="Разрыв страницы перед заголовком (печать)" Command="{Binding Insert.TogglePageBreakBeforeTitleCommand}" />
+                <MenuItem Header="Таблица: разрешить перенос с повтором шапки (печать)" Command="{Binding Insert.ToggleTablePageBreakAutoCommand}" />
+                <MenuItem Header="Отметить как изменённое (rev)" Command="{Binding Insert.ToggleRevChangedCommand}"
                           ToolTip="Полоса на полях при публикации — штатная DITA-пометка ревизии, не полноценная история правок" />
                 <Separator />
-                <MenuItem Header="Показывать имена элементов" IsCheckable="True" IsChecked="True" Click="OnToggleTags" />
+                <MenuItem Header="Показывать имена элементов" IsCheckable="True" IsChecked="{Binding Insert.ShowElementTags, Mode=TwoWay}" />
             </MenuItem>
 
             <MenuItem Header="_Публикация">
@@ -101,19 +101,19 @@
                 <Button Style="{StaticResource ToolButton}" Content="➕" Click="OnNewDocument" ToolTip="Создать документ (Ctrl+N)" />
                 <Button Style="{StaticResource ToolButton}" Content="💾" Command="{Binding Documents.SaveCurrentCommand}" ToolTip="Сохранить (Ctrl+S)" />
                 <Separator />
-                <Button Style="{StaticResource ToolButton}" Content="↩" Click="OnUndo" ToolTip="Отменить структурное изменение (Ctrl+Alt+Z)" />
-                <Button Style="{StaticResource ToolButton}" Content="↪" Click="OnRedo" ToolTip="Повторить (Ctrl+Alt+Y)" />
+                <Button Style="{StaticResource ToolButton}" Content="↩" Command="{Binding Insert.UndoCommand}" ToolTip="Отменить структурное изменение (Ctrl+Alt+Z)" />
+                <Button Style="{StaticResource ToolButton}" Content="↪" Command="{Binding Insert.RedoCommand}" ToolTip="Повторить (Ctrl+Alt+Y)" />
                 <Separator />
-                <Button Style="{StaticResource ToolButton}" Content="Ж" FontWeight="Bold" Click="OnFormatBold" ToolTip="Полужирный (Ctrl+B)" />
-                <Button Style="{StaticResource ToolButton}" Content="К" FontStyle="Italic" Click="OnFormatItalic" ToolTip="Курсив (Ctrl+I)" />
-                <Button Style="{StaticResource ToolButton}" Content="&lt;/&gt;" FontFamily="Consolas" FontSize="12" Click="OnFormatCode" ToolTip="Код в строке" />
+                <Button Style="{StaticResource ToolButton}" Content="Ж" FontWeight="Bold" Command="{Binding Insert.FormatBoldCommand}" ToolTip="Полужирный (Ctrl+B)" />
+                <Button Style="{StaticResource ToolButton}" Content="К" FontStyle="Italic" Command="{Binding Insert.FormatItalicCommand}" ToolTip="Курсив (Ctrl+I)" />
+                <Button Style="{StaticResource ToolButton}" Content="&lt;/&gt;" FontFamily="Consolas" FontSize="12" Command="{Binding Insert.FormatCodeCommand}" ToolTip="Код в строке" />
                 <Separator />
-                <Button Style="{StaticResource ToolButton}" Content="↑" Click="OnMoveUp" ToolTip="Переместить элемент вверх (Ctrl+Shift+Up)" />
-                <Button Style="{StaticResource ToolButton}" Content="↓" Click="OnMoveDown" ToolTip="Переместить элемент вниз (Ctrl+Shift+Down)" />
-                <Button Style="{StaticResource ToolButton}" Content="🗑" Click="OnDeleteElement" ToolTip="Удалить элемент" />
+                <Button Style="{StaticResource ToolButton}" Content="↑" Command="{Binding Insert.MoveUpCommand}" ToolTip="Переместить элемент вверх (Ctrl+Shift+Up)" />
+                <Button Style="{StaticResource ToolButton}" Content="↓" Command="{Binding Insert.MoveDownCommand}" ToolTip="Переместить элемент вниз (Ctrl+Shift+Down)" />
+                <Button Style="{StaticResource ToolButton}" Content="🗑" Command="{Binding Insert.DeleteElementCommand}" ToolTip="Удалить элемент" />
                 <Separator />
-                <Button Style="{StaticResource ToolButton}" Content="⇔" Click="OnMergeCellRight" ToolTip="Объединить ячейку таблицы со следующей (Ctrl+Alt+→)" />
-                <Button Style="{StaticResource ToolButton}" Content="⇕" Click="OnMergeCellDown" ToolTip="Объединить ячейку таблицы со строкой ниже (Ctrl+Alt+↓)" />
+                <Button Style="{StaticResource ToolButton}" Content="⇔" Command="{Binding Insert.MergeCellRightCommand}" ToolTip="Объединить ячейку таблицы со следующей (Ctrl+Alt+→)" />
+                <Button Style="{StaticResource ToolButton}" Content="⇕" Command="{Binding Insert.MergeCellDownCommand}" ToolTip="Объединить ячейку таблицы со строкой ниже (Ctrl+Alt+↓)" />
                 <Separator />
                 <Button Style="{StaticResource ToolButton}" Content="✔" Command="{Binding Validation.ValidateProjectCommand}" ToolTip="Проверить проект (F7)" />
                 <Button Style="{StaticResource ToolButton}" Content="▶" Command="{Binding Publish.PublishSiteCommand}" ToolTip="Собрать сайт HTML (F5)" />

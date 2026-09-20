@@ -189,4 +189,30 @@ public partial class MainWindow
 
     private void OnKeyDoubleClick(object sender, MouseButtonEventArgs e) =>
         ViewModel.ProjectPanel.OpenSelectedKeyCommand.Execute(null);
+
+    /// <summary>Общий хвост для рефакторинг-операций: документы, открытые во вкладках, просто
+    /// помечаются несохранёнными и перерисовываются (пользователь сохранит сам, как обычную
+    /// правку); закрытые документы сохраняются на диск сразу — иначе несохранённые изменения
+    /// в файлах, которые никто сейчас не видит, легко потерять или забыть.
+    /// Общий метод для OnProjectFileMove (здесь) и InsertViewModel (RenameId/ExtractToConref) —
+    /// подключается туда через мост MainViewModel.ApplyRefactorResult.</summary>
+    private void ApplyRefactorResult(RefactorResult result)
+    {
+        foreach (var doc in result.ChangedDocuments)
+        {
+            var openPane = _panes.Values.FirstOrDefault(p => ReferenceEquals(p.Document, doc));
+            if (openPane is not null)
+            {
+                openPane.Document.IsDirty = true;
+                openPane.ReloadViews();
+            }
+            else if (doc.FilePath is not null)
+            {
+                doc.Save(doc.FilePath);
+            }
+        }
+
+        UpdateTabHeaders();
+        BuildAttributePanel();
+    }
 }

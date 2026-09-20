@@ -276,7 +276,7 @@ public partial class MainWindow
     {
         if (PaletteList.SelectedItem is ListBoxItem { Tag: string name })
         {
-            InsertElement(name);
+            ViewModel.Insert.InsertElementCommand.Execute(name);
         }
     }
 

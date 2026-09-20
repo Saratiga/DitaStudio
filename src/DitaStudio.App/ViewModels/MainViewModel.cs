@@ -44,6 +44,9 @@ public partial class MainViewModel : ObservableObject
     public Action? RefreshMapSelector { get; set; }
     public Action? RefreshRecentProjectsMenu { get; set; }
     public Func<ProjectFile?>? GetSelectedMap { get; set; }
+    public Action? RefreshOutline { get; set; }
+    public Action? RefreshAttributePanel { get; set; }
+    public Action<RefactorResult>? ApplyRefactorResult { get; set; }
 
     // Индекс вкладки нижней панели (Проверка/Поиск/Журнал сборки) — общий для
     // нескольких VM, поэтому живёт здесь, а не в одной из них.
@@ -66,6 +69,7 @@ public partial class MainViewModel : ObservableObject
     // Не "Project" — это имя уже занято открытым DitaProject выше.
     public ProjectViewModel ProjectPanel { get; }
     public PublishViewModel Publish { get; }
+    public InsertViewModel Insert { get; }
 
     public MainViewModel(Dictionary<string, DocumentPane> panes)
     {
@@ -76,5 +80,6 @@ public partial class MainViewModel : ObservableObject
         Validation = new ValidationViewModel(this);
         ProjectPanel = new ProjectViewModel(this);
         Publish = new PublishViewModel(this);
+        Insert = new InsertViewModel(this);
     }
 }
