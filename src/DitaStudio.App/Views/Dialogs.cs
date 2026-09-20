@@ -595,9 +595,8 @@ public static class Dialogs
 
     public sealed record ConditionsResult(Dictionary<string, HashSet<string>> Exclude, bool ShowDraftComments);
 
-    public static ConditionsResult? PublishConditions(DitaProject project, ConditionsResult? current)
+    private static Dictionary<string, HashSet<string>> CollectConditionValues(DitaProject project, IReadOnlyList<string> attributes)
     {
-        var attributes = new[] { "props", "platform", "product", "audience", "otherprops", "deliveryTarget" };
         var values = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
 
         foreach (var file in project.Files)
@@ -631,6 +630,14 @@ public static class Dialogs
                 }
             }
         }
+
+        return values;
+    }
+
+    public static ConditionsResult? PublishConditions(DitaProject project, ConditionsResult? current)
+    {
+        var attributes = new[] { "props", "platform", "product", "audience", "otherprops", "deliveryTarget" };
+        var values = CollectConditionValues(project, attributes);
 
         var panel = new StackPanel { Margin = new Thickness(16) };
         panel.Children.Add(new TextBlock
