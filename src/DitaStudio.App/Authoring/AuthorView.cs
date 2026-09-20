@@ -727,68 +727,75 @@ public sealed class AuthorView : ScrollViewer
 
         for (var r = 0; r < rows.Count; r++)
         {
-            var isHeader = r < headerCount;
-            var cursor = 0;
-
-            foreach (var entry in rows[r].ElementChildren().Where(e => e.Name == "entry"))
-            {
-                while (cursor < columns && occupied[r, cursor])
-                {
-                    cursor++;
-                }
-
-                var colSpan = 1;
-                var namest = entry.GetAttribute("namest");
-                var nameend = entry.GetAttribute("nameend");
-                if (!string.IsNullOrEmpty(namest) && !string.IsNullOrEmpty(nameend))
-                {
-                    var startIdx = colNames.IndexOf(namest!);
-                    var endIdx = colNames.IndexOf(nameend!);
-                    if (startIdx >= 0 && endIdx >= startIdx)
-                    {
-                        colSpan = endIdx - startIdx + 1;
-                    }
-                }
-
-                var rowSpan = 1;
-                if (int.TryParse(entry.GetAttribute("morerows"), out var more) && more > 0)
-                {
-                    rowSpan = more + 1;
-                }
-
-                var editor = CreateEditor(entry);
-                editor.FontWeight = isHeader ? FontWeights.SemiBold : FontWeights.Normal;
-
-                var cellBorder = new Border
-                {
-                    Child = editor,
-                    BorderBrush = ContainerBorder,
-                    BorderThickness = new Thickness(cursor == 0 ? 1 : 0, r == 0 ? 1 : 0, 1, 1),
-                    Padding = new Thickness(7, 5, 7, 5),
-                    Background = isHeader ? MetaBackground : Brushes.Transparent,
-                    Tag = entry
-                };
-                AttachSelection(cellBorder, entry);
-
-                Grid.SetRow(cellBorder, r);
-                Grid.SetColumn(cellBorder, Math.Min(cursor, Math.Max(columns - 1, 0)));
-                Grid.SetColumnSpan(cellBorder, Math.Max(1, Math.Min(colSpan, columns - cursor)));
-                Grid.SetRowSpan(cellBorder, Math.Max(1, Math.Min(rowSpan, rows.Count - r)));
-                grid.Children.Add(cellBorder);
-
-                for (var rr = r; rr < Math.Min(r + rowSpan, rows.Count); rr++)
-                {
-                    for (var cc = cursor; cc < Math.Min(cursor + colSpan, columns); cc++)
-                    {
-                        occupied[rr, cc] = true;
-                    }
-                }
-
-                cursor += colSpan;
-            }
+            PlaceCalsRowCells(grid, rows, r, columns, headerCount, colNames, occupied);
         }
 
         return grid;
+    }
+
+    /// <summary>Раскладывает ячейки одной строки CALS-таблицы по сетке с учётом namest/nameend (colspan)
+    /// и morerows (rowspan); помечает занятые клетки в <paramref name="occupied"/>.</summary>
+    private void PlaceCalsRowCells(Grid grid, List<DitaNode> rows, int r, int columns, int headerCount, List<string> colNames, bool[,] occupied)
+    {
+        var isHeader = r < headerCount;
+        var cursor = 0;
+
+        foreach (var entry in rows[r].ElementChildren().Where(e => e.Name == "entry"))
+        {
+            while (cursor < columns && occupied[r, cursor])
+            {
+                cursor++;
+            }
+
+            var colSpan = 1;
+            var namest = entry.GetAttribute("namest");
+            var nameend = entry.GetAttribute("nameend");
+            if (!string.IsNullOrEmpty(namest) && !string.IsNullOrEmpty(nameend))
+            {
+                var startIdx = colNames.IndexOf(namest!);
+                var endIdx = colNames.IndexOf(nameend!);
+                if (startIdx >= 0 && endIdx >= startIdx)
+                {
+                    colSpan = endIdx - startIdx + 1;
+                }
+            }
+
+            var rowSpan = 1;
+            if (int.TryParse(entry.GetAttribute("morerows"), out var more) && more > 0)
+            {
+                rowSpan = more + 1;
+            }
+
+            var editor = CreateEditor(entry);
+            editor.FontWeight = isHeader ? FontWeights.SemiBold : FontWeights.Normal;
+
+            var cellBorder = new Border
+            {
+                Child = editor,
+                BorderBrush = ContainerBorder,
+                BorderThickness = new Thickness(cursor == 0 ? 1 : 0, r == 0 ? 1 : 0, 1, 1),
+                Padding = new Thickness(7, 5, 7, 5),
+                Background = isHeader ? MetaBackground : Brushes.Transparent,
+                Tag = entry
+            };
+            AttachSelection(cellBorder, entry);
+
+            Grid.SetRow(cellBorder, r);
+            Grid.SetColumn(cellBorder, Math.Min(cursor, Math.Max(columns - 1, 0)));
+            Grid.SetColumnSpan(cellBorder, Math.Max(1, Math.Min(colSpan, columns - cursor)));
+            Grid.SetRowSpan(cellBorder, Math.Max(1, Math.Min(rowSpan, rows.Count - r)));
+            grid.Children.Add(cellBorder);
+
+            for (var rr = r; rr < Math.Min(r + rowSpan, rows.Count); rr++)
+            {
+                for (var cc = cursor; cc < Math.Min(cursor + colSpan, columns); cc++)
+                {
+                    occupied[rr, cc] = true;
+                }
+            }
+
+            cursor += colSpan;
+        }
     }
 
     /// <summary>Список имён колонок из colspec; если их нет — просто "c1".."cN" по числу колонок в строках.
