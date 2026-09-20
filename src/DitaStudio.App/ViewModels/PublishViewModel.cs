@@ -1,7 +1,9 @@
+using System.Xml.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DitaStudio.App;
 using DitaStudio.App.Views;
+using DitaStudio.Core.Localization;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Docx;
@@ -207,6 +209,92 @@ public partial class PublishViewModel : ObservableObject
         _main.StatusText = project.CustomCssPath is null
             ? "Пользовательский CSS отключён."
             : $"Пользовательский CSS: {project.CustomCssPath}";
+    }
+
+    /// <summary>Экспортирует открытый документ в XLIFF 1.2 для перевода — сегмент на каждый
+    /// блочный элемент с прямым текстом, фразовая разметка внутри как bpt/ept/ph (см. XliffConverter).</summary>
+    [RelayCommand]
+    private void ExportXliff()
+    {
+        var pane = _main.Current;
+        if (pane is null)
+        {
+            Dialogs.Message("Экспорт в XLIFF", "Откройте документ.");
+            return;
+        }
+
+        var error = pane.CommitPendingEdits();
+        if (error is not null)
+        {
+            Dialogs.Message("Экспорт в XLIFF", $"Документ не разбирается как XML:\n\n{error}");
+            return;
+        }
+
+        var dialog = new SaveFileDialog
+        {
+            Title = "Экспорт в XLIFF",
+            Filter = "Файлы XLIFF|*.xliff|Все файлы|*.*",
+            FileName = Path.GetFileNameWithoutExtension(pane.FilePath ?? "document") + ".xliff"
+        };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        var xliff = XliffConverter.Export(pane.Document, "ru", "en");
+        xliff.Save(dialog.FileName);
+        _main.StatusText = $"Экспортировано в XLIFF: {dialog.FileName}";
+    }
+
+    /// <summary>Подставляет перевод из &lt;target&gt; каждого сегмента XLIFF обратно в открытый
+    /// документ — по номеру сегмента, тем же обходом дерева, что и при экспорте (см. XliffConverter).
+    /// Требует, чтобы структура документа не менялась с момента экспорта.</summary>
+    [RelayCommand]
+    private void ImportXliff()
+    {
+        var pane = _main.Current;
+        if (pane is null)
+        {
+            Dialogs.Message("Импорт из XLIFF", "Откройте документ, в который нужно подставить перевод.");
+            return;
+        }
+
+        var dialog = new OpenFileDialog { Title = "Импортировать перевод из XLIFF", Filter = "Файлы XLIFF|*.xliff|Все файлы|*.*" };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        XDocument xliff;
+        try
+        {
+            xliff = XDocument.Load(dialog.FileName);
+        }
+        catch (Exception ex)
+        {
+            Dialogs.Message("Импорт из XLIFF", $"Не удалось прочитать файл: {ex.Message}");
+            return;
+        }
+
+        var error = pane.CommitPendingEdits();
+        if (error is not null)
+        {
+            Dialogs.Message("Импорт из XLIFF", $"Документ не разбирается как XML:\n\n{error}");
+            return;
+        }
+
+        var warnings = new List<string>();
+        var applied = XliffConverter.Import(pane.Document, xliff, warnings);
+        pane.Document.IsDirty = true;
+        pane.Author.Rebuild();
+        _main.Documents.RefreshAllTabTitles();
+
+        _main.StatusText = $"Перевод импортирован: применено сегментов {applied}" +
+                            (warnings.Count > 0 ? $", предупреждений {warnings.Count}." : ".");
+        if (warnings.Count > 0)
+        {
+            Dialogs.Message("Импорт из XLIFF — предупреждения", string.Join("\n", warnings));
+        }
     }
 
     /// <summary>Сбрасывает несохранённые правки во всех открытых вкладках на диск и пересобирает

@@ -1,7 +1,9 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using DitaStudio.Core.Diff;
 using DitaStudio.Core.Editing;
+using DitaStudio.Core.Localization;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
@@ -40,6 +42,7 @@ public static class Program
         RelTableTests();
         RevChangeTests();
         TrackChangesTests();
+        XliffTests();
         DitavalFlagTests();
         RefactorTests();
         ExtractToConrefTests();
@@ -1217,6 +1220,104 @@ public static class Program
                 // временные файлы удалятся системой
             }
         }
+    }
+
+    private static void XliffTests()
+    {
+        Section("Экспорт/импорт XLIFF");
+
+        const string SourceXml = """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="topic">
+  <title>Обзор</title>
+  <shortdesc>Краткое описание.</shortdesc>
+  <conbody>
+    <p>Текст с <b>жирным</b> и <uicontrol keyref="setup-button">Готово</uicontrol> и картинкой <image href="pic.png"><alt>Схема</alt></image>.</p>
+    <note>Общее предупреждение.
+      <p>Вложенный абзац внутри note.</p>
+    </note>
+  </conbody>
+</concept>
+""";
+
+        var doc = DitaDocument.Parse(SourceXml);
+        doc.FilePath = "topic.dita";
+
+        var xliff = XliffConverter.Export(doc, "ru", "en");
+        var units = xliff.Root!.Element("file")!.Element("body")!.Elements("trans-unit").ToList();
+
+        Check(units.Count == 6,
+            $"шесть независимых сегментов: title, shortdesc, alt (внутри image), p (conbody), p (внутри note), собственный текст note -> найдено {units.Count}");
+
+        var pUnit = units.FirstOrDefault(u => u.Attribute("resname")!.Value == "/concept/conbody/p");
+        Check(pUnit is not null, "сегмент абзаца из conbody найден по resname");
+        var pSource = pUnit!.Element("source")!;
+        Check(pSource.Elements("bpt").Count() == 3,
+            $"в абзаце три парных фразовых элемента (b/uicontrol/image): {pSource.Elements("bpt").Count()}");
+        Check(pSource.Value.Contains("жирным") && pSource.Value.Contains("Готово"),
+            "текст внутри b/uicontrol попал в исходный сегмент как обычный переводимый текст");
+
+        var altUnit = units.FirstOrDefault(u => u.Attribute("resname")!.Value.EndsWith("/alt", StringComparison.Ordinal));
+        Check(altUnit is not null, "alt внутри image сегментирован независимо от абзаца");
+        Check(altUnit!.Element("source")!.Value == "Схема", "текст alt попал в свой сегмент как есть");
+
+        // --- перевод: подменяем текст в target каждого сегмента на маркер "[EN] исходный текст"
+        foreach (var unit in units)
+        {
+            var target = unit.Element("target")!;
+            foreach (var textNode in target.Nodes().OfType<XText>().ToList())
+            {
+                textNode.Value = "[EN]" + textNode.Value;
+            }
+        }
+
+        var warnings = new List<string>();
+        var reimported = DitaDocument.Parse(SourceXml);
+        reimported.FilePath = "topic.dita";
+        var applied = XliffConverter.Import(reimported, xliff, warnings);
+
+        Check(applied == units.Count, $"импорт применил все {units.Count} сегментов: {applied}");
+        Check(warnings.Count == 0, "чистый round-trip без предупреждений: " + string.Join("; ", warnings));
+
+        var titleText = reimported.Root.FirstElement("title")!.InnerText;
+        Check(titleText == "[EN]Обзор", $"заголовок переведён: '{titleText}'");
+
+        var pNode = reimported.Root.FindDescendant("conbody")!.FirstElement("p")!;
+        Check(pNode.InnerText.Contains("[EN]Текст с") && pNode.InnerText.Contains("[EN]жирным") && pNode.InnerText.Contains("[EN]Готово"),
+            $"текст абзаца и текст внутри b/uicontrol переведены: '{pNode.InnerText}'");
+
+        var uicontrolNode = pNode.FindDescendant("uicontrol")!;
+        Check(uicontrolNode.GetAttribute("keyref") == "setup-button",
+            "атрибут keyref у uicontrol сохранён после round-trip");
+
+        var imageNode = pNode.FindDescendant("image")!;
+        Check(imageNode.GetAttribute("href") == "pic.png", "атрибут href у image сохранён после round-trip");
+        Check(imageNode.FirstElement("alt")!.InnerText == "[EN]Схема", "alt внутри image переведён независимо от абзаца");
+
+        var noteNode = reimported.Root.FindDescendant("note")!;
+        Check(noteNode.Children.Any(c => c.Kind == NodeKind.Text && c.Value.Contains("[EN]Общее предупреждение")),
+            "собственный текст note переведён");
+        Check(noteNode.FirstElement("p")!.InnerText.Contains("[EN]Вложенный абзац"),
+            "вложенный <p> внутри note переведён как отдельный сегмент");
+
+        // --- устойчивость к повреждённому XLIFF: не роняет импорт, копит предупреждения
+        var brokenXliff = XliffConverter.Export(doc, "ru", "en");
+        var brokenUnits = brokenXliff.Root!.Element("file")!.Element("body")!.Elements("trans-unit").ToList();
+        brokenUnits[0].Element("target")!.Remove();
+        var missingTargetWarnings = new List<string>();
+        var docForMissingTarget = DitaDocument.Parse(SourceXml);
+        var appliedMissingTarget = XliffConverter.Import(docForMissingTarget, brokenXliff, missingTargetWarnings);
+        Check(appliedMissingTarget == brokenUnits.Count - 1, "сегмент без <target> пропущен, остальные применены");
+        Check(missingTargetWarnings.Count == 1, $"отсутствие <target> дало одно предупреждение: {missingTargetWarnings.Count}");
+
+        var badIdXliff = XliffConverter.Export(doc, "ru", "en");
+        var badPUnit = badIdXliff.Root!.Element("file")!.Element("body")!.Elements("trans-unit")
+            .First(u => u.Attribute("resname")!.Value == "/concept/conbody/p");
+        badPUnit.Element("target")!.Element("bpt")!.SetAttributeValue("id", "999");
+        var badIdWarnings = new List<string>();
+        var docForBadId = DitaDocument.Parse(SourceXml);
+        XliffConverter.Import(docForBadId, badIdXliff, badIdWarnings);
+        Check(badIdWarnings.Any(w => w.Contains("вне диапазона")), "placeholder id вне диапазона зафиксирован предупреждением, импорт не падает");
     }
 
     private static void DitavalFlagTests()
