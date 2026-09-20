@@ -349,23 +349,7 @@ public sealed class DitaCatalog
         }
 
         var names = DitaCatalog.ChildNames(node.Parent);
-        var index = names.Count;
-        var counter = 0;
-        for (var i = 0; i < node.Parent.Children.Count; i++)
-        {
-            if (node.Parent.Children[i].Kind != NodeKind.Element)
-            {
-                continue;
-            }
-
-            if (ReferenceEquals(node.Parent.Children[i], node))
-            {
-                index = counter;
-                break;
-            }
-
-            counter++;
-        }
+        var index = FindElementIndex(node.Parent, node, names.Count);
 
         var without = new List<string>(names);
         if (index < without.Count)
@@ -373,7 +357,37 @@ public sealed class DitaCatalog
             without.RemoveAt(index);
         }
 
+        return FilterReplacementCandidates(parentDef, node, without, index);
+    }
+
+    /// <summary>Позиция <paramref name="node"/> среди дочерних элементов <paramref name="parent"/> (без текстовых узлов);
+    /// <paramref name="fallback"/>, если узел не найден.</summary>
+    private static int FindElementIndex(DitaNode parent, DitaNode node, int fallback)
+    {
+        var counter = 0;
+        for (var i = 0; i < parent.Children.Count; i++)
+        {
+            if (parent.Children[i].Kind != NodeKind.Element)
+            {
+                continue;
+            }
+
+            if (ReferenceEquals(parent.Children[i], node))
+            {
+                return counter;
+            }
+
+            counter++;
+        }
+
+        return fallback;
+    }
+
+    private List<ElementDef> FilterReplacementCandidates(ElementDef parentDef, DitaNode node, List<string> without, int index)
+    {
         var result = new List<ElementDef>();
+        var current = Get(node.Name);
+
         foreach (var candidate in parentDef.Automaton.AllowedNames)
         {
             if (candidate == node.Name)
@@ -393,7 +407,6 @@ public sealed class DitaCatalog
             }
 
             // Меняем только на элемент со «совместимым» типом отображения.
-            var current = Get(node.Name);
             if (current is not null && current.IsInline != cd.IsInline)
             {
                 continue;
