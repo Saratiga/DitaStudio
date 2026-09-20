@@ -1103,79 +1103,92 @@ public sealed class AuthorView : ScrollViewer
 
         BeforeStructuralEdit?.Invoke(this, outdent ? "Уменьшение уровня" : "Увеличение уровня");
 
-        if (!outdent)
+        var applied = outdent ? OutdentItem(item, list) : IndentItem(item, list);
+        if (!applied)
         {
-            var previous = EditCommands.PreviousElement(item);
-            if (previous is null)
-            {
-                return false;
-            }
-
-            var nestedName = list.Name switch
-            {
-                "steps" or "steps-unordered" => "substeps",
-                "substeps" => "substeps",
-                "ol" => "ol",
-                _ => "ul"
-            };
-
-            var itemName = nestedName == "substeps" ? "substep" : "li";
-            var nested = previous.ElementChildren().FirstOrDefault(c => c.Name == nestedName);
-            if (nested is null)
-            {
-                nested = EditCommands.Append(previous, nestedName);
-                if (nested is null)
-                {
-                    return false;
-                }
-
-                foreach (var auto in nested.Children.ToList())
-                {
-                    nested.Remove(auto);
-                }
-            }
-
-            item.RemoveSelf();
-            nested.Add(item);
-            if (item.Name != itemName)
-            {
-                EditCommands.ChangeElementName(item, itemName);
-            }
-        }
-        else
-        {
-            var grandItem = list.Parent;
-            if (grandItem is null || grandItem.Name is not ("li" or "step" or "substep"))
-            {
-                return false;
-            }
-
-            var outerList = grandItem.Parent;
-            if (outerList is null)
-            {
-                return false;
-            }
-
-            var index = outerList.IndexOf(grandItem) + 1;
-            item.RemoveSelf();
-
-            var outerItemName = outerList.Name is "steps" or "steps-unordered" ? "step" : "li";
-            outerList.Insert(index, item);
-            if (item.Name != outerItemName)
-            {
-                EditCommands.ChangeElementName(item, outerItemName);
-            }
-
-            if (list.Children.Count == 0)
-            {
-                list.RemoveSelf();
-            }
+            return false;
         }
 
         Document.IsDirty = true;
         DocumentModified?.Invoke(this, EventArgs.Empty);
         var focus = item.FirstElement("cmd") ?? item;
         Rebuild(focus, 0);
+        return true;
+    }
+
+    /// <summary>Переносит <paramref name="item"/> в substeps/ul/ol предыдущего элемента списка.</summary>
+    private bool IndentItem(DitaNode item, DitaNode list)
+    {
+        var previous = EditCommands.PreviousElement(item);
+        if (previous is null)
+        {
+            return false;
+        }
+
+        var nestedName = list.Name switch
+        {
+            "steps" or "steps-unordered" => "substeps",
+            "substeps" => "substeps",
+            "ol" => "ol",
+            _ => "ul"
+        };
+
+        var itemName = nestedName == "substeps" ? "substep" : "li";
+        var nested = previous.ElementChildren().FirstOrDefault(c => c.Name == nestedName);
+        if (nested is null)
+        {
+            nested = EditCommands.Append(previous, nestedName);
+            if (nested is null)
+            {
+                return false;
+            }
+
+            foreach (var auto in nested.Children.ToList())
+            {
+                nested.Remove(auto);
+            }
+        }
+
+        item.RemoveSelf();
+        nested.Add(item);
+        if (item.Name != itemName)
+        {
+            EditCommands.ChangeElementName(item, itemName);
+        }
+
+        return true;
+    }
+
+    /// <summary>Переносит <paramref name="item"/> из вложенного <paramref name="list"/> на уровень внешнего списка.</summary>
+    private static bool OutdentItem(DitaNode item, DitaNode list)
+    {
+        var grandItem = list.Parent;
+        if (grandItem is null || grandItem.Name is not ("li" or "step" or "substep"))
+        {
+            return false;
+        }
+
+        var outerList = grandItem.Parent;
+        if (outerList is null)
+        {
+            return false;
+        }
+
+        var index = outerList.IndexOf(grandItem) + 1;
+        item.RemoveSelf();
+
+        var outerItemName = outerList.Name is "steps" or "steps-unordered" ? "step" : "li";
+        outerList.Insert(index, item);
+        if (item.Name != outerItemName)
+        {
+            EditCommands.ChangeElementName(item, outerItemName);
+        }
+
+        if (list.Children.Count == 0)
+        {
+            list.RemoveSelf();
+        }
+
         return true;
     }
 
