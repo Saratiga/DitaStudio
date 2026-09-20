@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Schema.Dtd;
 using DitaStudio.Core.Validation;
 
 namespace DitaStudio.Core.Project;
@@ -109,6 +110,7 @@ public sealed class DitaProject
     private const string PdfHeaderFooterSettingsFile = ".ditastudio-pdf-header";
     private const string DitavalSettingsFile = ".ditastudio-ditaval";
     private const string ReferencedProjectsSettingsFile = ".ditastudio-references";
+    private const string ExternalDtdSettingsFile = ".ditastudio-external-dtd";
 
     public DitaProject(string rootPath) : this(rootPath, allowReferencedProjects: true)
     {
@@ -126,6 +128,7 @@ public sealed class DitaProject
         LoadConditionsSetting();
         LoadPdfHeaderFooterSetting();
         LoadDitavalSetting();
+        LoadExternalDtdSetting();
         if (_allowReferencedProjects)
         {
             LoadReferencedProjectsSetting();
@@ -387,6 +390,71 @@ public sealed class DitaProject
         {
             return null;
         }
+    }
+
+    // ------------------------------------------------------- внешний DTD
+
+    /// <summary>Путь (относительно RootPath, со слэшами вперёд) к подключённому внешнему .dtd —
+    /// для проектов с кастомной специализацией DITA, которую нет смысла вписывать во встроенный
+    /// каталог. Сохраняется вместе с проектом, переживает перезапуск редактора.</summary>
+    public string? ExternalDtdPath { get; private set; }
+
+    public void SetExternalDtdPath(string? relativePath)
+    {
+        ExternalDtdPath = string.IsNullOrWhiteSpace(relativePath) ? null : relativePath.Replace('\\', '/');
+        var settingsPath = System.IO.Path.Combine(RootPath, ExternalDtdSettingsFile);
+        try
+        {
+            if (ExternalDtdPath is null)
+            {
+                if (File.Exists(settingsPath))
+                {
+                    File.Delete(settingsPath);
+                }
+            }
+            else
+            {
+                File.WriteAllText(settingsPath, ExternalDtdPath);
+            }
+        }
+        catch
+        {
+            // настройка не критична — молча продолжаем без сохранения на диск
+        }
+    }
+
+    private void LoadExternalDtdSetting()
+    {
+        try
+        {
+            var settingsPath = System.IO.Path.Combine(RootPath, ExternalDtdSettingsFile);
+            if (!File.Exists(settingsPath))
+            {
+                return;
+            }
+
+            var value = File.ReadAllText(settingsPath).Trim();
+            ExternalDtdPath = value.Length == 0 ? null : value;
+        }
+        catch
+        {
+            ExternalDtdPath = null;
+        }
+    }
+
+    /// <summary>Разбирает связанный .dtd заново с диска (см. DtdCatalogLoader) — правки файлов
+    /// подхватываются сами. Null, если внешний DTD не подключён. Результат нужно самостоятельно
+    /// влить в каталог через DitaCatalog.Default.Merge(...) — сам метод глобальный каталог не
+    /// трогает.</summary>
+    public DtdLoadResult? ResolveExternalDtd()
+    {
+        if (ExternalDtdPath is null)
+        {
+            return null;
+        }
+
+        var fullPath = System.IO.Path.Combine(RootPath, ExternalDtdPath.Replace('/', System.IO.Path.DirectorySeparatorChar));
+        return DtdCatalogLoader.Load(fullPath);
     }
 
     // ------------------------------------------------- проекты-источники ключей

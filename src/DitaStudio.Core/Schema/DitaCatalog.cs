@@ -17,6 +17,18 @@ public sealed class DitaCatalog
 
     public static DitaCatalog Default => Lazy.Value;
 
+    /// <summary>Добавляет/переопределяет элементы — используется при подключении внешнего DTD
+    /// (см. Dtd.DtdCatalogLoader). Действует на весь сеанс редактора: DitaCatalog.Default —
+    /// общий на приложение экземпляр, поэтому любой код, уже вызывающий Default.Get(...), сразу
+    /// увидит новые элементы, без перезапуска и без правки мест использования каталога.</summary>
+    public void Merge(IEnumerable<ElementDef> extra)
+    {
+        foreach (var def in extra)
+        {
+            _elements[def.Name] = def;
+        }
+    }
+
     public IReadOnlyDictionary<string, ElementDef> Elements => _elements;
 
     public ElementDef? Get(string name) => _elements.TryGetValue(name, out var d) ? d : null;

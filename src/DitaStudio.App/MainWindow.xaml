@@ -18,6 +18,8 @@
                 <MenuItem Header="Недавние проекты" x:Name="RecentProjectsMenu" />
                 <MenuItem Header="Подключить проект-источник ключей…" Command="{Binding ProjectPanel.AddReferencedProjectCommand}" />
                 <MenuItem Header="Отключить все проекты-источники" Command="{Binding ProjectPanel.ClearReferencedProjectsCommand}" />
+                <MenuItem Header="Подключить внешний DTD (кастомная специализация)…" Command="{Binding ProjectPanel.AttachExternalDtdCommand}" />
+                <MenuItem Header="Отключить внешний DTD" Command="{Binding ProjectPanel.DetachExternalDtdCommand}" />
                 <MenuItem Header="Создать документ…" Click="OnNewDocument" InputGestureText="Ctrl+N" />
                 <Separator />
                 <MenuItem Header="Сохранить" Command="{Binding Documents.SaveCurrentCommand}" InputGestureText="Ctrl+S" />

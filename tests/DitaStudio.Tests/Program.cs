@@ -8,6 +8,7 @@ using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Schema.Dtd;
 using DitaStudio.Core.Templates;
 using DitaStudio.Core.Validation;
 using DitaStudio.Docx;
@@ -43,6 +44,7 @@ public static class Program
         RevChangeTests();
         TrackChangesTests();
         XliffTests();
+        DtdCatalogLoaderTests();
         DitavalFlagTests();
         RefactorTests();
         ExtractToConrefTests();
@@ -636,6 +638,25 @@ public static class Program
             project.SetDitavalPath(null);
             Check(project.DitavalPath is null, "связь с .ditaval можно снять");
             Check(new DitaProject(root).DitavalPath is null, "снятие связи с .ditaval сохраняется на диске");
+
+            // Привязка внешнего DTD: путь сохраняется, разбирается заново при каждом обращении.
+            File.WriteAllText(Path.Combine(root, "custom.dtd"), """
+<!ELEMENT widget (#PCDATA)>
+<!ATTLIST widget class CDATA "+ topic/ph custom-d/widget ">
+""");
+            project.SetExternalDtdPath("custom.dtd");
+            Check(project.ExternalDtdPath == "custom.dtd", "путь к внешнему DTD сохранён в проекте");
+
+            var reopenedDtd = new DitaProject(root);
+            Check(reopenedDtd.ExternalDtdPath == "custom.dtd", "путь к внешнему DTD переживает переоткрытие проекта");
+
+            var dtdResult = project.ResolveExternalDtd();
+            Check(dtdResult is not null && dtdResult.Elements.Any(e => e.Name == "widget"),
+                "связанный внешний DTD резолвится в элементы каталога");
+
+            project.SetExternalDtdPath(null);
+            Check(project.ExternalDtdPath is null, "связь с внешним DTD можно снять");
+            Check(new DitaProject(root).ExternalDtdPath is null, "снятие связи с внешним DTD сохраняется на диске");
 
             // Слияние правил исключения (используется при импорте .ditaval поверх уже заданных условий).
             var existingExclude = new Dictionary<string, HashSet<string>>
@@ -1318,6 +1339,73 @@ public static class Program
         var docForBadId = DitaDocument.Parse(SourceXml);
         XliffConverter.Import(docForBadId, badIdXliff, badIdWarnings);
         Check(badIdWarnings.Any(w => w.Contains("вне диапазона")), "placeholder id вне диапазона зафиксирован предупреждением, импорт не падает");
+    }
+
+    private static void DtdCatalogLoaderTests()
+    {
+        Section("Загрузка внешнего DTD");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            // Проверяем сразу три механизма настоящего DTD: параметрическую сущность как текстовую
+            // подстановку внутри ATTLIST (%common-atts;), внешний файл через ENTITY SYSTEM, и голую
+            // %entity; верхнего уровня, раскрывающуюся в целые ELEMENT/ATTLIST — именно так реальные
+            // модульные DTD DITA подключают домены специализации.
+            File.WriteAllText(Path.Combine(root, "widget.mod"), """
+<!ENTITY % widget-def '<!ELEMENT widget (#PCDATA)><!ATTLIST widget %common-atts; class CDATA "+ topic/ph custom-d/widget ">'>
+%widget-def;
+""");
+            File.WriteAllText(Path.Combine(root, "custom.dtd"), """
+<!ENTITY % common-atts "id ID #IMPLIED">
+<!ENTITY % widget-mod SYSTEM "widget.mod">
+%widget-mod;
+<!ELEMENT root (widget+)>
+<!ATTLIST root class CDATA "- topic/topic ">
+""");
+
+            var result = DtdCatalogLoader.Load(Path.Combine(root, "custom.dtd"));
+
+            Check(result.Warnings.Count == 0, "загрузка без предупреждений: " + string.Join("; ", result.Warnings));
+            Check(result.Elements.Count == 2, $"найдено два элемента (root, widget): {result.Elements.Count}");
+
+            var widget = result.Elements.FirstOrDefault(e => e.Name == "widget");
+            Check(widget is not null, "widget из внешнего файла (ENTITY SYSTEM) найден");
+            Check(widget!.ClassAttr == "+ topic/ph custom-d/widget ", $"@class у widget прочитан из ATTLIST: '{widget.ClassAttr}'");
+            Check(widget.Display == DisplayKind.Inline, $"@class 'topic/ph' даёт DisplayKind.Inline: {widget.Display}");
+            Check(widget.Attributes.ContainsKey("id"), "атрибут id из %common-atts; попал в widget (раскрытие параметрической сущности в ATTLIST)");
+            Check(widget.Model.AllowsText(), "контент-модель widget (#PCDATA) разобрана существующим ModelParser");
+
+            var rootDef = result.Elements.FirstOrDefault(e => e.Name == "root");
+            Check(rootDef is not null, "root найден");
+            Check(rootDef!.ClassAttr == "- topic/topic ", $"@class у root: '{rootDef.ClassAttr}'");
+            Check(rootDef.Display == DisplayKind.Topic, $"@class 'topic/topic' даёт DisplayKind.Topic: {rootDef.Display}");
+            Check(rootDef.Model.CollectNames().Contains("widget"), "контент-модель root (widget+) ссылается на widget");
+
+            // Merge — на отдельном экземпляре каталога, не на общем Default, чтобы не влиять на
+            // остальные проверки; встроенные элементы при этом не теряются.
+            var mergedCatalog = DitaCatalog.Load(CatalogSource.All);
+            mergedCatalog.Merge(result.Elements);
+            Check(mergedCatalog.Get("widget") is not null, "после Merge внешний элемент доступен через каталог");
+            Check(mergedCatalog.Get("p") is not null, "после Merge встроенные элементы каталога никуда не делись");
+
+            var missingWarnings = DtdCatalogLoader.Load(Path.Combine(root, "no-such-file.dtd"));
+            Check(missingWarnings.Elements.Count == 0 && missingWarnings.Warnings.Count == 1,
+                "загрузка несуществующего файла не падает, а даёт предупреждение и пустой результат");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
     }
 
     private static void DitavalFlagTests()
