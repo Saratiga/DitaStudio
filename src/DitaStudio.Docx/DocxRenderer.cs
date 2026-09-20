@@ -936,52 +936,55 @@ public sealed class DocxRenderer
         }
     }
 
-    private IEnumerable<OpenXmlCompositeElement> RenderListItem(DitaNode item, int level, int numId, int ilvl)
+    private IEnumerable<OpenXmlCompositeElement> RenderListItem(DitaNode item, int level, int numId, int ilvl) =>
+        item.Name is "step" or "substep"
+            ? RenderStepListItem(item, level, numId, ilvl)
+            : RenderPlainListItem(item, numId, ilvl);
+
+    private IEnumerable<OpenXmlCompositeElement> RenderStepListItem(DitaNode item, int level, int numId, int ilvl)
     {
-        if (item.Name is "step" or "substep")
+        var cmd = item.FirstElement("cmd");
+        var firstParagraph = true;
+        foreach (var child in item.Children)
         {
-            var cmd = item.FirstElement("cmd");
-            var firstParagraph = true;
-            foreach (var child in item.Children)
+            if (child.Kind != NodeKind.Element || !Include(child))
             {
-                if (child.Kind != NodeKind.Element || !Include(child))
-                {
-                    continue;
-                }
-
-                if (ReferenceEquals(child, cmd))
-                {
-                    yield return NumberedParagraph(RenderInlineRuns(child), numId, ilvl);
-                    firstParagraph = false;
-                    continue;
-                }
-
-                if (child.Name is "substeps")
-                {
-                    foreach (var block in RenderList(child, level, numId: null, ilvl + 1, ordered: true))
-                    {
-                        yield return block;
-                    }
-
-                    continue;
-                }
-
-                foreach (var block in RenderBlock(child, level))
-                {
-                    yield return Indent(block, ilvl + 1);
-                }
+                continue;
             }
 
-            if (firstParagraph)
+            if (ReferenceEquals(child, cmd))
             {
-                // <step> без <cmd> — по схеме невозможно, но на случай повреждённого документа
-                yield return NumberedParagraph(new List<OpenXmlElement> { new W.Run() }, numId, ilvl);
+                yield return NumberedParagraph(RenderInlineRuns(child), numId, ilvl);
+                firstParagraph = false;
+                continue;
             }
 
-            yield break;
+            if (child.Name is "substeps")
+            {
+                foreach (var block in RenderList(child, level, numId: null, ilvl + 1, ordered: true))
+                {
+                    yield return block;
+                }
+
+                continue;
+            }
+
+            foreach (var block in RenderBlock(child, level))
+            {
+                yield return Indent(block, ilvl + 1);
+            }
         }
 
-        // li / sli / choice / stepsection — обычный пункт списка, возможно с вложенными блоками
+        if (firstParagraph)
+        {
+            // <step> без <cmd> — по схеме невозможно, но на случай повреждённого документа
+            yield return NumberedParagraph(new List<OpenXmlElement> { new W.Run() }, numId, ilvl);
+        }
+    }
+
+    // li / sli / choice / stepsection — обычный пункт списка, возможно с вложенными блоками
+    private IEnumerable<OpenXmlCompositeElement> RenderPlainListItem(DitaNode item, int numId, int ilvl)
+    {
         var nested = item.ElementChildren().Where(c => c.Name is "ul" or "ol" or "sl" or "choices").ToList();
         var directRuns = new List<OpenXmlElement>();
         foreach (var child in item.Children)
