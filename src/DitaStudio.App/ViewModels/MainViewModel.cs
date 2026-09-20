@@ -35,15 +35,16 @@ public partial class MainViewModel : ObservableObject
     // тип — мутируемый Dictionary, а не IReadOnlyDictionary.
     public Dictionary<string, DocumentPane> Panes { get; }
 
-    // Временные мосты к ещё не мигрированным областям Map/SidePanels.
-    // Заменяются на прямые вызовы VM-команд, когда области мигрируют.
+    // Временные мосты к ещё не мигрированной области SidePanels и к
+    // императивному построению дерева карты/проекта (MainWindow.Map.cs/
+    // Project.cs) — сознательно не мигрированы, см. комментарии на месте.
     public Action? UpdateTabHeaders { get; set; }
     public Func<string, DocumentPane?>? OpenDocument { get; set; }
     public Action? RefreshEditorContext { get; set; }
     public Action? RefreshProjectTree { get; set; }
     public Action? RefreshMapSelector { get; set; }
+    public Action? RefreshMapTree { get; set; }
     public Action? RefreshRecentProjectsMenu { get; set; }
-    public Func<ProjectFile?>? GetSelectedMap { get; set; }
     public Action? RefreshOutline { get; set; }
     public Action? RefreshAttributePanel { get; set; }
     public Action<RefactorResult>? ApplyRefactorResult { get; set; }
@@ -70,6 +71,7 @@ public partial class MainViewModel : ObservableObject
     public ProjectViewModel ProjectPanel { get; }
     public PublishViewModel Publish { get; }
     public InsertViewModel Insert { get; }
+    public MapViewModel Map { get; }
 
     public MainViewModel(Dictionary<string, DocumentPane> panes)
     {
@@ -81,5 +83,6 @@ public partial class MainViewModel : ObservableObject
         ProjectPanel = new ProjectViewModel(this);
         Publish = new PublishViewModel(this);
         Insert = new InsertViewModel(this);
+        Map = new MapViewModel(this);
     }
 }

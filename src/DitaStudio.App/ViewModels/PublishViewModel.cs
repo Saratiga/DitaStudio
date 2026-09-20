@@ -38,7 +38,7 @@ public partial class PublishViewModel : ObservableObject
     private void ExportDocx()
     {
         var project = _main.Project;
-        var map = _main.GetSelectedMap?.Invoke();
+        var map = _main.Map.SelectedMap;
         if (project is null || map is null)
         {
             Dialogs.Message("Экспорт в DOCX", "Выберите карту на вкладке «Карта».");
@@ -206,7 +206,7 @@ public partial class PublishViewModel : ObservableObject
     private async void Publish(bool singleFile, bool exportPdf)
     {
         var project = _main.Project;
-        var map = _main.GetSelectedMap?.Invoke();
+        var map = _main.Map.SelectedMap;
         if (project is null || map is null)
         {
             Dialogs.Message("Публикация", "Выберите карту на вкладке «Карта».");

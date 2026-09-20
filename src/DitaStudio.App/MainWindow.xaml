@@ -160,7 +160,8 @@
                 <TabItem Header="Карта">
                     <DockPanel>
                         <ComboBox x:Name="MapSelector" DockPanel.Dock="Top" Margin="4"
-                                  SelectionChanged="OnMapSelected" DisplayMemberPath="RelativePath" />
+                                  ItemsSource="{Binding Map.Maps}" SelectedItem="{Binding Map.SelectedMap}"
+                                  DisplayMemberPath="RelativePath" />
                         <WrapPanel DockPanel.Dock="Top" Margin="4,0,4,4">
                             <Button Content="+ Топик" Padding="6,3" Margin="0,0,3,3" Click="OnMapAddTopicref" ToolTip="Добавить ссылку на топик" />
                             <Button Content="+ Раздел" Padding="6,3" Margin="0,0,3,3" Click="OnMapAddTopichead" />

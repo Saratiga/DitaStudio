@@ -44,8 +44,8 @@ public partial class MainWindow : Window
             },
             RefreshProjectTree = BuildProjectTree,
             RefreshMapSelector = BuildMapSelector,
+            RefreshMapTree = BuildMapTree,
             RefreshRecentProjectsMenu = RefreshRecentProjectsMenu,
-            GetSelectedMap = () => MapSelector.SelectedItem as ProjectFile,
             RefreshOutline = BuildOutline,
             RefreshAttributePanel = BuildAttributePanel,
             ApplyRefactorResult = ApplyRefactorResult

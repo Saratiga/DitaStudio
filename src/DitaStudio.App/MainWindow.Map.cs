@@ -14,31 +14,20 @@ namespace DitaStudio.App;
 // добавление ссылок на топики и разделов.
 public partial class MainWindow
 {
-    private void BuildMapSelector()
-    {
-        if (_project is null)
-        {
-            return;
-        }
-
-        var maps = _project.Maps.ToList();
-        MapSelector.ItemsSource = maps;
-        if (maps.Count > 0)
-        {
-            MapSelector.SelectedIndex = 0;
-        }
-        else
-        {
-            MapTreeView.Items.Clear();
-        }
-    }
-
-    private void OnMapSelected(object sender, SelectionChangedEventArgs e) => BuildMapTree();
+    // Список карт — ViewModels/MapViewModel.cs (Maps/SelectedMap). Дерево
+    // выбранной карты и всё, что ниже (drag-and-drop, структурные операции,
+    // таблица соответствий) — императивное построение WPF-дерева вперемешку
+    // с состоянием drag-and-drop, сознательно не мигрировано.
+    private void BuildMapSelector() => ViewModel.Map.RefreshMaps();
 
     private void BuildMapTree()
     {
         MapTreeView.Items.Clear();
-        if (_project is null || MapSelector.SelectedItem is not ProjectFile map)
+        // Не MapSelector.SelectedItem: этот метод вызывается синхронно из
+        // MapViewModel.OnSelectedMapChanged, а тот срабатывает раньше, чем
+        // TwoWay-биндинг успевает протолкнуть новое значение в сам контрол
+        // ([ObservableProperty] зовёт partial-хук до PropertyChanged).
+        if (_project is null || ViewModel.Map.SelectedMap is not { } map)
         {
             return;
         }
