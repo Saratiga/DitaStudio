@@ -125,67 +125,7 @@ public static class ModelParser
         if (s.Peek() == '(')
         {
             s.Next();
-            var items = new List<ContentModel>();
-            var isChoice = false;
-            var isSeq = false;
-
-            while (true)
-            {
-                s.SkipWs();
-                if (s.Eof)
-                {
-                    break;
-                }
-
-                if (s.Peek() == ')')
-                {
-                    s.Next();
-                    break;
-                }
-
-                items.Add(ParseParticle(ref s));
-                s.SkipWs();
-
-                var sep = s.Peek();
-                if (sep == '|')
-                {
-                    isChoice = true;
-                    s.Next();
-                }
-                else if (sep == ',')
-                {
-                    isSeq = true;
-                    s.Next();
-                }
-                else if (sep == ')')
-                {
-                    s.Next();
-                    break;
-                }
-                else if (sep == '\0')
-                {
-                    break;
-                }
-                else
-                {
-                    // Непонятный символ — пропускаем, чтобы разбор не зациклился.
-                    s.Next();
-                }
-            }
-
-            if (items.Count == 1)
-            {
-                return items[0];
-            }
-
-            if (items.Count == 0)
-            {
-                return ContentModel.Empty.Instance;
-            }
-
-            return isChoice && !isSeq
-                ? new ContentModel.Choice(Flatten(items, choice: true))
-                : new ContentModel.Sequence(Flatten(items, choice: false));
+            return ParseGroup(ref s);
         }
 
         if (s.StartsWith("#PCDATA"))
@@ -202,6 +142,73 @@ public static class ModelParser
         }
 
         return new ContentModel.Name(name);
+    }
+
+    /// <summary>Разбирает содержимое скобочной группы после уже съеденной открывающей `(` —
+    /// список элементов и разделитель (`|` для выбора, `,` для последовательности).</summary>
+    private static ContentModel ParseGroup(ref Scanner s)
+    {
+        var items = new List<ContentModel>();
+        var isChoice = false;
+        var isSeq = false;
+
+        while (true)
+        {
+            s.SkipWs();
+            if (s.Eof)
+            {
+                break;
+            }
+
+            if (s.Peek() == ')')
+            {
+                s.Next();
+                break;
+            }
+
+            items.Add(ParseParticle(ref s));
+            s.SkipWs();
+
+            var sep = s.Peek();
+            if (sep == '|')
+            {
+                isChoice = true;
+                s.Next();
+            }
+            else if (sep == ',')
+            {
+                isSeq = true;
+                s.Next();
+            }
+            else if (sep == ')')
+            {
+                s.Next();
+                break;
+            }
+            else if (sep == '\0')
+            {
+                break;
+            }
+            else
+            {
+                // Непонятный символ — пропускаем, чтобы разбор не зациклился.
+                s.Next();
+            }
+        }
+
+        if (items.Count == 1)
+        {
+            return items[0];
+        }
+
+        if (items.Count == 0)
+        {
+            return ContentModel.Empty.Instance;
+        }
+
+        return isChoice && !isSeq
+            ? new ContentModel.Choice(Flatten(items, choice: true))
+            : new ContentModel.Sequence(Flatten(items, choice: false));
     }
 
     /// <summary>Схлопывает вложенные однотипные группы — модель становится компактнее.</summary>
