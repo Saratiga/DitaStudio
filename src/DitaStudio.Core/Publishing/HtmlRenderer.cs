@@ -745,42 +745,12 @@ public sealed class HtmlRenderer
 
         if (!string.IsNullOrWhiteSpace(keyref))
         {
-            var keyDef = _project.ResolveKey(keyref!.Split('/')[0], _options.CurrentKeyScope);
-            if (keyDef is not null)
-            {
-                label = keyDef.KeyText;
-                if (keyDef.ResolvedPath is not null)
-                {
-                    target = _options.TopicLink?.Invoke(keyDef.ResolvedPath, null);
-                }
-                else if (keyDef.Href is not null)
-                {
-                    target = keyDef.Href;
-                }
-            }
+            (target, label) = ResolveXrefKeyref(keyref!);
         }
 
         if (target is null && !string.IsNullOrWhiteSpace(href))
         {
-            if (RefResolver.IsExternal(href!) || node.GetAttribute("scope") is "external" or "peer")
-            {
-                target = href;
-            }
-            else if (_document.FilePath is not null)
-            {
-                var reference = RefResolver.Parse(_document.FilePath, href!);
-                if (reference.Path is not null)
-                {
-                    target = _options.TopicLink?.Invoke(reference.Path, reference.ElementId ?? reference.TopicId)
-                             ?? href;
-                    label ??= TitleOf(reference);
-                }
-                else
-                {
-                    target = "#" + (reference.ElementId ?? reference.TopicId ?? string.Empty);
-                    label ??= TitleOf(reference);
-                }
-            }
+            (target, label) = ResolveXrefHref(node, href!, label);
         }
 
         var inner = RenderInlineChildren(node);
@@ -795,6 +765,44 @@ public sealed class HtmlRenderer
         }
 
         return $"<a href=\"{Escape(target!)}\">{inner}</a>";
+    }
+
+    private (string? Target, string? Label) ResolveXrefKeyref(string keyref)
+    {
+        var keyDef = _project.ResolveKey(keyref.Split('/')[0], _options.CurrentKeyScope);
+        if (keyDef is null)
+        {
+            return (null, null);
+        }
+
+        var target = keyDef.ResolvedPath is not null
+            ? _options.TopicLink?.Invoke(keyDef.ResolvedPath, null)
+            : keyDef.Href;
+
+        return (target, keyDef.KeyText);
+    }
+
+    private (string? Target, string? Label) ResolveXrefHref(DitaNode node, string href, string? label)
+    {
+        if (RefResolver.IsExternal(href) || node.GetAttribute("scope") is "external" or "peer")
+        {
+            return (href, label);
+        }
+
+        if (_document.FilePath is null)
+        {
+            return (null, label);
+        }
+
+        var reference = RefResolver.Parse(_document.FilePath, href);
+        if (reference.Path is not null)
+        {
+            var target = _options.TopicLink?.Invoke(reference.Path, reference.ElementId ?? reference.TopicId) ?? href;
+            return (target, label ?? TitleOf(reference));
+        }
+
+        var fallback = "#" + (reference.ElementId ?? reference.TopicId ?? string.Empty);
+        return (fallback, label ?? TitleOf(reference));
     }
 
     private string? TitleOf(DitaReference reference)
