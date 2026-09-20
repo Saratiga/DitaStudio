@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DitaStudio.App.Authoring;
+using DitaStudio.App.Plugins;
 using DitaStudio.App.Views;
 using DitaStudio.Core.Diff;
 using DitaStudio.Core.Project;
@@ -38,7 +39,7 @@ public partial class ValidationViewModel : ObservableObject
             pane.CommitPendingEdits();
         }
 
-        var issues = project.ValidateAll();
+        var issues = project.ValidateAll(PluginRegistry.ValidationRules);
         ShowIssues(issues);
         _main.StatusText = $"Проверка проекта: ошибок {issues.Count(i => i.Severity == IssueSeverity.Error)}, " +
                             $"предупреждений {issues.Count(i => i.Severity == IssueSeverity.Warning)}.";
@@ -64,6 +65,19 @@ public partial class ValidationViewModel : ObservableObject
         var issues = new List<ValidationIssue>();
         issues.AddRange(new DitaValidator().Validate(pane.Document));
         issues.AddRange(RefResolver.ValidateReferences(project, pane.Document));
+
+        foreach (var plugin in PluginRegistry.ValidationRules)
+        {
+            try
+            {
+                issues.AddRange(plugin.Check(pane.Document));
+            }
+            catch (Exception ex)
+            {
+                issues.Add(new ValidationIssue(IssueSeverity.Warning, $"Плагин \"{plugin.Name}\" упал при проверке: {ex.Message}", null, pane.FilePath));
+            }
+        }
+
         ShowIssues(issues);
         _main.StatusText = $"Проверка документа: {issues.Count} замечаний.";
     }

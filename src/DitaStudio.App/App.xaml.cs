@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Markup;
 using System.Windows.Threading;
+using DitaStudio.App.Plugins;
 
 namespace DitaStudio.App;
 
@@ -16,6 +17,11 @@ public partial class App : Application
 
         DispatcherUnhandledException += OnUnhandledException;
         ThemeManager.Initialize();
+
+        var pluginsDir = Path.Combine(AppContext.BaseDirectory, "plugins");
+        Directory.CreateDirectory(pluginsDir);
+        PluginRegistry.Load(pluginsDir);
+
         base.OnStartup(e);
     }
 

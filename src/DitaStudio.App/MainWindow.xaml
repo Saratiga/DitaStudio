@@ -84,6 +84,8 @@
                 <MenuItem Header="Track changes: отклонить правку" Command="{Binding Insert.RejectTrackedChangeCommand}" />
                 <Separator />
                 <MenuItem Header="Показывать имена элементов" IsCheckable="True" IsChecked="{Binding Insert.ShowElementTags, Mode=TwoWay}" />
+                <Separator />
+                <MenuItem Header="Команда плагина…" Command="{Binding Insert.RunAuthorCommandPluginCommand}" />
             </MenuItem>
 
             <MenuItem Header="_Публикация">
@@ -91,6 +93,7 @@
                 <MenuItem Header="Собрать один HTML…" Command="{Binding Publish.PublishSingleCommand}" />
                 <MenuItem Header="Экспорт в PDF…" Command="{Binding Publish.PublishPdfCommand}" />
                 <MenuItem Header="Экспорт в DOCX…" Command="{Binding Publish.ExportDocxCommand}" />
+                <MenuItem Header="Публикация плагином…" Command="{Binding Publish.PublishWithPluginCommand}" />
                 <Separator />
                 <MenuItem Header="Условия сборки…" Command="{Binding Publish.PublishConditionsCommand}" />
                 <MenuItem Header="Подключить .ditaval…" Command="{Binding Publish.ImportDitavalCommand}" />

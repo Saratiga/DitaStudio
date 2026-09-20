@@ -2,6 +2,7 @@ using System.Xml.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DitaStudio.App;
+using DitaStudio.App.Plugins;
 using DitaStudio.App.Views;
 using DitaStudio.Core.Localization;
 using DitaStudio.Core.Project;
@@ -91,6 +92,60 @@ public partial class PublishViewModel : ObservableObject
         {
             BuildLogText += "Ошибка: " + ex.Message + "\n";
             Dialogs.Message("Экспорт в DOCX", ex.Message);
+        }
+    }
+
+    /// <summary>Публикует картой через выбранный плагин формата (см. IPublishFormatPlugin) —
+    /// пункт меню один и тот же для любого числа подключённых плагинов, выбор через диалог.</summary>
+    [RelayCommand]
+    private void PublishWithPlugin()
+    {
+        var project = _main.Project;
+        var map = _main.Map.SelectedMap;
+        if (project is null || map is null)
+        {
+            Dialogs.Message("Публикация плагином", "Выберите карту на вкладке «Карта».");
+            return;
+        }
+
+        var format = Dialogs.PickOne("Публикация плагином", "Выберите формат публикации:",
+            PluginRegistry.PublishFormats, f => f.Name);
+        if (format is null)
+        {
+            return;
+        }
+
+        SaveAllPanesAndRebuildKeySpace();
+
+        var dialog = new SaveFileDialog
+        {
+            Title = $"Публикация: {format.Name}",
+            Filter = $"{format.Name}|*.{format.FileExtension}",
+            FileName = Path.GetFileNameWithoutExtension(map.FullPath) + "." + format.FileExtension,
+            InitialDirectory = _lastOutputDirectory ?? project.RootPath
+        };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        var options = new PublishOptions { ShowDraftComments = _main.Conditions?.ShowDraftComments ?? false, Language = "ru" };
+        ApplyConditions(options);
+
+        _main.BottomTabIndex = 2;
+        BuildLogText = $"Публикация плагином «{format.Name}» по карте {map.RelativePath}…\n";
+
+        try
+        {
+            format.Publish(project, map.FullPath, options, dialog.FileName);
+            BuildLogText += "Результат: " + dialog.FileName + "\n";
+            _main.StatusText = $"Опубликовано плагином «{format.Name}»: {dialog.FileName}";
+            OpenInShell(dialog.FileName);
+        }
+        catch (Exception ex)
+        {
+            BuildLogText += "Ошибка: " + ex.Message + "\n";
+            Dialogs.Message("Публикация плагином", $"Плагин «{format.Name}» упал: {ex.Message}");
         }
     }
 

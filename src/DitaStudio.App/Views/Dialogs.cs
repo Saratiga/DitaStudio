@@ -925,4 +925,28 @@ public static class Dialogs
 
     public static bool Confirm(string title, string message) =>
         MessageBox.Show(message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+
+    /// <summary>Выбор одного элемента из списка — используется для выбора плагина (формат
+    /// публикации, команда «Автора»), когда их несколько. Null, если список пуст (с сообщением)
+    /// или пользователь отменил выбор.</summary>
+    public static T? PickOne<T>(string title, string prompt, IReadOnlyList<T> items, Func<T, string> display) where T : class
+    {
+        if (items.Count == 0)
+        {
+            Message(title, "Нет подключённых плагинов этого вида — положите .dll в папку plugins рядом с приложением.");
+            return null;
+        }
+
+        var panel = new StackPanel { Margin = new Thickness(16) };
+        panel.Children.Add(new TextBlock { Text = prompt, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) });
+
+        var list = new ListBox { Height = 160, ItemsSource = items.Select(display).ToList(), SelectedIndex = 0 };
+        panel.Children.Add(list);
+
+        T? result = null;
+        var window = Shell(title, panel, 420, 320);
+        panel.Children.Add(Buttons(window, () => result = list.SelectedIndex >= 0 ? items[list.SelectedIndex] : null));
+
+        return window.ShowDialog() == true ? result : null;
+    }
 }

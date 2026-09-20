@@ -1221,7 +1221,9 @@ public sealed class DitaProject
 
     // ------------------------------------------------------------- проверка
 
-    public IReadOnlyList<ValidationIssue> ValidateAll()
+    /// <summary>plugins — дополнительные правила стиля из плагинов (см. IValidationRulePlugin);
+    /// падение одного плагина на одном файле не прерывает проверку остальных.</summary>
+    public IReadOnlyList<ValidationIssue> ValidateAll(IReadOnlyList<IValidationRulePlugin>? plugins = null)
     {
         var validator = new DitaValidator();
         var issues = new List<ValidationIssue>();
@@ -1245,6 +1247,24 @@ public sealed class DitaProject
 
             issues.AddRange(validator.Validate(doc));
             issues.AddRange(RefResolver.ValidateReferences(this, doc));
+
+            if (plugins is null)
+            {
+                continue;
+            }
+
+            foreach (var plugin in plugins)
+            {
+                try
+                {
+                    issues.AddRange(plugin.Check(doc));
+                }
+                catch (Exception ex)
+                {
+                    issues.Add(new ValidationIssue(
+                        IssueSeverity.Warning, $"Плагин \"{plugin.Name}\" упал при проверке: {ex.Message}", null, file.FullPath));
+                }
+            }
         }
 
         return issues;

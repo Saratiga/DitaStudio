@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DitaStudio.App.Authoring;
+using DitaStudio.App.Plugins;
 using DitaStudio.App.Views;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
@@ -542,6 +543,43 @@ public partial class InsertViewModel : ObservableObject
         _main.Documents.RefreshAllTabTitles();
         _main.RefreshAttributePanel?.Invoke();
         _main.StatusText = "Правка отклонена.";
+    }
+
+    /// <summary>Выполняет выбранную команду плагина (см. IAuthorCommandPlugin) на открытом
+    /// документе — пункт меню один и тот же для любого числа подключённых плагинов.</summary>
+    [RelayCommand]
+    private void RunAuthorCommandPlugin()
+    {
+        var pane = _main.Current;
+        if (pane is null)
+        {
+            Dialogs.Message("Команда плагина", "Откройте документ.");
+            return;
+        }
+
+        var command = Dialogs.PickOne("Команда плагина", "Выберите команду:", PluginRegistry.AuthorCommands, c => c.Name);
+        if (command is null)
+        {
+            return;
+        }
+
+        pane.CommitPendingEdits();
+
+        try
+        {
+            command.Execute(pane);
+        }
+        catch (Exception ex)
+        {
+            Dialogs.Message("Команда плагина", $"Плагин «{command.Name}» упал: {ex.Message}");
+            return;
+        }
+
+        pane.Document.IsDirty = true;
+        pane.Author.Rebuild();
+        _main.Documents.RefreshAllTabTitles();
+        _main.RefreshAttributePanel?.Invoke();
+        _main.StatusText = $"Выполнена команда плагина «{command.Name}».";
     }
 
     partial void OnShowElementTagsChanged(bool value)
