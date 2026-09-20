@@ -757,54 +757,68 @@ public sealed class DitaProject
 
             foreach (var node in doc.Root.DescendantsAndSelf())
             {
-                if (elementNames)
+                var hit = elementNames
+                    ? MatchElementName(node, file, pattern, query, comparison)
+                    : MatchText(node, file, pattern, query, comparison);
+
+                if (hit is not null)
                 {
-                    var isMatch = pattern?.IsMatch(node.Name) ?? node.Name.Equals(query, comparison);
-                    if (node.Kind == NodeKind.Element && isMatch)
-                    {
-                        result.Add(new SearchHit(file, node, node.Path));
-                    }
-
-                    continue;
+                    result.Add(hit);
                 }
-
-                if (node.Kind != NodeKind.Text)
-                {
-                    continue;
-                }
-
-                int index;
-                int matchLength;
-                if (pattern is not null)
-                {
-                    var match = pattern.Match(node.Value);
-                    if (!match.Success)
-                    {
-                        continue;
-                    }
-
-                    index = match.Index;
-                    matchLength = match.Length;
-                }
-                else
-                {
-                    index = node.Value.IndexOf(query, comparison);
-                    if (index < 0)
-                    {
-                        continue;
-                    }
-
-                    matchLength = query.Length;
-                }
-
-                var start = Math.Max(0, index - 30);
-                var length = Math.Min(node.Value.Length - start, matchLength + 60);
-                var context = node.Value.Substring(start, length).Replace('\n', ' ').Trim();
-                result.Add(new SearchHit(file, node.Parent ?? node, context));
             }
         }
 
         return result;
+    }
+
+    private static SearchHit? MatchElementName(
+        DitaNode node, ProjectFile file, Regex? pattern, string query, StringComparison comparison)
+    {
+        if (node.Kind != NodeKind.Element)
+        {
+            return null;
+        }
+
+        var isMatch = pattern?.IsMatch(node.Name) ?? node.Name.Equals(query, comparison);
+        return isMatch ? new SearchHit(file, node, node.Path) : null;
+    }
+
+    private static SearchHit? MatchText(
+        DitaNode node, ProjectFile file, Regex? pattern, string query, StringComparison comparison)
+    {
+        if (node.Kind != NodeKind.Text)
+        {
+            return null;
+        }
+
+        int index;
+        int matchLength;
+        if (pattern is not null)
+        {
+            var match = pattern.Match(node.Value);
+            if (!match.Success)
+            {
+                return null;
+            }
+
+            index = match.Index;
+            matchLength = match.Length;
+        }
+        else
+        {
+            index = node.Value.IndexOf(query, comparison);
+            if (index < 0)
+            {
+                return null;
+            }
+
+            matchLength = query.Length;
+        }
+
+        var start = Math.Max(0, index - 30);
+        var length = Math.Min(node.Value.Length - start, matchLength + 60);
+        var context = node.Value.Substring(start, length).Replace('\n', ' ').Trim();
+        return new SearchHit(file, node.Parent ?? node, context);
     }
 
     /// <summary>Заменяет все вхождения запроса во всех текстовых узлах проекта. Изменённые
