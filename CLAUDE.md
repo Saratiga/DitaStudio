@@ -88,6 +88,24 @@ DITA`, при записи цепочки восстанавливают исх�
 Отмена — снимками XML (`UndoStack`), только для структурных правок; набор текста
 отменяется средствами самого `RichTextBox`.
 
+## Плагины
+
+`Core/Plugins/PluginLoader.Load<T>(directory)` — обобщённый загрузчик, каждая .dll
+из папки грузится в свой `AssemblyLoadContext`; сам контракт (интерфейс) резолвится
+через возврат `null` из `Load`, откатываясь на уже загруженную в хосте сборку —
+иначе `typeof(T).IsAssignableFrom(type)` не сработает через границу сборки. Автор
+плагина ссылается на `DitaStudio.Core.dll`/`DitaStudio.dll` с `Private=false`
+(не копировать в свой вывод) — см. `tests/TestPlugin` как пример.
+
+Три контракта: `IValidationRulePlugin` (Core/Validation, доп. правила стиля —
+`DitaProject.ValidateAll(plugins)`), `IPublishFormatPlugin` (Core/Publishing, свой
+формат вывода), `IAuthorCommandPlugin` (App/Plugins, команда режима «Автор» —
+работает с `DocumentPane` напрямую, поэтому определён в App, а не в Core).
+Загружаются один раз при старте (`App.xaml.cs` → `PluginRegistry.Load`) из
+`plugins/` рядом с exe. UI — один и тот же пункт меню на любое число плагинов
+конкретного вида, выбор через `Dialogs.PickOne`. Падение плагина (при загрузке или
+выполнении) не роняет приложение — превращается в предупреждение/сообщение.
+
 ## Что осталось незакрытым
 
 - Плашкой в режиме «Автор» показывается только сам непереводимый лист (image,
