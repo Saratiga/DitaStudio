@@ -141,9 +141,16 @@ public sealed class InlineEditor : RichTextBox
                 {
                     var def = DitaCatalog.Default.Get(child.Name);
                     var isInline = def?.IsInline ?? false;
-                    var hasText = child.DescendantsAndSelf().Any(n => n.Kind == NodeKind.Text && n.Value.Length > 0);
 
-                    if (isInline && hasText)
+                    // Рекурсия по наличию детей, а не текста: раньше фразовый элемент без текста
+                    // хоть где-то в поддереве (например <b><image/></b>) целиком схлопывался в
+                    // одну плашку — картинка внутри переставала быть видна и редактируема отдельно.
+                    // Спускаемся в любой непустой фразовый элемент — каждый лист (текст, картинка,
+                    // чужая плашка) получит своё представление на любой глубине; WriteBack/Descend
+                    // уже собирают цепочку предков произвольной длины, ограничения там нет.
+                    // Пустой элемент (0 детей) по-прежнему остаётся одной плашкой — иначе он не
+                    // получит вообще никакого представления в потоке и потеряется при записи.
+                    if (isInline && child.Children.Count > 0)
                     {
                         var nested = new List<DitaNode>(chain) { child };
                         AppendChildren(child, paragraph, nested);
