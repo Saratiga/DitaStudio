@@ -38,6 +38,7 @@ public static class Program
         ValidationAndAnchorFixTests();
         RelTableTests();
         RevChangeTests();
+        DitavalFlagTests();
         RefactorTests();
         ExtractToConrefTests();
         DiffTests();
@@ -585,12 +586,49 @@ public static class Program
 <val>
   <prop action="exclude" att="platform" val="linux"/>
   <prop action="include" val="tip"/>
+  <prop action="flag" att="audience" val="expert" color="red" backgroundcolor="yellow" style="bold" changebar="orange"/>
 </val>
 """);
             var ditavalRules = DitavalReader.ReadExcludeRules(ditavalPath);
             Check(ditavalRules.TryGetValue("platform", out var linuxRule) && linuxRule.Contains("linux"),
                 "правило exclude из .ditaval прочитано");
             Check(ditavalRules.Count == 1, "правило include из .ditaval пропущено как неподдерживаемое");
+
+            var ditavalFull = DitavalReader.Read(ditavalPath);
+            Check(ditavalFull.Exclude.TryGetValue("platform", out var linuxRule2) && linuxRule2.Contains("linux"),
+                "Read(): правило exclude прочитано вместе с правилами подсветки");
+            Check(ditavalFull.Flags.Count == 1, "Read(): правило flag прочитано");
+            var flagRule = ditavalFull.Flags[0];
+            Check(flagRule is { Attribute: "audience", Value: "expert", Color: "red", BackgroundColor: "yellow", Style: "bold", ChangeBar: "orange" },
+                "Read(): все атрибуты правила flag прочитаны верно");
+
+            // Привязка .ditaval к проекту: путь сохраняется, файл перечитывается заново при каждом
+            // обращении — правки на диске подхватываются без переимпорта.
+            project.SetDitavalPath("profile.ditaval");
+            Check(project.DitavalPath == "profile.ditaval", "путь к связанному .ditaval сохранён в проекте");
+
+            var reopenedDitaval = new DitaProject(root);
+            Check(reopenedDitaval.DitavalPath == "profile.ditaval", "путь к .ditaval переживает переоткрытие проекта");
+
+            var linked = project.ResolveLinkedDitaval();
+            Check(linked is not null && linked.Exclude["platform"].Contains("linux") && linked.Flags.Count == 1,
+                "связанный .ditaval резолвится с правилами исключения и подсветки");
+
+            File.WriteAllText(ditavalPath, """
+<?xml version="1.0" encoding="UTF-8"?>
+<val>
+  <prop action="exclude" att="platform" val="linux"/>
+  <prop action="exclude" att="platform" val="macos"/>
+  <prop action="flag" att="audience" val="expert" color="red" backgroundcolor="yellow" style="bold" changebar="orange"/>
+</val>
+""");
+            var relinked = project.ResolveLinkedDitaval();
+            Check(relinked!.Exclude["platform"].SetEquals(new[] { "linux", "macos" }),
+                "изменение .ditaval на диске подхватывается без переимпорта");
+
+            project.SetDitavalPath(null);
+            Check(project.DitavalPath is null, "связь с .ditaval можно снять");
+            Check(new DitaProject(root).DitavalPath is null, "снятие связи с .ditaval сохраняется на диске");
 
             // Слияние правил исключения (используется при импорте .ditaval поверх уже заданных условий).
             var existingExclude = new Dictionary<string, HashSet<string>>
@@ -954,6 +992,82 @@ public static class Program
                     .Any(b => b.Color?.Value == "D4380D");
                 Check(hasRevBorder, "полоса на полях у изменённого абзаца попала и в DOCX");
             }
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    private static void DitavalFlagTests()
+    {
+        Section("Подсветка .ditaval (action=\"flag\")");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "topic.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="topic">
+  <title>Тема</title>
+  <conbody>
+    <p audience="expert">Только для экспертов.</p>
+    <p>Обычный абзац.</p>
+  </conbody>
+</concept>
+""");
+            File.WriteAllText(Path.Combine(root, "map.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>Тест подсветки</title>
+  <topicref href="topic.dita"/>
+</map>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+
+            var options = new PublishOptions
+            {
+                OutputDirectory = Path.Combine(root, "out"),
+                SingleFile = true
+            };
+            options.FlagConditions.Add(new DitavalFlagRule("audience", "expert", "red", "yellow", "bold", "orange"));
+
+            var result = new HtmlPublisher(project).Publish(Path.Combine(root, "map.ditamap"), options);
+            var html = File.ReadAllText(result.EntryFile);
+
+            Check(Regex.IsMatch(html, "<p class=\"ditaval-flag\" style=\"[^\"]*\">Только для экспертов\\."),
+                "class ditaval-flag стоит на абзаце с совпавшим атрибутом");
+            Check(!Regex.IsMatch(html, "<p class=\"ditaval-flag\"[^>]*>Обычный абзац\\."),
+                "обычный абзац подсветку не получил");
+
+            var flaggedMatch = Regex.Match(html, "<p class=\"ditaval-flag\" style=\"([^\"]*)\">Только для экспертов");
+            var style = flaggedMatch.Groups[1].Value;
+            Check(style.Contains("color:red"), "цвет текста из правила flag попал в style");
+            Check(style.Contains("background-color:yellow"), "цвет фона из правила flag попал в style");
+            Check(style.Contains("font-weight:bold"), "начертание bold из правила flag попало в style");
+            Check(style.Contains("border-left:3px solid orange"), "полоса изменений changebar из правила flag попала в style");
+
+            // Правило без @val совпадает с любым значением атрибута.
+            var wildcardOptions = new PublishOptions
+            {
+                OutputDirectory = Path.Combine(root, "out-wildcard"),
+                SingleFile = true
+            };
+            wildcardOptions.FlagConditions.Add(new DitavalFlagRule("audience", null, "green", null, null, null));
+            var wildcardResult = new HtmlPublisher(project).Publish(Path.Combine(root, "map.ditamap"), wildcardOptions);
+            var wildcardHtml = File.ReadAllText(wildcardResult.EntryFile);
+            Check(wildcardHtml.Contains("color:green"), "правило flag без @val совпадает при любом значении атрибута");
         }
         finally
         {

@@ -18,6 +18,9 @@ public sealed class PublishOptions
     /// <summary>Условная фильтрация: атрибут -> значения, которые нужно исключить.</summary>
     public Dictionary<string, HashSet<string>> ExcludeConditions { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>Правила подсветки (action="flag" из .ditaval) — цвет/фон/начертание по атрибуту.</summary>
+    public List<DitavalFlagRule> FlagConditions { get; } = new();
+
     public bool CopyImages { get; set; } = true;
 }
 
@@ -123,7 +126,8 @@ public sealed class HtmlPublisher
             Labels = labels,
             ShowDraftComments = options.ShowDraftComments,
             ImageSource = ImageSource,
-            Filter = node => IsIncluded(node, options)
+            Filter = node => IsIncluded(node, options),
+            FlagRules = options.FlagConditions
         };
 
         if (options.SingleFile)
@@ -281,7 +285,8 @@ public sealed class HtmlPublisher
             ShowDraftComments = true,
             ImageSource = absolute => new Uri(absolute).AbsoluteUri,
             TopicLink = (path, id) => id is null ? new Uri(path).AbsoluteUri : new Uri(path).AbsoluteUri + "#" + id,
-            Filter = node => IsIncluded(node, options)
+            Filter = node => IsIncluded(node, options),
+            FlagRules = options.FlagConditions
         };
 
         var renderer = new HtmlRenderer(_project, renderOptions);

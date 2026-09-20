@@ -66,13 +66,7 @@ public partial class PublishViewModel : ObservableObject
             Language = "ru"
         };
 
-        if (_main.Conditions is not null)
-        {
-            foreach (var (attribute, values) in _main.Conditions.Exclude)
-            {
-                options.ExcludeConditions[attribute] = values;
-            }
-        }
+        ApplyConditions(options);
 
         _main.BottomTabIndex = 2;
         BuildLogText = $"Сборка DOCX по карте {map.RelativePath}…\n";
@@ -116,6 +110,8 @@ public partial class PublishViewModel : ObservableObject
         }
     }
 
+    /// <summary>Подключает .ditaval к проекту (путь сохраняется вместе с проектом) — при каждой
+    /// сборке файл перечитывается заново, руками переимпортировать не нужно.</summary>
     [RelayCommand]
     private void ImportDitaval()
     {
@@ -126,16 +122,23 @@ public partial class PublishViewModel : ObservableObject
             return;
         }
 
-        var dialog = new OpenFileDialog { Title = "Импорт условий из .ditaval", Filter = "Файлы DITAVAL|*.ditaval|Все файлы|*.*" };
+        var dialog = new OpenFileDialog
+        {
+            Title = "Подключить файл условий (.ditaval)",
+            Filter = "Файлы DITAVAL|*.ditaval|Все файлы|*.*",
+            InitialDirectory = project.DitavalPath is null ? project.RootPath : Path.GetDirectoryName(Path.Combine(project.RootPath, project.DitavalPath))
+        };
         if (dialog.ShowDialog() != true)
         {
             return;
         }
 
-        Dictionary<string, HashSet<string>> imported;
+        var relativePath = Path.GetRelativePath(project.RootPath, dialog.FileName).Replace('\\', '/');
+
+        DitavalRules? rules;
         try
         {
-            imported = DitavalReader.ReadExcludeRules(dialog.FileName);
+            rules = DitavalReader.Read(dialog.FileName);
         }
         catch (Exception ex)
         {
@@ -143,12 +146,31 @@ public partial class PublishViewModel : ObservableObject
             return;
         }
 
-        var merged = new Dictionary<string, HashSet<string>>(_main.Conditions?.Exclude ?? new Dictionary<string, HashSet<string>>());
-        var importedValues = DitaProject.MergeExcludeConditions(merged, imported);
+        project.SetDitavalPath(relativePath);
+        var excludedCount = rules.Exclude.Sum(x => x.Value.Count);
+        _main.StatusText = $"Подключён .ditaval: {relativePath} (исключений: {excludedCount}, правил подсветки: {rules.Flags.Count}). Изменения файла подхватываются автоматически.";
+    }
 
-        _main.Conditions = new Dialogs.ConditionsResult(merged, _main.Conditions?.ShowDraftComments ?? false);
-        project.SetConditions(merged, _main.Conditions.ShowDraftComments);
-        _main.StatusText = $"Из .ditaval импортировано правил исключения: {importedValues}.";
+    /// <summary>Дополняет условия сборки исключениями и правилами подсветки из связанного .ditaval
+    /// (см. <see cref="ImportDitaval"/>) поверх вручную заданных в диалоге условий.</summary>
+    private void ApplyConditions(PublishOptions options)
+    {
+        if (_main.Conditions is not null)
+        {
+            foreach (var (attribute, values) in _main.Conditions.Exclude)
+            {
+                options.ExcludeConditions[attribute] = values;
+            }
+        }
+
+        var linked = _main.Project?.ResolveLinkedDitaval();
+        if (linked is null)
+        {
+            return;
+        }
+
+        DitaProject.MergeExcludeConditions(options.ExcludeConditions, linked.Exclude);
+        options.FlagConditions.AddRange(linked.Flags);
     }
 
     [RelayCommand]
@@ -236,13 +258,7 @@ public partial class PublishViewModel : ObservableObject
             Language = "ru"
         };
 
-        if (_main.Conditions is not null)
-        {
-            foreach (var (attribute, values) in _main.Conditions.Exclude)
-            {
-                options.ExcludeConditions[attribute] = values;
-            }
-        }
+        ApplyConditions(options);
 
         _main.BottomTabIndex = 2;
         BuildLogText = $"Сборка карты {map.RelativePath}…\n";

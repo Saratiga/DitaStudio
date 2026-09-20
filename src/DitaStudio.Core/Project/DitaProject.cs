@@ -104,6 +104,7 @@ public sealed class DitaProject
     private const string CustomCssSettingsFile = ".ditastudio-css";
     private const string ConditionsSettingsFile = ".ditastudio-conditions";
     private const string PdfHeaderFooterSettingsFile = ".ditastudio-pdf-header";
+    private const string DitavalSettingsFile = ".ditastudio-ditaval";
 
     public DitaProject(string rootPath)
     {
@@ -112,6 +113,7 @@ public sealed class DitaProject
         LoadCustomCssSetting();
         LoadConditionsSetting();
         LoadPdfHeaderFooterSetting();
+        LoadDitavalSetting();
     }
 
     public string RootPath { get; }
@@ -293,6 +295,81 @@ public sealed class DitaProject
         {
             ExcludedConditionValues = new Dictionary<string, HashSet<string>>();
             ShowDraftComments = false;
+        }
+    }
+
+    // ------------------------------------------------------ связанный .ditaval
+
+    /// <summary>Путь (относительно RootPath, со слэшами вперёд) к связанному .ditaval-файлу,
+    /// или null, если не подключён. Сохраняется рядом с проектом, переживает перезапуск редактора.</summary>
+    public string? DitavalPath { get; private set; }
+
+    public void SetDitavalPath(string? relativePath)
+    {
+        DitavalPath = string.IsNullOrWhiteSpace(relativePath) ? null : relativePath.Replace('\\', '/');
+        var settingsPath = System.IO.Path.Combine(RootPath, DitavalSettingsFile);
+        try
+        {
+            if (DitavalPath is null)
+            {
+                if (File.Exists(settingsPath))
+                {
+                    File.Delete(settingsPath);
+                }
+            }
+            else
+            {
+                File.WriteAllText(settingsPath, DitavalPath);
+            }
+        }
+        catch
+        {
+            // настройка не критична — молча продолжаем без сохранения на диск
+        }
+    }
+
+    private void LoadDitavalSetting()
+    {
+        try
+        {
+            var settingsPath = System.IO.Path.Combine(RootPath, DitavalSettingsFile);
+            if (!File.Exists(settingsPath))
+            {
+                return;
+            }
+
+            var value = File.ReadAllText(settingsPath).Trim();
+            DitavalPath = value.Length == 0 ? null : value;
+        }
+        catch
+        {
+            DitavalPath = null;
+        }
+    }
+
+    /// <summary>Перечитывает связанный .ditaval с диска — правки файла подхватываются сами,
+    /// вручную переимпортировать не нужно. Null, если файл не подключён, отсутствует или
+    /// не читается.</summary>
+    public DitavalRules? ResolveLinkedDitaval()
+    {
+        if (DitavalPath is null)
+        {
+            return null;
+        }
+
+        var fullPath = System.IO.Path.Combine(RootPath, DitavalPath.Replace('/', System.IO.Path.DirectorySeparatorChar));
+        if (!File.Exists(fullPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            return DitavalReader.Read(fullPath);
+        }
+        catch
+        {
+            return null;
         }
     }
 

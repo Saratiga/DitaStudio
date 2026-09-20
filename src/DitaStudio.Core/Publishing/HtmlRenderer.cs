@@ -20,6 +20,9 @@ public sealed class RenderOptions
     /// <summary>Условная фильтрация: возвращает false, если элемент нужно исключить.</summary>
     public Func<DitaNode, bool>? Filter { get; set; }
 
+    /// <summary>Правила подсветки (action="flag" из .ditaval) — цвет/фон/начертание по атрибуту.</summary>
+    public IReadOnlyList<DitavalFlagRule>? FlagRules { get; set; }
+
     public bool NumberFiguresAndTables { get; set; } = true;
 
     /// <summary>Цепочка имён областей ключей (keyscope) для топика, который сейчас рендерится —
@@ -1323,16 +1326,18 @@ public sealed class HtmlRenderer
             ? HtmlPublisher.AnchorFor(_document.FilePath, id)
             : id;
 
-    /// <summary>class="..." из outputclass узла, если он задан — иначе пустая строка.</summary>
-    private static string OptionalClassAttr(DitaNode node) => BuildClassAttr(null, node);
+    /// <summary>class="..." (и style="...", если применилось правило подсветки) из outputclass узла,
+    /// если он задан — иначе пустая строка.</summary>
+    private string OptionalClassAttr(DitaNode node) => BuildClassAttr(null, node);
 
     /// <summary>class="baseClass outputclass" одним атрибутом — не дублирует class, если outputclass задан.</summary>
-    private static string MergedClassAttr(string baseClass, DitaNode? node) => BuildClassAttr(baseClass, node);
+    private string MergedClassAttr(string baseClass, DitaNode? node) => BuildClassAttr(baseClass, node);
 
     /// <summary>Собирает class="..." из базового класса, outputclass узла и класса rev-changed,
     /// если у элемента задан непустой атрибут rev — полоска на полях при публикации, штатный
-    /// DITA-механизм пометки изменений (не полноценный track changes с историей правок).</summary>
-    private static string BuildClassAttr(string? baseClass, DitaNode? node)
+    /// DITA-механизм пометки изменений (не полноценный track changes с историей правок). Плюс
+    /// class/style от совпавшего правила подсветки .ditaval (action="flag").</summary>
+    private string BuildClassAttr(string? baseClass, DitaNode? node)
     {
         var classes = new List<string>();
         if (!string.IsNullOrEmpty(baseClass))
@@ -1351,7 +1356,86 @@ public sealed class HtmlRenderer
             classes.Add("rev-changed");
         }
 
-        return classes.Count == 0 ? string.Empty : $" class=\"{Escape(string.Join(' ', classes))}\"";
+        var flag = node is null ? null : ResolveFlagRule(node);
+        if (flag is not null)
+        {
+            classes.Add("ditaval-flag");
+        }
+
+        var classAttr = classes.Count == 0 ? string.Empty : $" class=\"{Escape(string.Join(' ', classes))}\"";
+        return classAttr + FlagStyleAttr(flag);
+    }
+
+    /// <summary>Первое правило подсветки .ditaval, у которого атрибут узла присутствует и (если задан
+    /// @val) совпадает с одним из токенов значения. Правила без @val совпадают при любом значении.</summary>
+    private DitavalFlagRule? ResolveFlagRule(DitaNode node)
+    {
+        var rules = _options.FlagRules;
+        if (rules is null || rules.Count == 0)
+        {
+            return null;
+        }
+
+        foreach (var rule in rules)
+        {
+            var value = node.GetAttribute(rule.Attribute);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            if (rule.Value is null)
+            {
+                return rule;
+            }
+
+            var tokens = value!.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (tokens.Contains(rule.Value))
+            {
+                return rule;
+            }
+        }
+
+        return null;
+    }
+
+    private static string FlagStyleAttr(DitavalFlagRule? rule)
+    {
+        if (rule is null)
+        {
+            return string.Empty;
+        }
+
+        var style = new List<string>();
+        if (!string.IsNullOrWhiteSpace(rule.Color))
+        {
+            style.Add($"color:{rule.Color}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(rule.BackgroundColor))
+        {
+            style.Add($"background-color:{rule.BackgroundColor}");
+        }
+
+        switch (rule.Style)
+        {
+            case "bold":
+                style.Add("font-weight:bold");
+                break;
+            case "italics":
+                style.Add("font-style:italic");
+                break;
+            case "underline":
+                style.Add("text-decoration:underline");
+                break;
+        }
+
+        if (!string.IsNullOrWhiteSpace(rule.ChangeBar))
+        {
+            style.Add($"border-left:3px solid {rule.ChangeBar};padding-left:6px");
+        }
+
+        return style.Count == 0 ? string.Empty : $" style=\"{Escape(string.Join(';', style))}\"";
     }
 
     public static string Escape(string value)
