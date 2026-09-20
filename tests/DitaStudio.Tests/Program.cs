@@ -35,6 +35,7 @@ public static class Program
         EditingTests();
         ProjectTests();
         KeyScopeTests();
+        MultiProjectWorkspaceTests();
         ValidationAndAnchorFixTests();
         RelTableTests();
         RevChangeTests();
@@ -758,6 +759,110 @@ public static class Program
             try
             {
                 Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    private static void MultiProjectWorkspaceTests()
+    {
+        Section("Мультипроектный workspace (проекты-источники ключей)");
+
+        var mainRoot = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N") + "-main");
+        var sharedRoot = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N") + "-shared");
+        Directory.CreateDirectory(mainRoot);
+        Directory.CreateDirectory(sharedRoot);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(sharedRoot, "terms.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>Общие термины</title>
+  <keydef keys="product-name"><topicmeta><keywords><keyword>Мегапродукт</keyword></keywords></topicmeta></keydef>
+</map>
+""");
+            var sharedProject = new DitaProject(sharedRoot);
+            sharedProject.Scan();
+
+            File.WriteAllText(Path.Combine(mainRoot, "topic.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="topic">
+  <title>Тема</title>
+  <conbody>
+    <p>Добро пожаловать в <keyword keyref="product-name"/>.</p>
+  </conbody>
+</concept>
+""");
+            File.WriteAllText(Path.Combine(mainRoot, "map.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>Основной проект</title>
+  <topicref href="topic.dita"/>
+</map>
+""");
+
+            var project = new DitaProject(mainRoot);
+            project.Scan();
+
+            Check(project.ResolveKey("product-name") is null, "до подключения источника ключ не резолвится");
+            Check(!project.KeyExistsAnywhere("product-name"), "до подключения источника KeyExistsAnywhere тоже не находит ключ");
+
+            project.AddReferencedProject(sharedRoot);
+            Check(project.ReferencedProjectPaths.Count == 1, "путь к проекту-источнику сохранён");
+            Check(project.ResolveKey("product-name")?.KeyText == "Мегапродукт",
+                "ключ резолвится из подключённого проекта-источника");
+            Check(project.KeyExistsAnywhere("product-name"), "KeyExistsAnywhere видит ключ из проекта-источника");
+
+            var issues = project.ValidateAll();
+            Check(!issues.Any(i => i.Message.Contains("product-name")),
+                "keyref на ключ из проекта-источника не считается неразрешённым при валидации");
+
+            var publisher = new HtmlPublisher(project);
+            var result = publisher.Publish(Path.Combine(mainRoot, "map.ditamap"), new PublishOptions
+            {
+                OutputDirectory = Path.Combine(mainRoot, "out"),
+                SingleFile = true
+            });
+            var html = File.ReadAllText(result.EntryFile);
+            Check(html.Contains("Мегапродукт"), "keyref на ключ из проекта-источника подставился в публикацию");
+
+            var reopened = new DitaProject(mainRoot);
+            reopened.Scan();
+            Check(reopened.ReferencedProjectPaths.Count == 1, "связь с проектом-источником переживает переоткрытие проекта");
+            Check(reopened.ResolveKey("product-name")?.KeyText == "Мегапродукт",
+                "разрешение ключа из источника работает и после переоткрытия проекта");
+
+            project.RemoveReferencedProject(sharedRoot);
+            Check(project.ReferencedProjectPaths.Count == 0, "проект-источник можно отключить");
+            Check(project.ResolveKey("product-name") is null, "после отключения источника ключ снова не резолвится");
+
+            // Защита от циклической связи: источник, который сам ссылается на подключивший его
+            // проект, не должен уйти в бесконечную рекурсию при Scan() — а его собственные "источники"
+            // просто игнорируются (наружу видна только его собственная корневая область ключей).
+            sharedProject.AddReferencedProject(mainRoot);
+            project.AddReferencedProject(sharedRoot);
+            project.Scan();
+            Check(project.ResolveKey("product-name")?.KeyText == "Мегапродукт",
+                "циклическая связь между проектами не мешает разрешению ключа и не роняет Scan()");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(mainRoot, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+
+            try
+            {
+                Directory.Delete(sharedRoot, true);
             }
             catch
             {

@@ -100,20 +100,36 @@ public sealed class DitaProject
     private readonly Dictionary<string, DitaDocument> _cache = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<ProjectFile> _files = new();
     private readonly KeySpace _rootKeySpace = new();
+    private readonly List<string> _referencedProjectPaths = new();
+    private readonly List<DitaProject> _referencedProjects = new();
+    private readonly bool _allowReferencedProjects;
 
     private const string CustomCssSettingsFile = ".ditastudio-css";
     private const string ConditionsSettingsFile = ".ditastudio-conditions";
     private const string PdfHeaderFooterSettingsFile = ".ditastudio-pdf-header";
     private const string DitavalSettingsFile = ".ditastudio-ditaval";
+    private const string ReferencedProjectsSettingsFile = ".ditastudio-references";
 
-    public DitaProject(string rootPath)
+    public DitaProject(string rootPath) : this(rootPath, allowReferencedProjects: true)
+    {
+    }
+
+    /// <summary>allowReferencedProjects=false — для проектов, подключённых как источник ключей к
+    /// другому проекту: они дают свои ключи наружу, но сами дальше не цепляют чужие — без этого
+    /// ограничения циклическая связь A→B→A привела бы к бесконечной рекурсии в Scan().</summary>
+    private DitaProject(string rootPath, bool allowReferencedProjects)
     {
         RootPath = System.IO.Path.GetFullPath(rootPath);
         Name = new DirectoryInfo(RootPath).Name;
+        _allowReferencedProjects = allowReferencedProjects;
         LoadCustomCssSetting();
         LoadConditionsSetting();
         LoadPdfHeaderFooterSetting();
         LoadDitavalSetting();
+        if (_allowReferencedProjects)
+        {
+            LoadReferencedProjectsSetting();
+        }
     }
 
     public string RootPath { get; }
@@ -373,6 +389,123 @@ public sealed class DitaProject
         }
     }
 
+    // ------------------------------------------------- проекты-источники ключей
+
+    /// <summary>Пути к другим проектам, чьи ключи корневой области видны из этого проекта —
+    /// мультипроектный workspace без полного объединения деревьев файлов: свои карты и топики
+    /// публикуются как обычно, но keyref/conref на ключ, не найденный в своём проекте, ищется
+    /// здесь. Сохраняется вместе с проектом, переживает перезапуск редактора.</summary>
+    public IReadOnlyList<string> ReferencedProjectPaths => _referencedProjectPaths;
+
+    public void AddReferencedProject(string path)
+    {
+        var full = System.IO.Path.GetFullPath(path);
+        if (_referencedProjectPaths.Contains(full, StringComparer.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _referencedProjectPaths.Add(full);
+        SaveReferencedProjectsSetting();
+        RebuildReferencedProjects();
+    }
+
+    public void RemoveReferencedProject(string path)
+    {
+        var full = System.IO.Path.GetFullPath(path);
+        if (_referencedProjectPaths.RemoveAll(p => string.Equals(p, full, StringComparison.OrdinalIgnoreCase)) == 0)
+        {
+            return;
+        }
+
+        SaveReferencedProjectsSetting();
+        RebuildReferencedProjects();
+    }
+
+    private void SaveReferencedProjectsSetting()
+    {
+        var settingsPath = System.IO.Path.Combine(RootPath, ReferencedProjectsSettingsFile);
+        try
+        {
+            if (_referencedProjectPaths.Count == 0)
+            {
+                if (File.Exists(settingsPath))
+                {
+                    File.Delete(settingsPath);
+                }
+
+                return;
+            }
+
+            File.WriteAllLines(settingsPath, _referencedProjectPaths);
+        }
+        catch
+        {
+            // настройка не критична — молча продолжаем без сохранения на диск
+        }
+    }
+
+    private void LoadReferencedProjectsSetting()
+    {
+        try
+        {
+            var settingsPath = System.IO.Path.Combine(RootPath, ReferencedProjectsSettingsFile);
+            if (!File.Exists(settingsPath))
+            {
+                return;
+            }
+
+            _referencedProjectPaths.AddRange(File.ReadAllLines(settingsPath).Where(l => !string.IsNullOrWhiteSpace(l)));
+        }
+        catch
+        {
+            _referencedProjectPaths.Clear();
+        }
+    }
+
+    /// <summary>Пересканирует все подключённые проекты-источники — вызывается при каждом Scan(),
+    /// правки в них подхватываются сами, как и связанный .ditaval.</summary>
+    private void RebuildReferencedProjects()
+    {
+        _referencedProjects.Clear();
+        if (!_allowReferencedProjects)
+        {
+            return;
+        }
+
+        foreach (var path in _referencedProjectPaths)
+        {
+            if (!Directory.Exists(path))
+            {
+                continue;
+            }
+
+            try
+            {
+                var referenced = new DitaProject(path, allowReferencedProjects: false);
+                referenced.Scan();
+                _referencedProjects.Add(referenced);
+            }
+            catch
+            {
+                // недоступный проект-источник пропускаем — не мешаем работе с основным
+            }
+        }
+    }
+
+    private KeyDefinition? ResolveKeyInReferencedProjects(string key)
+    {
+        foreach (var referenced in _referencedProjects)
+        {
+            if (referenced.Keys.TryGetValue(key, out var def))
+            {
+                return def;
+            }
+        }
+
+        return null;
+    }
+
     // -------------------------------------------------------- колонтитулы PDF
 
     /// <summary>Показывать ли колонтитулы при экспорте в PDF. По умолчанию — нет (как и раньше).
@@ -470,6 +603,7 @@ public sealed class DitaProject
         }
 
         _files.Sort((a, b) => string.Compare(a.RelativePath, b.RelativePath, StringComparison.OrdinalIgnoreCase));
+        RebuildReferencedProjects();
         RebuildKeySpace();
         Reloaded?.Invoke(this, EventArgs.Empty);
     }
@@ -740,7 +874,7 @@ public sealed class DitaProject
 
         if (scopeChain is null || scopeChain.Count == 0)
         {
-            return _rootKeySpace.Keys.TryGetValue(key, out var rootDef) ? rootDef : null;
+            return _rootKeySpace.Keys.TryGetValue(key, out var rootDef) ? rootDef : ResolveKeyInReferencedProjects(key);
         }
 
         var chain = new List<KeySpace> { _rootKeySpace };
@@ -763,7 +897,7 @@ public sealed class DitaProject
             }
         }
 
-        return null;
+        return ResolveKeyInReferencedProjects(key);
     }
 
     /// <summary>Сколько всего ключей в проекте, считая вложенные keyscope-области — в отличие от
@@ -791,7 +925,12 @@ public sealed class DitaProject
     /// может встречаться сразу в нескольких ветках с разными областями.</summary>
     public bool KeyExistsAnywhere(string key)
     {
-        return key.Contains('.') ? ResolveKey(key) is not null : KeyExistsInSpace(_rootKeySpace, key);
+        if (key.Contains('.'))
+        {
+            return ResolveKey(key) is not null;
+        }
+
+        return KeyExistsInSpace(_rootKeySpace, key) || ResolveKeyInReferencedProjects(key) is not null;
     }
 
     private static bool KeyExistsInSpace(KeySpace space, string key)

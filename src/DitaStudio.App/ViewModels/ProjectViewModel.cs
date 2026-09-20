@@ -106,10 +106,22 @@ public partial class ProjectViewModel : ObservableObject
         }
 
         var hidden = (project?.TotalKeyCount ?? 0) - (project?.Keys.Count ?? 0);
-        ScopedKeysHintVisible = hidden > 0;
-        ScopedKeysHintText = hidden > 0
-            ? $"Показаны только ключи корневой области. Ещё {hidden} — внутри keyscope-областей карты."
-            : string.Empty;
+        var referencedCount = project?.ReferencedProjectPaths.Count ?? 0;
+
+        var hints = new List<string>();
+        if (hidden > 0)
+        {
+            hints.Add($"Показаны только ключи корневой области. Ещё {hidden} — внутри keyscope-областей карты.");
+        }
+
+        if (referencedCount > 0)
+        {
+            hints.Add($"Подключено проектов-источников ключей: {referencedCount} — их ключи в списке не показаны, " +
+                      "но доступны через keyref/conref, если не найдены в этом проекте.");
+        }
+
+        ScopedKeysHintVisible = hints.Count > 0;
+        ScopedKeysHintText = string.Join(" ", hints);
     }
 
     [RelayCommand]
@@ -119,5 +131,54 @@ public partial class ProjectViewModel : ObservableObject
         {
             _main.OpenDocument?.Invoke(path);
         }
+    }
+
+    /// <summary>Подключает другой проект как источник ключей (мультипроектный workspace):
+    /// его карты не публикуются вместе с текущим проектом, но keyref/conref на ключ, которого
+    /// нет в своём проекте, теперь ищется и там. Связь сохраняется вместе с проектом.</summary>
+    [RelayCommand]
+    private void AddReferencedProject()
+    {
+        var project = _main.Project;
+        if (project is null)
+        {
+            Dialogs.Message("Проект", "Сначала откройте папку проекта.");
+            return;
+        }
+
+        var dialog = new OpenFolderDialog { Title = "Подключить проект как источник ключей" };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        if (string.Equals(Path.GetFullPath(dialog.FolderName), Path.GetFullPath(project.RootPath), StringComparison.OrdinalIgnoreCase))
+        {
+            Dialogs.Message("Проект", "Нельзя подключить проект сам к себе.");
+            return;
+        }
+
+        project.AddReferencedProject(dialog.FolderName);
+        RefreshKeysList();
+        _main.StatusText = $"Подключён проект-источник ключей: {dialog.FolderName} " +
+                            $"(всего подключено: {project.ReferencedProjectPaths.Count}).";
+    }
+
+    [RelayCommand]
+    private void ClearReferencedProjects()
+    {
+        var project = _main.Project;
+        if (project is null || project.ReferencedProjectPaths.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var path in project.ReferencedProjectPaths.ToList())
+        {
+            project.RemoveReferencedProject(path);
+        }
+
+        RefreshKeysList();
+        _main.StatusText = "Все проекты-источники ключей отключены.";
     }
 }

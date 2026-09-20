@@ -16,6 +16,8 @@
             <MenuItem Header="_Файл">
                 <MenuItem Header="Открыть папку проекта…" Command="{Binding ProjectPanel.OpenProjectCommand}" InputGestureText="Ctrl+Shift+O" />
                 <MenuItem Header="Недавние проекты" x:Name="RecentProjectsMenu" />
+                <MenuItem Header="Подключить проект-источник ключей…" Command="{Binding ProjectPanel.AddReferencedProjectCommand}" />
+                <MenuItem Header="Отключить все проекты-источники" Command="{Binding ProjectPanel.ClearReferencedProjectsCommand}" />
                 <MenuItem Header="Создать документ…" Click="OnNewDocument" InputGestureText="Ctrl+N" />
                 <Separator />
                 <MenuItem Header="Сохранить" Command="{Binding Documents.SaveCurrentCommand}" InputGestureText="Ctrl+S" />
