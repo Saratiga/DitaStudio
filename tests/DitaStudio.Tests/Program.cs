@@ -42,6 +42,7 @@ public static class Program
         RefactorTests();
         ExtractToConrefTests();
         DiffTests();
+        GitHistoryTests();
         DocxTests();
         ListAndStepsDispatchTests();
 
@@ -1280,6 +1281,82 @@ public static class Program
         var removedOnly = XmlDiff.Compare("a\nb\nc", "a\nc");
         Check(removedOnly.Count(d => d.Kind == DiffKind.Removed) == 1 && removedOnly.Count(d => d.Kind == DiffKind.Added) == 0,
             "удалённая строка распознана без ложного добавления");
+    }
+
+    private static void GitHistoryTests()
+    {
+        Section("Сравнение с git-историей");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            RunGitOrSkip(root, "init");
+            if (!Directory.Exists(Path.Combine(root, ".git")))
+            {
+                Console.WriteLine("  (git недоступен в окружении — раздел пропущен)");
+                return;
+            }
+
+            RunGitOrSkip(root, "config", "user.email", "test@example.com");
+            RunGitOrSkip(root, "config", "user.name", "Test");
+
+            var tracked = Path.Combine(root, "topic.dita");
+            File.WriteAllText(tracked, "версия из коммита");
+            RunGitOrSkip(root, "add", "topic.dita");
+            RunGitOrSkip(root, "commit", "-m", "начальный коммит");
+
+            File.WriteAllText(tracked, "рабочая копия, ещё не закоммичена");
+
+            var headContent = GitHistory.ReadRevision(tracked);
+            Check(headContent?.Trim() == "версия из коммита", "ReadRevision вернул содержимое из HEAD, а не рабочей копии");
+            Check(GitHistory.IsInRepository(tracked), "файл внутри git-репозитория распознан");
+
+            var untracked = Path.Combine(root, "untracked.dita");
+            File.WriteAllText(untracked, "не в истории");
+            Check(GitHistory.ReadRevision(untracked) is null, "неотслеживаемый файл — ReadRevision возвращает null");
+
+            var outsideRepo = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N") + ".dita");
+            Check(!GitHistory.IsInRepository(outsideRepo), "файл вне репозитория git не распознан как отслеживаемый");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    private static void RunGitOrSkip(string workingDirectory, params string[] arguments)
+    {
+        try
+        {
+            var info = new System.Diagnostics.ProcessStartInfo("git")
+            {
+                WorkingDirectory = workingDirectory,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            foreach (var arg in arguments)
+            {
+                info.ArgumentList.Add(arg);
+            }
+
+            using var process = System.Diagnostics.Process.Start(info);
+            process?.WaitForExit(5000);
+        }
+        catch
+        {
+            // git не установлен — GitHistoryTests сам обнаружит отсутствие .git и пропустит раздел
+        }
     }
 
     // ---------------------------------------------------------------- DOCX

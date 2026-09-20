@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DitaStudio.App.Authoring;
 using DitaStudio.App.Views;
+using DitaStudio.Core.Diff;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Validation;
 
@@ -85,6 +86,33 @@ public partial class ValidationViewModel : ObservableObject
 
         // Сравнение читает файлы с диска — несохранённые правки в открытых вкладках не видны.
         DiffWindow.Show(left.FileName, right.FileName);
+    }
+
+    /// <summary>Сравнивает открытый документ с версией из последнего коммита git — через `git show`,
+    /// без библиотеки libgit2. Требует git в PATH и файл внутри репозитория.</summary>
+    [RelayCommand]
+    private void CompareWithGitHead()
+    {
+        var path = _main.Current?.FilePath;
+        if (path is null)
+        {
+            Dialogs.Message("Сравнение с git", "Откройте документ.");
+            return;
+        }
+
+        var headContent = GitHistory.ReadRevision(path);
+        if (headContent is null)
+        {
+            Dialogs.Message("Сравнение с git",
+                "Файл не найден в истории git: нет репозитория, файл не отслеживается, или git не установлен.");
+            return;
+        }
+
+        // Несохранённые правки в текущей вкладке diff не увидит — как и обычное «Сравнить файлы…».
+        var tempPath = Path.Combine(Path.GetTempPath(), $"ditastudio-git-head-{Path.GetFileName(path)}");
+        File.WriteAllText(tempPath, headContent);
+
+        DiffWindow.Show(tempPath, path);
     }
 
     private void ShowIssues(IReadOnlyList<ValidationIssue> issues)

@@ -34,6 +34,7 @@
                 <MenuItem Header="Проверить документ" Command="{Binding Validation.ValidateDocumentCommand}" />
                 <Separator />
                 <MenuItem Header="Сравнить файлы…" Command="{Binding Validation.CompareFilesCommand}" />
+                <MenuItem Header="Сравнить с последним коммитом (git)" Command="{Binding Validation.CompareWithGitHeadCommand}" />
             </MenuItem>
 
             <MenuItem Header="_Вставка">
