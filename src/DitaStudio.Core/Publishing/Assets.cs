@@ -123,4 +123,28 @@ li { margin: .3em 0; }
   main { padding: 24px 20px 64px; }
 }
 """;
+
+    /// <summary>Приближённая имитация вида DOCX — для предпросмотра "как будет выглядеть при
+    /// экспорте" (DocumentPane), не для самой публикации. Значения шрифтов/размеров/отступов
+    /// подобраны по DocxPublisher.AddStyles (Calibri, размеры Heading1-6, note — серая полоса без
+    /// заливки, таблицы — сплошная чёрная сетка) — не пиксель-в-пиксель (реальную пагинацию,
+    /// сноски и разрывы страниц Word воспроизводит только сам DOCX-экспорт), но структурно похоже.</summary>
+    public const string WordPreviewCss = """
+body { font-family: Calibri, "Segoe UI", sans-serif; font-size: 11pt; line-height: 1.3; color: #000; }
+main { max-width: 760px; }
+h1, h2, h3, h4, h5, h6 { font-weight: bold; color: #000; font-family: Calibri, sans-serif; margin: 12pt 0 6pt; }
+h1 { font-size: 18pt; }
+h2 { font-size: 16pt; }
+h3 { font-size: 14pt; }
+h4, h5, h6 { font-size: 12pt; }
+.shortdesc { font-size: 11pt; color: #000; font-style: italic; }
+a { color: #0563C1; text-decoration: underline; }
+.note { background: none; border-left: 1.5pt solid #999999; border-radius: 0; padding: 6pt 10pt; }
+.note.caution, .note.attention, .note.warning, .note.notice, .note.danger { background: none; border-left-color: #999999; }
+table { border-collapse: collapse; }
+th, td { border: 1pt solid #000; padding: 4pt 8pt; }
+th { background: #E8E8E8; }
+pre, .codeblock, .screen, .msgblock, .pre, .lines { background: #F2F2F2; border: none; border-radius: 0; font-family: Consolas, monospace; }
+.hazard { border-radius: 0; }
+""";
 }

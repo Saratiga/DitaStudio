@@ -273,7 +273,10 @@ public sealed class HtmlPublisher
     }
 
     /// <summary>Отрисовка одного топика для панели предпросмотра.</summary>
-    public string RenderPreview(DitaDocument document, PublishOptions? options = null)
+    /// <summary>extraCss — довешивается после пользовательского CSS проекта, поэтому побеждает
+    /// его в каскаде; используется DocumentPane для режима предпросмотра "как в DOCX"
+    /// (Assets.WordPreviewCss), саму публикацию не затрагивает.</summary>
+    public string RenderPreview(DitaDocument document, PublishOptions? options = null, string? extraCss = null)
     {
         options ??= new PublishOptions();
         var labels = Labels.For(options.Language);
@@ -314,7 +317,13 @@ public sealed class HtmlPublisher
         }
 
         _ = baseDir;
-        return Page(document.Title, null, body, labels, LoadCustomCss(out _));
+        var customCss = LoadCustomCss(out _);
+        if (!string.IsNullOrEmpty(extraCss))
+        {
+            customCss = customCss is null ? extraCss : customCss + "\n" + extraCss;
+        }
+
+        return Page(document.Title, null, body, labels, customCss);
     }
 
     private string RenderMapPreview(DitaDocument document, Labels labels)

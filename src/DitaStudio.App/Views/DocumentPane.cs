@@ -17,6 +17,17 @@ public enum EditorMode
     Preview
 }
 
+/// <summary>Как показывать вкладку «Предпросмотр» — под какой из форматов публикации.</summary>
+public enum PreviewFormat
+{
+    Html,
+    Pdf,
+
+    /// <summary>Приближённая имитация вида DOCX через CSS (Assets.WordPreviewCss) — не настоящий
+    /// .docx, реальную пагинацию/сноски/разрывы страниц Word показывает только сам экспорт.</summary>
+    DocxApprox
+}
+
 /// <summary>
 /// Вкладка одного документа: режимы «Автор», «Исходный код» и «Предпросмотр»
 /// с общей моделью и общей историей отмены.
@@ -32,6 +43,9 @@ public sealed class DocumentPane : Grid
 
     private bool _syncing;
     private string? _previewFile;
+    private PreviewFormat _previewFormat = PreviewFormat.Html;
+    private TextBlock _previewStatus = null!;
+    private int _previewRequestId;
 
     public DocumentPane(DitaProject project, DitaDocument document)
     {
@@ -103,14 +117,38 @@ public sealed class DocumentPane : Grid
             Margin = new Thickness(0)
         };
 
-        var refresh = new Button { Content = "Обновить", Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(6, 4, 4, 4) };
+        var formatCombo = new ComboBox
+        {
+            ItemsSource = new[] { "HTML", "PDF", "DOCX (приближённо)" },
+            SelectedIndex = 0,
+            Padding = new Thickness(8, 4, 8, 4),
+            Margin = new Thickness(6, 4, 4, 4),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        formatCombo.SelectionChanged += (_, _) =>
+        {
+            _previewFormat = (PreviewFormat)formatCombo.SelectedIndex;
+            RefreshPreview();
+        };
+
+        var refresh = new Button { Content = "Обновить", Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(4, 4, 4, 4) };
         refresh.Click += (_, _) => RefreshPreview();
 
-        var openInBrowser = new Button { Content = "Открыть в браузере", Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(0, 4, 4, 4) };
+        var openInBrowser = new Button { Content = "Открыть внешним приложением", Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(0, 4, 4, 4) };
         openInBrowser.Click += (_, _) => OpenPreviewInBrowser();
 
+        _previewStatus = new TextBlock
+        {
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(8, 4, 4, 4),
+            Foreground = new SolidColorBrush(Color.FromRgb(0x5b, 0x64, 0x72)),
+            FontSize = 12
+        };
+
+        bar.Children.Add(formatCombo);
         bar.Children.Add(refresh);
         bar.Children.Add(openInBrowser);
+        bar.Children.Add(_previewStatus);
 
         Grid.SetRow(bar, 0);
         Grid.SetRow(_browser, 1);
@@ -216,14 +254,24 @@ public sealed class DocumentPane : Grid
         }
     }
 
-    public void RefreshPreview()
+    public async void RefreshPreview() => await RefreshPreviewAsync();
+
+    /// <summary>PDF-режим печатает через WebView2PdfExporter (тот же путь, что и настоящий
+    /// экспорт — с колонтитулами, если включены в проекте) во временный .pdf и показывает его в
+    /// том же _browser: у WebView2 есть встроенный просмотрщик PDF, разбивка на страницы настоящая,
+    /// не имитация. DOCX-режим — приближение через CSS (Assets.WordPreviewCss), см. его комментарий.
+    /// _previewRequestId защищает от гонки: если формат/документ сменили, пока PDF ещё печатался,
+    /// устаревший результат не должен затирать более новый.</summary>
+    private async Task RefreshPreviewAsync()
     {
+        var requestId = ++_previewRequestId;
         CommitPendingEdits();
 
         string html;
         try
         {
-            html = new HtmlPublisher(_project).RenderPreview(Document);
+            var extraCss = _previewFormat == PreviewFormat.DocxApprox ? Assets.WordPreviewCss : null;
+            html = new HtmlPublisher(_project).RenderPreview(Document, extraCss: extraCss);
         }
         catch (Exception ex)
         {
@@ -233,12 +281,50 @@ public sealed class DocumentPane : Grid
 
         try
         {
-            _previewFile = Path.Combine(Path.GetTempPath(), "DitaStudioPreview",
-                (Document.FilePath is null ? "preview" : Path.GetFileNameWithoutExtension(Document.FilePath)) + ".html");
-            Directory.CreateDirectory(Path.GetDirectoryName(_previewFile)!);
-            File.WriteAllText(_previewFile, html, System.Text.Encoding.UTF8);
+            var baseName = Document.FilePath is null ? "preview" : Path.GetFileNameWithoutExtension(Document.FilePath);
+            var dir = Path.Combine(Path.GetTempPath(), "DitaStudioPreview");
+            Directory.CreateDirectory(dir);
+            var htmlPath = Path.Combine(dir, baseName + ".html");
+            File.WriteAllText(htmlPath, html, System.Text.Encoding.UTF8);
 
-            var uri = new Uri(_previewFile);
+            if (_previewFormat != PreviewFormat.Pdf)
+            {
+                _previewStatus.Text = string.Empty;
+                _previewFile = htmlPath;
+                Navigate(htmlPath);
+                return;
+            }
+
+            _previewStatus.Text = "Печать в PDF…";
+            var pdfPath = Path.Combine(dir, baseName + ".pdf");
+            var error = await WebView2PdfExporter.ExportAsync(
+                htmlPath, pdfPath, _project.PdfShowHeaderFooter, _project.PdfHeaderText, _project.PdfFooterText);
+
+            if (requestId != _previewRequestId)
+            {
+                return; // формат/документ уже сменились — не перетираем более новый результат
+            }
+
+            if (error is not null)
+            {
+                _previewStatus.Text = "Ошибка печати в PDF: " + error;
+                _previewFile = htmlPath;
+                Navigate(htmlPath);
+                return;
+            }
+
+            _previewStatus.Text = string.Empty;
+            _previewFile = pdfPath;
+            Navigate(pdfPath);
+        }
+        catch
+        {
+            // без предпросмотра редактор остаётся работоспособным
+        }
+
+        void Navigate(string path)
+        {
+            var uri = new Uri(path);
             if (_browser.Source == uri)
             {
                 _browser.CoreWebView2?.Reload();
@@ -248,15 +334,11 @@ public sealed class DocumentPane : Grid
                 _browser.Source = uri;
             }
         }
-        catch
-        {
-            // без предпросмотра редактор остаётся работоспособным
-        }
     }
 
-    private void OpenPreviewInBrowser()
+    private async void OpenPreviewInBrowser()
     {
-        RefreshPreview();
+        await RefreshPreviewAsync();
         if (_previewFile is null || !File.Exists(_previewFile))
         {
             return;

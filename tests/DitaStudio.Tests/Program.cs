@@ -532,7 +532,22 @@ public static class Program
             var cssHtml = File.ReadAllText(withCss.EntryFile);
             Check(cssHtml.Contains("h1.custom-marker { color: red; }"), "пользовательский CSS подключён к публикации");
 
+            // RenderPreview: extraCss (режим предпросмотра "как в DOCX" у DocumentPane) довешивается
+            // ПОСЛЕ пользовательского CSS проекта — значит побеждает его в каскаде.
+            var introDocForPreview = project.GetDocument(Path.Combine(root, "intro.dita"));
+            var previewWithExtraCss = publisher.RenderPreview(introDocForPreview, extraCss: "body { font-family: TestFont; }");
+            Check(previewWithExtraCss.Contains("h1.custom-marker { color: red; }"),
+                "RenderPreview: пользовательский CSS проекта тоже попадает в предпросмотр");
+            Check(previewWithExtraCss.Contains("body { font-family: TestFont; }"),
+                "RenderPreview: extraCss добавляется к предпросмотру");
+            Check(previewWithExtraCss.IndexOf("h1.custom-marker", StringComparison.Ordinal) <
+                  previewWithExtraCss.IndexOf("TestFont", StringComparison.Ordinal),
+                "extraCss идёт после пользовательского CSS в каскаде — значит побеждает его");
+
             project.SetCustomCssPath(null);
+            var previewWithoutCustomCss = publisher.RenderPreview(introDocForPreview, extraCss: "body { font-family: TestFont; }");
+            Check(previewWithoutCustomCss.Contains("body { font-family: TestFont; }") && !previewWithoutCustomCss.Contains("h1.custom-marker"),
+                "extraCss работает и без пользовательского CSS проекта");
             Check(project.CustomCssPath is null, "пользовательский CSS можно отключить");
 
             // Условия сборки: сохранение между запусками и отключение.
