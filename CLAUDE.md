@@ -7,7 +7,7 @@ WPF, .NET 8, Windows. Интерфейс и комментарии — на ру
 
 ```powershell
 dotnet build DitaStudio.sln -c Debug          # сборка
-dotnet run --project tests\DitaStudio.Tests   # 324 проверки ядра, код возврата 0 = всё прошло
+dotnet run --project tests\DitaStudio.Tests   # 339 проверок ядра, код возврата 0 = всё прошло
 dotnet run --project src\DitaStudio.App       # запуск редактора
 ```
 
@@ -87,6 +87,13 @@ DITA`, при записи цепочки восстанавливают исх�
 
 Отмена — снимками XML (`UndoStack`), только для структурных правок; набор текста
 отменяется средствами самого `RichTextBox`.
+
+Вкладка «Предпросмотр» (`DocumentPane`) умеет показывать три формата: HTML (как
+есть), PDF (настоящая печать через `WebView2PdfExporter` во временный файл — тот
+же встроенный просмотрщик WebView2 показывает реальную пагинацию, не имитацию) и
+DOCX-приближённо (тот же HTML со скином `Assets.WordPreviewCss`, подобранным по
+`DocxPublisher.AddStyles` — не пиксель-в-пиксель, но структурно похоже: чёрные
+жирные заголовки вместо цветных, note серой полосой без заливки).
 
 ## Плагины
 
