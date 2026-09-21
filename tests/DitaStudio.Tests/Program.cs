@@ -33,6 +33,7 @@ public static class Program
 
         CatalogTests();
         ContentModelTests();
+        ModelAutomatonPropertyTests();
         RoundTripTests();
         ValidationTests();
         TemplateTests();
@@ -45,10 +46,13 @@ public static class Program
         RevChangeTests();
         TrackChangesTests();
         XliffTests();
+        XliffConverterPropertyTests();
         DtdCatalogLoaderTests();
+        DtdCatalogLoaderPropertyTests();
         PluginLoaderTests();
         DitaProjectValidateAllWithPluginsTests();
         DitavalFlagTests();
+        DitavalPropertyTests();
         RefactorTests();
         ExtractToConrefTests();
         DiffTests();
@@ -165,6 +169,133 @@ public static class Program
         var p = catalog.Get("p")!;
         Check(p.Automaton.AllowedNames.Contains("uicontrol"), "внутри p допустим uicontrol");
         Check(p.Automaton.AllowedNames.Contains("ul"), "внутри p допустим вложенный список");
+    }
+
+    // ------------------------------------------------- property-based: модели
+
+    /// <summary>Собственное (не catalog'а) дерево контент-модели для генерации случайных, но
+    /// заведомо валидных DTD-выражений — используется как в этом тесте, так и в property-тесте
+    /// DtdCatalogLoader, чтобы гонять один и тот же генератор через оба независимых пути.</summary>
+    private abstract record ModelSpec;
+    private sealed record LeafSpec(string Name) : ModelSpec;
+    private sealed record SeqSpec(List<ModelSpec> Items) : ModelSpec;
+    private sealed record ChoiceSpec(List<ModelSpec> Items) : ModelSpec;
+    private sealed record RepeatSpec(ModelSpec Item, int Min, int Max) : ModelSpec;
+
+    private static ModelSpec GenerateModelNode(Random rnd, string[] alphabet, int depth)
+    {
+        if (depth <= 0 || rnd.NextDouble() < 0.4)
+        {
+            return new LeafSpec(alphabet[rnd.Next(alphabet.Length)]);
+        }
+
+        var itemCount = 2 + rnd.Next(2); // 2..3
+        var items = Enumerable.Range(0, itemCount)
+            .Select(_ => GenerateModelNode(rnd, alphabet, depth - 1))
+            .ToList();
+
+        return rnd.Next(3) switch
+        {
+            0 => new SeqSpec(items),
+            1 => new ChoiceSpec(items),
+            _ => new RepeatSpec(items[0], rnd.Next(3) switch { 0 => 0, 1 => 0, _ => 1 }, rnd.Next(2) == 0 ? -1 : 1)
+        };
+    }
+
+    private static string SerializeModelNode(ModelSpec spec) => spec switch
+    {
+        LeafSpec l => l.Name,
+        SeqSpec s => "(" + string.Join(",", s.Items.Select(SerializeModelNode)) + ")",
+        ChoiceSpec c => "(" + string.Join("|", c.Items.Select(SerializeModelNode)) + ")",
+        RepeatSpec { Min: 0, Max: 1 } r => SerializeRepeatItem(r.Item) + "?",
+        RepeatSpec { Min: 0 } r => SerializeRepeatItem(r.Item) + "*",
+        RepeatSpec r => SerializeRepeatItem(r.Item) + "+",
+        _ => throw new InvalidOperationException("неизвестный узел ModelSpec")
+    };
+
+    /// <summary>DTD не допускает два суффикса подряд на голом имени ("c++" не значит ничего и
+    /// молча коверкает разбор) — если повторяемый элемент сам оказался Repeat, оборачиваем его в
+    /// группу, как это и делают настоящие DTD: "(c+)*", а не "c+*".</summary>
+    private static string SerializeRepeatItem(ModelSpec item) =>
+        item is RepeatSpec ? "(" + SerializeModelNode(item) + ")" : SerializeModelNode(item);
+
+    /// <summary>Строит одну заведомо валидную последовательность имён по той же логике, по которой
+    /// ModelAutomaton интерпретирует Sequence/Choice/Repeat — если автомат не примет то, что
+    /// сгенерировал этот метод, значит разошлось построение НКА или разбор синтаксиса.</summary>
+    private static List<string> GenerateValidSequence(ModelSpec spec, Random rnd)
+    {
+        switch (spec)
+        {
+            case LeafSpec l:
+                return new List<string> { l.Name };
+            case SeqSpec s:
+                return s.Items.SelectMany(item => GenerateValidSequence(item, rnd)).ToList();
+            case ChoiceSpec c:
+                return GenerateValidSequence(c.Items[rnd.Next(c.Items.Count)], rnd);
+            case RepeatSpec r:
+                var count = (r.Min, r.Max) switch
+                {
+                    (0, 1) => rnd.Next(2),
+                    (0, -1) => rnd.Next(4),
+                    _ => 1 + rnd.Next(3)
+                };
+                var result = new List<string>();
+                for (var i = 0; i < count; i++)
+                {
+                    result.AddRange(GenerateValidSequence(r.Item, rnd));
+                }
+
+                return result;
+            default:
+                throw new InvalidOperationException("неизвестный узел ModelSpec");
+        }
+    }
+
+    private static void ModelAutomatonPropertyTests()
+    {
+        Section("Property-based: ModelParser + ModelAutomaton (случайные контент-модели)");
+
+        // Фиксированный сид — падение воспроизводимо без отдельного лога сида.
+        var rnd = new Random(12345);
+        var alphabet = new[] { "a", "b", "c", "d", "e" };
+        const int iterations = 300;
+        var failures = 0;
+
+        for (var i = 0; i < iterations; i++)
+        {
+            try
+            {
+                var spec = GenerateModelNode(rnd, alphabet, depth: 3);
+                var text = SerializeModelNode(spec);
+                var model = ModelParser.Parse(text);
+                var automaton = new ModelAutomaton(model);
+
+                var validSequence = GenerateValidSequence(spec, rnd);
+                if (!automaton.Validate(validSequence, out _, out _))
+                {
+                    failures++;
+                    Failures.Add($"ModelAutomaton: сгенерированная валидная последовательность [{string.Join(",", validSequence)}] отклонена для модели '{text}' (итерация {i})");
+                    continue;
+                }
+
+                // Автомат построен только на буквах алфавита — токен вне алфавита обязан рвать
+                // любую последовательность, независимо от формы модели (ANY здесь не встречается).
+                var withGarbage = validSequence.Append("unknown-token").ToList();
+                if (automaton.Validate(withGarbage, out _, out _))
+                {
+                    failures++;
+                    Failures.Add($"ModelAutomaton: последовательность с посторонним токеном [{string.Join(",", withGarbage)}] принята для модели '{text}' (итерация {i})");
+                }
+            }
+            catch (Exception ex)
+            {
+                failures++;
+                Failures.Add($"ModelAutomaton: исключение на итерации {i}: {ex.Message}");
+            }
+        }
+
+        Check(failures == 0,
+            $"{iterations} случайных контент-моделей: валидная последовательность принимается, с посторонним токеном отклоняется ({iterations - failures}/{iterations})");
     }
 
     // ------------------------------------------------------- разбор и запись
@@ -1375,6 +1506,198 @@ public static class Program
         Check(badIdWarnings.Any(w => w.Contains("вне диапазона")), "placeholder id вне диапазона зафиксирован предупреждением, импорт не падает");
     }
 
+    private static readonly string[] PhraseTags = { "b", "i", "u", "tt" };
+    private static readonly string[] RandomWordsPool =
+        { "текст", "пример", "значение", "документ", "проверка", "элемент", "раздел", "материал" };
+
+    private static string RandomWords(Random rnd)
+    {
+        var count = 1 + rnd.Next(3);
+        return string.Join(" ", Enumerable.Range(0, count).Select(_ => RandomWordsPool[rnd.Next(RandomWordsPool.Length)]));
+    }
+
+    /// <summary>Случайная, но валидная вложенность фразовых элементов внутри абзаца/note —
+    /// b/i/u/tt рекурсивно, плюс uicontrol с keyref и image с alt (те же элементы, на которых
+    /// раньше вручную ловился баг потери вложенности в XliffTests).</summary>
+    private static string GenerateInlineFragment(Random rnd, int depth)
+    {
+        var pieceCount = 1 + rnd.Next(3);
+        var sb = new StringBuilder();
+        for (var i = 0; i < pieceCount; i++)
+        {
+            sb.Append(GenerateInlinePiece(rnd, depth));
+        }
+
+        return sb.ToString();
+    }
+
+    private static string GenerateInlinePiece(Random rnd, int depth)
+    {
+        var roll = rnd.Next(depth <= 0 ? 2 : 5);
+        switch (roll)
+        {
+            case 0:
+            case 1:
+                return RandomWords(rnd);
+            case 2:
+                var tag = PhraseTags[rnd.Next(PhraseTags.Length)];
+                return $"<{tag}>{GenerateInlineFragment(rnd, depth - 1)}</{tag}>";
+            case 3:
+                return $"<uicontrol keyref=\"k{rnd.Next(5)}\">{GenerateInlineFragment(rnd, depth - 1)}</uicontrol>";
+            default:
+                return $"<image href=\"pic{rnd.Next(5)}.png\"><alt>{RandomWords(rnd)}</alt></image>";
+        }
+    }
+
+    private static string GenerateRandomTopicXml(Random rnd) => $"""
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="topic">
+  <title>{RandomWords(rnd)}</title>
+  <shortdesc>{RandomWords(rnd)}</shortdesc>
+  <conbody>
+    <p>{GenerateInlineFragment(rnd, 2)}</p>
+    <note>{RandomWords(rnd)} <p>{GenerateInlineFragment(rnd, 1)}</p></note>
+  </conbody>
+</concept>
+""";
+
+    /// <summary>Рекурсивно сверяет форму дерева до и после «перевода»: те же элементы, те же
+    /// атрибуты, то же число и порядок детей — а текстовые узлы отличаются ровно на префикс.</summary>
+    private static void AssertSameShapeAfterTranslation(DitaNode original, DitaNode translated, string prefix, List<string> mismatches, string path)
+    {
+        if (original.Kind != translated.Kind)
+        {
+            mismatches.Add($"{path}: разный тип узла ({original.Kind} vs {translated.Kind})");
+            return;
+        }
+
+        if (original.Kind == NodeKind.Element)
+        {
+            if (original.Name != translated.Name)
+            {
+                mismatches.Add($"{path}: разное имя элемента ({original.Name} vs {translated.Name})");
+            }
+
+            var origAttrs = original.Attributes.Select(a => (a.Name, a.Value)).OrderBy(a => a.Name, StringComparer.Ordinal).ToList();
+            var transAttrs = translated.Attributes.Select(a => (a.Name, a.Value)).OrderBy(a => a.Name, StringComparer.Ordinal).ToList();
+            if (!origAttrs.SequenceEqual(transAttrs))
+            {
+                mismatches.Add($"{path}: атрибуты не совпадают ({string.Join(",", origAttrs)} vs {string.Join(",", transAttrs)})");
+            }
+        }
+        else if (original.Kind == NodeKind.Text)
+        {
+            if (translated.Value != prefix + original.Value)
+            {
+                mismatches.Add($"{path}: текст переведён неверно ('{original.Value}' -> '{translated.Value}', ожидалось '{prefix + original.Value}')");
+            }
+        }
+
+        if (original.Children.Count != translated.Children.Count)
+        {
+            mismatches.Add($"{path}: разное число дочерних узлов ({original.Children.Count} vs {translated.Children.Count})");
+            return;
+        }
+
+        for (var i = 0; i < original.Children.Count; i++)
+        {
+            AssertSameShapeAfterTranslation(original.Children[i], translated.Children[i], prefix, mismatches, $"{path}/{i}");
+        }
+    }
+
+    private static void XliffConverterPropertyTests()
+    {
+        Section("Property-based: экспорт/импорт XLIFF (случайные фразовые деревья)");
+
+        var rnd = new Random(777);
+        const int iterations = 80;
+        var failures = 0;
+
+        for (var i = 0; i < iterations; i++)
+        {
+            var sourceXml = GenerateRandomTopicXml(rnd);
+            try
+            {
+                var baseline = DitaDocument.Parse(sourceXml);
+
+                // 1) round-trip без перевода: применение немодифицированных <target> обязано
+                //    вернуть побайтово тот же документ, что и свежий разбор исходника.
+                var docForNoop = DitaDocument.Parse(sourceXml);
+                docForNoop.FilePath = "random.dita";
+                var xliffForNoop = XliffConverter.Export(docForNoop, "ru", "en");
+                var noopWarnings = new List<string>();
+                var reimportedNoop = DitaDocument.Parse(sourceXml);
+                reimportedNoop.FilePath = "random.dita";
+                XliffConverter.Import(reimportedNoop, xliffForNoop, noopWarnings);
+
+                if (noopWarnings.Count != 0)
+                {
+                    failures++;
+                    Failures.Add($"XLIFF property: noop-импорт дал предупреждения на случае {i}: {string.Join("; ", noopWarnings)}\nXML: {sourceXml}");
+                    continue;
+                }
+
+                if (reimportedNoop.ToXmlString() != baseline.ToXmlString())
+                {
+                    failures++;
+                    Failures.Add($"XLIFF property: noop round-trip изменил документ на случае {i}\nXML: {sourceXml}");
+                    continue;
+                }
+
+                // 2) round-trip с "переводом": каждый текстовый узел в target получает префикс
+                //    [EN] — после импорта форма дерева обязана остаться той же, только текст
+                //    отличается ровно на этот префикс (см. AssertSameShapeAfterTranslation).
+                var docForTranslate = DitaDocument.Parse(sourceXml);
+                docForTranslate.FilePath = "random.dita";
+                var xliffForTranslate = XliffConverter.Export(docForTranslate, "ru", "en");
+                var units = xliffForTranslate.Root!.Element("file")!.Element("body")!.Elements("trans-unit").ToList();
+                foreach (var unit in units)
+                {
+                    var target = unit.Element("target")!;
+                    foreach (var textNode in target.Nodes().OfType<XText>().ToList())
+                    {
+                        textNode.Value = "[EN]" + textNode.Value;
+                    }
+                }
+
+                var translateWarnings = new List<string>();
+                var reimportedTranslated = DitaDocument.Parse(sourceXml);
+                reimportedTranslated.FilePath = "random.dita";
+                var applied = XliffConverter.Import(reimportedTranslated, xliffForTranslate, translateWarnings);
+
+                if (translateWarnings.Count != 0)
+                {
+                    failures++;
+                    Failures.Add($"XLIFF property: перевод дал предупреждения на случае {i}: {string.Join("; ", translateWarnings)}\nXML: {sourceXml}");
+                    continue;
+                }
+
+                if (applied != units.Count)
+                {
+                    failures++;
+                    Failures.Add($"XLIFF property: применено {applied} из {units.Count} сегментов на случае {i}\nXML: {sourceXml}");
+                    continue;
+                }
+
+                var mismatches = new List<string>();
+                AssertSameShapeAfterTranslation(baseline.Root, reimportedTranslated.Root, "[EN]", mismatches, "");
+                if (mismatches.Count > 0)
+                {
+                    failures++;
+                    Failures.Add($"XLIFF property: расхождение формы дерева на случае {i}: {string.Join(" | ", mismatches)}\nXML: {sourceXml}");
+                }
+            }
+            catch (Exception ex)
+            {
+                failures++;
+                Failures.Add($"XLIFF property: исключение на случае {i}: {ex.Message}\nXML: {sourceXml}");
+            }
+        }
+
+        Check(failures == 0,
+            $"{iterations} случайных фразовых деревьев: экспорт/импорт XLIFF без потерь формы и содержимого ({iterations - failures}/{iterations})");
+    }
+
     private static void DtdCatalogLoaderTests()
     {
         Section("Загрузка внешнего DTD");
@@ -1440,6 +1763,147 @@ public static class Program
                 // временные файлы удалятся системой
             }
         }
+    }
+
+    private static readonly (string? ClassAttr, DisplayKind Expected)[] DtdClassVariants =
+    {
+        ("+ topic/ph custom-d/inline-el ", DisplayKind.Inline),
+        ("- topic/topic ", DisplayKind.Topic),
+        ("+ topic/table custom-d/table-el ", DisplayKind.Table),
+        ("+ topic/pre custom-d/pre-el ", DisplayKind.Preformatted),
+        (null, DisplayKind.Block) // без @class — решает форма модели, см. ниже
+    };
+
+    /// <summary>Прогоняет тот же генератор контент-моделей (ModelSpec), что и
+    /// ModelAutomatonPropertyTests, но теперь через весь путь ЧЕРЕЗ реальный DTD-текст:
+    /// DtdReader (сущности, ELEMENT/ATTLIST) → DtdCatalogLoader (ElementDef, DisplayKind по
+    /// @class) → ElementDef.Automaton — если где-то на этом пути модель или @class потеряются
+    /// или исказятся, сгенерированная валидная последовательность перестанет проходить, а
+    /// ожидаемый DisplayKind разойдётся с фактическим.</summary>
+    private static void DtdCatalogLoaderPropertyTests()
+    {
+        Section("Property-based: DtdReader + DtdCatalogLoader (случайные DTD-фрагменты)");
+
+        var rnd = new Random(20260921);
+        var alphabet = new[] { "x1", "x2", "x3", "x4", "x5" };
+        const int iterations = 60;
+        var failures = 0;
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", "PropDtd_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            for (var i = 0; i < iterations; i++)
+            {
+                try
+                {
+                    var elementCount = 2 + rnd.Next(3); // 2..4
+                    var sb = new StringBuilder();
+                    // Параметрическая сущность на общий атрибут — как в реальных модульных DTD
+                    // DITA (%univ-atts; и т.п.), уже проверялась вручную в DtdCatalogLoaderTests.
+                    sb.Append("<!ENTITY % common-atts \"id ID #IMPLIED\">\n");
+
+                    var expectations = new List<(string Name, string ClassAttr, DisplayKind Expected, ModelSpec Model)>();
+
+                    for (var e = 0; e < elementCount; e++)
+                    {
+                        var name = $"el{i}_{e}";
+                        var spec = GenerateModelNode(rnd, alphabet, depth: 2);
+                        var modelText = SerializeModelNode(spec);
+                        sb.Append("<!ELEMENT ").Append(name).Append(' ').Append(modelText).Append(">\n");
+
+                        var variant = DtdClassVariants[rnd.Next(DtdClassVariants.Length)];
+                        var expectedDisplay = variant.ClassAttr is null
+                            ? (ModelParser.Parse(modelText).AllowsText() ? DisplayKind.Block : DisplayKind.Container)
+                            : variant.Expected;
+
+                        sb.Append("<!ATTLIST ").Append(name).Append(" %common-atts;");
+                        if (variant.ClassAttr is not null)
+                        {
+                            sb.Append(" class CDATA \"").Append(variant.ClassAttr).Append('"');
+                        }
+
+                        sb.Append(">\n");
+
+                        expectations.Add((name, variant.ClassAttr ?? string.Empty, expectedDisplay, spec));
+                    }
+
+                    var dtdPath = Path.Combine(root, $"case{i}.dtd");
+                    File.WriteAllText(dtdPath, sb.ToString());
+
+                    var result = DtdCatalogLoader.Load(dtdPath);
+                    if (result.Warnings.Count != 0)
+                    {
+                        failures++;
+                        Failures.Add($"DtdCatalogLoader property: неожиданные предупреждения на случае {i}: {string.Join("; ", result.Warnings)}");
+                        continue;
+                    }
+
+                    if (result.Elements.Count != expectations.Count)
+                    {
+                        failures++;
+                        Failures.Add($"DtdCatalogLoader property: ожидалось {expectations.Count} элементов, получено {result.Elements.Count} (случай {i})");
+                        continue;
+                    }
+
+                    foreach (var (name, classAttr, expectedDisplay, spec) in expectations)
+                    {
+                        var def = result.Elements.FirstOrDefault(el => el.Name == name);
+                        if (def is null)
+                        {
+                            failures++;
+                            Failures.Add($"DtdCatalogLoader property: элемент {name} не найден (случай {i})");
+                            continue;
+                        }
+
+                        if (def.ClassAttr != classAttr)
+                        {
+                            failures++;
+                            Failures.Add($"DtdCatalogLoader property: @class у {name} — ожидалось '{classAttr}', получено '{def.ClassAttr}' (случай {i})");
+                        }
+
+                        if (def.Display != expectedDisplay)
+                        {
+                            failures++;
+                            Failures.Add($"DtdCatalogLoader property: DisplayKind у {name} — ожидалось {expectedDisplay}, получено {def.Display} (случай {i})");
+                        }
+
+                        if (!def.Attributes.ContainsKey("id"))
+                        {
+                            failures++;
+                            Failures.Add($"DtdCatalogLoader property: атрибут id из %common-atts; не попал в {name} (случай {i})");
+                        }
+
+                        var validSequence = GenerateValidSequence(spec, rnd);
+                        if (!def.Automaton.Validate(validSequence, out _, out _))
+                        {
+                            failures++;
+                            Failures.Add($"DtdCatalogLoader property: контент-модель {name} не приняла собственную сгенерированную последовательность [{string.Join(",", validSequence)}] (случай {i})");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    failures++;
+                    Failures.Add($"DtdCatalogLoader property: исключение на случае {i}: {ex.Message}");
+                }
+            }
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+
+        Check(failures == 0,
+            $"{iterations} случайных DTD-фрагментов (сущности + ELEMENT/ATTLIST + @class) разобраны и провалидированы без расхождений ({iterations - failures}/{iterations})");
     }
 
     private static void PluginLoaderTests()
@@ -1644,6 +2108,146 @@ public static class Program
                 // временные файлы удалятся системой
             }
         }
+    }
+
+    // ------------------------------------------------- property-based: .ditaval
+
+    /// <summary>Случайный токен-значение для .ditaval: гарантированно не пустой и не из одних
+    /// пробелов (иначе DitavalReader сам его отбросит — это не баг, а другое инвариант), но может
+    /// содержать спецсимволы XML (&amp;"'&lt;&gt;) и юникод — чтобы гонять Escape()/XmlReader.</summary>
+    private static string RandomDitavalToken(Random rnd)
+    {
+        const string pool = "abcABC0123 _-.,:;!?()[]{}&<>\"'йцукенгшщзхъфывапролджэячсмитьбюЙЦУ中文한글";
+        var length = 1 + rnd.Next(8);
+        var chars = new char[length];
+        for (var i = 0; i < length; i++)
+        {
+            chars[i] = pool[rnd.Next(pool.Length)];
+        }
+
+        var s = new string(chars);
+        return string.IsNullOrWhiteSpace(s) ? "x" + s : s;
+    }
+
+    private static Dictionary<string, HashSet<string>> GenerateRandomExclude(Random rnd)
+    {
+        var exclude = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        var attrCount = 1 + rnd.Next(3);
+        for (var a = 0; a < attrCount; a++)
+        {
+            var attr = RandomDitavalToken(rnd);
+            if (!exclude.TryGetValue(attr, out var values))
+            {
+                values = new HashSet<string>(StringComparer.Ordinal);
+                exclude[attr] = values;
+            }
+
+            var valueCount = 1 + rnd.Next(3);
+            for (var v = 0; v < valueCount; v++)
+            {
+                values.Add(RandomDitavalToken(rnd));
+            }
+        }
+
+        return exclude;
+    }
+
+    private static List<DitavalFlagRule> GenerateRandomFlags(Random rnd)
+    {
+        var count = rnd.Next(4); // 0..3 — включая случай без единого правила подсветки
+        var flags = new List<DitavalFlagRule>();
+        for (var i = 0; i < count; i++)
+        {
+            string? Optional(double skipChance) => rnd.NextDouble() < skipChance ? null : RandomDitavalToken(rnd);
+            flags.Add(new DitavalFlagRule(
+                RandomDitavalToken(rnd),
+                Optional(0.3),
+                Optional(0.4),
+                Optional(0.4),
+                Optional(0.4),
+                Optional(0.4)));
+        }
+
+        return flags;
+    }
+
+    private static bool ExcludeEquals(Dictionary<string, HashSet<string>> a, Dictionary<string, HashSet<string>> b)
+    {
+        if (a.Count != b.Count)
+        {
+            return false;
+        }
+
+        foreach (var (key, values) in a)
+        {
+            if (!b.TryGetValue(key, out var otherValues) || !values.SetEquals(otherValues))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static void DitavalPropertyTests()
+    {
+        Section("Property-based: DitavalWriter + DitavalReader (случайные правила .ditaval)");
+
+        var rnd = new Random(999);
+        const int iterations = 150;
+        var failures = 0;
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", "PropDitaval_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var path = Path.Combine(root, "random.ditaval");
+
+        try
+        {
+            for (var i = 0; i < iterations; i++)
+            {
+                try
+                {
+                    var exclude = GenerateRandomExclude(rnd);
+                    var flags = GenerateRandomFlags(rnd);
+
+                    DitavalWriter.Write(path, new DitavalRules(exclude, flags));
+                    var reread = DitavalReader.Read(path);
+
+                    if (!ExcludeEquals(exclude, reread.Exclude))
+                    {
+                        failures++;
+                        Failures.Add($"Ditaval property: exclude не совпал после round-trip на случае {i}");
+                        continue;
+                    }
+
+                    if (!flags.SequenceEqual(reread.Flags))
+                    {
+                        failures++;
+                        Failures.Add($"Ditaval property: flag-правила не совпали после round-trip на случае {i}: " +
+                            $"было [{string.Join(" | ", flags)}], стало [{string.Join(" | ", reread.Flags)}]");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    failures++;
+                    Failures.Add($"Ditaval property: исключение на случае {i}: {ex.Message}");
+                }
+            }
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+
+        Check(failures == 0,
+            $"{iterations} случайных наборов правил .ditaval пережили Write→Read без потерь ({iterations - failures}/{iterations})");
     }
 
     // -------------------------------------------------------------- рефакторинг

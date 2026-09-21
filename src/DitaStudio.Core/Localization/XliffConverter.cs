@@ -36,15 +36,15 @@ public static class XliffConverter
     {
         foreach (var child in node.ElementChildren())
         {
-            if (IsPhraseInline(child))
-            {
-                continue;
-            }
-
             WalkForExport(child, body, ref counter);
         }
 
-        if (!HasDirectText(node))
+        // Фразовый элемент сам сегментом не становится — его текст уже вошёл в сегмент предка
+        // через SerializeChildren, отдельный trans-unit его бы задвоил. Но спускаться внутрь него
+        // (цикл выше) всё равно нужно: там может обнаружиться, например, <image> с независимо
+        // сегментируемым <alt> (найдено property-тестом XliffConverterPropertyTests — <alt> внутри
+        // <image>, вложенного в <b>/<i>, раньше вообще не попадал в XLIFF).
+        if (IsPhraseInline(node) || !HasSegmentableContent(node))
         {
             return;
         }
@@ -89,15 +89,12 @@ public static class XliffConverter
     {
         foreach (var child in node.ElementChildren())
         {
-            if (IsPhraseInline(child))
-            {
-                continue;
-            }
-
             ApplyForImport(child, units, warnings, ref counter, ref applied);
         }
 
-        if (!HasDirectText(node))
+        // Симметрично WalkForExport: тот же обход, то же исключение для фразовых узлов — иначе
+        // номера сегментов (id) разъедутся между экспортом и импортом.
+        if (IsPhraseInline(node) || !HasSegmentableContent(node))
         {
             return;
         }
@@ -139,8 +136,15 @@ public static class XliffConverter
     private static bool IsSegmentPlaceholder(DitaNode node) =>
         DitaCatalog.Default.Get(node.Name) is { } def && def.Display is DisplayKind.Inline or DisplayKind.Empty;
 
-    private static bool HasDirectText(DitaNode node) =>
-        node.Children.Any(c => c.Kind == NodeKind.Text && !string.IsNullOrWhiteSpace(c.Value));
+    /// <summary>Есть ли у узла что переводить в собственном сегменте: прямой непустой текст —
+    /// или (важно!) фразовый/пустой ребёнок без единого текстового соседа, например
+    /// &lt;p&gt;&lt;uicontrol&gt;Готово&lt;/uicontrol&gt;&lt;/p&gt;. Раньше проверялся только прямой
+    /// текст — блок, целиком обёрнутый в фразовую разметку, вообще не выгружался в XLIFF, и текст
+    /// внутри неё тихо не попадал на перевод (найдено property-тестом XliffConverterPropertyTests).</summary>
+    private static bool HasSegmentableContent(DitaNode node) =>
+        node.Children.Any(c =>
+            (c.Kind == NodeKind.Text && !string.IsNullOrWhiteSpace(c.Value)) ||
+            (c.Kind == NodeKind.Element && IsSegmentPlaceholder(c)));
 
     // ------------------------------------------------------------------ экспорт сегмента
 

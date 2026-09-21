@@ -7,7 +7,7 @@ WPF, .NET 8, Windows. Интерфейс и комментарии — на ру
 
 ```powershell
 dotnet build DitaStudio.sln -c Debug          # сборка
-dotnet run --project tests\DitaStudio.Tests   # 339 проверок ядра, код возврата 0 = всё прошло
+dotnet run --project tests\DitaStudio.Tests   # 346 проверок ядра, код возврата 0 = всё прошло
 dotnet run --project src\DitaStudio.App       # запуск редактора
 ```
 
