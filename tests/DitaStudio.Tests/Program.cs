@@ -653,6 +653,22 @@ public static class Program
             Check(relinked!.Exclude["platform"].SetEquals(new[] { "linux", "macos" }),
                 "изменение .ditaval на диске подхватывается без переимпорта");
 
+            // DitavalWriter: правка исключений через диалог условий не должна стирать правила
+            // подсветки, написанные вручную в том же файле — round-trip Read → Write → Read.
+            var editedExclude = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal)
+            {
+                ["platform"] = new HashSet<string> { "linux" },
+                ["product"] = new HashSet<string> { "enterprise" }
+            };
+            DitavalWriter.Write(ditavalPath, new DitavalRules(editedExclude, relinked.Flags));
+            var rewritten = DitavalReader.Read(ditavalPath);
+            Check(rewritten.Exclude["platform"].SetEquals(new[] { "linux" }) && rewritten.Exclude["product"].SetEquals(new[] { "enterprise" }),
+                "DitavalWriter записал новые правила исключения");
+            Check(!rewritten.Exclude.ContainsKey("platform") || !rewritten.Exclude["platform"].Contains("macos"),
+                "исключённое ранее значение (macos), снятое в редакторе, не попало в файл");
+            Check(rewritten.Flags.Count == 1 && rewritten.Flags[0] is { Attribute: "audience", Value: "expert", Color: "red", BackgroundColor: "yellow", Style: "bold", ChangeBar: "orange" },
+                "DitavalWriter сохранил правило подсветки нетронутым при правке исключений");
+
             project.SetDitavalPath(null);
             Check(project.DitavalPath is null, "связь с .ditaval можно снять");
             Check(new DitaProject(root).DitavalPath is null, "снятие связи с .ditaval сохраняется на диске");

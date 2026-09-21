@@ -97,6 +97,7 @@
                 <Separator />
                 <MenuItem Header="Условия сборки…" Command="{Binding Publish.PublishConditionsCommand}" />
                 <MenuItem Header="Подключить .ditaval…" Command="{Binding Publish.ImportDitavalCommand}" />
+                <MenuItem Header="Редактировать .ditaval…" Command="{Binding Publish.EditDitavalCommand}" />
                 <MenuItem Header="Пользовательский CSS…" Command="{Binding Publish.CustomCssCommand}" />
                 <MenuItem Header="Колонтитулы PDF…" Command="{Binding Publish.PdfHeaderFooterCommand}" />
                 <Separator />

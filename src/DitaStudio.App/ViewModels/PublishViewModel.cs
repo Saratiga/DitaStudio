@@ -208,6 +208,24 @@ public partial class PublishViewModel : ObservableObject
         _main.StatusText = $"Подключён .ditaval: {relativePath} (исключений: {excludedCount}, правил подсветки: {rules.Flags.Count}). Изменения файла подхватываются автоматически.";
     }
 
+    /// <summary>Правит правила исключения СВЯЗАННОГО .ditaval прямо в приложении, не выходя в
+    /// текстовый редактор — записывает обратно в тот же файл (правила подсветки сохраняются).</summary>
+    [RelayCommand]
+    private void EditDitaval()
+    {
+        var project = _main.Project;
+        if (project is null)
+        {
+            Dialogs.Message("Редактирование .ditaval", "Сначала откройте папку проекта.");
+            return;
+        }
+
+        if (Dialogs.EditDitaval(project))
+        {
+            _main.StatusText = $"Файл .ditaval обновлён: {project.DitavalPath}.";
+        }
+    }
+
     /// <summary>Дополняет условия сборки исключениями и правилами подсветки из связанного .ditaval
     /// (см. <see cref="ImportDitaval"/>) поверх вручную заданных в диалоге условий.</summary>
     private void ApplyConditions(PublishOptions options)

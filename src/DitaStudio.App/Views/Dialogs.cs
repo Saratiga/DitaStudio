@@ -711,6 +711,95 @@ public static class Dialogs
         return window.ShowDialog() == true ? result : null;
     }
 
+    /// <summary>Правит правила исключения СВЯЗАННОГО .ditaval прямо в приложении — раньше файл
+    /// можно было только подключить (готовый, извне) или получить только через это подключение
+    /// заново перечитанным; отредактировать его содержимое можно было только вручную в текстовом
+    /// редакторе. Правила подсветки (action="flag") не трогает — читает их из текущего файла и
+    /// пишет обратно нетронутыми (см. DitavalWriter), поэтому ручная подсветка не теряется.</summary>
+    public static bool EditDitaval(DitaProject project)
+    {
+        if (project.DitavalPath is null)
+        {
+            Message("Редактирование .ditaval", "Сначала подключите файл .ditaval через «Публикация → Подключить .ditaval…».");
+            return false;
+        }
+
+        var current = project.ResolveLinkedDitaval();
+        if (current is null)
+        {
+            Message("Редактирование .ditaval", $"Не удалось прочитать связанный файл: {project.DitavalPath}");
+            return false;
+        }
+
+        var attributes = new[] { "props", "platform", "product", "audience", "otherprops", "deliveryTarget" };
+        var values = CollectConditionValues(project, attributes);
+
+        var panel = new StackPanel { Margin = new Thickness(16) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = $"Файл: {project.DitavalPath}. Отметьте значения, которые нужно исключить из сборки — " +
+                   (current.Flags.Count > 0 ? $"правила подсветки ({current.Flags.Count}) в файле не тронутся." : "правил подсветки в файле нет."),
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 8)
+        });
+
+        var checks = new List<(string Attribute, string Value, CheckBox Box)>();
+        foreach (var (attribute, set) in values.OrderBy(v => v.Key, StringComparer.Ordinal))
+        {
+            panel.Children.Add(Label($"@{attribute}"));
+            foreach (var value in set.OrderBy(v => v, StringComparer.Ordinal))
+            {
+                var box = new CheckBox
+                {
+                    Content = value,
+                    Margin = new Thickness(8, 2, 0, 2),
+                    IsChecked = current.Exclude.TryGetValue(attribute, out var excluded) && excluded.Contains(value)
+                };
+                checks.Add((attribute, value, box));
+                panel.Children.Add(box);
+            }
+        }
+
+        if (checks.Count == 0)
+        {
+            panel.Children.Add(new TextBlock
+            {
+                Text = "В проекте нет условных атрибутов.",
+                Foreground = ThemeManager.Brush("TextMuted"),
+                Margin = new Thickness(0, 4, 0, 0)
+            });
+        }
+
+        var saved = false;
+        var window = Shell("Редактирование .ditaval", new ScrollViewer { Content = panel }, 460, 560);
+        panel.Children.Add(Buttons(window, () =>
+        {
+            var exclude = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+            foreach (var (attribute, value, box) in checks)
+            {
+                if (box.IsChecked != true)
+                {
+                    continue;
+                }
+
+                if (!exclude.TryGetValue(attribute, out var set))
+                {
+                    set = new HashSet<string>(StringComparer.Ordinal);
+                    exclude[attribute] = set;
+                }
+
+                set.Add(value);
+            }
+
+            var fullPath = System.IO.Path.Combine(project.RootPath, project.DitavalPath.Replace('/', System.IO.Path.DirectorySeparatorChar));
+            DitavalWriter.Write(fullPath, new DitavalRules(exclude, current.Flags));
+            saved = true;
+        }));
+
+        window.ShowDialog();
+        return saved;
+    }
+
     // ------------------------------------------------------- колонтитулы PDF
 
     public sealed record PdfHeaderFooterResult(bool Show, string HeaderText, string FooterText);
