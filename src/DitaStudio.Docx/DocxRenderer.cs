@@ -1462,7 +1462,11 @@ public sealed class DocxRenderer
         var (widthEmu, heightEmu) = ImageSize.ReadEmuSize(absolute, node.GetAttribute("width"), node.GetAttribute("height"));
         var imageId = _nextImageId++;
 
-        yield return new W.Run(new Drawing.Wordprocessing.Inline(
+        // wp:inline обязан лежать внутри w:drawing — без этой обёртки OpenXml SDK молча не
+        // записывает элемент в document.xml при сохранении (сам image part при этом создаётся и
+        // остаётся в пакете «осиротевшим»): найдено этим же тестом (AdvancedRenderingTests),
+        // раньше ни одно изображение в DOCX-экспорте фактически не появлялось.
+        yield return new W.Run(new W.Drawing(new Drawing.Wordprocessing.Inline(
             new Drawing.Wordprocessing.Extent { Cx = widthEmu, Cy = heightEmu },
             new Drawing.Wordprocessing.EffectExtent { LeftEdge = 0, TopEdge = 0, RightEdge = 0, BottomEdge = 0 },
             new Drawing.Wordprocessing.DocProperties { Id = (uint)imageId, Name = "image" + imageId, Description = alt },
@@ -1483,7 +1487,7 @@ public sealed class DocxRenderer
                 ) { Uri = "http://schemas.openxmlformats.org/drawingml/2006/picture" }))
         {
             DistanceFromTop = 0, DistanceFromBottom = 0, DistanceFromLeft = 0, DistanceFromRight = 0
-        });
+        }));
     }
 
     // ====================================================================== вспомогательное

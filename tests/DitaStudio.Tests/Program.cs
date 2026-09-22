@@ -33,11 +33,14 @@ public static class Program
 
         CatalogTests();
         ContentModelTests();
+        ContentModelMiscTests();
         ModelAutomatonPropertyTests();
         RoundTripTests();
         ValidationTests();
         TemplateTests();
         EditingTests();
+        EditCommandsExtraTests();
+        UndoStackExtraTests();
         ProjectTests();
         KeyScopeTests();
         MultiProjectWorkspaceTests();
@@ -47,6 +50,7 @@ public static class Program
         TrackChangesTests();
         XliffTests();
         XliffConverterPropertyTests();
+        DtdAttributeListParserTests();
         DtdCatalogLoaderTests();
         DtdCatalogLoaderPropertyTests();
         PluginLoaderTests();
@@ -55,10 +59,12 @@ public static class Program
         DitavalPropertyTests();
         RefactorTests();
         ExtractToConrefTests();
+        PdfExporterTests();
         DiffTests();
         GitHistoryTests();
         SvnHistoryTests();
         DocxTests();
+        AdvancedRenderingTests();
         ListAndStepsDispatchTests();
 
         Console.WriteLine();
@@ -169,6 +175,54 @@ public static class Program
         var p = catalog.Get("p")!;
         Check(p.Automaton.AllowedNames.Contains("uicontrol"), "внутри p допустим uicontrol");
         Check(p.Automaton.AllowedNames.Contains("ul"), "внутри p допустим вложенный список");
+
+        var ulNode = catalog.Get("ul")!;
+        Check(ulNode.Automaton.CanRemoveAt(new[] { "li", "li" }, 0), "из двух li можно удалить один — ul всё ещё валиден");
+        Check(!ulNode.Automaton.CanRemoveAt(new[] { "li" }, 0), "нельзя удалить единственный li — ul опустеет и станет невалидным");
+    }
+
+    private static void ContentModelMiscTests()
+    {
+        Section("ContentModel: EMPTY/ANY, ToString(), CanRemoveAt (по отчёту покрытия)");
+
+        var empty = ModelParser.Parse("EMPTY");
+        Check(empty is ContentModel.Empty, "ключевое слово EMPTY разобрано как ContentModel.Empty");
+        Check(empty.ToString() == "EMPTY", "ContentModel.Empty.ToString() == \"EMPTY\"");
+        Check(!empty.AllowsText(), "EMPTY не допускает текст");
+        var emptyAutomaton = new ModelAutomaton(empty);
+        Check(!emptyAutomaton.AllowsAny, "автомат по EMPTY: AllowsAny == false");
+        Check(emptyAutomaton.Validate(Array.Empty<string>(), out _, out _), "автомат по EMPTY принимает пустую последовательность детей");
+        Check(!emptyAutomaton.Validate(new[] { "p" }, out _, out _), "автомат по EMPTY отклоняет любого ребёнка");
+
+        var any = ModelParser.Parse("ANY");
+        Check(any is ContentModel.Any, "ключевое слово ANY разобрано как ContentModel.Any");
+        Check(any.ToString() == "ANY", "ContentModel.Any.ToString() == \"ANY\"");
+        Check(any.AllowsText(), "ANY допускает текст");
+        var anyAutomaton = new ModelAutomaton(any);
+        Check(anyAutomaton.AllowsAny, "автомат по ANY: AllowsAny == true");
+        Check(anyAutomaton.Validate(new[] { "p", "совершенно-неизвестный-элемент", "ul" }, out _, out _),
+            "автомат по ANY принимает любую последовательность произвольных имён");
+        Check(anyAutomaton.CanInsertAt(new[] { "p" }, 1, "что-угодно"), "CanInsertAt при ANY всегда true");
+        Check(anyAutomaton.CanRemoveAt(Array.Empty<string>(), 0), "CanRemoveAt при ANY всегда true (даже на пустом списке/некорректном индексе)");
+        Check(anyAutomaton.InsertableAt(new[] { "p" }, 0).Count == 0,
+            "InsertableAt при ANY возвращает пустой список (вставить можно что угодно, перечислять нечего)");
+
+        Check(new ContentModel.Name("xref").ToString() == "xref", "ContentModel.Name.ToString() возвращает само имя");
+        Check(ContentModel.Pcdata.Instance.ToString() == "#PCDATA", "ContentModel.Pcdata.ToString() == \"#PCDATA\"");
+
+        var seq = new ContentModel.Sequence(new ContentModel[] { new ContentModel.Name("a"), new ContentModel.Name("b") });
+        Check(seq.ToString() == "(a, b)", $"ContentModel.Sequence.ToString(): '{seq}'");
+
+        var choice = new ContentModel.Choice(new ContentModel[] { new ContentModel.Name("a"), new ContentModel.Name("b") });
+        Check(choice.ToString() == "(a | b)", $"ContentModel.Choice.ToString(): '{choice}'");
+
+        Check(new ContentModel.Repeat(new ContentModel.Name("a"), 0, 1).ToString() == "a?", "Repeat(0,1).ToString() == \"a?\"");
+        Check(new ContentModel.Repeat(new ContentModel.Name("a"), 0, -1).ToString() == "a*", "Repeat(0,-1).ToString() == \"a*\"");
+        Check(new ContentModel.Repeat(new ContentModel.Name("a"), 1, -1).ToString() == "a+", "Repeat(1,-1).ToString() == \"a+\"");
+        // Кардинальность, которую ModelParser никогда не строит сам (нет DTD-синтаксиса под неё),
+        // но тип это допускает — резервная ветка ToString() на случай ручного построения модели.
+        Check(new ContentModel.Repeat(new ContentModel.Name("a"), 2, 5).ToString() == "a{2,5}",
+            "Repeat с произвольной кардинальностью использует резервный формат {min,max}");
     }
 
     // ------------------------------------------------- property-based: модели
@@ -493,6 +547,149 @@ public static class Program
         var soleEntry = soleRows[0].FirstElement("entry")!;
         Check(EditCommands.MergeTableCellDown(soleEntry) is null,
             "объединение по вертикали не опустошает строку целиком");
+    }
+
+    private static void EditCommandsExtraTests()
+    {
+        Section("EditCommands: остальные операции (по отчёту покрытия)");
+
+        var doc = DitaDocument.Parse("""
+<concept id="c1"><title>T</title><conbody>
+  <p id="p1">Первый</p>
+  <p id="p2">Второй</p>
+  <p id="p3">Третий</p>
+</conbody></concept>
+""");
+        var conbody = doc.Root.FirstElement("conbody")!;
+        var ps = () => conbody.ElementChildren().Where(e => e.Name == "p").ToList();
+        var p1 = ps()[0];
+        var p2 = ps()[1];
+        var p3 = ps()[2];
+
+        var beforeP2 = EditCommands.InsertBefore(p2, "p");
+        Check(beforeP2 is not null && ps().IndexOf(beforeP2) == 1, "InsertBefore вставляет непосредственно перед узлом");
+        beforeP2!.RemoveSelf();
+
+        var appended = EditCommands.Append(conbody, "p");
+        Check(appended is not null && ReferenceEquals(ps()[^1], appended), "Append вставляет в конец родителя");
+        appended!.RemoveSelf();
+
+        var wrapped = EditCommands.Wrap(conbody, 0, 1, "note");
+        Check(wrapped is not null && wrapped.Name == "note", "Wrap создаёт обёртку заданного имени");
+        Check(wrapped!.ElementChildren().Select(e => e.Name == "p" ? e.InnerText : e.Name).SequenceEqual(new[] { "Первый", "Второй" }),
+            "Wrap переносит внутрь обёртки именно указанный диапазон детей, в исходном порядке");
+        Check(conbody.ElementChildren().Count() == 2 && ReferenceEquals(conbody.ElementChildren().First(), wrapped),
+            "обёрнутые дети убраны из родителя, на их месте — обёртка");
+
+        Check(EditCommands.Unwrap(wrapped) && conbody.ElementChildren().Count() == 3,
+            "Unwrap возвращает детей обёртки на её место и убирает саму обёртку");
+        Check(ps().Select(p => p.InnerText).SequenceEqual(new[] { "Первый", "Второй", "Третий" }),
+            "после Wrap→Unwrap порядок и содержимое узлов не изменились");
+
+        Check(EditCommands.Wrap(conbody, 1, 0, "note") is null, "Wrap отклоняет диапазон с first > last");
+        Check(EditCommands.Wrap(conbody, 0, 99, "note") is null, "Wrap отклоняет диапазон за пределами числа детей");
+
+        Check(!EditCommands.Unwrap(doc.Root), "Unwrap корневого узла (нет родителя) возвращает false");
+
+        Check(EditCommands.MoveDown(p1) && ps()[0] == p2 && ps()[1] == p1, "MoveDown меняет местами с следующим элементом");
+        Check(EditCommands.MoveUp(p1) && ps()[0] == p1 && ps()[1] == p2, "MoveUp возвращает элемент обратно наверх");
+        Check(!EditCommands.MoveUp(p1), "MoveUp первого элемента возвращает false");
+        Check(!EditCommands.MoveDown(p3), "MoveDown последнего элемента возвращает false");
+
+        p1.SetAttribute("totally-fake-attr", "x");
+        Check(EditCommands.ChangeElementName(p1, "note"), "ChangeElementName переименовывает известный элемент");
+        Check(p1.Name == "note", "имя узла обновлено");
+        Check(p1.GetAttribute("totally-fake-attr") is null,
+            "атрибут, недопустимый для нового имени элемента, снят при переименовании");
+        Check(!EditCommands.ChangeElementName(p1, "no-such-element-xyz"), "ChangeElementName отклоняет неизвестное целевое имя");
+        Check(!EditCommands.ChangeElementName(doc.Root, "task"), "ChangeElementName корневого узла (нет родителя) возвращает false");
+
+        Check(EditCommands.MergeWithPrevious(p2) is null, "MergeWithPrevious не объединяет узлы разного имени (сосед p1 теперь note)");
+        Check(!EditCommands.Delete(doc.Root), "Delete корневого узла (нет родителя) возвращает false");
+        Check(EditCommands.Delete(p3) && conbody.ElementChildren().Count() == 2, "Delete убирает узел из дерева");
+
+        var id1 = EditCommands.GenerateId(doc, "fig");
+        Check(id1 == "fig_1", $"GenerateId выдаёт первый свободный номер: {id1}");
+        doc.Root.FirstElement("title")!.SetAttribute("id", "fig_1");
+        var id2 = EditCommands.GenerateId(doc, "fig");
+        Check(id2 == "fig_2", $"GenerateId пропускает уже занятый id: {id2}");
+
+        // --- механические защитные проверки MergeTableCellRight/Down на входах не по форме
+        var notEntry = DitaDocument.Parse("<reference id=\"r\"><title>Р</title><refbody><p>Абзац</p></refbody></reference>")
+            .Root.FindDescendant("p")!;
+        Check(EditCommands.MergeTableCellRight(notEntry) is null, "MergeTableCellRight отклоняет узел, который не является entry в row");
+        Check(EditCommands.MergeTableCellDown(notEntry) is null, "MergeTableCellDown отклоняет узел, который не является entry в row");
+
+        var singleEntryRow = DitaDocument.Parse("""
+<reference id="r3"><title>Р</title><refbody><table><tgroup cols="2">
+<colspec colname="c1" colnum="1"/><colspec colname="c2" colnum="2"/>
+<tbody><row><entry>only</entry></row></tbody>
+</tgroup></table></refbody></reference>
+""");
+        var lastInRow = singleEntryRow.Root.FindDescendant("row")!.FirstElement("entry")!;
+        Check(EditCommands.MergeTableCellRight(lastInRow) is null, "MergeTableCellRight отклоняет последнюю ячейку строки (нет соседа справа)");
+        Check(EditCommands.MergeTableCellDown(lastInRow) is null, "MergeTableCellDown отклоняет ячейку, если строки снизу нет");
+
+        var detachedRow = DitaDocument.Parse("<concept id=\"c\"><title>T</title><conbody><row><entry>X</entry><entry>Y</entry></row></conbody></concept>");
+        var detachedEntry = detachedRow.Root.FindDescendant("row")!.FirstElement("entry")!;
+        Check(EditCommands.MergeTableCellRight(detachedEntry) is null, "MergeTableCellRight отклоняет entry вне tgroup");
+    }
+
+    private static void UndoStackExtraTests()
+    {
+        Section("UndoStack: Redo, лимит, событие Changed (по отчёту покрытия)");
+
+        var document = DitaDocument.Parse("<concept id=\"c1\"><title>T</title><conbody><p>A</p></conbody></concept>");
+        var undo = new UndoStack(limit: 3);
+        var changedCount = 0;
+        undo.Changed += (_, _) => changedCount++;
+
+        Check(!undo.CanUndo && !undo.CanRedo, "новый UndoStack пуст");
+        Check(!undo.Undo(document), "Undo на пустом стеке возвращает false");
+        Check(!undo.Redo(document), "Redo на пустом стеке возвращает false");
+        Check(changedCount == 0, "Undo/Redo впустую не генерируют событие Changed");
+
+        undo.Push(document, "шаг 1");
+        document.Root.FirstElement("conbody")!.FirstElement("p")!.SetText("B");
+        Check(undo.CanUndo && undo.NextUndoDescription == "шаг 1", "Push запоминает описание снимка");
+        Check(changedCount == 1, "Push генерирует событие Changed");
+
+        undo.Push(document, "шаг 2");
+        document.Root.FirstElement("conbody")!.FirstElement("p")!.SetText("C");
+        Check(undo.NextUndoDescription == "шаг 2", "второй Push — следующий кандидат на отмену");
+
+        Check(undo.Undo(document) && document.Root.FirstElement("conbody")!.FirstElement("p")!.InnerText == "B",
+            "Undo восстанавливает состояние до шага 2");
+        Check(undo.CanRedo && undo.NextRedoDescription == "шаг 2", "после Undo появляется кандидат на Redo с тем же описанием");
+
+        Check(undo.Redo(document) && document.Root.FirstElement("conbody")!.FirstElement("p")!.InnerText == "C",
+            "Redo возвращает состояние вперёд");
+        Check(!undo.CanRedo, "после Redo стек повтора снова пуст");
+
+        undo.Undo(document);
+        undo.Push(document, "шаг 2b — новая ветка после отмены");
+        Check(!undo.CanRedo, "новый Push после Undo очищает стек Redo (старая ветка истории отброшена)");
+
+        undo.Clear();
+        Check(!undo.CanUndo && !undo.CanRedo, "Clear опустошает оба стека");
+
+        // Лимит истории: limit=3, пятая запись должна вытеснить самую старую.
+        var limited = new UndoStack(limit: 3);
+        for (var i = 1; i <= 5; i++)
+        {
+            limited.Push(document, $"запись {i}");
+        }
+
+        var descriptions = new List<string>();
+        while (limited.CanUndo)
+        {
+            descriptions.Add(limited.NextUndoDescription!);
+            limited.Undo(document);
+        }
+
+        Check(descriptions.Count == 3, $"история обрезана по лимиту: {descriptions.Count} записей вместо 5");
+        Check(descriptions[0] == "запись 5" && descriptions[^1] == "запись 3",
+            $"вытеснены самые старые записи, остались последние {string.Join(",", descriptions)}");
     }
 
     // -------------------------------------------------------------- проект
@@ -1698,6 +1895,42 @@ public static class Program
             $"{iterations} случайных фразовых деревьев: экспорт/импорт XLIFF без потерь формы и содержимого ({iterations - failures}/{iterations})");
     }
 
+    private static void DtdAttributeListParserTests()
+    {
+        Section("DtdAttributeListParser: типы атрибутов (по отчёту покрытия)");
+
+        var attrs = DtdAttributeListParser.Parse(
+            "req CDATA #REQUIRED " +
+            "fixedval CDATA #FIXED \"const\" " +
+            "single IDREF #IMPLIED " +
+            "multi IDREFS #IMPLIED " +
+            "tok NMTOKEN #IMPLIED " +
+            "toks NMTOKENS #IMPLIED " +
+            "kind NOTATION (gif|jpeg) #IMPLIED " +
+            "status (obsolete|deprecated) \"deprecated\" " +
+            "plain CDATA 'single-quoted default'"
+        ).ToDictionary(a => a.Name);
+
+        Check(attrs.Count == 9, $"разобраны все атрибуты одного ATTLIST: {attrs.Count}");
+
+        Check(attrs["req"] is { Type: AttrType.CData, Required: true, DefaultValue: null }, "#REQUIRED помечает атрибут обязательным без значения по умолчанию");
+        Check(attrs["fixedval"] is { Required: false, DefaultValue: "const" }, "#FIXED \"значение\" даёт зафиксированное значение по умолчанию");
+        Check(attrs["single"].Type == AttrType.IdRef, "IDREF распознан");
+        Check(attrs["multi"].Type == AttrType.IdRef, "IDREFS распознан как тот же AttrType.IdRef");
+        Check(attrs["tok"].Type == AttrType.NmToken, "NMTOKEN распознан");
+        Check(attrs["toks"].Type == AttrType.NmToken, "NMTOKENS распознан как тот же AttrType.NmToken");
+        Check(attrs["kind"].Type == AttrType.CData, "NOTATION (a|b) сведён к CDATA — сама нотация не нужна каталогу");
+        Check(attrs["status"] is { Type: AttrType.Enumeration } s && s.Values.SequenceEqual(new[] { "obsolete", "deprecated" }) && s.DefaultValue == "deprecated",
+            "перечисление и его значение по умолчанию (двойные кавычки) разобраны");
+        Check(attrs["plain"].DefaultValue == "single-quoted default", "значение по умолчанию в одинарных кавычках тоже разбирается");
+
+        var empty = DtdAttributeListParser.Parse(string.Empty);
+        Check(empty.Count == 0, "пустой текст ATTLIST — пустой список атрибутов, не падает");
+
+        var danglingName = DtdAttributeListParser.Parse("onlyname");
+        Check(danglingName.Count == 0, "имя атрибута без типа/умолчания (оборванный текст) не добавляется как половинчатая запись");
+    }
+
     private static void DtdCatalogLoaderTests()
     {
         Section("Загрузка внешнего DTD");
@@ -2428,6 +2661,55 @@ public static class Program
         }
     }
 
+    private static void PdfExporterTests()
+    {
+        Section("Экспорт в PDF через headless-браузер (по отчёту покрытия)");
+
+        var browser = PdfExporter.FindBrowser();
+        Check(PdfExporter.IsAvailable == (browser is not null), "IsAvailable согласован с FindBrowser()");
+
+        if (browser is null)
+        {
+            Console.WriteLine("  (Edge/Chrome не найден по стандартным путям — остальные проверки раздела пропущены)");
+            return;
+        }
+
+        Check(File.Exists(browser), $"FindBrowser вернул существующий исполняемый файл: {browser}");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            var htmlPath = Path.Combine(root, "page.html");
+            File.WriteAllText(htmlPath, "<html><body><h1>Проверка PdfExporter</h1></body></html>");
+            var pdfPath = Path.Combine(root, "out.pdf");
+
+            var error = PdfExporter.ExportToPdf(htmlPath, pdfPath, timeoutSeconds: 60);
+            Check(error is null, $"ExportToPdf не сообщил об ошибке: {error}");
+            Check(File.Exists(pdfPath), "PDF-файл создан");
+
+            var header = new byte[5];
+            using (var stream = File.OpenRead(pdfPath))
+            {
+                stream.ReadExactly(header);
+            }
+
+            Check(System.Text.Encoding.ASCII.GetString(header) == "%PDF-", "созданный файл начинается с настоящей PDF-сигнатуры");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
     private static void DiffTests()
     {
         Section("Сравнение файлов (построчный diff)");
@@ -2693,6 +2975,213 @@ public static class Program
             var headings = body.Elements<Paragraph>()
                 .Count(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value?.StartsWith("Heading") == true);
             Check(headings == 2, $"оба топика получили заголовки-абзацы: {headings}");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    /// <summary>Минимальный (нерабочий как изображение, но валидный по заголовку) PNG —
+    /// сигнатура + честный IHDR с шириной/высотой; ImageSize читает только эти байты,
+    /// пиксельные данные и CRC ей не нужны.</summary>
+    private static byte[] BuildMinimalPng(int width, int height)
+    {
+        var bytes = new List<byte>(33);
+        bytes.AddRange(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A });
+        void AppendBigEndian(int value)
+        {
+            bytes.Add((byte)(value >> 24));
+            bytes.Add((byte)(value >> 16));
+            bytes.Add((byte)(value >> 8));
+            bytes.Add((byte)value);
+        }
+
+        AppendBigEndian(13);
+        bytes.AddRange(System.Text.Encoding.ASCII.GetBytes("IHDR"));
+        AppendBigEndian(width);
+        AppendBigEndian(height);
+        bytes.AddRange(new byte[] { 8, 2, 0, 0, 0 });
+        AppendBigEndian(0);
+        return bytes.ToArray();
+    }
+
+    /// <summary>
+    /// Элементы публикации, которых нет в основных DocxTests/HtmlPublisher-проверках:
+    /// figure/dl/parml/simpletable/properties/choicetable, image (естественный размер, явные
+    /// width/height, слишком широкое изображение — обрезка по MaxWidthEmu, отсутствующий файл,
+    /// неподдерживаемый формат, внешняя ссылка), xref (внешний, неразрешённый, keyref без href).
+    /// Один и тот же проект публикуется и в HTML, и в DOCX — расхождения в поведении между
+    /// рендерерами (например, внешние изображения) фиксируются как есть, не как баг.
+    /// </summary>
+    private static void AdvancedRenderingTests()
+    {
+        Section("HTML/DOCX: figure/dl/parml/simpletable/image/xref (по отчёту покрытия)");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllBytes(Path.Combine(root, "real.png"), BuildMinimalPng(200, 100));
+            File.WriteAllBytes(Path.Combine(root, "wide.png"), BuildMinimalPng(2000, 1000));
+            File.WriteAllBytes(Path.Combine(root, "pic.webp"), new byte[] { 1, 2, 3, 4 });
+
+            File.WriteAllText(Path.Combine(root, "second.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="second">
+  <title>Второй топик</title>
+  <conbody><p>Текст.</p></conbody>
+</concept>
+""");
+
+            File.WriteAllText(Path.Combine(root, "advanced.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="advanced">
+  <title>Продвинутые элементы</title>
+  <conbody>
+    <fig><title>Схема</title>
+      <p>Внутри рисунка.</p>
+      <desc>Описание рисунка.</desc>
+    </fig>
+    <dl>
+      <dlhead><dthd>Термин</dthd><ddhd>Значение</ddhd></dlhead>
+      <dlentry><dt>Ключ</dt><dd>Значение ключа</dd></dlentry>
+    </dl>
+    <parml>
+      <plentry><pt>-x</pt><pd>Включить X</pd></plentry>
+    </parml>
+    <simpletable>
+      <sthead><stentry>H1</stentry><stentry>H2</stentry></sthead>
+      <strow><stentry>A1</stentry><stentry>B1</stentry></strow>
+    </simpletable>
+    <properties>
+      <prophead><proptypehd>Тип</proptypehd><propvaluehd>Значение</propvaluehd><propdeschd>Описание</propdeschd></prophead>
+      <property><proptype>color</proptype><propvalue>red</propvalue><propdesc>Красный</propdesc></property>
+    </properties>
+    <choicetable>
+      <chhead><choptionhd>Опция</choptionhd><chdeschd>Описание</chdeschd></chhead>
+      <chrow><choption>A</choption><chdesc>Вариант A</chdesc></chrow>
+    </choicetable>
+    <p>Без размеров: <image href="real.png"/></p>
+    <p>Явные размеры: <image href="real.png" width="2in" height="1in"/></p>
+    <p>Слишком широкое: <image href="wide.png"/></p>
+    <p>Через keyref: <image keyref="img-key"/></p>
+    <p>Нет файла: <image href="missing.png"/></p>
+    <p>Неподдерживаемый формат: <image href="pic.webp"/></p>
+    <p>Внешнее: <image href="https://example.com/pic.png"/></p>
+    <p>Внешняя ссылка: <xref href="https://example.com" scope="external">Сайт</xref></p>
+    <p>Неразрешённая: <xref href="nowhere.dita#topic"/></p>
+    <p>По ключу без href: <xref keyref="label-key"/></p>
+    <related-links>
+      <link href="second.dita#second"/>
+      <link href="https://example.com" scope="external"><linktext>Внешний сайт</linktext></link>
+    </related-links>
+  </conbody>
+</concept>
+""");
+
+            File.WriteAllText(Path.Combine(root, "guide.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>Тест расширенного рендера</title>
+  <keydef keys="img-key" href="real.png"/>
+  <keydef keys="label-key"><topicmeta><keywords><keyword>Голый текст</keyword></keywords></topicmeta></keydef>
+  <topicref href="advanced.dita"/>
+  <topicref href="second.dita"/>
+</map>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+            var mapPath = Path.Combine(root, "guide.ditamap");
+
+            // --------------------------------------------------------------- HTML
+            var htmlResult = new HtmlPublisher(project).Publish(mapPath, new PublishOptions { OutputDirectory = Path.Combine(root, "html-out"), SingleFile = true });
+            var html = File.ReadAllText(htmlResult.EntryFile);
+
+            Check(html.Contains("<figcaption class=\"fig-title\">Рисунок 1. Схема</figcaption>"), "html: подпись рисунка пронумерована");
+            Check(html.Contains("<div class=\"desc\">Описание рисунка.</div>"), "html: desc рисунка отрисован");
+            Check(System.Text.RegularExpressions.Regex.IsMatch(html, "<dt>Ключ</dt>\\s*<dd>Значение ключа</dd>"), "html: dlentry (dt/dd) отрисован");
+            Check(html.Contains("class=\"dlhead\""), "html: dlhead отрисован");
+            Check(System.Text.RegularExpressions.Regex.IsMatch(html, "<dt>-x</dt>\\s*<dd>Включить X</dd>"), "html: parml (pt/pd как dt/dd) отрисован");
+            Check(html.Contains("H1") && html.Contains("A1"), "html: generic simpletable отрисован");
+            Check(html.Contains("color") && html.Contains("red") && html.Contains("Красный"), "html: properties отрисован");
+            Check(html.Contains("Вариант A"), "html: choicetable отрисован");
+
+            // CopyImages по умолчанию включён — HtmlPublisher копирует файлы в media/ и переписывает
+            // src, кешируя по абсолютному исходному пути (real.png использован трижды и должен
+            // трижды сослаться на один и тот же скопированный файл).
+            Check(html.Contains("<img src=\"media/real.png\" alt=\"\" />"), "html: изображение без width/height скопировано в media/, атрибуты размера не добавлены");
+            Check(html.Contains("width=\"2in\"") && html.Contains("height=\"1in\""), "html: явные width/height перенесены в <img> как есть (без пересчёта в EMU — это забота DOCX)");
+            Check(html.Contains("src=\"media/wide.png\""), "html: слишком широкое изображение всё равно отрисовано (у HTML нет понятия печатной полосы)");
+            Check(html.Split("src=\"media/real.png\"").Length - 1 == 3,
+                $"html: keyref и прямой href на одно и то же изображение резолвятся в один и тот же скопированный файл (3 вхождения): {html.Split("src=\"media/real.png\"").Length - 1}");
+            Check(html.Contains("src=\"missing.png\""), "html: несуществующий файл — копирование не удалось, но <img> всё равно отрисован с исходным именем (не 'media/', в отличие от успешно скопированных)");
+            Check(html.Contains("src=\"media/pic.webp\""), "html: неподдерживаемый для DOCX формат в HTML не особый случай — обычный скопированный <img>");
+            Check(html.Contains("src=\"https://example.com/pic.png\""), "html: внешнее изображение отрисовано как обычный <img> (в отличие от DOCX, который его пропускает)");
+
+            Check(html.Contains("<a href=\"https://example.com\">Сайт</a>"), "html: внешняя xref стала обычной ссылкой");
+            Check(System.Text.RegularExpressions.Regex.IsMatch(html, "<a href=\"#topic\">#topic</a>"),
+                "html (single-file): неразрешённая xref внутри публикации деградирует до якоря по topicId, а не до буквального href (это забота DOCX — там именно буквальный href)");
+            Check(html.Contains("Голый текст") && !html.Contains("label-key"), "html: xref по keyref без href показывает KeyText");
+            Check(html.Contains("related-links") && html.Contains("Второй топик") && html.Contains("Внешний сайт"),
+                "html: related-links собрал и внутреннюю, и внешнюю ссылку");
+
+            // --------------------------------------------------------------- DOCX
+            var docxPath = Path.Combine(root, "out.docx");
+            var docxResult = new DocxPublisher(project).Publish(mapPath, new PublishOptions { Language = "ru" }, docxPath);
+
+            using var doc = WordprocessingDocument.Open(docxPath, false);
+            var body = doc.MainDocumentPart!.Document.Body!;
+            var text = body.InnerText;
+
+            Check(text.Contains("Рисунок 1. Схема"), "docx: подпись рисунка пронумерована");
+            Check(text.Contains("Описание рисунка."), "docx: desc рисунка отрисован");
+            Check(text.Contains("Ключ") && text.Contains("Значение ключа"), "docx: dlentry (dt/dd) отрисован");
+            Check(text.Contains("-x") && text.Contains("Включить X"), "docx: parml (pt/pd) отрисован");
+            Check(text.Contains("H1") && text.Contains("A1"), "docx: generic simpletable отрисован");
+            Check(text.Contains("Красный"), "docx: properties отрисован (заданные заголовки колонок использованы)");
+            Check(text.Contains("Вариант A"), "docx: choicetable отрисован");
+
+            var drawings = body.Descendants<DocumentFormat.OpenXml.Drawing.Wordprocessing.Inline>().ToList();
+            Check(drawings.Count == 4, $"docx: во внедрение попали 4 изображения (натуральный размер, явные размеры, слишком широкое, keyref): {drawings.Count}");
+
+            if (drawings.Count >= 4)
+            {
+                var natural = drawings[0].Extent!;
+                Check(natural.Cx!.Value == 200L * 9525 && natural.Cy!.Value == 100L * 9525,
+                    $"docx: естественный размер картинки взят из PNG-заголовка (200x100 px @96dpi): {natural.Cx},{natural.Cy}");
+
+                var explicitSize = drawings[1].Extent!;
+                Check(explicitSize.Cx!.Value == 2L * 914400 && explicitSize.Cy!.Value == 914400,
+                    $"docx: явные width/height (2in x 1in) переопределяют естественный размер: {explicitSize.Cx},{explicitSize.Cy}");
+
+                var wide = drawings[2].Extent!;
+                const long maxWidthEmu = 6L * 914400;
+                Check(wide.Cx!.Value == maxWidthEmu && wide.Cx!.Value < 2000L * 9525,
+                    $"docx: слишком широкое изображение (2000px) обрезано по MaxWidthEmu (6 дюймов): {wide.Cx}");
+            }
+
+            Check(docxResult.Warnings.Any(w => w.Contains("Изображение не найдено") && w.Contains("missing.png")),
+                "docx: отсутствующий файл изображения дал предупреждение");
+            Check(docxResult.Warnings.Any(w => w.Contains("не поддерживается") && w.Contains("pic.webp")),
+                "docx: неподдерживаемый формат дал предупреждение");
+            Check(text.Contains("pic.webp"), "docx: неподдерживаемый формат показан как текстовая ссылка на имя файла");
+            Check(!text.Contains("example.com/pic.png"), "docx: внешнее изображение молча пропущено (не встроено, не текстом)");
+
+            var hyperlinks = body.Descendants<Hyperlink>().ToList();
+            Check(hyperlinks.Any(h => h.Id?.Value is not null), "docx: внешняя xref стала гиперссылкой по Relationship Id");
+            Check(text.Contains("nowhere.dita#topic"), "docx: неразрешённая xref деградирует до буквального href как простого текста (без гиперссылки)");
+            Check(text.Contains("Голый текст"), "docx: xref по keyref без href показывает KeyText как обычный текст");
+            Check(text.Contains("Второй топик") && text.Contains("Внешний сайт"), "docx: related-links собрал и внутреннюю, и внешнюю ссылку");
         }
         finally
         {
