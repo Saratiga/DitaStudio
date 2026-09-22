@@ -9,3 +9,5 @@ build.log
 test.log
 build.done
 build.request
+coverage.xml
+coverage-report/
