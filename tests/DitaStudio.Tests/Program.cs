@@ -32,11 +32,14 @@ public static class Program
         Console.OutputEncoding = Encoding.UTF8;
 
         CatalogTests();
+        DitaCatalogMiscTests();
         ContentModelTests();
         ContentModelMiscTests();
         ModelAutomatonPropertyTests();
         RoundTripTests();
         ValidationTests();
+        DitaValidatorMiscTests();
+        ValidationIssueTests();
         TemplateTests();
         EditingTests();
         EditCommandsExtraTests();
@@ -46,6 +49,7 @@ public static class Program
         MultiProjectWorkspaceTests();
         ValidationAndAnchorFixTests();
         RelTableTests();
+        MapTreeMiscTests();
         RevChangeTests();
         TrackChangesTests();
         XliffTests();
@@ -57,6 +61,7 @@ public static class Program
         DitaProjectValidateAllWithPluginsTests();
         DitavalFlagTests();
         DitavalPropertyTests();
+        RefResolverTests();
         RefactorTests();
         ExtractToConrefTests();
         PdfExporterTests();
@@ -65,6 +70,8 @@ public static class Program
         SvnHistoryTests();
         DocxTests();
         AdvancedRenderingTests();
+        ImageSizeFormatsTests();
+        HtmlRendererMiscTests();
         ListAndStepsDispatchTests();
 
         Console.WriteLine();
@@ -133,6 +140,63 @@ public static class Program
         Check(catalog.Get("note")!.Attributes.ContainsKey("type"), "у <note> есть атрибут @type");
         Check(catalog.Get("p")!.Attributes.ContainsKey("conref"), "универсальные атрибуты подставились в <p>");
         Check(catalog.PublicIdFor("task") is not null, "для task известен публичный идентификатор DOCTYPE");
+    }
+
+    private static void DitaCatalogMiscTests()
+    {
+        Section("DitaCatalog: InsertableAt/ReplacementsFor/ElementIndexFor/DOCTYPE (по отчёту покрытия)");
+
+        var catalog = DitaCatalog.Default;
+
+        Check(catalog.SystemIdFor("task") == "task.dtd", "SystemIdFor для известного корня");
+        Check(catalog.PublicIdFor("no-such-root") is null, "PublicIdFor для неизвестного корня — null");
+        Check(catalog.SystemIdFor("no-such-root") is null, "SystemIdFor для неизвестного корня — null");
+
+        Check(catalog.TopicTypes.Any(e => e.Name == "concept") && catalog.TopicTypes.Any(e => e.Name == "task"),
+            "TopicTypes перечисляет типы топиков");
+        Check(!catalog.TopicTypes.Any(e => e.Name == "p"), "TopicTypes не включает обычные блочные элементы");
+        Check(catalog.MapTypes.Any(e => e.Name == "map") && catalog.MapTypes.Any(e => e.Name == "bookmap"),
+            "MapTypes перечисляет типы карт");
+
+        var doc = DitaDocument.Parse("<concept id=\"c\"><title>T</title><conbody><p>текст1</p><p>текст2</p></conbody></concept>");
+        var conbody = doc.Root.FirstElement("conbody")!;
+
+        var insertableAtStart = catalog.InsertableAt(conbody, 0).Select(e => e.Name).ToList();
+        Check(insertableAtStart.Contains("p") && insertableAtStart.Contains("ul"), "InsertableAt(conbody, 0) предлагает p/ul");
+        Check(!insertableAtStart.Contains("title"), "InsertableAt(conbody, 0) не предлагает title (недопустим в conbody)");
+
+        Check(catalog.InsertableAt(conbody, -5).Count == catalog.InsertableAt(conbody, 0).Count,
+            "InsertableAt: отрицательный индекс схлопывается к 0");
+        Check(catalog.InsertableAt(conbody, 999).Count == catalog.InsertableAt(conbody, 2).Count,
+            "InsertableAt: индекс за пределами числа детей схлопывается к их количеству");
+        var unknownParent = DitaNode.Element("totally-unknown-element-xyz");
+        Check(catalog.InsertableAt(unknownParent, 0).Count == 0, "InsertableAt для родителя, которого нет в каталоге, — пустой список, не падает");
+
+        var firstP = conbody.FirstElement("p")!;
+        var replacements = catalog.ReplacementsFor(firstP).Select(e => e.Name).ToList();
+        Check(replacements.Contains("ul") || replacements.Contains("note") || replacements.Contains("lq"),
+            $"ReplacementsFor(<p>) предлагает совместимые по отображению блочные альтернативы: [{string.Join(",", replacements)}]");
+        Check(!replacements.Contains("p"), "ReplacementsFor не предлагает заменить элемент на самого себя");
+
+        var bNode = DitaNode.Element("b");
+        bNode.Add(DitaNode.Text("жирный"));
+        firstP.Insert(0, bNode);
+        var inlineReplacements = catalog.ReplacementsFor(bNode).Select(e => e.Name).ToList();
+        Check(inlineReplacements.Count > 0 && inlineReplacements.All(n => catalog.Get(n)!.IsInline),
+            $"ReplacementsFor(<b>) предлагает только фразовые альтернативы (совместимый Display): [{string.Join(",", inlineReplacements)}]");
+
+        Check(catalog.ReplacementsFor(doc.Root).Count == 0, "ReplacementsFor для узла без родителя (корень документа) — пустой список");
+
+        var detached = DitaNode.Element("p");
+        Check(catalog.ReplacementsFor(detached).Count == 0, "ReplacementsFor для узла без родителя вообще — пустой список");
+
+        // ElementIndexFor считает только элементы среди детей ДО childIndex (childIndex — индекс в
+        // общем списке детей, включая текстовые узлы).
+        var mixedParent = DitaDocument.Parse("<p>текст<b>a</b> ещё текст<i>b</i></p>").Root;
+        Check(DitaCatalog.ElementIndexFor(mixedParent, 0) == 0, "ElementIndexFor(0) — перед первым ребёнком, элементов ещё не было");
+        Check(DitaCatalog.ElementIndexFor(mixedParent, 2) == 1, "ElementIndexFor(2) — один элемент (<b>) уже пройден");
+        Check(DitaCatalog.ElementIndexFor(mixedParent, mixedParent.Children.Count) == 2,
+            "ElementIndexFor(число_детей) — все элементы пройдены (текстовые не считаются)");
     }
 
     private static void ContentModelTests()
@@ -437,6 +501,119 @@ public static class Program
         Check(validator.Validate(conrefSkipped).Count == 0, "элемент с conref не проверяется по модели");
     }
 
+    private static void DitaValidatorMiscTests()
+    {
+        Section("DitaValidator: атрибуты/EMPTY/незакрытая модель/стилевые правила (по отчёту покрытия)");
+
+        var structural = new DitaValidator { CheckStyleRules = false };
+
+        var unusualRoot = DitaDocument.Parse("<p>Просто абзац как корень.</p>");
+        Check(structural.Validate(unusualRoot).Any(i => i.Severity == IssueSeverity.Warning && i.Message.Contains("обычно не используется как корень")),
+            "известный, но не topic/map элемент в корне — предупреждение, не ошибка");
+
+        var undeclaredAttr = DitaDocument.Parse("<concept id=\"c\" совершенно-незнакомый-атрибут=\"x\"><title>T</title><conbody><p>Текст</p></conbody></concept>");
+        Check(structural.Validate(undeclaredAttr).Any(i => i.Severity == IssueSeverity.Warning && i.Message.Contains("не объявлен")),
+            "необъявленный атрибут элемента — предупреждение");
+
+        var xmlnsIgnored = DitaDocument.Parse("<concept id=\"c\" xmlns:ditaarch=\"http://dita.oasis-open.org/architecture/2005/\" ditaarch:DITAArchVersion=\"1.3\"><title>T</title><conbody><p>Текст</p></conbody></concept>");
+        Check(!structural.Validate(xmlnsIgnored).Any(i => i.Message.Contains("не объявлен")),
+            "xmlns:*/ditaarch:* атрибуты не считаются необъявленными (пропускаются явно)");
+
+        var missingRequiredAttr = DitaDocument.Parse("<concept id=\"c\"><title>T</title><conbody><p>Текст <abbreviated-form/> текст</p></conbody></concept>");
+        Check(structural.Validate(missingRequiredAttr).Any(i => i.Severity == IssueSeverity.Error && i.Message.Contains("обязательный атрибут @keyref")),
+            "отсутствующий обязательный атрибут (keyref! у abbreviated-form) — ошибка");
+
+        var emptyWithChildren = DitaDocument.Parse("<concept id=\"c\"><title>T</title><conbody><p>Текст <abbreviated-form keyref=\"k\"><b>x</b></abbreviated-form></p></conbody></concept>");
+        Check(structural.Validate(emptyWithChildren).Any(i => i.Message.Contains("должен быть пустым")),
+            "содержимое у элемента с моделью EMPTY — ошибка");
+
+        var incompleteContent = DitaDocument.Parse("<task id=\"t\"><title>T</title><taskbody><steps><step></step></steps></taskbody></task>");
+        Check(structural.Validate(incompleteContent).Any(i => i.Message.Contains("неполное") && i.Message.Contains("cmd")),
+            "пустой <step/> (нужен обязательный cmd) — 'содержимое неполное', а не 'недопустим в этой позиции'");
+
+        // --- стилевые правила (CheckStyleRules по умолчанию true — во всех остальных тестах их
+        // намеренно выключают, поэтому здесь единственное прямое покрытие ValidateStyle/*).
+        var styled = new DitaValidator();
+
+        var noId = DitaDocument.Parse("<concept><title>T</title><conbody><p>Текст</p></conbody></concept>");
+        Check(styled.Validate(noId).Any(i => i.Severity == IssueSeverity.Warning && i.Message.Contains("нет атрибута @id")),
+            "топик без @id — предупреждение стиля");
+
+        var glossTitleFallback = DitaDocument.Parse("<glossentry id=\"g\"><glossterm></glossterm><glossdef>Определение.</glossdef></glossentry>");
+        Check(styled.Validate(glossTitleFallback).Any(i => i.Severity == IssueSeverity.Error && i.Message.Contains("Пустой заголовок")),
+            "glossentry без текста в glossterm — пустой заголовок (тот же путь, что title)");
+
+        var withAbstractNoShortdesc = DitaDocument.Parse("<concept id=\"c\"><title>T</title><abstract><p>Реферат.</p></abstract><conbody><p>Текст</p></conbody></concept>");
+        Check(!styled.Validate(withAbstractNoShortdesc).Any(i => i.Message.Contains("shortdesc")),
+            "abstract присутствует — предупреждение про отсутствие shortdesc не выдаётся, даже если самого shortdesc нет");
+
+        var noShortdescNoAbstract = DitaDocument.Parse("<concept id=\"c\"><title>T</title><conbody><p>Текст</p></conbody></concept>");
+        Check(styled.Validate(noShortdescNoAbstract).Any(i => i.Severity == IssueSeverity.Info && i.Message.Contains("shortdesc")),
+            "ни shortdesc, ни abstract — информационная подсказка");
+
+        var mapRootSkipsTopicStyle = DitaDocument.Parse("""
+<map>
+  <title>Карта</title>
+  <topicref href="x.dita"><linktext></linktext></topicref>
+</map>
+""");
+        var mapIssues = styled.Validate(mapRootSkipsTopicStyle);
+        Check(!mapIssues.Any(i => i.Message.Contains("Пустой заголовок топика") || i.Message.Contains("shortdesc")),
+            "карта (не topic-тип) — ValidateTopicStyle не запускается вовсе");
+
+        var emptyStyleElements = DitaDocument.Parse("""
+<concept id="c">
+  <title>T</title>
+  <conbody>
+    <p></p>
+    <table><tgroup cols="1"><tbody><row><entry></entry></row></tbody></tgroup></table>
+  </conbody>
+</concept>
+""");
+        var emptyIssues = styled.Validate(emptyStyleElements);
+        Check(emptyIssues.Count(i => i.Message.Contains("Пустой элемент")) == 2,
+            $"пустые p и entry — по одному предупреждению на каждый: {emptyIssues.Count(i => i.Message.Contains("Пустой элемент"))}");
+
+        var imageNoRefNoAlt = DitaDocument.Parse("<concept id=\"c\"><title>T</title><conbody><p><image/></p></conbody></concept>");
+        var imgIssues = styled.Validate(imageNoRefNoAlt);
+        Check(imgIssues.Any(i => i.Severity == IssueSeverity.Error && i.Message.Contains("ни @href, ни @keyref")),
+            "image без href и keyref — ошибка");
+        Check(imgIssues.Any(i => i.Severity == IssueSeverity.Info && i.Message.Contains("альтернативного текста")),
+            "image без alt (и без href/keyref) — тоже отдельная информационная подсказка");
+
+        var imageWithAltAttr = DitaDocument.Parse("<concept id=\"c\"><title>T</title><conbody><p><image href=\"x.png\" alt=\"описание\"/></p></conbody></concept>");
+        Check(!styled.Validate(imageWithAltAttr).Any(i => i.Message.Contains("альтернативного текста")),
+            "image с @alt — подсказки про alt нет");
+
+        var imageWithAltChild = DitaDocument.Parse("<concept id=\"c\"><title>T</title><conbody><p><image href=\"x.png\"><alt>описание</alt></image></p></conbody></concept>");
+        Check(!styled.Validate(imageWithAltChild).Any(i => i.Message.Contains("альтернативного текста")),
+            "image с дочерним <alt> тоже гасит подсказку (не только атрибут)");
+    }
+
+    private static void ValidationIssueTests()
+    {
+        Section("ValidationIssue: SeverityText/Location/ToString (по отчёту покрытия)");
+
+        var doc = DitaDocument.Parse("<concept id=\"c\"><title>T</title><conbody><p>Текст</p></conbody></concept>");
+        var node = doc.Root.FindDescendant("p")!;
+        node.Line = 7;
+
+        var error = new ValidationIssue(IssueSeverity.Error, "ошибка", node, "file.dita");
+        Check(error.SeverityText == "Ошибка", "SeverityText для Error");
+        Check(error.Line == 7, "Line берётся из узла");
+        Check(error.Location == node.Path, "Location берётся из Path узла");
+        Check(error.ToString() == $"Ошибка: ошибка ({node.Path}, строка 7)", $"ToString() с узлом и строкой: '{error}'");
+
+        var warning = new ValidationIssue(IssueSeverity.Warning, "предупреждение", node);
+        Check(warning.SeverityText == "Предупреждение", "SeverityText для Warning");
+        Check(warning.FilePath is null, "FilePath не задан по умолчанию");
+
+        var info = new ValidationIssue(IssueSeverity.Info, "инфо", null);
+        Check(info.SeverityText == "Сведения", "SeverityText для Info (значение по умолчанию switch)");
+        Check(info.Line == 0 && info.Location == string.Empty, "Node == null — Line и Location по умолчанию");
+        Check(info.ToString() == "Сведения: инфо ()", $"ToString() без узла и без строки не добавляет ', строка N': '{info}'");
+    }
+
     private static void TemplateTests()
     {
         Section("Заготовки документов");
@@ -453,6 +630,33 @@ public static class Program
 
         Check(DocumentTemplates.SuggestId("Установка сервера", "task") == "ustanovka_servera",
             "идентификатор транслитерируется из русского заголовка");
+
+        Check(DocumentTemplates.Find("TASK") is { Key: "task" }, "Find регистронезависим");
+        Check(DocumentTemplates.Find("no-such-template") is null, "Find возвращает null для неизвестного ключа");
+
+        var fallback = DocumentTemplates.Create("no-such-template", "Заголовок");
+        Check(fallback.Root.Name == DocumentTemplates.All[0].RootElement,
+            $"Create с неизвестным ключом использует первую заготовку из All: {fallback.Root.Name}");
+
+        var topic = DocumentTemplates.Create("topic", "Заголовок универсального топика");
+        Check(topic.Root.Name == "topic", "Create('topic') идёт по ветке default switch (Topic())");
+
+        var t1 = DocumentTemplates.All[0];
+        var t2 = t1 with { };
+        Check(t1 == t2 && t1.Equals(t2), "DocumentTemplate — record со структурным равенством");
+        Check(t1.ToString() == t1.DisplayName, "DocumentTemplate.ToString() возвращает DisplayName");
+
+        Check(DocumentTemplates.SuggestId("...", "topic") == "topic",
+            "SuggestId: заголовок без букв/цифр целиком — используется префикс");
+        Check(DocumentTemplates.SuggestId("123 сервер", "topic") == "topic_123_server",
+            $"SuggestId: результат, начинающийся с цифры, получает префикс спереди: {DocumentTemplates.SuggestId("123 сервер", "topic")}");
+        Check(DocumentTemplates.SuggestId("a  --  b", "topic") == "a_b",
+            $"SuggestId: подряд идущие пробелы/дефисы схлопываются в один '_': {DocumentTemplates.SuggestId("a  --  b", "topic")}");
+        Check(DocumentTemplates.SuggestId("中文 текст", "topic") == "tekst",
+            $"SuggestId: символы вне транслит-таблицы и вне ASCII молча пропускаются (вместе с последующим пробелом, раз до него ничего не накопилось): {DocumentTemplates.SuggestId("中文 текст", "topic")}");
+        var longTitle = string.Concat(Enumerable.Repeat("word ", 20));
+        Check(DocumentTemplates.SuggestId(longTitle, "topic").Length <= 60,
+            $"SuggestId обрезает результат до 60 символов: {DocumentTemplates.SuggestId(longTitle, "topic").Length}");
     }
 
     private static void EditingTests()
@@ -1418,6 +1622,109 @@ public static class Program
                 var hyperlinks = doc.MainDocumentPart!.Document.Body!.Descendants<Hyperlink>().Count(h => h.Anchor is not null);
                 Check(hyperlinks >= 4, $"reltable-связи стали внутренними гиперссылками и в DOCX: {hyperlinks}");
             }
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    private static void MapTreeMiscTests()
+    {
+        Section("MapTree: mapref, keyref-topicref, заголовки узлов карты (по отчёту покрытия)");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "innertopic.dita"), "<concept id=\"inner\"><title>Внутренний топик</title><conbody><p>x</p></conbody></concept>");
+            File.WriteAllText(Path.Combine(root, "inner.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map><title>Inner</title><topicref href="innertopic.dita"/></map>
+""");
+            File.WriteAllText(Path.Combine(root, "k1target.dita"), "<concept id=\"k1t\"><title>Цель по ключу</title><conbody><p>x</p></conbody></concept>");
+            File.WriteAllText(Path.Combine(root, "a.dita"), "<concept id=\"a\"><title>A</title><conbody><p>x</p></conbody></concept>");
+            File.WriteAllText(Path.Combine(root, "multi.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="first">
+  <title>Первый</title>
+  <conbody><concept id="second"><title>Второй</title><conbody><p>x</p></conbody></concept></conbody>
+</concept>
+""");
+
+            File.WriteAllText(Path.Combine(root, "outer.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>Outer</title>
+  <mapref href="inner.ditamap"/>
+  <keydef keys="k1" href="k1target.dita"/>
+  <keydef keys="k2"><topicmeta><keywords><keyword>дефолт</keyword></keywords></topicmeta></keydef>
+  <keydef/>
+  <topicref keyref="k1"/>
+  <topicref keyref="no-such-key"/>
+  <topicref href="http://example.com" scope="external"/>
+  <topicref href="a.dita" navtitle="Заголовок из атрибута"/>
+  <topicref href="nope.dita"><topicmeta><linktext>Текст ссылки</linktext></topicmeta></topicref>
+  <topicref href="multi.dita#second"/>
+  <topicref href="totally-missing.dita"/>
+  <topicref/>
+</map>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+            var tree = MapTree.Build(project, Path.Combine(root, "outer.ditamap"));
+            var items = tree.Items.ToList();
+
+            var mapRefItem = items.Single(i => i.ElementName == "mapref");
+            Check(mapRefItem.IsMapRef, "mapref распознан как IsMapRef");
+            Check(mapRefItem.Title == "Inner", $"заголовок вложенной карты подхватился: '{mapRefItem.Title}'");
+            Check(items.Any(i => i.Title == "Внутренний топик"),
+                "содержимое вложенной карты (mapref) раскрыто рекурсивно и попало в общее дерево");
+
+            var byKeyref = items.Single(i => i.Node.GetAttribute("keyref") == "k1");
+            Check(byKeyref.TargetPath == Path.GetFullPath(Path.Combine(root, "k1target.dita")) && !byKeyref.IsBroken,
+                "topicref с keyref (без href) резолвится через ключ карты");
+            Check(byKeyref.Title == "Цель по ключу", "заголовок узла по keyref взят из целевого топика");
+
+            var unresolvedKeyref = items.Single(i => i.Node.GetAttribute("keyref") == "no-such-key");
+            Check(unresolvedKeyref.IsBroken, "topicref с несуществующим keyref помечен как битый");
+
+            var external = items.Single(i => i.Href == "http://example.com");
+            Check(external.TargetPath is null && !external.IsBroken,
+                "scope=\"external\" — ссылка не резолвится и не считается битой (внешние URL не проверяются)");
+
+            var navtitleAttr = items.Single(i => i.Href == "a.dita");
+            Check(navtitleAttr.Title == "Заголовок из атрибута", "атрибут navtitle на topicref побеждает заголовок целевого топика (A)");
+
+            var linktextItem = items.Single(i => i.Href == "nope.dita");
+            Check(linktextItem.Title == "Текст ссылки", "topicmeta/linktext используется как заголовок, когда navtitle нет");
+            Check(linktextItem.IsBroken, "тот же узел: цель (nope.dita) не существует — тоже помечен битым");
+
+            var subTopicItem = items.Single(i => i.Href == "multi.dita#second");
+            Check(subTopicItem.TargetTopicId == "second", "фрагмент #second разобран как TargetTopicId");
+            Check(subTopicItem.Title == "Второй",
+                $"заголовок взят из ВЛОЖЕННОГО топика по TargetTopicId (не из файла целиком, там был бы 'Первый'): '{subTopicItem.Title}'");
+
+            var keydefWithText = items.Single(i => i.Keys == "k2");
+            Check(keydefWithText.Title == "ключ: k2", $"keydef без href/navtitle/linktext — заголовок 'ключ: <keys>': '{keydefWithText.Title}'");
+
+            var keydefBare = items.Single(i => i.ElementName == "keydef" && i.Keys is null);
+            Check(keydefBare.Title == "keydef", "keydef совсем без атрибутов — заголовок буквально 'keydef'");
+
+            var brokenWithHref = items.Single(i => i.Href == "totally-missing.dita");
+            Check(brokenWithHref.Title == "totally-missing.dita", "нет ни navtitle/linktext, ни цели — заголовком становится сам href");
+
+            var bareTopicref = items.Single(i => i.ElementName == "topicref" && i.Href is null && i.Keys is null && i.Node.GetAttribute("keyref") is null);
+            Check(bareTopicref.Title == "<topicref>", "совсем пустой topicref (ни href, ни keyref, ни keys) — заголовок '<имя_элемента>'");
         }
         finally
         {
@@ -2483,6 +2790,193 @@ public static class Program
             $"{iterations} случайных наборов правил .ditaval пережили Write→Read без потерь ({iterations - failures}/{iterations})");
     }
 
+    private static void RefResolverTests()
+    {
+        Section("RefResolver: Parse/ResolvePath/FindTarget/ResolveConref/ExpandConrefs (по отчёту покрытия)");
+
+        Check(RefResolver.IsExternal("http://example.com"), "IsExternal: http");
+        Check(RefResolver.IsExternal("HTTPS://example.com"), "IsExternal регистронезависим");
+        Check(RefResolver.IsExternal("mailto:a@b.com"), "IsExternal: mailto");
+        Check(RefResolver.IsExternal("ftp://host/file"), "IsExternal: ftp");
+        Check(!RefResolver.IsExternal("topic.dita"), "IsExternal: обычный относительный путь — не внешний");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            var aPath = Path.Combine(root, "a.dita");
+            var bPath = Path.Combine(root, "b.dita");
+            var subDir = Path.Combine(root, "sub");
+            Directory.CreateDirectory(subDir);
+            var cPath = Path.Combine(subDir, "c.dita");
+
+            File.WriteAllText(aPath, """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="a">
+  <title>A</title>
+  <conbody>
+    <p id="shared" outputclass="local">Локальный текст (не должен исчезнуть).</p>
+    <p conref="b.dita#b/borrowed" audience="local-wins">Заглушка.</p>
+  </conbody>
+</concept>
+""");
+            File.WriteAllText(bPath, """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="b">
+  <title>B</title>
+  <conbody>
+    <p id="borrowed" audience="borrowed-loses">Заимствуемый текст<i>с вложенным</i>.</p>
+  </conbody>
+</concept>
+""");
+            File.WriteAllText(cPath, "<concept id=\"c\"><title>C</title><conbody><p>В подпапке.</p></conbody></concept>");
+
+            var project = new DitaProject(root);
+            project.Scan();
+            var docA = project.GetDocument(aPath);
+
+            // --- Parse
+            var localFragment = RefResolver.Parse(aPath, "#shared");
+            Check(localFragment.Path is null && localFragment.TopicId == "shared" && localFragment.IsLocalFragment,
+                "Parse: '#id' — локальный фрагмент без файла (TopicId, IsLocalFragment)");
+
+            var topicAndElement = RefResolver.Parse(aPath, "b.dita#b/borrowed");
+            Check(topicAndElement.TopicId == "b" && topicAndElement.ElementId == "borrowed" && topicAndElement.Path == bPath,
+                "Parse: 'файл#топик/элемент' разобран полностью");
+
+            var topicOnly = RefResolver.Parse(aPath, "b.dita#b");
+            Check(topicOnly.TopicId == "b" && topicOnly.ElementId is null, "Parse: 'файл#топик' без элемента — ElementId == null");
+
+            var externalWithFragment = RefResolver.Parse(aPath, "https://example.com/x#y");
+            Check(externalWithFragment.Path is null && externalWithFragment.TopicId == "y",
+                "Parse: внешняя ссылка не резолвится в Path, но фрагмент всё равно разбирается");
+
+            Check(RefResolver.Parse(aPath, "b.dita").ToString() == "b.dita", "DitaReference.ToString() возвращает исходную строку (Raw)");
+
+            // --- ResolvePath
+            Check(RefResolver.ResolvePath(aPath, "") is null, "ResolvePath: пустой href — null");
+            Check(RefResolver.ResolvePath(aPath, "http://example.com") is null, "ResolvePath: внешний href — null");
+            Check(RefResolver.ResolvePath(aPath, "#anything") == Path.GetFullPath(aPath),
+                "ResolvePath: '#fragment' без файла — путь самого базового файла");
+            Check(RefResolver.ResolvePath(aPath, "sub/c.dita") == Path.GetFullPath(cPath), "ResolvePath: относительный путь в подпапку");
+            Check(RefResolver.ResolvePath(aPath, "sub/c.dita#c") == Path.GetFullPath(cPath), "ResolvePath: фрагмент отбрасывается при резолве пути файла");
+
+            // --- MakeRelative
+            Check(RefResolver.MakeRelative(aPath, cPath) == "sub/c.dita", "MakeRelative: путь в подпапку, со слешем вперёд (не '\\\\')");
+            Check(RefResolver.MakeRelative(cPath, aPath) == "../a.dita", "MakeRelative: путь из подпапки наверх");
+
+            // --- FindTarget / FindById
+            Check(ReferenceEquals(RefResolver.FindTarget(project, docA, RefResolver.Parse(aPath, "#shared")), docA.Root.FindDescendant("p")),
+                "FindTarget: локальный фрагмент ищет в исходном документе");
+            Check(RefResolver.FindTarget(project, docA, RefResolver.Parse(aPath, "no-such-file.dita#x")) is null,
+                "FindTarget: файл не существует — null");
+            var targetRoot = RefResolver.FindTarget(project, docA, RefResolver.Parse(aPath, "b.dita"));
+            Check(targetRoot?.Name == "concept" && targetRoot.GetAttribute("id") == "b",
+                "FindTarget: ссылка без фрагмента — корень целевого документа");
+            Check(RefResolver.FindTarget(project, docA, RefResolver.Parse(aPath, "b.dita#no-such-topic")) is null,
+                "FindTarget: топик с таким id не найден — null");
+            var targetElement = RefResolver.FindTarget(project, docA, RefResolver.Parse(aPath, "b.dita#b/borrowed"));
+            Check(targetElement?.GetAttribute("id") == "borrowed", "FindTarget: топик и элемент оба найдены");
+            Check(RefResolver.FindTarget(project, docA, RefResolver.Parse(aPath, "b.dita#b/no-such-elem")) is null,
+                "FindTarget: элемент с таким id внутри топика не найден — null");
+
+            // --- ResolveConref (href-style)
+            var conrefNode = docA.Root.DescendantsAndSelf().First(n => n.HasAttribute("conref"));
+            var resolvedConref = RefResolver.ResolveConref(project, docA, conrefNode);
+            Check(resolvedConref?.GetAttribute("id") == "borrowed", "ResolveConref: обычный conref резолвится через Parse+FindTarget");
+
+            var noConrefNode = docA.Root.FindDescendant("title")!;
+            Check(RefResolver.ResolveConref(project, docA, noConrefNode) is null,
+                "ResolveConref: узел без conref/conkeyref — null");
+
+            // --- ResolveConref (conkeyref-style) — нужен реальный keydef в карте
+            File.WriteAllText(Path.Combine(root, "guide.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>T</title>
+  <keydef keys="shared-key" href="b.dita"/>
+  <topicref href="a.dita"/>
+  <topicref href="b.dita"/>
+</map>
+""");
+            project.Scan();
+            docA = project.GetDocument(aPath);
+
+            var conkeyrefWholeNode = DitaNode.Element("p");
+            conkeyrefWholeNode.SetAttribute("conkeyref", "shared-key");
+            var conkeyrefWhole = RefResolver.ResolveConref(project, docA, conkeyrefWholeNode);
+            Check(conkeyrefWhole?.GetAttribute("id") == "b", "ResolveConref: conkeyref без '/' — корень целевого топика по ключу");
+
+            var conkeyrefElementNode = DitaNode.Element("p");
+            conkeyrefElementNode.SetAttribute("conkeyref", "shared-key/borrowed");
+            var conkeyrefElement = RefResolver.ResolveConref(project, docA, conkeyrefElementNode);
+            Check(conkeyrefElement?.GetAttribute("id") == "borrowed", "ResolveConref: conkeyref с '/элемент' находит элемент внутри топика по ключу");
+
+            var conkeyrefUnknownNode = DitaNode.Element("p");
+            conkeyrefUnknownNode.SetAttribute("conkeyref", "no-such-key");
+            Check(RefResolver.ResolveConref(project, docA, conkeyrefUnknownNode) is null,
+                "ResolveConref: conkeyref на несуществующий ключ — null");
+
+            // --- ExpandConrefs: локальные атрибуты побеждают, id заимствованного элемента снят,
+            // вложенное фразовое содержимое (i) пришло вместе с текстом.
+            var expanded = RefResolver.ExpandConrefs(project, docA);
+            var expandedConrefNode = expanded.Root.DescendantsAndSelf().First(n => n.GetAttribute("audience") is not null);
+            Check(expandedConrefNode.GetAttribute("id") is null, "ExpandConrefs: id заимствованного элемента снят (не задваивается)");
+            Check(expandedConrefNode.GetAttribute("audience") == "local-wins",
+                "ExpandConrefs: атрибут локального элемента (audience) побеждает атрибут из источника");
+            Check(expandedConrefNode.InnerText.Contains("Заимствуемый текст") && expandedConrefNode.FindDescendant("i") is not null,
+                "ExpandConrefs: содержимое источника (включая вложенный <i>) скопировано целиком");
+            Check(!expandedConrefNode.HasAttribute("conref"), "ExpandConrefs: атрибут conref в результат не переносится");
+            Check(docA.Root.DescendantsAndSelf().First(n => n.HasAttribute("conref")).HasAttribute("conref"),
+                "ExpandConrefs возвращает копию — исходный документ не тронут (conref остался)");
+
+            // --- ValidateReferences
+            var brokenHrefDoc = DitaDocument.Parse("<concept id=\"x\"><title>T</title><conbody><p><xref href=\"nowhere.dita\"/></p></conbody></concept>");
+            brokenHrefDoc.FilePath = aPath;
+            var brokenIssues = RefResolver.ValidateReferences(project, brokenHrefDoc);
+            Check(brokenIssues.Any(i => i.Severity == IssueSeverity.Error && i.Message.Contains("не найден")),
+                "ValidateReferences: href на несуществующий файл — ошибка");
+
+            var externalScopeDoc = DitaDocument.Parse("<concept id=\"x\"><title>T</title><conbody><p><xref href=\"nowhere.dita\" scope=\"external\"/></p></conbody></concept>");
+            externalScopeDoc.FilePath = aPath;
+            Check(RefResolver.ValidateReferences(project, externalScopeDoc).Count == 0,
+                "ValidateReferences: scope=\"external\" пропускает проверку файла, даже если href похож на локальный");
+
+            var pdfFormatDoc = DitaDocument.Parse("<concept id=\"x\"><title>T</title><conbody><p><xref href=\"doc.pdf#section1\" format=\"pdf\"/></p></conbody></concept>");
+            pdfFormatDoc.FilePath = aPath;
+            File.WriteAllText(Path.Combine(root, "doc.pdf"), "не настоящий pdf, но файл существует");
+            Check(RefResolver.ValidateReferences(project, pdfFormatDoc).Count == 0,
+                "ValidateReferences: format=\"pdf\" — фрагмент (#section1) не проверяется как id топика");
+
+            var unknownKeyDoc = DitaDocument.Parse("<concept id=\"x\"><title>T</title><conbody><p><xref keyref=\"no-such-key\"/></p></conbody></concept>");
+            unknownKeyDoc.FilePath = aPath;
+            Check(RefResolver.ValidateReferences(project, unknownKeyDoc).Any(i => i.Message.Contains("не объявлен")),
+                "ValidateReferences: keyref на необъявленный ключ — ошибка");
+
+            var unresolvedConkeyrefDoc = DitaDocument.Parse("<concept id=\"x\"><title>T</title><conbody><p conkeyref=\"no-such-key\"/></conbody></concept>");
+            unresolvedConkeyrefDoc.FilePath = aPath;
+            Check(RefResolver.ValidateReferences(project, unresolvedConkeyrefDoc).Any(i => i.Message.Contains("Не удалось разрешить conkeyref")),
+                "ValidateReferences: неразрешимый conkeyref — ошибка");
+
+            var missingTopicIdDoc = DitaDocument.Parse("<concept id=\"x\"><title>T</title><conbody><p><xref href=\"b.dita#no-such-topic\"/></p></conbody></concept>");
+            missingTopicIdDoc.FilePath = aPath;
+            Check(RefResolver.ValidateReferences(project, missingTopicIdDoc).Any(i => i.Severity == IssueSeverity.Warning && i.Message.Contains("Не найден целевой элемент")),
+                "ValidateReferences: файл существует, но id топика внутри — нет: предупреждение (не ошибка)");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
     // -------------------------------------------------------------- рефакторинг
 
     private static void RefactorTests()
@@ -2823,6 +3317,9 @@ public static class Program
             var untracked = Path.Combine(wcPath, "untracked.dita");
             File.WriteAllText(untracked, "не в истории");
             Check(SvnHistory.ReadRevision(untracked) is null, "неотслеживаемый файл — ReadRevision возвращает null");
+
+            var outsideWc = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N") + ".dita");
+            Check(!SvnHistory.IsInRepository(outsideWc), "файл вне рабочей копии svn не распознан как отслеживаемый");
         }
         finally
         {
@@ -3013,6 +3510,125 @@ public static class Program
         return bytes.ToArray();
     }
 
+    private static byte[] BuildMinimalGif(int width, int height)
+    {
+        var bytes = new List<byte> { (byte)'G', (byte)'I', (byte)'F', (byte)'8', (byte)'9', (byte)'a' };
+        bytes.Add((byte)(width & 0xFF));
+        bytes.Add((byte)((width >> 8) & 0xFF));
+        bytes.Add((byte)(height & 0xFF));
+        bytes.Add((byte)((height >> 8) & 0xFF));
+        while (bytes.Count < 24)
+        {
+            bytes.Add(0);
+        }
+
+        return bytes.ToArray();
+    }
+
+    /// <summary>signedHeight отрицательный проверяет ветку Math.Abs в ReadPixelSize.</summary>
+    private static byte[] BuildMinimalBmp(int width, int signedHeight)
+    {
+        var bytes = new List<byte>(30) { (byte)'B', (byte)'M' };
+        while (bytes.Count < 18)
+        {
+            bytes.Add(0);
+        }
+
+        bytes.AddRange(BitConverter.GetBytes(width));
+        bytes.AddRange(BitConverter.GetBytes(signedHeight));
+        while (bytes.Count < 30)
+        {
+            bytes.Add(0);
+        }
+
+        return bytes.ToArray();
+    }
+
+    /// <summary>SOI + один незначащий APP0-сегмент (проверяет пропуск сегмента по длине) + SOF0 с
+    /// шириной/высотой — ReadJpegSize возвращает результат сразу после SOF0, дальше можно не писать.</summary>
+    private static byte[] BuildMinimalJpeg(int width, int height)
+    {
+        var bytes = new List<byte> { 0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10 };
+        bytes.AddRange(new byte[14]); // тело APP0 — 16 (длина) - 2 = 14 байт, содержимое неважно
+        bytes.AddRange(new byte[] { 0xFF, 0xC0, 0x00, 0x11 });
+        bytes.Add(8); // precision
+        bytes.Add((byte)((height >> 8) & 0xFF));
+        bytes.Add((byte)(height & 0xFF));
+        bytes.Add((byte)((width >> 8) & 0xFF));
+        bytes.Add((byte)(width & 0xFF));
+        return bytes.ToArray();
+    }
+
+    private static void ImageSizeFormatsTests()
+    {
+        Section("ImageSize через DocxRenderer.RenderImage: GIF/BMP/JPEG, единицы измерения (по отчёту покрытия)");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllBytes(Path.Combine(root, "pic.gif"), BuildMinimalGif(160, 90));
+            File.WriteAllBytes(Path.Combine(root, "pic.bmp"), BuildMinimalBmp(320, -240));
+            File.WriteAllBytes(Path.Combine(root, "pic.jpg"), BuildMinimalJpeg(400, 300));
+            File.WriteAllBytes(Path.Combine(root, "unit.png"), BuildMinimalPng(1000, 500));
+
+            File.WriteAllText(Path.Combine(root, "topic.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="t">
+  <title>T</title>
+  <conbody>
+    <p><image href="pic.gif"/></p>
+    <p><image href="pic.bmp"/></p>
+    <p><image href="pic.jpg"/></p>
+    <p><image href="unit.png" width="2cm"/></p>
+    <p><image href="unit.png" width="10mm"/></p>
+    <p><image href="unit.png" width="36pt"/></p>
+  </conbody>
+</concept>
+""");
+            File.WriteAllText(Path.Combine(root, "guide.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map><title>T</title><topicref href="topic.dita"/></map>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+            var outFile = Path.Combine(root, "out.docx");
+            var result = new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            Check(result.Warnings.Count == 0, "публикация без предупреждений: " + string.Join("; ", result.Warnings));
+
+            using var doc = WordprocessingDocument.Open(outFile, false);
+            var drawings = doc.MainDocumentPart!.Document.Body!.Descendants<DocumentFormat.OpenXml.Drawing.Wordprocessing.Inline>().ToList();
+            Check(drawings.Count == 6, $"все 6 изображений встроены: {drawings.Count}");
+
+            const long emuPerInch = 914400;
+            const long emuPerPixel = emuPerInch / 96;
+
+            Check(drawings[0].Extent!.Cx!.Value == 160L * emuPerPixel && drawings[0].Extent!.Cy!.Value == 90L * emuPerPixel,
+                $"GIF: размер прочитан из заголовка (160x90): {drawings[0].Extent!.Cx},{drawings[0].Extent!.Cy}");
+            Check(drawings[1].Extent!.Cx!.Value == 320L * emuPerPixel && drawings[1].Extent!.Cy!.Value == 240L * emuPerPixel,
+                $"BMP: размер прочитан из заголовка, отрицательная высота стала положительной через Math.Abs (320x240): {drawings[1].Extent!.Cx},{drawings[1].Extent!.Cy}");
+            Check(drawings[2].Extent!.Cx!.Value == 400L * emuPerPixel && drawings[2].Extent!.Cy!.Value == 300L * emuPerPixel,
+                $"JPEG: размер прочитан из маркера SOF0 после пропуска APP0 (400x300): {drawings[2].Extent!.Cx},{drawings[2].Extent!.Cy}");
+
+            Check(drawings[3].Extent!.Cx!.Value == (long)(2 * emuPerInch / 2.54), $"width=\"2cm\" переведён в EMU через дюймы/2.54: {drawings[3].Extent!.Cx}");
+            Check(drawings[4].Extent!.Cx!.Value == (long)(10 * emuPerInch / 25.4), $"width=\"10mm\" переведён в EMU через дюймы/25.4: {drawings[4].Extent!.Cx}");
+            Check(drawings[5].Extent!.Cx!.Value == (long)(36 * emuPerInch / 72), $"width=\"36pt\" переведён в EMU через дюймы/72 (0.5in = 457200 EMU): {drawings[5].Extent!.Cx}");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
     /// <summary>
     /// Элементы публикации, которых нет в основных DocxTests/HtmlPublisher-проверках:
     /// figure/dl/parml/simpletable/properties/choicetable, image (естественный размер, явные
@@ -3182,6 +3798,177 @@ public static class Program
             Check(text.Contains("nowhere.dita#topic"), "docx: неразрешённая xref деградирует до буквального href как простого текста (без гиперссылки)");
             Check(text.Contains("Голый текст"), "docx: xref по keyref без href показывает KeyText как обычный текст");
             Check(text.Contains("Второй топик") && text.Contains("Внешний сайт"), "docx: related-links собрал и внутреннюю, и внешнюю ссылку");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    /// <summary>
+    /// Остальные конструкции HtmlRenderer, которых нет ни в одном другом тесте: CALS-таблица,
+    /// object/video/audio, foreign/svg-container, coderef, сноски, предметный указатель
+    /// (indexterm/RenderIndexSection), abbreviated-form (все три исхода), RenderInline-варианты
+    /// (overline/q/cite/menucascade/state/boolean/tm), spectitle-заголовок раздела, hazardstatement,
+    /// вложенный топик (RenderNestedTopic) и глоссарная статья как отдельный тип топика.
+    /// </summary>
+    private static void HtmlRendererMiscTests()
+    {
+        Section("HtmlRenderer: таблица/медиа/foreign/сноски/указатель/abbreviated-form (по отчёту покрытия)");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "code.txt"), "int main() { return 0; }");
+            File.WriteAllBytes(Path.Combine(root, "video.mp4"), new byte[] { 1, 2, 3 });
+            File.WriteAllBytes(Path.Combine(root, "audio.mp3"), new byte[] { 4, 5, 6 });
+            File.WriteAllBytes(Path.Combine(root, "flashthing.bin"), new byte[] { 7, 8 });
+
+            File.WriteAllText(Path.Combine(root, "glossary.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<glossentry id="acr-glossentry">
+  <glossterm>Central Processing Unit</glossterm>
+  <glossAcronym>CPU</glossAcronym>
+  <glossdef>Определение.</glossdef>
+</glossentry>
+""");
+
+            File.WriteAllText(Path.Combine(root, "plain.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="plain">
+  <title>Обычный топик, не глоссарий</title>
+  <conbody><p>Текст.</p></conbody>
+</concept>
+""");
+
+            File.WriteAllText(Path.Combine(root, "main.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="main">
+  <title>Продвинутые конструкции</title>
+  <conbody>
+    <concept id="nested"><title>Вложенный топик</title><conbody><p>Внутри вложенного.</p></conbody></concept>
+    <section spectitle="Пользовательский раздел"><p>Текст раздела без явного title.</p></section>
+    <hazardstatement type="warning">
+      <messagepanel><typeoftext>ОПАСНО</typeoftext><howtoavoid>Не делайте так.</howtoavoid></messagepanel>
+    </hazardstatement>
+    <table>
+      <title>Заголовок таблицы</title>
+      <tgroup cols="3">
+        <colspec colname="c1" colnum="1" colwidth="2*"/>
+        <colspec colname="c2" colnum="2" colwidth="1*"/>
+        <colspec colname="c3" colnum="3" colwidth="1*"/>
+        <thead><row><entry>H1</entry><entry>H2</entry><entry>H3</entry></row></thead>
+        <tbody>
+          <row><entry namest="c1" nameend="c2" align="center">Объединённая</entry><entry morerows="1" valign="top">R</entry></row>
+          <row><entry>X</entry><entry>Y</entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+    <object data="flashthing.bin" type="application/octet-stream"/>
+    <object>Без data — дети рендерятся как есть</object>
+    <video href="video.mp4"/>
+    <audio href="audio.mp3" controls="false"/>
+    <video><media-source href="video.mp4"/></video>
+    <svg-container><svg width="10" height="10"><circle r="5"/></svg></svg-container>
+    <codeblock><coderef href="code.txt"/></codeblock>
+    <codeblock><coderef href="missing.txt"/></codeblock>
+    <p>Сноска с меткой<fn callout="*">Особая сноска.</fn> и обычная<fn>Вторая сноска.</fn>.</p>
+    <p>Термин <indexterm>CPU<indexterm>детали</indexterm></indexterm> встречается и здесь: <indexterm>CPU</indexterm>.</p>
+    <p>По ключу глоссария: <abbreviated-form keyref="cpu-key"/>; по ключу без глоссария: <abbreviated-form keyref="plain-key"/>; по несуществующему ключу: <abbreviated-form keyref="no-such-key"/>; без keyref: <abbreviated-form/>.</p>
+    <p><overline>надчёркнутый</overline> <q>цитата</q> <cite>Источник</cite> <menucascade><uicontrol>Файл</uicontrol><uicontrol>Открыть</uicontrol></menucascade> <state name="mode" value="on"/> <boolean state="yes"/> <tm tmtype="reg">Reg</tm> <tm tmtype="service">Serv</tm> <tm>Trade</tm></p>
+  </conbody>
+</concept>
+""");
+
+            File.WriteAllText(Path.Combine(root, "guide.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>Тест HtmlRenderer</title>
+  <keydef keys="cpu-key" href="glossary.dita"/>
+  <keydef keys="plain-key" href="plain.dita"><topicmeta><keywords><keyword>Обычная ссылка</keyword></keywords></topicmeta></keydef>
+  <topicref href="main.dita"/>
+  <topicref href="glossary.dita"/>
+  <topicref href="plain.dita"/>
+</map>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+
+            var htmlResult = new HtmlPublisher(project).Publish(
+                Path.Combine(root, "guide.ditamap"),
+                new PublishOptions { OutputDirectory = Path.Combine(root, "html-out"), SingleFile = true });
+            var html = File.ReadAllText(htmlResult.EntryFile);
+
+            // FigureNumber/TableNumber: публично объявленные счётчики, нигде в проекте больше не
+            // используемые (HtmlPublisher их не трогает) — минимальная проверка самих геттеров/сеттеров.
+            var standaloneRenderer = new HtmlRenderer(project) { FigureNumber = 5, TableNumber = 3 };
+            Check(standaloneRenderer.FigureNumber == 5 && standaloneRenderer.TableNumber == 3,
+                "FigureNumber/TableNumber — обычные читаемые/записываемые свойства");
+
+            Check(html.Contains("Вложенный топик") && html.Contains("Внутри вложенного."), "вложенный топик (RenderNestedTopic) отрисован");
+            Check(html.Contains("Пользовательский раздел"), "section без title использует spectitle как заголовок");
+
+            Check(html.Contains("class=\"typeoftext\"") && html.Contains("ОПАСНО") && html.Contains("Не делайте так."),
+                "hazardstatement/messagepanel отрисован по произвольным именам дочерних элементов");
+
+            Check(System.Text.RegularExpressions.Regex.IsMatch(html, "<col style=\"width:2\\*\"[^>]*/>|<col />"), "CALS-таблица: colgroup сгенерирован");
+            Check(html.Contains("<th>H1</th>") || html.Contains("<th>H1"), "CALS-таблица: заголовок thead/th отрисован");
+            Check(html.Contains("colspan=\"2\""), "CALS-таблица: namest/nameend дали colspan");
+            Check(html.Contains("rowspan=\"2\""), "CALS-таблица: morerows=1 дал rowspan=2 (morerows+1)");
+            Check(html.Contains("text-align:center"), "CALS-таблица: align превращён в style");
+            Check(html.Contains("vertical-align:top"), "CALS-таблица: valign превращён в style");
+            Check(html.Contains("Заголовок 1. Заголовок таблицы") || html.Contains("Таблица 1. Заголовок таблицы"),
+                $"CALS-таблица пронумерована подписью (реальный текст подписи см. Labels.Table)");
+
+            Check(html.Contains("<object data=\"media/flashthing.bin\"") || html.Contains("<object data=\"flashthing.bin\""),
+                "object с data встроен как <object>");
+            Check(html.Contains("Без data — дети рендерятся как есть"), "object без data рендерит своих детей как есть");
+            Check(System.Text.RegularExpressions.Regex.IsMatch(html, "<video src=\"[^\"]*video\\.mp4\" controls>"), "video с href и без controls=\"false\" получает атрибут controls");
+            Check(System.Text.RegularExpressions.Regex.IsMatch(html, "<audio src=\"[^\"]*audio\\.mp3\"></audio>"), "audio с controls=\"false\" не получает атрибут controls");
+            Check(System.Text.RegularExpressions.Regex.IsMatch(html, "<video src=\"[^\"]*video\\.mp4\" controls></video>\\s*<video src=\"[^\"]*video\\.mp4\" controls>") ||
+                  html.Split("video.mp4").Length - 1 >= 2,
+                "video без href, но с media-source, тоже находит источник");
+
+            Check(html.Contains("<circle r=\"5\"") && html.Contains("<svg"), "svg-container передан как есть (RenderForeign)");
+
+            Check(html.Contains("int main() { return 0; }"), "coderef на существующий файл вставляет его содержимое");
+            Check(html.Contains("<!-- coderef не найден: missing.txt -->"), "coderef на несуществующий файл даёт HTML-комментарий, а не падает");
+
+            Check(System.Text.RegularExpressions.Regex.IsMatch(html, "<a class=\"fn-ref\" href=\"#fn1\"[^>]*>\\[\\*\\]</a>"), "сноска с callout использует его как маркер вместо номера");
+            Check(System.Text.RegularExpressions.Regex.IsMatch(html, "<a class=\"fn-ref\" href=\"#fn2\"[^>]*>\\[2\\]</a>"), "вторая сноска без callout нумеруется автоматически");
+            Check(html.Contains("class=\"footnotes\"") && html.Contains("Особая сноска.") && html.Contains("Вторая сноска."),
+                "блок сносок в конце топика собрал обе сноски по тексту");
+
+            Check(html.Contains("class=\"index-terms\""), "предметный указатель отрисован (RenderIndexSection)");
+            Check(System.Text.RegularExpressions.Regex.IsMatch(html, "<li>CPU\\s*<a href=\"[^\"]*\">1</a>"),
+                "верхний уровень указателя: термин CPU встретился дважды в одном топике, но Distinct() схлопнул ссылки в одну");
+            Check(html.Contains("<li>детали"), "вложенный indexterm стал подпунктом указателя");
+
+            Check(html.Contains("<abbr class=\"abbreviated-form\">CPU</abbr>"), "abbreviated-form: акроним из глоссария найден и использован");
+            Check(html.Contains("<abbr class=\"abbreviated-form\">Обычная ссылка</abbr>"), "abbreviated-form: ключ резолвится, но цель не глоссарий — используется KeyText ключа");
+            Check(html.Contains("<abbr class=\"abbreviated-form\">no-such-key</abbr>"), "abbreviated-form: ключ не резолвится вовсе — используется буквальный keyref");
+            Check(!html.Contains("<abbr class=\"abbreviated-form\"></abbr>"), "abbreviated-form без keyref не создаёт пустой <abbr>");
+
+            Check(html.Contains("<span style=\"text-decoration:overline\">надчёркнутый</span>"), "overline отрисован");
+            Check(html.Contains("<q>цитата</q>"), "q отрисован как <q>");
+            Check(html.Contains("<cite>Источник</cite>"), "cite отрисован");
+            Check(html.Contains("class=\"menucascade\"") && html.Contains("Файл") && html.Contains("Открыть") && html.Contains("&rarr;"),
+                "menucascade собрал цепочку uicontrol через разделитель");
+            Check(html.Contains("class=\"state\">mode=on</span>"), "state отрисован как name=value");
+            Check(html.Contains("class=\"boolean\">yes</span>"), "boolean отрисован по атрибуту state");
+            Check(html.Contains("Reg&reg;") || html.Contains("Reg&amp;reg;"), "tm tmtype=\"reg\" даёт символ ®");
+            Check(html.Contains("Serv&#8480;") || html.Contains("Serv&amp;#8480;"), "tm tmtype=\"service\" даёт символ ℠");
+            Check(html.Contains("Trade&trade;") || html.Contains("Trade&amp;trade;"), "tm без tmtype по умолчанию — ™");
         }
         finally
         {
