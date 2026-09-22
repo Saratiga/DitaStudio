@@ -9,12 +9,45 @@ WPF, .NET 8, Windows. Интерфейс и комментарии — на ру
 dotnet build DitaStudio.sln -c Debug          # сборка
 dotnet run --project tests\DitaStudio.Tests   # 697 проверок ядра, код возврата 0 = всё прошло
 dotnet run --project src\DitaStudio.App       # запуск редактора
+dotnet test tests\DitaStudio.UiTests          # автоматизированное подмножество TESTPLAN.md (реальный DitaStudio.exe)
 ```
 
 Тестовый проект — обычное консольное приложение со своим `Check(...)`, без xunit.
 Новую логику сопровождать проверкой там же; прогон должен оставаться зелёным.
 
 Демо-проект для ручной проверки: **Файл → Открыть папку проекта** → `samples\GuideSample`.
+
+## UI-тесты и UiHarness
+
+`tools/DitaStudio.UiAutomation` — общая библиотека (FlaUI/UIA3) поверх уже запущенного
+DitaStudio.exe: поиск элементов, клики, меню, чтение текста/состояния. Один источник
+истины для двух потребителей:
+- `tools/UiHarness` — CLI для ручной проверки (`dotnet run --project tools\UiHarness -- <команда>`,
+  список команд — `--help`/без аргументов).
+- `tests/DitaStudio.UiTests` — xUnit-обёртка, реальные `Assert` вместо чтения вывода
+  консоли; один процесс DitaStudio.exe на весь прогон (`[Collection("DitaStudio App")]`),
+  требует собранный `src\DitaStudio.App` заранее.
+
+Известное ограничение (проверено эмпирически, не баг приложения): FlaUI/UIA3 в этой
+связке **не видит содержимое внутри вкладок** `TabControl` (LeftTabs/RightTabs/
+BottomTabs) — `FindAllDescendants` от корня окна находит заголовки `TabItem`, но не
+`ProjectTree`, не кнопки "Обновить"/"Создать…" и вообще ничего внутри активной вкладки,
+хотя оно реально отрисовано (проверялось скриншотом). Элементы вне TabControl (меню,
+тулбар, статус-бар, диалоги `Dialogs.Shell`) находятся нормально — их и используют
+UI-тесты для проверок (например, строка статус-бара "Проект открыт: N файлов..." вместо
+прямого обращения к `ProjectTree`). Не тратить время на повторное обнаружение этого при
+добавлении новых UI-тестов.
+
+Второе, уже исправленное на этом же материале: `SetProcessDpiAwarenessContext` обязан
+выполниться **до** создания первого `UIA3Automation` — иначе (не только клики мимо цели
+при масштабе экрана, как было написано изначально, но и) обход автомейшн-дерева внутри
+части WPF-панелей рвётся молча. В `UiDriver` это статический конструктор, а не
+конструктор экземпляра — поле `_automation` иначе инициализируется раньше.
+
+Модальные диалоги (`Dialogs.Shell`, например «О программе») иногда не попадают в
+`Application.GetAllTopLevelWindows` — FlaUI отдаёт их как узел `ControlType.Window`
+внутри дерева окна-владельца, а не отдельным окном рабочего стола.
+`UiDriver.ResolveWindow` ищет и там, и там; это тоже не нужно передиагностировать заново.
 
 ## Устройство
 
@@ -31,6 +64,9 @@ src/DitaStudio.App/      WPF
   Authoring/             режим «Автор» (AuthorView, InlineEditor), редактор XML на AvalonEdit
   Views/                 вкладка документа, диалоги
 tests/DitaStudio.Tests/  проверки ядра
+tests/DitaStudio.UiTests/ автоматизированные UI-тесты (xUnit + FlaUI, см. ниже)
+tools/UiHarness/         CLI для ручной UI-проверки (тот же FlaUI-драйвер)
+tools/DitaStudio.UiAutomation/ общая FlaUI-библиотека для двух пунктов выше
 samples/GuideSample/     учебный DITA-проект
 ```
 

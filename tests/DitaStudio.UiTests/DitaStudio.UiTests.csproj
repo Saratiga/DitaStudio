@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>DitaStudio.UiTests</RootNamespace>
+    <!-- Тесты этого проекта запускают настоящий DitaStudio.exe и водят по нему мышью через UI
+         Automation — по одному экземпляру приложения на сборку (см. AppCollection), параллельный
+         запуск классов друг другу мешал бы (общее окно, общие recent-projects.txt). -->
+    <ParallelizeTestCollections>false</ParallelizeTestCollections>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\tools\DitaStudio.UiAutomation\DitaStudio.UiAutomation.csproj" />
+  </ItemGroup>
+
+</Project>
