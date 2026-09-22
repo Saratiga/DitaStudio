@@ -37,6 +37,7 @@ public static class Program
         ContentModelMiscTests();
         ModelAutomatonPropertyTests();
         RoundTripTests();
+        XmlSerializerMiscTests();
         ValidationTests();
         DitaValidatorMiscTests();
         ValidationIssueTests();
@@ -45,7 +46,9 @@ public static class Program
         EditCommandsExtraTests();
         UndoStackExtraTests();
         ProjectTests();
+        HtmlPublisherMiscTests();
         KeyScopeTests();
+        KeyDefinitionMiscTests();
         MultiProjectWorkspaceTests();
         ValidationAndAnchorFixTests();
         RelTableTests();
@@ -56,6 +59,7 @@ public static class Program
         XliffConverterPropertyTests();
         DtdAttributeListParserTests();
         DtdCatalogLoaderTests();
+        DtdReaderMiscTests();
         DtdCatalogLoaderPropertyTests();
         PluginLoaderTests();
         DitaProjectValidateAllWithPluginsTests();
@@ -69,6 +73,7 @@ public static class Program
         GitHistoryTests();
         SvnHistoryTests();
         DocxTests();
+        DocxRendererMiscTests();
         AdvancedRenderingTests();
         ImageSizeFormatsTests();
         HtmlRendererMiscTests();
@@ -458,6 +463,35 @@ public static class Program
         var escaped = DitaDocument.Parse("<topic id=\"t\"><title>a &amp; b &lt; c</title></topic>");
         Check(escaped.Root.FirstElement("title")!.InnerText == "a & b < c", "сущности раскрыты при чтении");
         Check(escaped.ToXmlString().Contains("a &amp; b &lt; c"), "спецсимволы экранированы при записи");
+    }
+
+    private static void XmlSerializerMiscTests()
+    {
+        Section("XmlSerializer: Comment/PI, неизвестный элемент, экранирование атрибутов (по отчёту покрытия)");
+
+        Check(XmlSerializer.ToXml(DitaNode.Comment("комментарий")) == "<!--комментарий-->", "комментарий сериализуется как <!--...-->");
+
+        var piWithValue = DitaNode.Pi("xml-stylesheet", "href=\"x.css\"");
+        Check(XmlSerializer.ToXml(piWithValue) == "<?xml-stylesheet href=\"x.css\"?>", "PI со значением: '<?имя значение?>'");
+
+        var piNoValue = DitaNode.Pi("foo", string.Empty);
+        Check(XmlSerializer.ToXml(piNoValue) == "<?foo?>", "PI без значения — без лишнего пробела: '<?имя?>'");
+
+        var unknownWithText = DitaNode.Element("совершенно-неизвестный-элемент");
+        unknownWithText.Add(DitaNode.Text("текст"));
+        Check(!XmlSerializer.ToXml(unknownWithText).Contains('\n'),
+            "неизвестный элемент каталогу с непустым текстовым ребёнком печатается в одну строку (эвристика IsInlineContainer)");
+
+        var unknownBlockOnly = DitaNode.Element("другой-неизвестный-элемент");
+        var innerUnknown = DitaNode.Element("child");
+        unknownBlockOnly.Add(innerUnknown);
+        Check(XmlSerializer.ToXml(unknownBlockOnly).Contains('\n'),
+            "неизвестный элемент только с дочерними элементами (без текста) печатается блочно, с переносами");
+
+        var withNewlineAttr = DitaNode.Element("p");
+        withNewlineAttr.SetAttribute("outputclass", "line1\nline2\ttabbed");
+        Check(XmlSerializer.ToXml(withNewlineAttr).Contains("line1&#10;line2&#9;tabbed"),
+            "перевод строки и таб в значении атрибута экранируются числовыми ссылками");
     }
 
     // ------------------------------------------------------------- проверка
@@ -1122,6 +1156,20 @@ public static class Program
             var badRegexHits = project.Search("[", regex: true);
             Check(badRegexHits.Count == 0, "некорректный regex не роняет поиск");
 
+            Check(project.Search(string.Empty).Count == 0, "пустой запрос — пустой результат, не 'совпадает со всем'");
+            Check(project.Search("   ").Count == 0, "запрос из одних пробелов — тоже пустой результат");
+
+            var caseSensitiveMiss = project.Search("ПРОДУКТЕ", caseSensitive: true);
+            Check(caseSensitiveMiss.Count == 0, "поиск с учётом регистра не находит несовпадающий по регистру текст");
+            var caseInsensitiveHit = project.Search("ПРОДУКТЕ", caseSensitive: false);
+            Check(caseInsensitiveHit.Count == 1, "тот же запрос без учёта регистра находит совпадение");
+
+            var elementNameHits = project.Search("shortdesc", elementNames: true);
+            Check(elementNameHits.Count >= 1 && elementNameHits.All(h => h.Node.Name == "shortdesc"),
+                $"поиск по именам элементов находит узлы <shortdesc> вместо текста внутри них: {elementNameHits.Count}");
+            var elementNameRegexHits = project.Search(@"^short\w+$", elementNames: true, regex: true);
+            Check(elementNameRegexHits.Count == elementNameHits.Count, "поиск по именам элементов тоже умеет работать через regex");
+
             // Замена: обычный текст и регулярное выражение, с сохранением между документами.
             var plainReplace = project.ReplaceAll("Коротко о продукте.", "Кратко о товаре.");
             Check(plainReplace.ReplacementCount == 1, "обычная замена нашла одно вхождение");
@@ -1253,6 +1301,103 @@ public static class Program
         }
     }
 
+    private static void HtmlPublisherMiscTests()
+    {
+        Section("HtmlPublisher: многофайловая сборка, RenderPreview для карты (по отчёту покрытия)");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "intro.dita"), "<concept id=\"intro\"><title>Введение</title><conbody><p>Текст.</p></conbody></concept>");
+            // Разные настоящие файлы на диске ("doc.name.dita" и "doc name.dita" — точка и пробел),
+            // но SafeFileName сводит и точку, и пробел к '-', так что оба претендуют на "doc-name.html" —
+            // второй должен получить суффикс "doc-name-1.html". Одноимённые файлы с точностью до
+            // регистра ("Doc.dita"/"doc.dita") тут не годятся — NTFS сам не даст их создать раздельно.
+            File.WriteAllText(Path.Combine(root, "doc.name.dita"), "<concept id=\"docA\"><title>Документ A</title><conbody><p>x</p></conbody></concept>");
+            File.WriteAllText(Path.Combine(root, "doc name.dita"), "<concept id=\"docB\"><title>Документ Б</title><conbody><p>x<xref href=\"intro.dita#intro\"/></p></conbody></concept>");
+
+            File.WriteAllText(Path.Combine(root, "guide.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>Многостраничное руководство</title>
+  <topicref href="intro.dita"/>
+  <topicref href="doc.name.dita"/>
+  <topicref href="doc name.dita"/>
+</map>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+            var publisher = new HtmlPublisher(project);
+
+            var outDir = Path.Combine(root, "site");
+            var result = publisher.Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { OutputDirectory = outDir });
+
+            Check(File.Exists(Path.Combine(outDir, "index.html")), "index.html создан для многостраничной сборки");
+            Check(File.Exists(Path.Combine(outDir, "intro.html")), "первый топик получил файл по своему имени");
+            Check(File.Exists(Path.Combine(outDir, "doc-name.html")) && File.Exists(Path.Combine(outDir, "doc-name-1.html")),
+                "коллизия очищенных имён файлов (точка/пробел оба стали '-') разрешена суффиксом -1");
+            Check(result.Files.Count == 5, $"в списке файлов style.css + index.html + 3 страницы топиков: {result.Files.Count}");
+
+            var indexHtml = File.ReadAllText(Path.Combine(outDir, "index.html"));
+            Check(indexHtml.Contains("intro.html") && indexHtml.Contains("Введение"),
+                "index.html ссылается на первый топик карты по имени и заголовку");
+
+            var introHtml = File.ReadAllText(Path.Combine(outDir, "intro.html"));
+            Check(introHtml.Contains("<a href=\"doc-name.html\">Документ A</a>"),
+                "у первой страницы есть Pager-ссылка \"вперёд\" на следующий топик карты");
+
+            var docBHtml = File.ReadAllText(Path.Combine(outDir, "doc-name-1.html"));
+            Check(docBHtml.Contains("href=\"intro.html#intro\""),
+                "перекрёстная ссылка на другой файл в многостраничной сборке стала 'файл.html#id'");
+
+            // Пустая карта: index.html получает заглушку "В карте нет топиков.".
+            File.WriteAllText(Path.Combine(root, "empty.ditamap"), "<map><title>Пустая</title></map>");
+            var emptyResult = publisher.Publish(Path.Combine(root, "empty.ditamap"), new PublishOptions { OutputDirectory = Path.Combine(root, "empty-out") });
+            Check(File.ReadAllText(emptyResult.EntryFile).Contains("В карте нет топиков."), "пустая карта — заглушка вместо ссылки на первый топик");
+
+            // RenderPreview карты: сохранённая (с FilePath) — список топиков с пометками "битый"/"только ресурс".
+            File.WriteAllText(Path.Combine(root, "broken.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>С проблемами</title>
+  <topicref href="intro.dita"/>
+  <topicref href="nowhere.dita"/>
+  <keydef keys="only-resource" href="intro.dita"/>
+</map>
+""");
+            var brokenMapDoc = project.GetDocument(Path.Combine(root, "broken.ditamap"));
+            var mapPreview = publisher.RenderPreview(brokenMapDoc);
+            Check(mapPreview.Contains("файл не найден"), "RenderPreview карты помечает битую ссылку");
+            Check(mapPreview.Contains("только ресурс"), "RenderPreview карты помечает keydef как resource-only");
+            Check(mapPreview.Contains("Введение"), "RenderPreview карты перечисляет обычные топики по заголовку");
+
+            // Та же карта — через настоящую многостраничную сборку: битая ссылка и keydef попадают
+            // в оглавление как "голова без ссылки" (<li class="head">), а не как обычная <a>.
+            var brokenSiteResult = publisher.Publish(Path.Combine(root, "broken.ditamap"), new PublishOptions { OutputDirectory = Path.Combine(root, "broken-out") });
+            var brokenIndexHtml = File.ReadAllText(brokenSiteResult.EntryFile);
+            Check(System.Text.RegularExpressions.Regex.IsMatch(brokenIndexHtml, "<li class=\"head\"><span>[^<]*</span>"),
+                "оглавление многостраничной сборки: узел без валидной ссылки (битый href) отрисован как <li class=\"head\">, без <a>");
+
+            // Карта без FilePath (ещё не сохранена на диск) — отдельная заглушка.
+            var unsavedMap = DitaDocument.Parse("<map><title>Новая карта</title></map>");
+            Check(publisher.RenderPreview(unsavedMap).Contains("Карта не сохранена."), "RenderPreview несохранённой карты — заглушка, не падает");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
     // ------------------------------------------------------------ keyscope
 
     private static void KeyScopeTests()
@@ -1358,6 +1503,53 @@ public static class Program
         }
     }
 
+    private static void KeyDefinitionMiscTests()
+    {
+        Section("KeyDefinition: KeyText через navtitle, KeyContent, ToString() (по отчёту покрытия)");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "map.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
+  <title>T</title>
+  <keydef keys="via-navtitle" href="a.dita"><topicmeta><navtitle>Заголовок навигации</navtitle></topicmeta></keydef>
+  <keydef keys="via-keyword" href="a.dita"><topicmeta><keywords><keyword>Слово-ключ</keyword></keywords></topicmeta></keydef>
+  <keydef keys="bare" href="a.dita"/>
+</map>
+""");
+            File.WriteAllText(Path.Combine(root, "a.dita"), "<concept id=\"a\"><title>A</title><conbody><p>x</p></conbody></concept>");
+
+            var project = new DitaProject(root);
+            project.Scan();
+
+            var viaNavtitle = project.ResolveKey("via-navtitle", null)!;
+            Check(viaNavtitle.KeyText == "Заголовок навигации", $"KeyText берёт navtitle, когда keywords/keyword нет: '{viaNavtitle.KeyText}'");
+            Check(viaNavtitle.KeyContent is null, "KeyContent — null, когда нет keywords/keyword (navtitle не считается)");
+
+            var viaKeyword = project.ResolveKey("via-keyword", null)!;
+            Check(viaKeyword.KeyContent?.InnerText == "Слово-ключ", "KeyContent возвращает сам узел <keyword>, когда он есть");
+
+            var bare = project.ResolveKey("bare", null)!;
+            Check(bare.KeyText is null, "KeyText — null, когда нет ни keyword, ни navtitle");
+            Check(bare.ToString() == "bare -> a.dita", $"ToString() формата 'ключ -> href': '{bare}'");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
     private static void MultiProjectWorkspaceTests()
     {
         Section("Мультипроектный workspace (проекты-источники ключей)");
@@ -1430,6 +1622,24 @@ public static class Program
             project.RemoveReferencedProject(sharedRoot);
             Check(project.ReferencedProjectPaths.Count == 0, "проект-источник можно отключить");
             Check(project.ResolveKey("product-name") is null, "после отключения источника ключ снова не резолвится");
+
+            Check(!File.Exists(Path.Combine(mainRoot, ".ditastudio-references")),
+                "отключение последнего источника удаляет файл настройки, а не оставляет пустой список");
+
+            project.RemoveReferencedProject(sharedRoot);
+            Check(project.ReferencedProjectPaths.Count == 0, "повторное отключение уже не подключённого источника — no-op, не падает");
+
+            project.AddReferencedProject(sharedRoot);
+            project.AddReferencedProject(sharedRoot);
+            Check(project.ReferencedProjectPaths.Count == 1, "повторное подключение того же источника не создаёт дубликат");
+            project.RemoveReferencedProject(sharedRoot);
+
+            var missingRoot = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N") + "-missing");
+            project.AddReferencedProject(missingRoot);
+            project.Scan();
+            Check(project.ReferencedProjectPaths.Count == 1 && project.ResolveKey("product-name") is null,
+                "источник, указывающий на несуществующую папку, не роняет Scan() и просто не даёт ключей");
+            project.RemoveReferencedProject(missingRoot);
 
             // Защита от циклической связи: источник, который сам ссылается на подключивший его
             // проект, не должен уйти в бесконечную рекурсию при Scan() — а его собственные "источники"
@@ -2291,6 +2501,99 @@ public static class Program
             var missingWarnings = DtdCatalogLoader.Load(Path.Combine(root, "no-such-file.dtd"));
             Check(missingWarnings.Elements.Count == 0 && missingWarnings.Warnings.Count == 1,
                 "загрузка несуществующего файла не падает, а даёт предупреждение и пустой результат");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    private static void DtdReaderMiscTests()
+    {
+        Section("DtdReader: PUBLIC-сущности, циклы, повреждённый синтаксис (по отчёту покрытия)");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            // --- PUBLIC-сущность: путь после публичного идентификатора должен подключиться так же,
+            // как и SYSTEM (успешный случай раньше не проверялся вовсе — только SYSTEM).
+            File.WriteAllText(Path.Combine(root, "public-module.mod"), "<!ELEMENT pubEl (#PCDATA)>");
+            File.WriteAllText(Path.Combine(root, "public.dtd"), """
+<!ENTITY % pubmod PUBLIC "-//Example//ELEMENTS Public Module//EN" "public-module.mod">
+%pubmod;
+<!ELEMENT root (pubEl)>
+""");
+            var publicResult = DtdCatalogLoader.Load(Path.Combine(root, "public.dtd"));
+            Check(publicResult.Warnings.Count == 0, "PUBLIC-сущность с системным путём подключается без предупреждений: " + string.Join("; ", publicResult.Warnings));
+            Check(publicResult.Elements.Any(e => e.Name == "pubEl"), "элемент из PUBLIC-подключённого модуля найден");
+
+            // --- PUBLIC без системного пути вовсе (только публичный идентификатор, распространённо
+            // для настоящих каталогов OASIS) — не падает, просто ничего не подключает.
+            File.WriteAllText(Path.Combine(root, "public-no-system.dtd"), """
+<!ENTITY % nopath PUBLIC "-//Example//ELEMENTS No System//EN">
+<!ELEMENT root2 (#PCDATA)>
+""");
+            var noSystemResult = DtdCatalogLoader.Load(Path.Combine(root, "public-no-system.dtd"));
+            Check(noSystemResult.Elements.Any(e => e.Name == "root2"), "чтение продолжается после PUBLIC без системного пути (сам файл не пострадал)");
+
+            // --- Циклическое SYSTEM-подключение: a.dtd подключает b.dtd, b.dtd подключает обратно a.dtd.
+            File.WriteAllText(Path.Combine(root, "cycle-a.dtd"), """
+<!ENTITY % incB SYSTEM "cycle-b.dtd">
+%incB;
+<!ELEMENT fromA (#PCDATA)>
+""");
+            File.WriteAllText(Path.Combine(root, "cycle-b.dtd"), """
+<!ENTITY % incA SYSTEM "cycle-a.dtd">
+%incA;
+<!ELEMENT fromB (#PCDATA)>
+""");
+            var cycleResult = DtdCatalogLoader.Load(Path.Combine(root, "cycle-a.dtd"));
+            Check(cycleResult.Elements.Select(e => e.Name).OrderBy(n => n).SequenceEqual(new[] { "fromA", "fromB" }),
+                $"циклическое SYSTEM-подключение не зацикливается, оба элемента найдены: [{string.Join(",", cycleResult.Elements.Select(e => e.Name))}]");
+
+            // --- SYSTEM-путь с символом, недопустимым для Path.GetFullPath (embedded NUL — .NET
+            // Core почти не проверяет спецсимволы вроде '|' в путях, в отличие от старого .NET
+            // Framework, поэтому только NUL надёжно вызывает исключение) — ReadFile ловит его и
+            // превращает в предупреждение, не падает.
+            File.WriteAllText(Path.Combine(root, "bad-path.dtd"),
+                "<!ENTITY % badinc SYSTEM \"bad\0name.mod\">\n%badinc;\n<!ELEMENT ok (#PCDATA)>\n");
+            var badPathResult = DtdCatalogLoader.Load(Path.Combine(root, "bad-path.dtd"));
+            Check(badPathResult.Warnings.Any(w => w.Contains("Некорректный путь")), "SYSTEM-путь с недопустимым символом даёт предупреждение, а не падает");
+            Check(badPathResult.Elements.Any(e => e.Name == "ok"), "остальной файл после сломанного SYSTEM-подключения читается нормально");
+
+            // --- Обрывки синтаксиса: пустые ELEMENT/ATTLIST, недопустимая форма имени, обычная
+            // (не параметрическая) сущность, стрей-символ между декларациями, незакрытая кавычка.
+            File.WriteAllText(Path.Combine(root, "malformed.dtd"), """
+<!ENTITY nbsp "&#160;">
+<!ELEMENT>
+<!ATTLIST>
+<!ELEMENT (a|b) (#PCDATA)>
+x
+<!ELEMENT good (#PCDATA)>
+<!ATTLIST good id ID #IMPLIED>
+""");
+            var malformedResult = DtdCatalogLoader.Load(Path.Combine(root, "malformed.dtd"));
+            Check(malformedResult.Elements.Count == 1 && malformedResult.Elements[0].Name == "good",
+                $"обрывки синтаксиса (пустой ELEMENT/ATTLIST, групповое имя, обычная сущность, стрей-символ) пропущены, валидный ELEMENT дальше по файлу разобран: [{string.Join(",", malformedResult.Elements.Select(e => e.Name))}]");
+            Check(malformedResult.Elements[0].Attributes.ContainsKey("id"), "ATTLIST после обрывков всё ещё корректно привязался к своему элементу");
+
+            // --- Незакрытая кавычка в значении SYSTEM тянет декларацию до конца файла
+            // (FindDeclarationEnd) и ExtractQuoted корректно не находит вторую кавычку — не падает.
+            File.WriteAllText(Path.Combine(root, "unterminated.dtd"), """
+<!ENTITY % bad SYSTEM "never-closed
+""");
+            var unterminatedResult = DtdCatalogLoader.Load(Path.Combine(root, "unterminated.dtd"));
+            Check(unterminatedResult.Elements.Count == 0 && unterminatedResult.Warnings.Count == 0,
+                "незакрытая кавычка в SYSTEM — декларация проглочена целиком до EOF, ничего не подключается, но и не падает");
         }
         finally
         {
@@ -3485,6 +3788,153 @@ public static class Program
             }
         }
     }
+
+    private static void DocxRendererMiscTests()
+    {
+        Section("DocxRenderer: топик-уровневые ветки, CALS-таблица, сноски, закладки (по отчёту покрытия)");
+
+        Check(DocxRenderer.SafeBookmarkName("123abc") == "_123abc", "SafeBookmarkName: имя, начинающееся с цифры, получает ведущее '_'");
+        Check(DocxRenderer.SafeBookmarkName("!!!") == "___", "SafeBookmarkName: символы вне буквы/цифры заменяются на '_' (не даёт пустую строку)");
+        Check(DocxRenderer.SafeBookmarkName(new string('a', 60)).Length == 40, "SafeBookmarkName обрезает длинное имя до 40 символов");
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "main.dita"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<concept id="main">
+  <title outputclass="page-break-before">Заголовок с разрывом страницы</title>
+  <shortdesc audience="internal">Это описание должно быть исключено.</shortdesc>
+  <prolog><author>Автор</author></prolog>
+  <titlealts><navtitle>Альт</navtitle></titlealts>
+  <abstract><p>Реферат концепции.</p></abstract>
+  <conbody>
+    <concept id="nested"><title>Вложенный топик</title><conbody><p>Внутри.</p></conbody></concept>
+    <codeblock>Строка 1
+Строка 2
+Строка 3</codeblock>
+    <lq>Цитата с отступом и курсивом.</lq>
+    <p>Сноска раз<fn>Первая.</fn> и сноска два<fn>Вторая.</fn>.</p>
+    <table>
+      <tgroup>
+        <tbody>
+          <row><entry>A</entry><entry>B</entry><entry>C</entry></row>
+          <row><entry>D</entry><entry>E</entry><entry>F</entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+    <table>
+      <tgroup cols="3">
+        <colspec colname="c1" colnum="1"/><colspec colname="c2" colnum="2"/><colspec colname="c3" colnum="3"/>
+        <tbody>
+          <row>
+            <entry namest="c1" nameend="c2" morerows="1" align="center" valign="top">Span+rowspan</entry>
+            <entry align="right">R</entry>
+          </row>
+          <row><entry align="justify" valign="bottom">X</entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+    <properties>
+      <property><proptype>color</proptype><propvalue>red</propvalue><propdesc>Красный</propdesc></property>
+    </properties>
+  </conbody>
+  <related-links>
+    <link href="second.dita#second"/>
+  </related-links>
+</concept>
+""");
+            File.WriteAllText(Path.Combine(root, "second.dita"), "<concept id=\"second\"><title>Второй</title><conbody><p>x</p></conbody></concept>");
+            File.WriteAllText(Path.Combine(root, "guide.ditamap"), """
+<?xml version="1.0" encoding="UTF-8"?>
+<map><title>T</title><topicref href="main.dita"/><topicref href="second.dita"/></map>
+""");
+
+            var project = new DitaProject(root);
+            project.Scan();
+
+            var options = new PublishOptions { Language = "ru" };
+            options.ExcludeConditions["audience"] = new HashSet<string> { "internal" };
+
+            var outFile = Path.Combine(root, "out.docx");
+            var result = new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), options, outFile);
+            Check(result.Warnings.Count == 0, "публикация без предупреждений: " + string.Join("; ", result.Warnings));
+
+            using var doc = WordprocessingDocument.Open(outFile, false);
+            var body = doc.MainDocumentPart!.Document.Body!;
+            var text = body.InnerText;
+
+            Check(!text.Contains("Это описание должно быть исключено"), "shortdesc с audience=internal исключён фильтром ditaval на уровне RenderTopic");
+            Check(!text.Contains("Автор") && !text.Contains("Альт"), "prolog и titlealts — молчаливо пропускаемые ветки, их содержимое не попадает в вывод");
+            Check(text.Contains("Реферат концепции."), "abstract топика (не только conbody) отрисован через RenderTopic");
+            Check(text.Contains("Вложенный топик") && text.Contains("Внутри."), "вложенный топик внутри conbody отрисован рекурсивным RenderTopic");
+            Check(text.Contains("Второй"), "related-links как ПРЯМОЙ ребёнок топика (не внутри conbody) отрисован");
+
+            var titleHeading = body.Elements<Paragraph>().First(p => p.InnerText.Contains("Заголовок с разрывом"));
+            Check(titleHeading.ParagraphProperties?.GetFirstChild<PageBreakBefore>() is not null,
+                "outputclass=\"page-break-before\" на title даёт PageBreakBefore в DOCX");
+
+            Check(text.Contains("Строка 1") && text.Contains("Строка 2") && text.Contains("Строка 3"),
+                "многострочный codeblock — все строки попали в вывод");
+            Check(body.Descendants<Break>().Any(), "перенос строки внутри codeblock стал <w:br/> (не потерян)");
+
+            var footnotesPart = doc.MainDocumentPart.FootnotesPart;
+            var realFootnotes = footnotesPart?.Footnotes?.Elements<Footnote>().Count(f => (f.Id?.Value ?? 0) > 0) ?? 0;
+            Check(realFootnotes == 2, $"обе сноски в одном документе создали отдельные настоящие сноски Word (не только первая): {realFootnotes}");
+            var separatorFootnotes = footnotesPart?.Footnotes?.Elements<Footnote>().Count(f => (f.Id?.Value ?? 0) <= 0) ?? 0;
+            Check(separatorFootnotes == 2, "служебные Separator/ContinuationSeparator созданы один раз, а не по разу на сноску (EnsureFootnotesRoot идемпотентен)");
+
+            var tables = body.Descendants<Table>().ToList();
+            Check(tables.Count == 3, $"обе CALS-таблицы и simpletable (properties) отрисованы как <w:tbl>: {tables.Count}");
+
+            var noColspecTable = tables[0];
+            Check(noColspecTable.Elements<TableGrid>().First().Elements<GridColumn>().Count() == 3,
+                "таблица без единого colspec определяет число колонок по факту строк (3 entry в строке)");
+
+            var spanTable = tables[1];
+            var spanRow = spanTable.Elements<TableRow>().First();
+            var spanCells = spanRow.Elements<TableCell>().ToList();
+            Check(spanCells[0].TableCellProperties?.GetFirstChild<GridSpan>()?.Val?.Value == 2,
+                "namest/nameend на entry дали colspan=2 (реальный CALS span, не через colname)");
+            Check(spanCells[0].TableCellProperties?.GetFirstChild<VerticalMerge>()?.Val?.Value == MergedCellValues.Restart,
+                "тот же entry с morerows=1 начал вертикальное объединение");
+            Check(spanCells[0].TableCellProperties?.GetFirstChild<TableCellVerticalAlignment>()?.Val?.Value == TableVerticalAlignmentValues.Top,
+                "valign=\"top\" дал TableCellVerticalAlignment.Top");
+            var centerJustification = spanCells[0].Elements<Paragraph>().First().ParagraphProperties?.Justification?.Val?.Value;
+            Check(centerJustification == JustificationValues.Center, "align=\"center\" дал Justification.Center");
+            Check(spanCells[1].Elements<Paragraph>().First().ParagraphProperties?.Justification?.Val?.Value == JustificationValues.Right,
+                "align=\"right\" дал Justification.Right");
+
+            var secondSpanRow = spanTable.Elements<TableRow>().ElementAt(1);
+            var continuationCell = secondSpanRow.Elements<TableCell>().First();
+            Check(continuationCell.TableCellProperties?.GetFirstChild<VerticalMerge>()?.Val?.Value == MergedCellValues.Continue &&
+                  continuationCell.TableCellProperties?.GetFirstChild<GridSpan>()?.Val?.Value == 2,
+                "ячейка-продолжение вертикального объединения тоже несёт GridSpan=2 (продолжает и colspan, и rowspan одновременно)");
+            Check(secondSpanRow.Elements<TableCell>().ElementAt(1).Elements<Paragraph>().First().ParagraphProperties?.Justification?.Val?.Value == JustificationValues.Both,
+                "align=\"justify\" дал Justification.Both");
+            Check(secondSpanRow.Elements<TableCell>().ElementAt(1).TableCellProperties?.GetFirstChild<TableCellVerticalAlignment>()?.Val?.Value == TableVerticalAlignmentValues.Bottom,
+                "valign=\"bottom\" дал TableCellVerticalAlignment.Bottom");
+
+            Check(text.Contains("Красный"), "properties без явного <prophead> получили синтетический заголовок (headLabels) и не потеряли содержимое");
+            var simpleTableHeader = body.Descendants<Table>().SelectMany(t => t.Elements<TableRow>()).FirstOrDefault(r => r.InnerText.Contains(L_TypeLabelRu));
+            Check(simpleTableHeader is not null, $"синтетический заголовок properties использует локализованную метку '{L_TypeLabelRu}'");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch
+            {
+                // временные файлы удалятся системой
+            }
+        }
+    }
+
+    private const string L_TypeLabelRu = "Тип";
 
     /// <summary>Минимальный (нерабочий как изображение, но валидный по заголовку) PNG —
     /// сигнатура + честный IHDR с шириной/высотой; ImageSize читает только эти байты,
