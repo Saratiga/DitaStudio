@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="review-changes" xml:lang="ru-RU">
+  <title>Рецензирование и сравнение версий</title>
+  <shortdesc>Как отметить изменённые места, вести правки с возможностью принять или отклонить их
+    и сравнить документ с другой версией.</shortdesc>
+  <taskbody>
+    <steps>
+      <step>
+        <cmd>Чтобы отметить изменённый фрагмент для читателя, поставьте курсор в элемент и
+          выберите <menucascade><uicontrol>Структура</uicontrol>
+          <uicontrol>Отметить как изменённое (rev)</uicontrol></menucascade>.</cmd>
+        <stepresult>Элемент получает атрибут <codeph>rev="changed"</codeph>, в публикации у него
+          появляется полоса на полях. Повторный выбор команды снимает пометку.</stepresult>
+      </step>
+      <step>
+        <cmd>Чтобы вести правки для рецензента, используйте пункты
+          <menucascade><uicontrol>Структура</uicontrol>
+          <uicontrol>Track changes: …</uicontrol></menucascade>.</cmd>
+        <choicetable>
+          <chhead>
+            <choptionhd>Команда</choptionhd>
+            <chdeschd>Что происходит</chdeschd>
+          </chhead>
+          <chrow>
+            <choption>Пометить как вставленное</choption>
+            <chdesc>Элемент получает <codeph>status="new"</codeph>, подсвечивается в предпросмотре
+              и остаётся в публикации.</chdesc>
+          </chrow>
+          <chrow>
+            <choption>Пометить как удалённое</choption>
+            <chdesc>Элемент получает <codeph>status="deleted"</codeph>, остаётся в документе
+              зачёркнутым, но из публикации исключается.</chdesc>
+          </chrow>
+          <chrow>
+            <choption>Принять правку</choption>
+            <chdesc>Вставка остаётся без пометки; удалённый элемент убирается из документа.</chdesc>
+          </chrow>
+          <chrow>
+            <choption>Отклонить правку</choption>
+            <chdesc>Вставленный элемент убирается; удалённый восстанавливается.</chdesc>
+          </chrow>
+        </choicetable>
+        <info>Вместе с пометкой записываются имя пользователя Windows и дата (атрибуты
+          <parmname>tcauthor</parmname> и <parmname>tcdate</parmname>).</info>
+      </step>
+      <step>
+        <cmd>Чтобы сравнить два файла, выберите <menucascade><uicontrol>Правка</uicontrol>
+          <uicontrol>Сравнить файлы…</uicontrol></menucascade> и укажите оба файла.</cmd>
+        <stepresult>Различия показываются построчно, как в обычном diff.</stepresult>
+      </step>
+      <step>
+        <cmd>Чтобы перенести группу различий в другой файл, нажмите у неё кнопку
+          <uicontrol>→</uicontrol> или <uicontrol>←</uicontrol>.</cmd>
+        <info>
+          <note type="attention">Файл, в который перенесена группа, сразу записывается на
+            диск.</note>
+        </info>
+      </step>
+      <step>
+        <cmd>Чтобы сравнить открытый документ с версией из системы контроля версий, выберите
+          <menucascade><uicontrol>Правка</uicontrol>
+          <uicontrol>Сравнить с последним коммитом (git)</uicontrol></menucascade> или
+          <menucascade><uicontrol>Правка</uicontrol>
+          <uicontrol>Сравнить с версией BASE (svn)</uicontrol></menucascade>.</cmd>
+        <info>Нужен установленный <cmdname>git</cmdname> или <cmdname>svn</cmdname> в
+          <codeph>PATH</codeph>, файл должен быть под версионным контролем. Слева показывается
+          версия из истории, справа — файл на диске.</info>
+      </step>
+    </steps>
+
+    <result>
+      <note>Сравнение читает файлы с диска — сохраните документ перед сравнением, иначе
+        несохранённые правки в нём не будут видны.</note>
+    </result>
+  </taskbody>
+</task>

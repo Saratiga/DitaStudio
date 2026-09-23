@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="refactor" xml:lang="ru-RU">
+  <title>Переименование и перенос без битых ссылок</title>
+  <shortdesc>Как переименовать <parmname>id</parmname>, перенести файл или вынести повторяющийся
+    фрагмент в <parmname>conref</parmname> так, чтобы все ссылки в проекте обновились сами.</shortdesc>
+  <taskbody>
+    <context>
+      <p>Ссылки <parmname>href</parmname> и <parmname>conref</parmname> указывают на путь к файлу
+        и <parmname>id</parmname> элемента. Если переименовать их вручную, ссылки в других файлах
+        сломаются. Команды рефакторинга находят и исправляют такие ссылки по всему проекту.
+        Ссылки через ключи (<parmname>keyref</parmname>, <parmname>conkeyref</parmname>) от пути и
+        <parmname>id</parmname> не зависят и не меняются.</p>
+    </context>
+
+    <steps>
+      <step>
+        <cmd>Чтобы переименовать <parmname>id</parmname>, поставьте курсор в элемент и выберите
+          <menucascade><uicontrol>Структура</uicontrol>
+          <uicontrol>Переименовать id…</uicontrol></menucascade>.</cmd>
+        <info>Если у элемента нет <parmname>id</parmname>, сначала задайте его на вкладке
+          «Атрибуты».</info>
+        <stepresult>Строка состояния показывает, сколько ссылок обновлено.</stepresult>
+      </step>
+      <step>
+        <cmd>Чтобы переименовать или перенести файл, щёлкните его правой кнопкой на вкладке
+          «Проект» и выберите <uicontrol>Переименовать / переместить файл…</uicontrol>.</cmd>
+        <info>Папка назначения создаётся, если её нет. Относительные ссылки внутри самого файла
+          пересчитываются от нового расположения, а ссылки на него из других файлов
+          обновляются.</info>
+      </step>
+      <step>
+        <cmd>Чтобы использовать фрагмент повторно, поставьте курсор в элемент и выберите
+          <menucascade><uicontrol>Структура</uicontrol>
+          <uicontrol>Вынести в conref…</uicontrol></menucascade>.</cmd>
+        <info>В диалоге задайте <parmname>id</parmname> вынесенного элемента и выберите
+          существующий топик или новый файл (по умолчанию —
+          <filepath>reusable/shared.dita</filepath>).</info>
+        <stepresult>Содержимое элемента переносится в целевой топик, а на исходном месте остаётся
+          пустой элемент со ссылкой <parmname>conref</parmname>. Текст дальше правится в целевом
+          топике.</stepresult>
+      </step>
+      <step>
+        <cmd>Проверьте изменённые документы и сохраните их (<shortcut>Ctrl+Shift+S</shortcut>).</cmd>
+        <info>Перенесённый файл и новый файл для <parmname>conref</parmname> записываются на диск
+          сразу, остальные изменения — только после сохранения.</info>
+      </step>
+    </steps>
+
+    <result>
+      <p>Чтобы убедиться, что битых ссылок не осталось, запустите
+        <xref href="validate-and-search.dita#validate-and-search">проверку проекта</xref>.</p>
+    </result>
+  </taskbody>
+</task>

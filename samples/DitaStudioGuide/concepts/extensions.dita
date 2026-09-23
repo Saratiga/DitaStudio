@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="extensions" xml:lang="ru-RU">
+  <title>Расширение редактора</title>
+  <shortdesc>Как подключить общие ключи из другого проекта, собственные специализации DITA и
+    плагины.</shortdesc>
+  <conbody>
+    <section id="referenced-projects">
+      <title>Проекты-источники ключей</title>
+      <p>Если общие ключи (название продукта, версия, повторяющиеся фрагменты) хранятся в
+        отдельном проекте, подключите его через <menucascade><uicontrol>Файл</uicontrol>
+        <uicontrol>Подключить проект-источник ключей…</uicontrol></menucascade>. Ключ, которого
+        нет в своём проекте, ищется в подключённых. Карты проекта-источника вместе с текущим
+        проектом не публикуются, а его ключи не показываются на вкладке «Ключи». Связь
+        сохраняется вместе с проектом.</p>
+    </section>
+
+    <section id="external-dtd">
+      <title>Собственные специализации</title>
+      <p>Свои элементы подключаются готовым DTD: <menucascade><uicontrol>Файл</uicontrol>
+        <uicontrol>Подключить внешний DTD (кастомная специализация)…</uicontrol></menucascade>.
+        Редактор разбирает объявления <codeph>ENTITY</codeph>, <codeph>ELEMENT</codeph>,
+        <codeph>ATTLIST</codeph>, параметрические сущности и подключаемые модули. Новые элементы
+        появляются в палитре вставки, автодополнении, проверке и публикации; способ их
+        отображения выводится из атрибута <parmname>class</parmname>.</p>
+      <note>Каталог элементов общий на весь сеанс редактора. Если по очереди открыть два проекта
+        с конфликтующими специализациями, элементы последнего загруженного DTD заменят
+        предыдущие — перезапустите редактор при переключении между такими проектами.</note>
+    </section>
+
+    <section id="plugins">
+      <title>Плагины</title>
+      <p>Плагины — это файлы <filepath>.dll</filepath> в папке <filepath>plugins</filepath>
+        рядом с <filepath>DitaStudio.exe</filepath>. Они загружаются при запуске редактора и
+        бывают трёх видов:</p>
+      <ul>
+        <li>правила проверки — дополнительные замечания при проверке проекта;</li>
+        <li>форматы публикации — <menucascade><uicontrol>Публикация</uicontrol>
+          <uicontrol>Публикация плагином…</uicontrol></menucascade>;</li>
+        <li>команды режима «Автор» — <menucascade><uicontrol>Структура</uicontrol>
+          <uicontrol>Команда плагина…</uicontrol></menucascade>.</li>
+      </ul>
+      <p>Ошибка внутри плагина не закрывает редактор — она показывается как предупреждение.</p>
+    </section>
+  </conbody>
+</concept>

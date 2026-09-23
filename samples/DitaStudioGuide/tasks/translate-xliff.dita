@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="translate-xliff" xml:lang="ru-RU">
+  <title>Перевод топика через XLIFF</title>
+  <shortdesc>Как выгрузить текст топика на перевод в формате XLIFF 1.2 и подставить готовый
+    перевод обратно.</shortdesc>
+  <taskbody>
+    <context>
+      <p>XLIFF — стандартный формат обмена с переводчиками и CAT-инструментами. Каждый блочный
+        элемент с текстом (заголовок, краткое описание, абзац, пункт списка) становится
+        отдельным сегментом. Фразовая разметка внутри сегмента передаётся тегами: парные
+        элементы — <codeph>bpt</codeph>/<codeph>ept</codeph> (текст внутри них тоже переводится),
+        пустые (изображение, ссылка без текста) — <codeph>ph</codeph>.</p>
+    </context>
+
+    <steps>
+      <step>
+        <cmd>Откройте топик и выберите <menucascade><uicontrol>Публикация</uicontrol>
+          <uicontrol>Экспорт в XLIFF (для перевода)…</uicontrol></menucascade>.</cmd>
+        <stepresult>Создаётся файл <filepath>.xliff</filepath> с языковой парой
+          <codeph>ru</codeph> → <codeph>en</codeph>.</stepresult>
+      </step>
+      <step>
+        <cmd>Передайте файл переводчику; перевод записывается в элементы <codeph>target</codeph>.</cmd>
+      </step>
+      <step>
+        <cmd>Откройте тот же топик и выберите <menucascade><uicontrol>Публикация</uicontrol>
+          <uicontrol>Импортировать перевод из XLIFF…</uicontrol></menucascade>.</cmd>
+        <stepresult>Текст из <codeph>target</codeph> подставляется на место исходного; строка
+          состояния показывает, сколько сегментов применено.</stepresult>
+      </step>
+      <step>
+        <cmd>Проверьте документ и сохраните его под нужным именем.</cmd>
+      </step>
+    </steps>
+
+    <result>
+      <note type="important">Сегменты сопоставляются с документом по порядку, поэтому не
+        меняйте структуру топика между экспортом и импортом. Несовпавшие сегменты
+        пропускаются и перечисляются в предупреждениях, остальной перевод всё равно
+        применяется.</note>
+    </result>
+  </taskbody>
+</task>

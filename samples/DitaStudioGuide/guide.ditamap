@@ -24,6 +24,16 @@
     <topicref href="tasks/insert-elements.dita"/>
     <topicref href="tasks/validate-and-search.dita"/>
     <topicref href="tasks/publish.dita"/>
+    <topicref href="tasks/refactor.dita"/>
+    <topicref href="tasks/review-changes.dita"/>
+    <topicref href="tasks/translate-xliff.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Расширение редактора</navtitle>
+    </topicmeta>
+    <topicref href="concepts/extensions.dita"/>
   </topichead>
 
   <topichead>

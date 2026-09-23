@@ -43,6 +43,7 @@
         </thead>
         <tbody>
           <row><entry><shortcut>Ctrl+E</shortcut></entry><entry>Фокус на палитре вставки</entry></row>
+          <row><entry><shortcut>Ctrl+Space</shortcut></entry><entry>Автодополнение элементов и атрибутов в режиме «Исходный код»</entry></row>
           <row><entry><shortcut>Ctrl+Shift+↑</shortcut></entry><entry>Переместить элемент вверх</entry></row>
           <row><entry><shortcut>Ctrl+Shift+↓</shortcut></entry><entry>Переместить элемент вниз</entry></row>
           <row><entry><shortcut>Ctrl+Alt+→</shortcut></entry><entry>Объединить ячейку таблицы с соседней справа</entry></row>

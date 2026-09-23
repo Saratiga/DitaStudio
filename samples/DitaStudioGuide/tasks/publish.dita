@@ -3,14 +3,15 @@
 <task id="publish" xml:lang="ru-RU">
   <title outputclass="page-break-before">Условия сборки и публикация</title>
   <shortdesc>Как исключить часть содержимого из публикации по атрибутам условности и собрать
-    итоговый HTML или PDF.</shortdesc>
+    итоговый HTML, PDF или DOCX.</shortdesc>
   <taskbody>
     <context>
       <p><keyword keyref="product-name"/> умеет собирать один и тот же проект по-разному в
         зависимости от значений атрибутов <parmname>props</parmname>,
         <parmname>platform</parmname>, <parmname>product</parmname>, <parmname>audience</parmname>,
         <parmname>otherprops</parmname> и <parmname>deliveryTarget</parmname>, расставленных в
-        топиках. Отдельного файла <filepath>.ditaval</filepath> для этого не нужно.</p>
+        топиках. Условия задаются в диалоге, в стандартном файле <filepath>.ditaval</filepath> или
+        обоими способами сразу.</p>
     </context>
 
     <steps>
@@ -29,16 +30,28 @@
       <step>
         <cmd>Если условия уже описаны в стандартном файле <filepath>.ditaval</filepath> (например,
           из другого инструмента), выберите <menucascade><uicontrol>Публикация</uicontrol>
-          <uicontrol>Импортировать условия из .ditaval…</uicontrol></menucascade> — правила
-          исключения (<parmname>action="exclude"</parmname>) добавятся к уже отмеченным.</cmd>
-        <info>Другие действия DITAVAL (<parmname>include</parmname>, <parmname>flag</parmname>,
-          <parmname>passthrough</parmname>) не поддерживаются и при импорте пропускаются.</info>
+          <uicontrol>Подключить .ditaval…</uicontrol></menucascade>.</cmd>
+        <info>Файл не копируется, а перечитывается при каждой сборке — правки, сделанные в нём
+          снаружи, подхватываются автоматически. Правила <parmname>action="exclude"</parmname>
+          складываются с отмеченными в диалоге, правила <parmname>action="flag"</parmname>
+          подсвечивают содержимое в публикации (цвет, фон, начертание, полоса изменений).
+          Действия <parmname>include</parmname> и <parmname>passthrough</parmname> пропускаются.</info>
+      </step>
+      <step>
+        <cmd>Чтобы изменить исключения в связанном файле, не выходя из редактора, выберите
+          <menucascade><uicontrol>Публикация</uicontrol>
+          <uicontrol>Редактировать .ditaval…</uicontrol></menucascade>.</cmd>
+        <stepresult>Отмеченные значения записываются обратно в тот же файл; правила подсветки в
+          нём не меняются.</stepresult>
       </step>
       <step>
         <cmd>Выберите способ публикации в меню <uicontrol>Публикация</uicontrol>: «Собрать сайт
           HTML» (<shortcut>F5</shortcut>) — многостраничный сайт с оглавлением, «Собрать один
-          HTML» — всё содержимое карты в одном файле, «Экспорт в PDF» — тот же HTML, напечатанный
-          в PDF.</cmd>
+          HTML» — всё содержимое карты в одном файле с предметным указателем, «Экспорт в PDF» — тот
+          же HTML, напечатанный в PDF, «Экспорт в DOCX» — документ Word с настоящими сносками и
+          полем оглавления.</cmd>
+        <info>Перед сборкой несохранённые документы сохраняются автоматически. Предупреждения
+          сборки (битые ссылки, SVG в DOCX) — на вкладке «Журнал сборки».</info>
       </step>
       <step>
         <cmd>По умолчанию PDF печатается без колонтитулов. Чтобы включить их или задать свой текст,
