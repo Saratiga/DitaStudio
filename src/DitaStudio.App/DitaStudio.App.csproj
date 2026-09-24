@@ -10,9 +10,10 @@
     <RootNamespace>DitaStudio.App</RootNamespace>
     <AssemblyName>DitaStudio</AssemblyName>
     <ApplicationTitle>DITA Studio</ApplicationTitle>
-    <Version>0.2.0</Version>
+    <Version>0.2.1</Version>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <ApplicationIcon>app.ico</ApplicationIcon>
+    <Copyright>Copyright (c) 2026 Saratiga. MIT License.</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,6 +24,11 @@
   <ItemGroup>
     <!-- Как ресурс — чтобы Window.Icon="app.ico" тоже находил файл (не только сборка .exe). -->
     <Resource Include="app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Текст лицензии рядом с exe — попадает и в архив релиза (dotnet publish). -->
+    <None Include="..\..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
