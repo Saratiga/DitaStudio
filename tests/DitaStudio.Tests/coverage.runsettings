@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Покрытие кода (coverlet): считаем только продуктовые сборки ядра и DOCX-экспорта —
+     не сами тесты и не тестовый плагин. Запуск:
+     dotnet test tests/DitaStudio.Tests (ключ settings = этот файл), см. README. -->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[DitaStudio.Core]*,[DitaStudio.Docx]*</Include>
+          <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

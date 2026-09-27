@@ -41,12 +41,24 @@ jobs:
       - name: Сборка
         run: dotnet build DitaStudio.sln -c Debug --no-restore
 
-      - name: Тесты ядра
+      - name: Тесты ядра (с покрытием)
         run: >
           dotnet test tests/DitaStudio.Tests -c Debug --no-build
+          --settings tests/DitaStudio.Tests/coverage.runsettings
           --logger "trx;LogFileName=core-tests.trx"
           --logger "console;verbosity=normal"
           --results-directory TestResults
+
+      # Сводка покрытия — на странице прогона (Summary), полный HTML-отчёт — артефактом.
+      - name: Отчёт о покрытии
+        if: always()
+        shell: pwsh
+        run: |
+          $reports = Get-ChildItem TestResults -Recurse -Filter coverage.cobertura.xml
+          if (-not $reports) { Write-Host "Нет данных о покрытии (тесты не дошли до конца)"; exit 0 }
+          dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.5.11
+          reportgenerator "-reports:$($reports.FullName -join ';')" -targetdir:TestResults/coverage-report "-reporttypes:Html;MarkdownSummaryGithub"
+          Get-Content TestResults/coverage-report/SummaryGithub.md | Add-Content $env:GITHUB_STEP_SUMMARY
 
       - name: Результаты тестов
         if: always()

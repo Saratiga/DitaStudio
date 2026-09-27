@@ -158,7 +158,19 @@ dotnet test tests\DitaStudio.UiTests          # UI-тесты на реальн�
 `.ditaval`) со случайными входными данными на фиксированном зерне.
 
 На каждый пуш GitHub Actions (`.github/workflows/ci.yml`, Windows-раннер) собирает всё
-решение и прогоняет проверки ядра; UI-тесты в CI не запускаются.
+решение и прогоняет проверки ядра с покрытием кода: сводка — на странице прогона, полный
+HTML-отчёт — в артефакте `test-results`. Локально покрытие считается так:
+
+```powershell
+dotnet test tests\DitaStudio.Tests --settings tests\DitaStudio.Tests\coverage.runsettings
+```
+
+UI-тесты гоняет отдельный workflow `ui-tests.yml` — после пуша в `master` и вручную
+(Actions → UI tests → Run workflow); при падении к прогону прикладывается снимок экрана.
+
+Релиз: пуш тега `vX.Y.Z` (равного `<Version>` в `DitaStudio.App.csproj`) запускает
+`release.yml` — тесты, самодостаточная сборка и черновик релиза с архивом
+`DitaStudio-vX.Y.Z-win-x64.zip`; текст «Что нового» дописывается вручную перед публикацией.
 
 UI-тесты (xUnit + FlaUI) запускают собранный `DitaStudio.exe` и управляют им через UI
 Automation, поэтому решение нужно собрать заранее. Та же библиотека управления доступна

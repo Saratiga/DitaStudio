@@ -20,8 +20,13 @@ dotnet test tests\DitaStudio.UiTests          # автоматизированн
 (`DisableTestParallelization`) — у `CoreChecks` статическое состояние.
 Новую логику сопровождать проверкой там же; прогон должен оставаться зелёным.
 
-CI — `.github/workflows/ci.yml`: на каждый пуш Windows-раннер собирает `DitaStudio.sln`
-и запускает `dotnet test tests/DitaStudio.Tests`. UI-тесты в CI не входят.
+CI — `.github/workflows/`:
+- `ci.yml` — каждый пуш: сборка `DitaStudio.sln`, тесты ядра с покрытием (coverlet,
+  `tests/DitaStudio.Tests/coverage.runsettings`, отчёт ReportGenerator в Summary и артефакте);
+- `ui-tests.yml` — UI-тесты на рабочем столе Windows-раннера: пуш в `master` и вручную;
+- `release.yml` — тег `vX.Y.Z` (должен совпадать с `<Version>` в `DitaStudio.App.csproj`):
+  тесты, `dotnet publish` self-contained win-x64, черновик релиза с архивом
+  `DitaStudio-vX.Y.Z-win-x64.zip`. Ручной запуск — пробная сборка без релиза.
 На Linux три проверки `FileSafetyTests` падают ожидаемо (регистр в путях, root игнорирует
 «только для чтения»), а svn-тест требует UTF-8-локаль — целевая платформа Windows.
 

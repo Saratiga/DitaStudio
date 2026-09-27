@@ -1,0 +1,66 @@
+# UI-тесты (tests/DitaStudio.UiTests): настоящий DitaStudio.exe под UI Automation (FlaUI)
+# на рабочем столе Windows-раннера GitHub. Отдельно от основного CI: тесты водят мышью по
+# живому окну, и нестабильность рабочего стола раннера не должна делать CI красным.
+# Запуск — вручную (Actions → UI tests → Run workflow) и после пуша в master.
+name: UI tests
+
+on:
+  push:
+    branches: ['master', 'claude/cool-bardeen-es6ndy'] # ветка claude/… — ВРЕМЕННО, пробный прогон
+  workflow_dispatch:
+
+concurrency:
+  group: ui-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ui-tests:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Кэш NuGet
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Сборка
+        run: dotnet build DitaStudio.sln -c Debug
+
+      - name: UI-тесты
+        run: >
+          dotnet test tests/DitaStudio.UiTests -c Debug --no-build
+          --logger "trx;LogFileName=ui-tests.trx"
+          --logger "console;verbosity=normal"
+          --results-directory TestResults
+
+      - name: Снимок экрана при падении
+        if: failure()
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+          $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+          New-Item -ItemType Directory -Force TestResults | Out-Null
+          $bitmap.Save("TestResults/screen.png")
+
+      - name: Результаты
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-test-results
+          path: TestResults
+          if-no-files-found: ignore
