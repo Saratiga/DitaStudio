@@ -13,7 +13,8 @@ dotnet test tests\DitaStudio.UiTests          # автоматизированн
 ```
 
 Тестовый проект — xUnit, но проверки пишутся «мягким» `Check(условие, описание)` внутри
-разделов `CoreChecks` (`CoreChecks.cs` и соседние partial-файлы): раздел доходит до конца
+разделов `CoreChecks` (partial-класс: `CoreChecks.cs` — сам механизм, разделы — по файлам
+`*Checks.cs` по областям: `SchemaChecks`, `DocxChecks`, `RefactorChecks`…): раздел доходит до конца
 и падает со списком всех непрошедших проверок. Новый раздел — `internal static void XxxTests()`
 в `CoreChecks` + строка `[Fact]` в `CoreTests.cs`. Пометки вроде «git недоступен — раздел
 пропущен» — через `Note(...)`, не `Console` (попадают в вывод теста, в CI без кракозябр). Тесты идут последовательно
