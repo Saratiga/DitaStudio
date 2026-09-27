@@ -79,6 +79,7 @@ public static partial class Program
         HtmlRendererMiscTests();
         ListAndStepsDispatchTests();
         FileSafetyTests();
+        XmlSafetyTests();
         DocxStylingTests();
 
         Console.WriteLine();
@@ -3539,7 +3540,9 @@ x
     {
         Section("Сравнение с git-историей");
 
-        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        // Кириллица в пути репозитория: путь из `git rev-parse --show-toplevel` должен
+        // прочитаться без искажений, иначе ReadRevision не найдёт файл.
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N") + "-проект");
         Directory.CreateDirectory(root);
 
         try
@@ -3622,6 +3625,15 @@ x
             var baseContent = SvnHistory.ReadRevision(tracked);
             Check(baseContent?.Trim() == "версия из репозитория", "ReadRevision вернул содержимое BASE, а не рабочей копии");
             Check(SvnHistory.IsInRepository(tracked), "файл под версионным контролем распознан");
+
+            // «@» в имени svn читает как peg-ревизию — путь нужно передавать с завершающим «@».
+            var withAt = Path.Combine(wcPath, "logo@2x.dita");
+            File.WriteAllText(withAt, "файл с @ в имени");
+            RunExternalOrSkip("svn", wcPath, "add", "logo@2x.dita@");
+            RunExternalOrSkip("svn", wcPath, "commit", "-m", "файл с @");
+            File.WriteAllText(withAt, "правка в рабочей копии");
+            Check(SvnHistory.ReadRevision(withAt)?.Trim() == "файл с @ в имени",
+                "ReadRevision: «@» в имени файла не принимается за peg-ревизию");
 
             var untracked = Path.Combine(wcPath, "untracked.dita");
             File.WriteAllText(untracked, "не в истории");

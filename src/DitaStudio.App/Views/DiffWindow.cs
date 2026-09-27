@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using DitaStudio.Core.Diff;
+using DitaStudio.Core.IO;
 
 namespace DitaStudio.App.Views;
 
@@ -114,15 +115,13 @@ public static class DiffWindow
                 {
                     var replacement = leftLines.Skip(leftStart).Take(leftCount);
                     var merged = rightLines.Take(rightStart).Concat(replacement).Concat(rightLines.Skip(rightStart + rightCount));
-                    File.WriteAllText(rightPath, string.Join("\n", merged));
-                    Rebuild();
+                    WriteMerged(rightPath, rightText, merged);
                 };
                 toLeft.Click += (_, _) =>
                 {
                     var replacement = rightLines.Skip(rightStart).Take(rightCount);
                     var merged = leftLines.Take(leftStart).Concat(replacement).Concat(leftLines.Skip(leftStart + leftCount));
-                    File.WriteAllText(leftPath, string.Join("\n", merged));
-                    Rebuild();
+                    WriteMerged(leftPath, leftText, merged);
                 };
 
                 arrows.Children.Add(toRight);
@@ -136,9 +135,36 @@ public static class DiffWindow
             scroll.Content = grid;
         }
 
+        // Сравнение идёт по строкам без \r, но файл записываем с его собственными переводами
+        // строк и кодировкой (BOM) — иначе одно слияние превращало бы CRLF-файл в LF целиком,
+        // и в git он выглядел бы изменённым в каждой строке.
+        void WriteMerged(string path, string originalText, IEnumerable<string> lines)
+        {
+            var newline = originalText.Contains("\r\n") ? "\r\n" : "\n";
+            try
+            {
+                AtomicFile.WriteAllText(path, string.Join(newline, lines), EncodingOf(path));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Dialogs.Message("Сравнение", $"Не удалось записать {System.IO.Path.GetFileName(path)}: {ex.Message}");
+                return;
+            }
+
+            Rebuild();
+        }
+
         Rebuild();
         window.Content = outer;
         window.Show();
+    }
+
+    /// <summary>Кодировка файла по BOM: UTF-8 с BOM, UTF-16 или (по умолчанию) UTF-8 без BOM.</summary>
+    private static System.Text.Encoding EncodingOf(string path)
+    {
+        using var reader = new StreamReader(path, new System.Text.UTF8Encoding(false), detectEncodingFromByteOrderMarks: true);
+        reader.Peek();
+        return reader.CurrentEncoding;
     }
 
     private static void AddCell(Grid grid, int row, int column, string text, Brush background)

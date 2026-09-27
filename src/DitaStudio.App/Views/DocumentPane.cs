@@ -284,7 +284,7 @@ public sealed class DocumentPane : Grid
 
         try
         {
-            var baseName = Document.FilePath is null ? "preview" : Path.GetFileNameWithoutExtension(Document.FilePath);
+            var baseName = PreviewFileBaseName(Document.FilePath);
             var dir = Path.Combine(Path.GetTempPath(), "DitaStudioPreview");
             Directory.CreateDirectory(dir);
             var htmlPath = Path.Combine(dir, baseName + ".html");
@@ -337,6 +337,21 @@ public sealed class DocumentPane : Grid
                 _browser.Source = uri;
             }
         }
+    }
+
+    /// <summary>Имя временного файла предпросмотра: имя документа + короткий хэш полного пути.
+    /// Одного имени мало — overview.dita из разных папок (или из двух запущенных редакторов)
+    /// писали бы в один и тот же overview.html/.pdf и затирали предпросмотр друг друга.</summary>
+    private static string PreviewFileBaseName(string? filePath)
+    {
+        if (filePath is null)
+        {
+            return "preview";
+        }
+
+        var hash = System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(Path.GetFullPath(filePath).ToUpperInvariant()));
+        return Path.GetFileNameWithoutExtension(filePath) + "-" + Convert.ToHexString(hash, 0, 4).ToLowerInvariant();
     }
 
     private async void OpenPreviewInBrowser()

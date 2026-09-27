@@ -1,4 +1,5 @@
 using System.Xml;
+using DitaStudio.Core.Model;
 
 namespace DitaStudio.Core.Project;
 
@@ -23,7 +24,7 @@ public static class DitavalReader
         {
             DtdProcessing = DtdProcessing.Parse,
             XmlResolver = null, // внешние DTD не загружаем
-            MaxCharactersFromEntities = 0
+            MaxCharactersFromEntities = DitaDocument.MaxEntityCharacters
         };
 
         using var reader = XmlReader.Create(path, settings);

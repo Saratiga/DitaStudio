@@ -512,7 +512,8 @@ public partial class PublishViewModel : ObservableObject
             BuildLogText += $"WebView2: {error} — печатаем через установленный браузер без колонтитулов.\n";
         }
 
-        return PdfExporter.ExportToPdf(htmlPath, pdfPath);
+        // Печать браузером идёт до двух минут — в фоне, чтобы окно не замирало.
+        return await Task.Run(() => PdfExporter.ExportToPdf(htmlPath, pdfPath));
     }
 
     private static void OpenInShell(string path)

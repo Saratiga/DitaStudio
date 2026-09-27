@@ -43,6 +43,22 @@ public static class PdfExporter
                    "Откройте собранный HTML и напечатайте его в PDF вручную.";
         }
 
+        // Старый PDF от прошлой сборки убираем заранее: иначе, если браузер не сможет записать
+        // новый (файл открыт в просмотрщике, сбой печати), проверка File.Exists ниже примет
+        // устаревший файл за успешный результат.
+        try
+        {
+            if (File.Exists(pdfPath))
+            {
+                File.Delete(pdfPath);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return $"Не удалось заменить {Path.GetFileName(pdfPath)}: файл занят другой программой " +
+                   $"(закройте его в просмотрщике PDF). {ex.Message}";
+        }
+
         var profileDir = Path.Combine(Path.GetTempPath(), "DitaStudioPrint");
         Directory.CreateDirectory(profileDir);
 
@@ -74,6 +90,11 @@ public static class PdfExporter
                 return "Не удалось запустить браузер для печати.";
             }
 
+            // Chromium много пишет в stderr даже при успехе. Если не вычитывать потоки, буфер
+            // канала переполняется, браузер блокируется на записи и печать «зависает» до таймаута.
+            _ = process.StandardOutput.ReadToEndAsync();
+            var errorOutput = process.StandardError.ReadToEndAsync();
+
             if (!process.WaitForExit(timeoutSeconds * 1000))
             {
                 try
@@ -90,7 +111,9 @@ public static class PdfExporter
 
             if (!File.Exists(pdfPath))
             {
-                var error = process.StandardError.ReadToEnd();
+                // Дочерние процессы браузера могут держать канал открытым и после выхода
+                // основного — ждём текст ошибки недолго.
+                var error = errorOutput.Wait(5000) ? errorOutput.Result : string.Empty;
                 return string.IsNullOrWhiteSpace(error)
                     ? "Браузер завершился, но PDF не создан."
                     : $"Браузер сообщил об ошибке: {error.Trim()}";
