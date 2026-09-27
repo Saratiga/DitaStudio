@@ -7,7 +7,7 @@ WPF, .NET 8, Windows. Интерфейс и комментарии — на ру
 
 ```powershell
 dotnet build DitaStudio.sln -c Debug          # сборка
-dotnet run --project tests\DitaStudio.Tests   # 727 проверок ядра, код возврата 0 = всё прошло
+dotnet run --project tests\DitaStudio.Tests   # 855 проверок ядра, код возврата 0 = всё прошло
 dotnet run --project src\DitaStudio.App       # запуск редактора
 dotnet test tests\DitaStudio.UiTests          # автоматизированное подмножество TESTPLAN.md (реальный DitaStudio.exe)
 ```
@@ -153,6 +153,28 @@ DOCX-приближённо (тот же HTML со скином `Assets.WordPrev
   или явном отказе, предлагает восстановление в `ProjectViewModel.LoadProject`.
 - `DocumentsViewModel.ConfirmClose` возвращает false, если сохранить не удалось, —
   окно или смена проекта тогда отменяются.
+
+## Оформление DOCX
+
+- Экспорт ставит **именованные стили Word**, а не прямое форматирование. Каталог стилей и
+  селекторы HTML, которые на них переводятся, — `Docx/Styling/DocxStyleCatalog.cs`;
+  оформление по умолчанию в нём повторяет прежний вид экспорта.
+- `DocxStyleSheet.FromCss(css)` разбирает пользовательский CSS проекта (`CssParser`,
+  `CssApplier`): каскад по специфичности, `@media print|docx`, `@page`, переменные
+  `var(--x)`. Неизвестный класс → правило для `outputclass` и имени элемента →
+  производный стиль «база_класс» (`DocxRenderer.Styling.cs`).
+- Маркеры списков — не стили, а abstractNum: `ul`/`ul ul`/`li::marker` → `DocxStyleSheet.BulletMarker(ilvl)`,
+  классы (`.dash`) → `MarkerForClasses` → свой abstractNum в `DocxRenderer.CustomBulletAbstract`
+  (вставляется перед первым `w:num` — так требует схема).
+- `p` → стиль BodyText, а не Normal: Normal — база всех стилей, в него идут только
+  наследуемые свойства `body`.
+- Вёрстка, которую CSS не выражает, — `Core/Publishing/DocxLayout` (`.ditastudio-docx`,
+  диалог `Dialogs.DocxLayoutSettings`).
+- Порядок дочерних элементов rPr/pPr/tcPr/settings в OOXML строгий — `DocxPropsWriter`
+  выдаёт их уже упорядоченными. Каждый DOCX в тестах проходит `OpenXmlValidator`
+  (`CheckValidDocx`) — новые экспорты проверять так же.
+- Символы маркеров из области частного использования Unicode (U+F0B7) писать только
+  escape-последовательностью: при чтении и перезаписи файла они незаметно теряются.
 
 ## Плагины
 

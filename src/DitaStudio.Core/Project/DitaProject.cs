@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using DitaStudio.Core.IO;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 using DitaStudio.Core.Schema.Dtd;
 using DitaStudio.Core.Validation;
@@ -113,6 +114,7 @@ public sealed class DitaProject
     private const string DitavalSettingsFile = ".ditastudio-ditaval";
     private const string ReferencedProjectsSettingsFile = ".ditastudio-references";
     private const string ExternalDtdSettingsFile = ".ditastudio-external-dtd";
+    private const string DocxLayoutSettingsFile = ".ditastudio-docx";
 
     public DitaProject(string rootPath) : this(rootPath, allowReferencedProjects: true)
     {
@@ -131,6 +133,7 @@ public sealed class DitaProject
         LoadPdfHeaderFooterSetting();
         LoadDitavalSetting();
         LoadExternalDtdSetting();
+        LoadDocxLayoutSetting();
         if (_allowReferencedProjects)
         {
             LoadReferencedProjectsSetting();
@@ -607,12 +610,12 @@ public sealed class DitaProject
                 return;
             }
 
-            File.WriteAllLines(settingsPath, new[]
+            AtomicFile.WriteAllText(settingsPath, string.Join(Environment.NewLine, new[]
             {
                 show ? "1" : "0",
                 headerText ?? string.Empty,
                 footerText ?? string.Empty
-            });
+            }) + Environment.NewLine, new UTF8Encoding(false));
         }
         catch
         {
@@ -640,6 +643,71 @@ public sealed class DitaProject
             PdfShowHeaderFooter = false;
             PdfHeaderText = null;
             PdfFooterText = null;
+        }
+    }
+
+    // ------------------------------------------------------------- оформление DOCX
+
+    /// <summary>Вёрстка DOCX, которую не выразить через CSS (титул, оглавление, нумерация
+    /// заголовков, колонтитулы…). Всегда не null; сохраняется в .ditastudio-docx.</summary>
+    public DocxLayout DocxLayout { get; private set; } = new();
+
+    /// <summary>Предупреждение, если файл .ditastudio-docx есть, но не разобрался.</summary>
+    public string? DocxLayoutWarning { get; private set; }
+
+    public void SetDocxLayout(DocxLayout layout)
+    {
+        var copy = layout.Clone();
+        DocxLayout = copy;
+        DocxLayoutWarning = null;
+        var settingsPath = System.IO.Path.Combine(RootPath, DocxLayoutSettingsFile);
+        AtomicFile.WriteAllText(settingsPath, copy.ToJson(), new UTF8Encoding(false));
+    }
+
+    private void LoadDocxLayoutSetting()
+    {
+        var settingsPath = System.IO.Path.Combine(RootPath, DocxLayoutSettingsFile);
+        try
+        {
+            if (File.Exists(settingsPath))
+            {
+                DocxLayout = DocxLayout.FromJson(File.ReadAllText(settingsPath));
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            DocxLayout = new DocxLayout();
+            DocxLayoutWarning = $"Не удалось прочитать {DocxLayoutSettingsFile}: {ex.Message}. Используются настройки по умолчанию.";
+        }
+    }
+
+    // ------------------------------------------------------ пользовательский CSS
+
+    /// <summary>Текст пользовательского CSS проекта или null, если он не подключён или не читается
+    /// (тогда в warning — причина). Общий источник для HTML, PDF и DOCX.</summary>
+    public string? ReadCustomCss(out string? warning)
+    {
+        warning = null;
+        if (string.IsNullOrEmpty(CustomCssPath))
+        {
+            return null;
+        }
+
+        var path = System.IO.Path.Combine(RootPath, CustomCssPath.Replace('/', System.IO.Path.DirectorySeparatorChar));
+        if (!File.Exists(path))
+        {
+            warning = $"Пользовательский файл стилей не найден: {path}";
+            return null;
+        }
+
+        try
+        {
+            return File.ReadAllText(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            warning = $"Не удалось прочитать файл стилей {path}: {ex.Message}";
+            return null;
         }
     }
 

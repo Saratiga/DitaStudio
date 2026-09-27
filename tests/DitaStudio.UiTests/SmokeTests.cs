@@ -55,4 +55,26 @@ public sealed class SmokeTests
         // Основное окно осталось на месте и по-прежнему доступно — модальный диалог не утащил его за собой.
         Assert.Contains("DITA Studio", _fixture.Driver.ResolveWindow().Title);
     }
+
+    [Fact]
+    public void DocxLayoutDialog_ShowsSectionsAndCancelDoesNotSave()
+    {
+        _fixture.OpenGuideSampleViaRecentProjects();
+        var settingsFile = Path.Combine(_fixture.GuideSamplePath, ".ditastudio-docx");
+        var existedBefore = File.Exists(settingsFile);
+
+        _fixture.Driver.Menu("Публикация|Оформление DOCX…");
+        _fixture.Driver.WaitForWindow("Оформление DOCX", timeoutMs: 5000);
+
+        var text = string.Join(" ", _fixture.Driver.Tree("Оформление DOCX"));
+        Assert.Contains("Титульная страница", text);
+        Assert.Contains("Оглавление", text);
+        Assert.Contains("Колонтитулы", text);
+        Assert.Contains("Текст нижнего колонтитула", text); // у полей ввода есть доступные имена
+
+        _fixture.Driver.Click("Отмена", "Оформление DOCX");
+
+        Assert.Throws<InvalidOperationException>(() => _fixture.Driver.ResolveWindow("Оформление DOCX"));
+        Assert.Equal(existedBefore, File.Exists(settingsFile));
+    }
 }

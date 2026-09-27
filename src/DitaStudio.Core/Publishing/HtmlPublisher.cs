@@ -521,30 +521,6 @@ public sealed class HtmlPublisher
 
     /// <summary>Читает подключённый к проекту файл пользовательских стилей (см. DitaProject.CustomCssPath).
     /// Возвращает null, если CSS не подключён; предупреждение — если подключён, но файл не найден.</summary>
-    private string? LoadCustomCss(out string? warning)
-    {
-        warning = null;
-        if (string.IsNullOrEmpty(_project.CustomCssPath))
-        {
-            return null;
-        }
-
-        var path = Path.Combine(_project.RootPath, _project.CustomCssPath.Replace('/', Path.DirectorySeparatorChar));
-        if (!File.Exists(path))
-        {
-            warning = $"Пользовательский файл стилей не найден: {path}";
-            return null;
-        }
-
-        try
-        {
-            return File.ReadAllText(path);
-        }
-        catch (Exception ex)
-        {
-            warning = $"Не удалось прочитать файл стилей {path}: {ex.Message}";
-            return null;
-        }
-    }
+    private string? LoadCustomCss(out string? warning) => _project.ReadCustomCss(out warning);
 
 }

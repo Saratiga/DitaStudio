@@ -268,6 +268,35 @@ public partial class PublishViewModel : ObservableObject
         _main.StatusText = result.Show ? "Колонтитулы PDF включены." : "Колонтитулы PDF отключены.";
     }
 
+    /// <summary>«Оформление DOCX» — титул, оглавление, нумерация заголовков, колонтитулы и прочее,
+    /// чего не выразить пользовательским CSS. Сохраняется вместе с проектом.</summary>
+    [RelayCommand]
+    private void DocxLayout()
+    {
+        var project = _main.Project;
+        if (project is null)
+        {
+            Dialogs.Message("Оформление DOCX", "Сначала откройте папку проекта.");
+            return;
+        }
+
+        var result = Dialogs.DocxLayoutSettings(project);
+        if (result is null)
+        {
+            return;
+        }
+
+        try
+        {
+            project.SetDocxLayout(result);
+            _main.StatusText = "Оформление DOCX сохранено — применится при следующем экспорте в DOCX.";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Dialogs.Message("Оформление DOCX", $"Не удалось сохранить настройки: {ex.Message}");
+        }
+    }
+
     [RelayCommand]
     private void CustomCss()
     {

@@ -2,6 +2,7 @@ using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
+using DitaStudio.Docx.Styling;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using Drawing = DocumentFormat.OpenXml.Drawing;
@@ -20,6 +21,9 @@ public sealed class DocxRenderOptions
     public Func<DitaNode, bool>? Filter { get; set; }
 
     public bool NumberFiguresAndTables { get; set; } = true;
+
+    /// <summary>Оформление: стили Word из пользовательского CSS (по умолчанию — встроенное).</summary>
+    public DocxStyleSheet Styles { get; set; } = DocxStyleSheet.Default;
 
     /// <summary>Возвращает имя закладки для топика (путь, id элемента) — на неё ссылаются
     /// перекрёстные ссылки. Null, если целевой топик не входит в публикацию.</summary>
@@ -45,7 +49,7 @@ public sealed class DocxRenderOptions
 /// специализации (hazardstatement, видео/аудио, coderef, MathML/SVG-контейнер, learning-контент)
 /// показываются обобщённым абзацем с текстом — как и в HtmlRenderer для неизвестных элементов.
 /// </summary>
-public sealed class DocxRenderer
+public sealed partial class DocxRenderer
 {
     private readonly DitaProject _project;
     private readonly MainDocumentPart _mainPart;
@@ -60,8 +64,10 @@ public sealed class DocxRenderer
     private int _nextFootnoteId = 1;
     private int _nextBookmarkId = 1;
     private int _nextImageId = 1;
-    private const uint BulletAbstractNumId = 1000;
-    private const uint DecimalAbstractNumId = 1001;
+    internal const int BulletAbstractNumId = 1000;
+    internal const int DecimalAbstractNumId = 1001;
+    private int _nextCustomAbstractId = 2000;
+    private readonly Dictionary<DocxListMarker, int> _customBulletAbstracts = new();
 
     public DocxRenderer(DitaProject project, MainDocumentPart mainPart, NumberingDefinitionsPart numberingPart,
         DocxRenderOptions? options = null)
@@ -82,6 +88,7 @@ public sealed class DocxRenderer
     public void RenderTopic(DitaDocument document, DitaNode topic, W.Body body, int headingLevel, string? bookmarkName)
     {
         _document = document;
+        using var topicScope = BlockScope(topic);
         var isTopLevel = bookmarkName is not null; // вложенные топики файла вызываются с bookmarkName == null
         var def = _catalog.Get(topic.Name);
         var isGlossary = def?.ClassAttr.Contains("glossentry/") == true;
@@ -97,7 +104,12 @@ public sealed class DocxRenderer
             {
                 case "title":
                 case "glossterm":
-                    var heading = HeadingParagraph(RenderInlineRuns(child), headingLevel);
+                    W.Paragraph heading;
+                    using (BlockScope(child))
+                    {
+                        heading = HeadingParagraph(RenderInlineRuns(child), headingLevel);
+                    }
+
                     if (bookmarkName is not null)
                     {
                         PrependBookmark(heading, bookmarkName);
@@ -113,7 +125,11 @@ public sealed class DocxRenderer
                     break;
 
                 case "shortdesc":
-                    body.Append(StyledParagraph(RenderInlineRuns(child), italic: true));
+                    using (BlockScope(child))
+                    {
+                        body.Append(Para(DocxStyleCatalog.Shortdesc, RenderInlineRuns(child)));
+                    }
+
                     break;
 
                 case "abstract":
@@ -194,7 +210,7 @@ public sealed class DocxRenderer
             yield break;
         }
 
-        yield return StyledParagraph(new List<OpenXmlElement> { new W.Run(new W.Text(L.RelatedLinks)) }, bold: true);
+        yield return Para(DocxStyleCatalog.RelatedLinksTitle, L.RelatedLinks);
 
         foreach (var link in _options.RelatedTopics)
         {
@@ -203,12 +219,10 @@ public sealed class DocxRenderer
             var bookmark = _options.TopicBookmark?.Invoke(link.Path, link.TopicId);
 
             OpenXmlElement run = bookmark is not null
-                ? new W.Hyperlink(new W.Run(new W.Text(title))) { Anchor = bookmark, History = true }
+                ? new W.Hyperlink(HyperlinkRun(title)) { Anchor = bookmark, History = true }
                 : new W.Run(new W.Text(title));
 
-            var paragraph = new W.Paragraph(new W.ParagraphProperties(new W.Indentation { Left = "227" }));
-            paragraph.Append(run);
-            yield return paragraph;
+            yield return Para(DocxStyleCatalog.RelatedLink, new[] { run });
         }
     }
 
@@ -236,6 +250,8 @@ public sealed class DocxRenderer
         {
             yield break;
         }
+
+        using var scope = BlockScope(node);
 
         switch (BlockElementCategoryMap.Of(node.Name))
         {
@@ -295,7 +311,7 @@ public sealed class DocxRenderer
         switch (node.Name)
         {
             case "p":
-                yield return WithOutputClass(Paragraph(RenderInlineRuns(node)), node);
+                yield return WithOutputClass(Para(DocxStyleCatalog.BodyText, RenderInlineRuns(node)), node);
                 yield break;
 
             case "ol":
@@ -327,7 +343,7 @@ public sealed class DocxRenderer
                 yield break;
 
             case "lq":
-                yield return StyledParagraph(RenderInlineRuns(node), italic: true, indent: true);
+                yield return Para(DocxStyleCatalog.Quote, RenderInlineRuns(node));
                 yield break;
 
             case "table":
@@ -341,7 +357,7 @@ public sealed class DocxRenderer
             case "draft-comment":
                 if (_options.ShowDraftComments)
                 {
-                    yield return StyledParagraph(RenderInlineRuns(node), italic: true);
+                    yield return Para(DocxStyleCatalog.DraftComment, RenderInlineRuns(node));
                 }
 
                 yield break;
@@ -350,7 +366,7 @@ public sealed class DocxRenderer
                 yield break;
 
             case "title":
-                yield return StyledParagraph(RenderInlineRuns(node), bold: true);
+                yield return Para(DocxStyleCatalog.BlockTitle, RenderInlineRuns(node));
                 yield break;
 
             case "info":
@@ -358,7 +374,7 @@ public sealed class DocxRenderer
             case "stepresult":
             case "steptroubleshooting":
             case "tutorialinfo":
-                yield return Paragraph(RenderInlineRuns(node));
+                yield return Para(DocxStyleCatalog.StepInfo, RenderInlineRuns(node));
                 yield break;
 
             case "related-links":
@@ -387,7 +403,7 @@ public sealed class DocxRenderer
         var def = _catalog.Get(node.Name);
         if (def is null)
         {
-            yield return Paragraph(RenderInlineRuns(node));
+            yield return Para(DocxStyleCatalog.Normal, RenderInlineRuns(node));
             yield break;
         }
 
@@ -395,7 +411,7 @@ public sealed class DocxRenderer
         {
             case DisplayKind.Inline:
             case DisplayKind.Empty:
-                yield return Paragraph(RenderInlineRunsForNode(node).ToList());
+                yield return Para(DocxStyleCatalog.Normal, RenderInlineRunsForNode(node).ToList());
                 yield break;
             case DisplayKind.Meta:
                 yield break;
@@ -457,9 +473,7 @@ public sealed class DocxRenderer
         }
     }
 
-    private static W.Paragraph GeneratedTitle(string label) =>
-        new(new W.ParagraphProperties(new W.SpacingBetweenLines { Before = "160" }),
-            new W.Run(new W.RunProperties(new W.Bold()), new W.Text(label)));
+    private W.Paragraph GeneratedTitle(string label) => Para(DocxStyleCatalog.GeneratedTitle, label);
 
     private W.Paragraph RenderNote(DitaNode node)
     {
@@ -467,14 +481,19 @@ public sealed class DocxRenderer
         var label = L.NoteLabel(type);
         var runs = new List<OpenXmlElement>
         {
-            new W.Run(new W.RunProperties(new W.Bold()), new W.Text(label + ": "))
+            new W.Run(new W.RunProperties(new W.RunStyle { Val = DocxStyleCatalog.NoteLabel }),
+                new W.Text(label + ": ") { Space = SpaceProcessingModeValues.Preserve })
         };
         runs.AddRange(RenderInlineRuns(node));
-        var paragraph = new W.Paragraph(new W.ParagraphProperties(
-            new W.ParagraphBorders(new W.LeftBorder { Val = W.BorderValues.Single, Size = 12, Color = "999999" }),
-            new W.Indentation { Left = "227" }));
-        paragraph.Append(runs);
-        return paragraph;
+        var style = type switch
+        {
+            "tip" or "fastpath" => DocxStyleCatalog.NoteTip,
+            "important" or "remember" or "restriction" => DocxStyleCatalog.NoteImportant,
+            "caution" or "attention" or "warning" or "notice" => DocxStyleCatalog.NoteWarning,
+            "danger" => DocxStyleCatalog.NoteDanger,
+            _ => DocxStyleCatalog.Note
+        };
+        return Para(style, runs);
     }
 
     private W.Paragraph RenderPre(DitaNode node)
@@ -489,13 +508,10 @@ public sealed class DocxRenderer
                 runs.Add(new W.Run(new W.Break()));
             }
 
-            runs.Add(new W.Run(new W.RunProperties(new W.RunFonts { Ascii = "Consolas" }),
-                new W.Text(lines[i]) { Space = SpaceProcessingModeValues.Preserve }));
+            runs.Add(new W.Run(new W.Text(lines[i]) { Space = SpaceProcessingModeValues.Preserve }));
         }
 
-        var pre = new W.Paragraph(new W.ParagraphProperties(new W.Shading { Fill = "F2F2F2" }));
-        pre.Append(runs);
-        return pre;
+        return Para(DocxStyleCatalog.CodeBlock, runs);
     }
 
     private IEnumerable<OpenXmlCompositeElement> RenderDl(DitaNode node)
@@ -510,19 +526,19 @@ public sealed class DocxRenderer
                 runs.Add(new W.Run(new W.Text("  ")));
             }
 
-            yield return StyledParagraph(runs, bold: true);
+            yield return Para(DocxStyleCatalog.DefinitionTerm, runs);
         }
 
         foreach (var entry in node.ElementChildren().Where(e => e.Name == "dlentry"))
         {
             foreach (var dt in entry.ElementChildren().Where(e => e.Name == "dt"))
             {
-                yield return StyledParagraph(RenderInlineRuns(dt), bold: true);
+                yield return Para(DocxStyleCatalog.DefinitionTerm, RenderInlineRuns(dt));
             }
 
             foreach (var dd in entry.ElementChildren().Where(e => e.Name == "dd"))
             {
-                yield return StyledParagraph(RenderInlineRuns(dd), indent: true);
+                yield return Para(DocxStyleCatalog.Definition, RenderInlineRuns(dd));
             }
         }
     }
@@ -533,12 +549,12 @@ public sealed class DocxRenderer
         {
             foreach (var pt in entry.ElementChildren().Where(e => e.Name == "pt"))
             {
-                yield return StyledParagraph(RenderInlineRuns(pt), bold: true);
+                yield return Para(DocxStyleCatalog.DefinitionTerm, RenderInlineRuns(pt));
             }
 
             foreach (var pd in entry.ElementChildren().Where(e => e.Name == "pd"))
             {
-                yield return StyledParagraph(RenderInlineRuns(pd), indent: true);
+                yield return Para(DocxStyleCatalog.Definition, RenderInlineRuns(pd));
             }
         }
     }
@@ -570,17 +586,17 @@ public sealed class DocxRenderer
             var captionRuns = new List<OpenXmlElement>();
             if (_options.NumberFiguresAndTables)
             {
-                captionRuns.Add(new W.Run(new W.Text($"{L.Figure} {_figureNumber}. ")));
+                captionRuns.Add(new W.Run(new W.Text($"{L.Figure} {_figureNumber}. ") { Space = SpaceProcessingModeValues.Preserve }));
             }
 
             captionRuns.AddRange(RenderInlineRuns(title));
-            yield return StyledParagraph(captionRuns, italic: true);
+            yield return Para(DocxStyleCatalog.FigureCaption, captionRuns);
         }
 
         var desc = node.FirstElement("desc");
         if (desc is not null)
         {
-            yield return StyledParagraph(RenderInlineRuns(desc), italic: true);
+            yield return Para(DocxStyleCatalog.FigureCaption, RenderInlineRuns(desc));
         }
     }
 
@@ -595,11 +611,11 @@ public sealed class DocxRenderer
             var captionRuns = new List<OpenXmlElement>();
             if (_options.NumberFiguresAndTables)
             {
-                captionRuns.Add(new W.Run(new W.Text($"{L.Table} {_tableNumber}. ")));
+                captionRuns.Add(new W.Run(new W.Text($"{L.Table} {_tableNumber}. ") { Space = SpaceProcessingModeValues.Preserve }));
             }
 
             captionRuns.AddRange(RenderInlineRuns(title));
-            yield return StyledParagraph(captionRuns, bold: true);
+            yield return Para(DocxStyleCatalog.TableCaption, captionRuns);
         }
 
         var allowSplit = HasOutputClass(node, "page-break-auto");
@@ -630,15 +646,7 @@ public sealed class DocxRenderer
         }
 
         var table = new W.Table();
-        table.Append(new W.TableProperties(
-            new W.TableBorders(
-                new W.TopBorder { Val = W.BorderValues.Single, Size = 4, Color = "999999" },
-                new W.BottomBorder { Val = W.BorderValues.Single, Size = 4, Color = "999999" },
-                new W.LeftBorder { Val = W.BorderValues.Single, Size = 4, Color = "999999" },
-                new W.RightBorder { Val = W.BorderValues.Single, Size = 4, Color = "999999" },
-                new W.InsideHorizontalBorder { Val = W.BorderValues.Single, Size = 4, Color = "CCCCCC" },
-                new W.InsideVerticalBorder { Val = W.BorderValues.Single, Size = 4, Color = "CCCCCC" }),
-            new W.TableWidth { Width = "5000", Type = W.TableWidthUnitValues.Pct }));
+        table.Append(TableProperties());
 
         var grid = new W.TableGrid();
         for (var i = 0; i < numCols; i++)
@@ -787,9 +795,9 @@ public sealed class DocxRenderer
             props.Append(new W.VerticalMerge { Val = W.MergedCellValues.Restart });
         }
 
-        if (isHeader)
+        if (CellShading(isHeader) is { } shading)
         {
-            props.Append(new W.Shading { Fill = "E8E8E8" });
+            props.Append(shading);
         }
 
         var valign = entry.GetAttribute("valign");
@@ -820,15 +828,10 @@ public sealed class DocxRenderer
             }});
         }
 
-        W.Paragraph paragraph;
-        if (paragraphProps.Count > 0)
+        var paragraph = Para(isHeader ? DocxStyleCatalog.TableHeading : DocxStyleCatalog.TableText, runs);
+        foreach (var property in paragraphProps)
         {
-            paragraph = new W.Paragraph(new W.ParagraphProperties(paragraphProps.ToArray()));
-            paragraph.Append(runs);
-        }
-        else
-        {
-            paragraph = new W.Paragraph(runs.ToArray());
+            EnsureParagraphProperties(paragraph).Append(property);
         }
 
         return new W.TableCell(props, paragraph);
@@ -836,11 +839,14 @@ public sealed class DocxRenderer
 
     private static W.TableCell ContinuationCell(int span)
     {
-        var props = new W.TableCellProperties(new W.VerticalMerge { Val = W.MergedCellValues.Continue });
+        // Порядок в tcPr задан схемой: gridSpan раньше vMerge.
+        var props = new W.TableCellProperties();
         if (span > 1)
         {
             props.Append(new W.GridSpan { Val = span });
         }
+
+        props.Append(new W.VerticalMerge { Val = W.MergedCellValues.Continue });
 
         return new W.TableCell(props, new W.Paragraph());
     }
@@ -864,15 +870,7 @@ public sealed class DocxRenderer
         var numCols = Math.Max(1, rows.Select(r => r.ElementChildren().Count(c => rowNames.Contains(c.Name))).DefaultIfEmpty(headNames.Length).Max());
 
         var table = new W.Table();
-        table.Append(new W.TableProperties(
-            new W.TableBorders(
-                new W.TopBorder { Val = W.BorderValues.Single, Size = 4, Color = "999999" },
-                new W.BottomBorder { Val = W.BorderValues.Single, Size = 4, Color = "999999" },
-                new W.LeftBorder { Val = W.BorderValues.Single, Size = 4, Color = "999999" },
-                new W.RightBorder { Val = W.BorderValues.Single, Size = 4, Color = "999999" },
-                new W.InsideHorizontalBorder { Val = W.BorderValues.Single, Size = 4, Color = "CCCCCC" },
-                new W.InsideVerticalBorder { Val = W.BorderValues.Single, Size = 4, Color = "CCCCCC" }),
-            new W.TableWidth { Width = "5000", Type = W.TableWidthUnitValues.Pct }));
+        table.Append(TableProperties());
 
         var grid = new W.TableGrid();
         for (var i = 0; i < numCols; i++)
@@ -895,8 +893,7 @@ public sealed class DocxRenderer
             var tr = new W.TableRow(new W.TableRowProperties(new W.TableHeader()));
             foreach (var cell in head.ElementChildren().Where(c => headNames.Contains(c.Name)))
             {
-                tr.Append(new W.TableCell(new W.TableCellProperties(new W.Shading { Fill = "E8E8E8" }),
-                    new W.Paragraph(RenderInlineRuns(cell).ToArray())));
+                tr.Append(Cell(RenderInlineRuns(cell), isHeader: true));
             }
 
             table.Append(tr);
@@ -906,8 +903,7 @@ public sealed class DocxRenderer
             var tr = new W.TableRow(new W.TableRowProperties(new W.TableHeader()));
             foreach (var label in headLabels)
             {
-                tr.Append(new W.TableCell(new W.TableCellProperties(new W.Shading { Fill = "E8E8E8" }),
-                    new W.Paragraph(new W.Run(new W.RunProperties(new W.Bold()), new W.Text(label)))));
+                tr.Append(Cell(new OpenXmlElement[] { new W.Run(new W.RunProperties(new W.Bold()), new W.Text(label)) }, isHeader: true));
             }
 
             table.Append(tr);
@@ -918,7 +914,7 @@ public sealed class DocxRenderer
             var tr = new W.TableRow();
             foreach (var cell in row.ElementChildren().Where(c => rowNames.Contains(c.Name)))
             {
-                tr.Append(new W.TableCell(new W.Paragraph(RenderInlineRuns(cell).ToArray())));
+                tr.Append(Cell(RenderInlineRuns(cell), isHeader: false));
             }
 
             table.Append(tr);
@@ -931,7 +927,7 @@ public sealed class DocxRenderer
 
     private IEnumerable<OpenXmlCompositeElement> RenderList(DitaNode node, int level, int? numId, int ilvl, bool ordered)
     {
-        var effectiveNumId = numId ?? AllocateNumbering(ordered);
+        var effectiveNumId = numId ?? AllocateNumbering(ordered, ordered ? null : MarkerFor(node));
         foreach (var item in node.ElementChildren())
         {
             if (!Include(item))
@@ -967,7 +963,7 @@ public sealed class DocxRenderer
 
             if (ReferenceEquals(child, cmd))
             {
-                yield return NumberedParagraph(RenderInlineRuns(child), numId, ilvl);
+                yield return NumberedParagraph(RenderInlineRuns(child), numId, ilvl, DocxStyleCatalog.StepCommand);
                 firstParagraph = false;
                 continue;
             }
@@ -1004,7 +1000,7 @@ public sealed class DocxRenderer
         {
             if (child.Kind == NodeKind.Text)
             {
-                directRuns.Add(new W.Run(new W.Text(child.Value) { Space = SpaceProcessingModeValues.Preserve }));
+                directRuns.Add(new W.Run(new W.Text(CollapseSpaces(child.Value)) { Space = SpaceProcessingModeValues.Preserve }));
                 continue;
             }
 
@@ -1068,21 +1064,75 @@ public sealed class DocxRenderer
         return block;
     }
 
-    private int AllocateNumbering(bool ordered)
+    /// <summary>Свой маркер списка по классу (outputclass или имя элемента: sl, choices) из CSS.</summary>
+    private DocxListMarker? MarkerFor(DitaNode list)
     {
+        var classes = (list.GetAttribute("outputclass") ?? string.Empty)
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Append(list.Name)
+            .ToList();
+        return Sheet.MarkerForClasses(classes);
+    }
+
+    private int AllocateNumbering(bool ordered, DocxListMarker? customMarker = null)
+    {
+        var abstractId = ordered ? DecimalAbstractNumId
+            : customMarker is null ? BulletAbstractNumId
+            : CustomBulletAbstract(customMarker);
+
         var numId = _nextNumId++;
-        _numberingPart.Numbering!.Append(new W.NumberingInstance(
-            new W.AbstractNumId { Val = (int)(ordered ? DecimalAbstractNumId : BulletAbstractNumId) })
-        { NumberID = numId });
+        var instance = new W.NumberingInstance(new W.AbstractNumId { Val = abstractId }) { NumberID = numId };
+
+        // Все нумерованные списки ссылаются на одно abstractNum — без явного сброса Word
+        // продолжает счёт с предыдущего списка (шаги второй задачи начинались бы с 8).
+        if (ordered)
+        {
+            for (var level = 0; level < 9; level++)
+            {
+                instance.Append(new W.LevelOverride(new W.StartOverrideNumberingValue { Val = 1 }) { LevelIndex = level });
+            }
+        }
+
+        _numberingPart.Numbering!.Append(instance);
         return numId;
     }
 
-    private static W.Paragraph NumberedParagraph(List<OpenXmlElement> runs, int numId, int ilvl)
+    /// <summary>abstractNum со своим маркером на всех уровнях — один на каждый маркер. По схеме
+    /// все abstractNum обязаны идти раньше любого num, поэтому вставляется перед первым num.</summary>
+    private int CustomBulletAbstract(DocxListMarker marker)
     {
-        var paragraph = new W.Paragraph(new W.ParagraphProperties(new W.NumberingProperties(
-            new W.NumberingLevelReference { Val = ilvl },
-            new W.NumberingId { Val = numId })));
+        if (_customBulletAbstracts.TryGetValue(marker, out var existing))
+        {
+            return existing;
+        }
+
+        var id = _nextCustomAbstractId++;
+        var abstractNum = DocxNumbering.Bullet(id, _ => marker, Sheet.BulletColor);
+        var numbering = _numberingPart.Numbering!;
+        var firstInstance = numbering.Elements<W.NumberingInstance>().FirstOrDefault();
+        if (firstInstance is null)
+        {
+            numbering.Append(abstractNum);
+        }
+        else
+        {
+            numbering.InsertBefore(abstractNum, firstInstance);
+        }
+
+        _customBulletAbstracts[marker] = id;
+        return id;
+    }
+
+    private W.Paragraph NumberedParagraph(List<OpenXmlElement> runs, int numId, int ilvl,
+        string style = DocxStyleCatalog.ListItem)
+    {
+        var paragraph = new W.Paragraph(new W.ParagraphProperties(
+            new W.ParagraphStyleId { Val = ParagraphStyle(style) },
+            new W.NumberingProperties(
+                new W.NumberingLevelReference { Val = ilvl },
+                new W.NumberingId { Val = numId })));
         paragraph.Append(runs);
+        TrimEdges(paragraph);
         return paragraph;
     }
 
@@ -1099,12 +1149,17 @@ public sealed class DocxRenderer
         return runs;
     }
 
-    private IEnumerable<OpenXmlElement> RenderInlineRunsForNode(DitaNode node)
+    private IEnumerable<OpenXmlElement> RenderInlineRunsForNode(DitaNode node) =>
+        node.Kind == NodeKind.Element
+            ? WithInlineClasses(node, () => RenderInlineRunsForNodeCore(node))
+            : RenderInlineRunsForNodeCore(node);
+
+    private IEnumerable<OpenXmlElement> RenderInlineRunsForNodeCore(DitaNode node)
     {
         switch (node.Kind)
         {
             case NodeKind.Text:
-                yield return new W.Run(new W.Text(node.Value) { Space = SpaceProcessingModeValues.Preserve });
+                yield return new W.Run(new W.Text(CollapseSpaces(node.Value)) { Space = SpaceProcessingModeValues.Preserve });
                 yield break;
             case NodeKind.Comment:
             case NodeKind.ProcessingInstruction:
@@ -1150,11 +1205,14 @@ public sealed class DocxRenderer
             case "varname":
             case "coderef":
             case "shortcut":
-                foreach (var r in Styled(node, monospace: true)) yield return r;
+                foreach (var r in Styled(node, runStyle: DocxStyleCatalog.CodeChar)) yield return r;
                 yield break;
             case "uicontrol":
             case "wintitle":
-                foreach (var r in Styled(node, bold: true)) yield return r;
+                foreach (var r in Styled(node, runStyle: DocxStyleCatalog.UiControl)) yield return r;
+                yield break;
+            case "term" when node.Children.Count > 0:
+                foreach (var r in Styled(node, runStyle: DocxStyleCatalog.Term)) yield return r;
                 yield break;
             case "menucascade":
             {
@@ -1166,7 +1224,7 @@ public sealed class DocxRenderer
                         yield return new W.Run(new W.Text(" → ") { Space = SpaceProcessingModeValues.Preserve });
                     }
 
-                    foreach (var r in Styled(parts[i], bold: true))
+                    foreach (var r in Styled(parts[i], runStyle: DocxStyleCatalog.UiControl))
                     {
                         yield return r;
                     }
@@ -1227,24 +1285,25 @@ public sealed class DocxRenderer
     }
 
     private IEnumerable<OpenXmlElement> Styled(DitaNode node, bool bold = false, bool italic = false,
-        bool underline = false, bool strike = false, bool monospace = false,
+        bool underline = false, bool strike = false, string? runStyle = null,
         W.VerticalPositionValues? vertical = null)
     {
         foreach (var child in node.Children)
         {
             if (child.Kind == NodeKind.Text)
             {
+                // порядок элементов rPr задан схемой OOXML
                 var props = new List<OpenXmlElement>();
+                if (runStyle is not null) props.Add(new W.RunStyle { Val = runStyle });
                 if (bold) props.Add(new W.Bold());
                 if (italic) props.Add(new W.Italic());
-                if (underline) props.Add(new W.Underline { Val = W.UnderlineValues.Single });
                 if (strike) props.Add(new W.Strike());
-                if (monospace) props.Add(new W.RunFonts { Ascii = "Consolas" });
+                if (underline) props.Add(new W.Underline { Val = W.UnderlineValues.Single });
                 if (vertical is not null) props.Add(new W.VerticalTextAlignment { Val = vertical.Value });
 
                 yield return props.Count > 0
-                    ? new W.Run(new W.RunProperties(props.ToArray()), new W.Text(child.Value) { Space = SpaceProcessingModeValues.Preserve })
-                    : new W.Run(new W.Text(child.Value) { Space = SpaceProcessingModeValues.Preserve });
+                    ? new W.Run(new W.RunProperties(props.ToArray()), new W.Text(CollapseSpaces(child.Value)) { Space = SpaceProcessingModeValues.Preserve })
+                    : new W.Run(new W.Text(CollapseSpaces(child.Value)) { Space = SpaceProcessingModeValues.Preserve });
             }
             else if (child.Kind == NodeKind.Element)
             {
@@ -1318,8 +1377,7 @@ public sealed class DocxRenderer
 
         if (bookmark is not null)
         {
-            yield return new W.Hyperlink(innerRuns.Select(r => (OpenXmlElement)r.CloneNode(true)).ToArray())
-                { Anchor = bookmark, History = true };
+            yield return new W.Hyperlink(LinkRuns(innerRuns)) { Anchor = bookmark, History = true };
             yield break;
         }
 
@@ -1327,8 +1385,7 @@ public sealed class DocxRenderer
         {
             var relId = "hlink" + _nextImageId++;
             _mainPart.AddHyperlinkRelationship(new Uri(external!, UriKind.RelativeOrAbsolute), true, relId);
-            yield return new W.Hyperlink(innerRuns.Select(r => (OpenXmlElement)r.CloneNode(true)).ToArray())
-                { Id = relId, History = true };
+            yield return new W.Hyperlink(LinkRuns(innerRuns)) { Id = relId, History = true };
             yield break;
         }
 
@@ -1370,13 +1427,10 @@ public sealed class DocxRenderer
             yield break;
         }
 
-        yield return StyledParagraph(new List<OpenXmlElement> { new W.Run(new W.Text(L.RelatedLinks)) }, bold: true);
+        yield return Para(DocxStyleCatalog.RelatedLinksTitle, L.RelatedLinks);
         foreach (var link in links)
         {
-            var runs = RenderXref(link).ToList();
-            var linkParagraph = new W.Paragraph(new W.ParagraphProperties(new W.Indentation { Left = "227" }));
-            linkParagraph.Append(runs);
-            yield return linkParagraph;
+            yield return Para(DocxStyleCatalog.RelatedLink, RenderXref(link).ToList());
         }
     }
 
@@ -1388,6 +1442,7 @@ public sealed class DocxRenderer
         var id = _nextFootnoteId++;
         var runs = RenderInlineRuns(node);
         var paragraph = new W.Paragraph(
+            new W.ParagraphProperties(new W.ParagraphStyleId { Val = DocxStyleCatalog.FootnoteText }),
             new W.Run(new W.RunProperties(new W.RunStyle { Val = "FootnoteReference" }), new W.FootnoteReferenceMark()),
             new W.Run(new W.Text(" ") { Space = SpaceProcessingModeValues.Preserve }));
         foreach (var run in runs)
@@ -1499,72 +1554,30 @@ public sealed class DocxRenderer
 
     /// <summary>Полоса на полях у абзаца с непустым атрибутом rev — штатная DITA-пометка
     /// изменений (не полноценный track changes с историей правок), см. HtmlRenderer.BuildClassAttr.</summary>
-    private static OpenXmlCompositeElement WithOutputClass(W.Paragraph paragraph, DitaNode node)
+    private OpenXmlCompositeElement WithOutputClass(W.Paragraph paragraph, DitaNode node)
     {
         if (!string.IsNullOrWhiteSpace(node.GetAttribute("rev")))
         {
             EnsureParagraphProperties(paragraph).Append(new W.ParagraphBorders(
-                new W.LeftBorder { Val = W.BorderValues.Single, Size = 18, Color = "D4380D", Space = 4 }));
+                DocxPropsWriter.Border(new W.LeftBorder(), Sheet.RevBorder)));
         }
 
         return paragraph;
     }
 
-    private static W.Paragraph Paragraph(List<OpenXmlElement> runs) => new(runs.ToArray());
-
-    private static W.Paragraph StyledParagraph(List<OpenXmlElement> runs, bool bold = false, bool italic = false,
-        bool indent = false)
-    {
-        if (!bold && !italic)
-        {
-            var p = new W.Paragraph(runs.ToArray());
-            if (indent)
-            {
-                EnsureParagraphProperties(p).Append(new W.Indentation { Left = "227" });
-            }
-
-            return p;
-        }
-
-        foreach (var run in runs.OfType<W.Run>())
-        {
-            var rPr = run.RunProperties ??= new W.RunProperties();
-            if (bold)
-            {
-                rPr.Append(new W.Bold());
-            }
-
-            if (italic)
-            {
-                rPr.Append(new W.Italic());
-            }
-        }
-
-        var paragraph = new W.Paragraph(runs.ToArray());
-        if (indent)
-        {
-            EnsureParagraphProperties(paragraph).Append(new W.Indentation { Left = "227" });
-        }
-
-        return paragraph;
-    }
-
-    private static W.Paragraph HeadingParagraph(List<OpenXmlElement> runs, int level)
-    {
-        var style = "Heading" + Math.Clamp(level, 1, 6);
-        var paragraph = new W.Paragraph(new W.ParagraphProperties(new W.ParagraphStyleId { Val = style }));
-        paragraph.Append(runs);
-        return paragraph;
-    }
+    private W.Paragraph HeadingParagraph(List<OpenXmlElement> runs, int level) =>
+        Para(DocxStyleCatalog.Heading(level), runs);
 
     private static W.ParagraphProperties EnsureParagraphProperties(W.Paragraph paragraph) =>
         paragraph.ParagraphProperties ??= new W.ParagraphProperties();
 
     private void PrependBookmark(W.Paragraph paragraph, string bookmarkName)
     {
+        // Закладка — после pPr: свойства абзаца обязаны быть его первым дочерним элементом.
         var id = _nextBookmarkId++;
-        paragraph.InsertAt(new W.BookmarkStart { Id = id.ToString(), Name = bookmarkName }, 0);
-        paragraph.InsertAt(new W.BookmarkEnd { Id = id.ToString() }, 1);
+        var index = paragraph.ParagraphProperties is null ? 0 : 1;
+        paragraph.InsertAt(new W.BookmarkStart { Id = id.ToString(), Name = bookmarkName }, index);
+        paragraph.InsertAt(new W.BookmarkEnd { Id = id.ToString() }, index + 1);
     }
 
     /// <summary>Приводит произвольную строку к допустимому имени закладки Word (буквы/цифры/

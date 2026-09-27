@@ -93,6 +93,7 @@
                 <MenuItem Header="Собрать один HTML…" Command="{Binding Publish.PublishSingleCommand}" />
                 <MenuItem Header="Экспорт в PDF…" Command="{Binding Publish.PublishPdfCommand}" />
                 <MenuItem Header="Экспорт в DOCX…" Command="{Binding Publish.ExportDocxCommand}" />
+                <MenuItem Header="Оформление DOCX…" Command="{Binding Publish.DocxLayoutCommand}" />
                 <MenuItem Header="Публикация плагином…" Command="{Binding Publish.PublishWithPluginCommand}" />
                 <Separator />
                 <MenuItem Header="Условия сборки…" Command="{Binding Publish.PublishConditionsCommand}" />

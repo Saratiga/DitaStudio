@@ -79,6 +79,7 @@ public static partial class Program
         HtmlRendererMiscTests();
         ListAndStepsDispatchTests();
         FileSafetyTests();
+        DocxStylingTests();
 
         Console.WriteLine();
         Console.WriteLine($"Пройдено проверок: {_passed}");
@@ -1484,6 +1485,7 @@ public static partial class Program
             var docxOut = Path.Combine(root, "out.docx");
             var docxResult = new DocxPublisher(project).Publish(Path.Combine(root, "map.ditamap"),
                 new PublishOptions(), docxOut);
+            CheckValidDocx(docxOut, "Области ключей (keyscope)");
             using (var doc = WordprocessingDocument.Open(docxOut, false))
             {
                 var docxText = doc.MainDocumentPart!.Document.Body!.InnerText;
@@ -1828,6 +1830,7 @@ public static partial class Program
 
             var docxOut = Path.Combine(root, "out.docx");
             new DocxPublisher(project).Publish(Path.Combine(root, "map.ditamap"), new PublishOptions(), docxOut);
+            CheckValidDocx(docxOut, "Таблицы соответствий (reltable)");
             using (var doc = WordprocessingDocument.Open(docxOut, false))
             {
                 var hyperlinks = doc.MainDocumentPart!.Document.Body!.Descendants<Hyperlink>().Count(h => h.Anchor is not null);
@@ -1998,6 +2001,7 @@ public static partial class Program
 
             var docxOut = Path.Combine(root, "out.docx");
             new DocxPublisher(project).Publish(Path.Combine(root, "map.ditamap"), new PublishOptions(), docxOut);
+            CheckValidDocx(docxOut, "Пометка изменений (rev)");
             using (var doc = WordprocessingDocument.Open(docxOut, false))
             {
                 var hasRevBorder = doc.MainDocumentPart!.Document.Body!.Descendants<LeftBorder>()
@@ -2084,6 +2088,7 @@ public static partial class Program
 
             var docxOut = Path.Combine(root, "out.docx");
             new DocxPublisher(project).Publish(Path.Combine(root, "map.ditamap"), new PublishOptions(), docxOut);
+            CheckValidDocx(docxOut, "Пометка изменений (rev)");
             using (var docxDoc = WordprocessingDocument.Open(docxOut, false))
             {
                 var docxText = docxDoc.MainDocumentPart!.Document.Body!.InnerText;
@@ -3736,6 +3741,7 @@ x
             var outFile = Path.Combine(root, "out.docx");
             var publisher = new DocxPublisher(project);
             var result = publisher.Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            CheckValidDocx(outFile, "Экспорт в DOCX");
 
             Check(result.Warnings.Count == 0, "экспорт в DOCX прошёл без предупреждений: " + string.Join("; ", result.Warnings));
             Check(File.Exists(outFile), "файл .docx создан");
@@ -3861,6 +3867,7 @@ x
 
             var outFile = Path.Combine(root, "out.docx");
             var result = new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), options, outFile);
+            CheckValidDocx(outFile, "DocxRenderer: топик-уровневые ветки, CALS-таблица, сноски, закладки (по отчёту покрытия)");
             Check(result.Warnings.Count == 0, "публикация без предупреждений: " + string.Join("; ", result.Warnings));
 
             using var doc = WordprocessingDocument.Open(outFile, false);
@@ -4047,6 +4054,7 @@ x
             project.Scan();
             var outFile = Path.Combine(root, "out.docx");
             var result = new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            CheckValidDocx(outFile, "ImageSize через DocxRenderer.RenderImage: GIF/BMP/JPEG, единицы измерения (по отчёту покрытия)");
             Check(result.Warnings.Count == 0, "публикация без предупреждений: " + string.Join("; ", result.Warnings));
 
             using var doc = WordprocessingDocument.Open(outFile, false);
@@ -4205,6 +4213,7 @@ x
             // --------------------------------------------------------------- DOCX
             var docxPath = Path.Combine(root, "out.docx");
             var docxResult = new DocxPublisher(project).Publish(mapPath, new PublishOptions { Language = "ru" }, docxPath);
+            CheckValidDocx(docxPath, "HTML/DOCX: figure/dl/parml/simpletable/image/xref (по отчёту покрытия)");
 
             using var doc = WordprocessingDocument.Open(docxPath, false);
             var body = doc.MainDocumentPart!.Document.Body!;
@@ -4538,6 +4547,7 @@ x
             // --- DOCX ---
             var docxOut = Path.Combine(root, "out.docx");
             new DocxPublisher(project).Publish(Path.Combine(root, "coverage.ditamap"), new PublishOptions(), docxOut);
+            CheckValidDocx(docxOut, "Списки и шаги: защита перед унификацией диспетчера рендера");
 
             using var doc = WordprocessingDocument.Open(docxOut, false);
             var body = doc.MainDocumentPart!.Document.Body!;

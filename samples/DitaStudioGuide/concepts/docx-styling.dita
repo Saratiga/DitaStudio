@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="docx-styling" xml:lang="ru-RU">
+  <title>Оформление DOCX</title>
+  <shortdesc>Внешний вид документа Word задаётся тем же пользовательским CSS, что и сайт, а
+    устройство документа — титул, оглавление, нумерация заголовков, колонтитулы — диалогом
+    «Оформление DOCX».</shortdesc>
+  <conbody>
+    <section id="styles">
+      <title>Стили Word из CSS</title>
+      <p>Экспорт в DOCX не форматирует текст напрямую: каждому виду содержимого соответствует
+        именованный стиль Word, а правила пользовательского CSS меняют эти стили. Документ можно
+        дорабатывать и в самом Word: изменение стиля на вкладке «Главная» разом меняет весь
+        документ.</p>
+      <simpletable relcolwidth="2* 3*">
+        <sthead>
+          <stentry>Селектор CSS</stentry>
+          <stentry>Стиль Word</stentry>
+        </sthead>
+        <strow><stentry><codeph>body</codeph></stentry><stentry>«Обычный» — только свойства текста: шрифт, размер, цвет</stentry></strow>
+        <strow><stentry><codeph>p</codeph></stentry><stentry>«Основной текст» — абзацы, включая поля и выравнивание</stentry></strow>
+        <strow><stentry><codeph>h1</codeph> … <codeph>h6</codeph></stentry><stentry>«Заголовок 1…6»</stentry></strow>
+        <strow><stentry><codeph>.shortdesc</codeph></stentry><stentry>«Краткое описание»</stentry></strow>
+        <strow><stentry><codeph>.note</codeph>, <codeph>.note.warning</codeph>, <codeph>.note.danger</codeph></stentry><stentry>«Примечание» и его варианты по типу</stentry></strow>
+        <strow><stentry><codeph>pre</codeph>, <codeph>.codeblock</codeph></stentry><stentry>«Блок кода»</stentry></strow>
+        <strow><stentry><codeph>code</codeph>, <codeph>.codeph</codeph>, <codeph>.uicontrol</codeph></stentry><stentry>символьные стили «Код в тексте», «Элемент интерфейса»</stentry></strow>
+        <strow><stentry><codeph>table</codeph>, <codeph>th</codeph>, <codeph>td</codeph></stentry><stentry>рамки, заливка шапки, поля ячеек, шрифт текста таблицы</stentry></strow>
+        <strow><stentry><codeph>ul</codeph>, <codeph>ul ul</codeph>, <codeph>li::marker</codeph></stentry><stentry>маркеры списков по уровням (<codeph>disc</codeph>, <codeph>circle</codeph>, <codeph>square</codeph>, <codeph>none</codeph> или текст в кавычках) и их цвет</stentry></strow>
+      </simpletable>
+      <p>Правило для своего класса применяется к элементам с таким значением
+        <parmname>outputclass</parmname>: экспорт создаёт производный стиль, например «Основной
+        текст · warning-box». Класс на разделе оформляет все его абзацы, класс на фразе — только
+        её текст.</p>
+      <p>Переносятся шрифты, размеры, цвета, заливка, подчёркивание, прописные и капитель,
+        выравнивание, отступы, межстрочный интервал, рамки и разрывы страниц. Размер и поля
+        страницы задаёт правило <codeph>@page</codeph>, правила только для Word — блок
+        <codeph>@media docx</codeph>, который браузер пропускает.</p>
+      <codeblock>@page { size: A4; margin: 20mm 15mm 20mm 25mm; }
+@media docx {
+  body { font-family: Georgia; font-size: 12pt; }
+  h1 { color: #1a5fb4; border-bottom: 1pt solid #1a5fb4; }
+}</codeblock>
+      <note>Скругления, тени, фоновые картинки и вёрстка веб-страницы в Word не переносятся. О
+        пропущенных свойствах и селекторах сообщает «Журнал сборки». Шрифт должен быть установлен
+        на компьютере, где открывают документ.</note>
+    </section>
+
+    <section id="layout">
+      <title>Настройки «Оформление DOCX»</title>
+      <p>Диалог <menucascade><uicontrol>Публикация</uicontrol><uicontrol>Оформление
+        DOCX…</uicontrol></menucascade> задаёт то, чего нет в CSS. Настройки сохраняются вместе с
+        проектом.</p>
+      <ul>
+        <li>титульная страница: название карты, подзаголовок, автор, дата;</li>
+        <li>оглавление и число уровней в нём;</li>
+        <li>нумерация заголовков «1», «1.1», «1.1.1» — номера видны и в оглавлении;</li>
+        <li>топик верхнего уровня с новой страницы, нумерация рисунков и таблиц;</li>
+        <li>колонтитулы с полями <codeph>{page}</codeph>, <codeph>{pages}</codeph>,
+          <codeph>{title}</codeph>, <codeph>{date}</codeph> и выравниванием, без колонтитулов на
+          титуле;</li>
+        <li>зеркальные поля и переплёт для двусторонней печати;</li>
+        <li>язык текста для проверки правописания и автоматические переносы.</li>
+      </ul>
+    </section>
+  </conbody>
+</concept>

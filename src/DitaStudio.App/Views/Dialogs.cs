@@ -8,7 +8,7 @@ using Microsoft.Win32;
 namespace DitaStudio.App.Views;
 
 /// <summary>Небольшие диалоги приложения, собранные в коде — без отдельных XAML-файлов.</summary>
-public static class Dialogs
+public static partial class Dialogs
 {
     private static Window Shell(string title, UIElement content, double width = 460, double height = 320)
     {
@@ -856,7 +856,14 @@ public static class Dialogs
    на нужном элементе — в панели «Атрибуты» или пунктами меню «Структура»):
    - outputclass="page-break-before" на заголовке (title) — начинает новую страницу;
    - outputclass="page-break-auto" на таблице (table) — разрешает перенос таблицы
-     между страницами с повтором строки шапки (thead) на каждой странице. */
+     между страницами с повтором строки шапки (thead) на каждой странице.
+
+   Этот же файл оформляет и экспорт в DOCX: правила для тегов и классов публикации
+   (body, p, h1…h6, .note, .shortdesc, pre, table, th, td…) становятся стилями Word,
+   правила для собственных классов — стилями элементов с таким outputclass,
+   @page { size; margin } — размером и полями страницы. Правила только для Word
+   можно положить в @media docx { … } — браузер их не применит.
+   Титул, оглавление, колонтитулы и нумерация заголовков — «Публикация → Оформление DOCX…». */
 
 """;
 
@@ -865,8 +872,9 @@ public static class Dialogs
         var panel = new StackPanel { Margin = new Thickness(20) };
         panel.Children.Add(new TextBlock
         {
-            Text = "Файл стилей подключается к каждой публикации (HTML и PDF) в дополнение к " +
-                   "встроенным стилям — его правила применяются последними и могут их переопределять.",
+            Text = "Файл стилей подключается к каждой публикации (HTML, PDF и DOCX) в дополнение к " +
+                   "встроенным стилям — его правила применяются последними и могут их переопределять. " +
+                   "В DOCX правила становятся стилями Word; правила только для Word — в @media docx { … }.",
             TextWrapping = TextWrapping.Wrap
         });
 
