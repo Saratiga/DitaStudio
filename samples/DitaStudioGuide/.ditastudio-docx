@@ -1,0 +1,21 @@
+{
+  "TitlePage": true,
+  "Subtitle": "Редактор технической документации на DITA 1.3",
+  "Author": "Команда DITA Studio",
+  "TitlePageDate": true,
+  "TableOfContents": true,
+  "TocDepth": 3,
+  "NumberHeadings": true,
+  "NumberingDepth": 3,
+  "PageBreakBeforeTopLevel": true,
+  "NumberFiguresAndTables": true,
+  "HeaderText": "{title}",
+  "HeaderAlignment": "Right",
+  "FooterText": "Стр. {page} из {pages}",
+  "FooterAlignment": "Center",
+  "NoHeaderOnFirstPage": true,
+  "MirrorMargins": false,
+  "GutterMm": 0,
+  "Language": "ru-RU",
+  "AutoHyphenation": true
+}
