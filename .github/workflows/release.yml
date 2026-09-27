@@ -1,0 +1,89 @@
+# Релиз: самодостаточная сборка для Windows x64 в архиве DitaStudio-vX.Y.Z-win-x64.zip.
+#
+# Пуш тега vX.Y.Z (совпадающего с <Version> в src/DitaStudio.App/DitaStudio.App.csproj) —
+# тесты, сборка и ЧЕРНОВИК релиза с архивом. Текст «Что нового» дописывается вручную,
+# публикация — кнопкой «Publish release» на GitHub. Если релиз с этим тегом уже есть,
+# архив в нём заменяется.
+#
+# Ручной запуск (Actions → Release → Run workflow) — пробная сборка без релиза:
+# архив только прикладывается к прогону как артефакт.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+    branches: ['claude/cool-bardeen-es6ndy'] # ВРЕМЕННО: пробный прогон, убрать
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Версия
+        id: version
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content src/DitaStudio.App/DitaStudio.App.csproj
+          $version = @($project.Project.PropertyGroup.Version | Where-Object { $_ })[0]
+          if (-not $version) { Write-Error "В DitaStudio.App.csproj не найден <Version>"; exit 1 }
+          $tag = "v$version"
+          if ("${{ github.ref_type }}" -eq "tag" -and "${{ github.ref_name }}" -ne $tag) {
+            Write-Error "Тег ${{ github.ref_name }} не совпадает с <Version>$version</Version> в DitaStudio.App.csproj"
+            exit 1
+          }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "zip=DitaStudio-$tag-win-x64.zip" >> $env:GITHUB_OUTPUT
+
+      - name: Тесты ядра
+        run: dotnet test tests/DitaStudio.Tests -c Release
+
+      - name: Сборка
+        run: dotnet publish src/DitaStudio.App -c Release -r win-x64 --self-contained true -o publish
+
+      - name: Архив
+        shell: pwsh
+        run: Compress-Archive -Path publish/* -DestinationPath "${{ steps.version.outputs.zip }}"
+
+      - name: Архив как артефакт прогона
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.version.outputs.zip }}
+          path: ${{ steps.version.outputs.zip }}
+
+      - name: Черновик релиза
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ steps.version.outputs.tag }}"
+          $zip = "${{ steps.version.outputs.zip }}"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag $zip --clobber
+            exit $LASTEXITCODE
+          }
+          $notes = @"
+          ## Что нового
+
+          (дописать перед публикацией)
+
+          ## Установка
+
+          Скачайте ``$zip``, распакуйте и запустите ``DitaStudio.exe``. Сборка самодостаточная, установленный .NET не требуется (Windows x64). Для предпросмотра и печати в PDF нужен WebView2 Evergreen Runtime — на Windows 11 он обычно уже есть.
+          "@
+          gh release create $tag $zip --draft --title "DITA Studio $tag" --notes $notes
