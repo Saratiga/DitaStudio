@@ -6,7 +6,7 @@ name: UI tests
 
 on:
   push:
-    branches: ['master', 'claude/cool-bardeen-es6ndy'] # ветка claude/… — ВРЕМЕННО, пробный прогон
+    branches: ['master']
   workflow_dispatch:
 
 concurrency:

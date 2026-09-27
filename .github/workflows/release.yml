@@ -12,7 +12,6 @@ name: Release
 on:
   push:
     tags: ['v*']
-    branches: ['claude/cool-bardeen-es6ndy'] # ВРЕМЕННО: пробный прогон, убрать
   workflow_dispatch:
 
 permissions:
