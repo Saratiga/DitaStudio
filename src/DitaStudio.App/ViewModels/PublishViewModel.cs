@@ -70,10 +70,15 @@ public partial class PublishViewModel : ObservableObject
             Language = "ru"
         };
 
-        ApplyConditions(options);
+        var conditionsWarning = ApplyConditions(options);
 
         _main.BottomTabIndex = 2;
         BuildLogText = $"Сборка DOCX по карте {map.RelativePath}…\n";
+
+        if (conditionsWarning is not null)
+        {
+            BuildLogText += "Предупреждение: " + conditionsWarning + "\n";
+        }
 
         try
         {
@@ -131,10 +136,15 @@ public partial class PublishViewModel : ObservableObject
         }
 
         var options = new PublishOptions { ShowDraftComments = _main.Conditions?.ShowDraftComments ?? false, Language = "ru" };
-        ApplyConditions(options);
+        var conditionsWarning = ApplyConditions(options);
 
         _main.BottomTabIndex = 2;
         BuildLogText = $"Публикация плагином «{format.Name}» по карте {map.RelativePath}…\n";
+
+        if (conditionsWarning is not null)
+        {
+            BuildLogText += "Предупреждение: " + conditionsWarning + "\n";
+        }
 
         try
         {
@@ -229,7 +239,8 @@ public partial class PublishViewModel : ObservableObject
 
     /// <summary>Дополняет условия сборки исключениями и правилами подсветки из связанного .ditaval
     /// (см. <see cref="ImportDitaval"/>) поверх вручную заданных в диалоге условий.</summary>
-    private void ApplyConditions(PublishOptions options)
+    /// <returns>Предупреждение для журнала сборки, если подключённый .ditaval не прочитан.</returns>
+    private string? ApplyConditions(PublishOptions options)
     {
         if (_main.Conditions is not null)
         {
@@ -239,14 +250,16 @@ public partial class PublishViewModel : ObservableObject
             }
         }
 
-        var linked = _main.Project?.ResolveLinkedDitaval();
+        string? error = null;
+        var linked = _main.Project?.ResolveLinkedDitaval(out error);
         if (linked is null)
         {
-            return;
+            return error;
         }
 
         DitaProject.MergeExcludeConditions(options.ExcludeConditions, linked.Exclude);
         options.FlagConditions.AddRange(linked.Flags);
+        return null;
     }
 
     [RelayCommand]
@@ -458,10 +471,15 @@ public partial class PublishViewModel : ObservableObject
             Language = "ru"
         };
 
-        ApplyConditions(options);
+        var conditionsWarning = ApplyConditions(options);
 
         _main.BottomTabIndex = 2;
         BuildLogText = $"Сборка карты {map.RelativePath}…\n";
+
+        if (conditionsWarning is not null)
+        {
+            BuildLogText += "Предупреждение: " + conditionsWarning + "\n";
+        }
 
         try
         {

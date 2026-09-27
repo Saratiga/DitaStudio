@@ -1,6 +1,7 @@
 using System.Text;
 using DitaStudio.Core.IO;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Project;
 
 namespace DitaStudio.Tests;
 
@@ -19,6 +20,7 @@ internal static partial class CoreChecks
             AtomicFileChecks(root);
             DiskStampChecks(root);
             RecoveryStoreChecks(root);
+            ProjectSettingsChecks(root);
         }
         finally
         {
@@ -119,6 +121,49 @@ internal static partial class CoreChecks
         leftovers = Directory.GetFiles(Path.GetDirectoryName(path)!, AtomicFile.TempPrefix + "*");
         Check(File.ReadAllText(viaPath) == "новый" && leftovers.Length == 0,
             "atomic.WriteVia: сбой — оригинал цел, временный файл удалён");
+    }
+
+    // Сбои чтения/записи .ditastudio-* и подключённого .ditaval больше не проглатываются молча.
+    private static void ProjectSettingsChecks(string root)
+    {
+        var projectRoot = Path.Combine(root, "settings-project");
+        Directory.CreateDirectory(projectRoot);
+
+        // Папка на месте файла настройки — запись гарантированно не удастся на любой ОС.
+        Directory.CreateDirectory(Path.Combine(projectRoot, ".ditastudio-css"));
+        var project = new DitaProject(projectRoot);
+        var reported = new List<string>();
+        project.SettingsWarning += reported.Add;
+        project.SetCustomCssPath("custom.css");
+        Check(reported.Count == 1 && reported[0].Contains(".ditastudio-css"),
+            "настройки: сбой записи .ditastudio-css — событие SettingsWarning с именем файла");
+        Check(project.CustomCssPath == "custom.css" && project.SettingsWarnings.Count == 1,
+            "настройки: при сбое записи значение действует в сеансе, сбой есть в SettingsWarnings");
+
+        // Файл настройки занят другой программой — прочитать не удаётся.
+        var conditions = Path.Combine(projectRoot, ".ditastudio-conditions");
+        File.WriteAllText(conditions, "1\naudience=admin\n");
+        using (new FileStream(conditions, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            var locked = new DitaProject(projectRoot);
+            Check(locked.SettingsWarnings.Any(w => w.Contains(".ditastudio-conditions")),
+                "настройки: сбой чтения .ditastudio-conditions — предупреждение, значения по умолчанию");
+            Check(locked.ExcludedConditionValues.Count == 0 && !locked.ShowDraftComments,
+                "настройки: при сбое чтения условия не применены частично");
+        }
+
+        var readable = new DitaProject(projectRoot);
+        Check(readable.ShowDraftComments && readable.ExcludedConditionValues.ContainsKey("audience"),
+            "настройки: без блокировки условия читаются как обычно");
+
+        readable.SetDitavalPath("missing.ditaval");
+        Check(readable.ResolveLinkedDitaval(out var missingError) is null && missingError?.Contains("не найден") == true,
+            "ditaval: подключённый файл пропал — причина сообщается, а не молчаливый null");
+
+        File.WriteAllText(Path.Combine(projectRoot, "broken.ditaval"), "<val><prop");
+        readable.SetDitavalPath("broken.ditaval");
+        Check(readable.ResolveLinkedDitaval(out var brokenError) is null && brokenError?.Contains("не прочитан") == true,
+            "ditaval: битый XML — причина сообщается, сборка не пройдёт молча без условий");
     }
 
     private static void DiskStampChecks(string root)

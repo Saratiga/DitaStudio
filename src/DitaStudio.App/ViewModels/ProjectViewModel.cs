@@ -56,6 +56,9 @@ public partial class ProjectViewModel : ObservableObject
         _main.ExternalChanges.Detach();
 
         var project = new DitaProject(path);
+        // Сбой записи настройки проекта (.ditastudio-*) — сразу сообщаем: иначе пользователь
+        // считает, что условия/CSS/DTD сохранены, а после перезапуска их не окажется.
+        project.SettingsWarning += message => Dialogs.Message("Настройки проекта", message);
         _main.Project = project;
         _main.Panes.Clear();
 
@@ -85,6 +88,11 @@ public partial class ProjectViewModel : ObservableObject
         _main.RefreshRecentProjectsMenu?.Invoke();
 
         _main.StatusText = $"Проект открыт: {project.Files.Count} файлов, {project.Keys.Count} ключей.{dtdNote}";
+
+        if (project.SettingsWarnings.Count > 0)
+        {
+            Dialogs.Message("Настройки проекта", string.Join("\n", project.SettingsWarnings));
+        }
 
         _main.Recovery.Attach(project);
         _main.ExternalChanges.Attach(project);
