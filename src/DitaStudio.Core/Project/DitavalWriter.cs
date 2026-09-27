@@ -1,4 +1,5 @@
 using System.Text;
+using DitaStudio.Core.IO;
 
 namespace DitaStudio.Core.Project;
 
@@ -33,7 +34,7 @@ public static class DitavalWriter
         }
 
         sb.Append("</val>\n");
-        File.WriteAllText(path, sb.ToString(), new UTF8Encoding(false));
+        AtomicFile.WriteAllText(path, sb.ToString(), new UTF8Encoding(false));
     }
 
     private static void AppendOptionalAttr(StringBuilder sb, string name, string? value)

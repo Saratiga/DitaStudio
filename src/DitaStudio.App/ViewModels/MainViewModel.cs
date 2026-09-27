@@ -73,6 +73,12 @@ public partial class MainViewModel : ObservableObject
     public InsertViewModel Insert { get; }
     public MapViewModel Map { get; }
 
+    // Защита от потери данных: копии несохранённых правок и слежение за
+    // изменениями файлов другими программами. Подключаются к проекту в
+    // ProjectViewModel.LoadProject.
+    public AutoRecovery Recovery { get; }
+    public ExternalChangeWatcher ExternalChanges { get; }
+
     public MainViewModel(Dictionary<string, DocumentPane> panes)
     {
         Panes = panes;
@@ -84,5 +90,7 @@ public partial class MainViewModel : ObservableObject
         Publish = new PublishViewModel(this);
         Insert = new InsertViewModel(this);
         Map = new MapViewModel(this);
+        Recovery = new AutoRecovery(this);
+        ExternalChanges = new ExternalChangeWatcher(this);
     }
 }

@@ -7,7 +7,7 @@ WPF, .NET 8, Windows. Интерфейс и комментарии — на ру
 
 ```powershell
 dotnet build DitaStudio.sln -c Debug          # сборка
-dotnet run --project tests\DitaStudio.Tests   # 697 проверок ядра, код возврата 0 = всё прошло
+dotnet run --project tests\DitaStudio.Tests   # 727 проверок ядра, код возврата 0 = всё прошло
 dotnet run --project src\DitaStudio.App       # запуск редактора
 dotnet test tests\DitaStudio.UiTests          # автоматизированное подмножество TESTPLAN.md (реальный DitaStudio.exe)
 ```
@@ -62,6 +62,7 @@ UI-тесты для проверок (например, строка стату
 ```
 src/DitaStudio.Core/     ядро, не знает про WPF — переиспользуемо в консоли и CI
   Model/                 DOM (DitaNode, DitaDocument), разбор и запись XML
+  IO/                    AtomicFile, FileStamp, RecoveryStore — защита от потери данных
   Schema/                каталог DITA 1.3, контент-модели, конечный автомат допустимости
   Validation/            проверка структуры, атрибутов, редакторского стиля
   Project/               папка проекта, ditamap, ключи, conref/keyref, поиск
@@ -138,6 +139,20 @@ DITA`, при записи цепочки восстанавливают исх�
 DOCX-приближённо (тот же HTML со скином `Assets.WordPreviewCss`, подобранным по
 `DocxPublisher.AddStyles` — не пиксель-в-пиксель, но структурно похоже: чёрные
 жирные заголовки вместо цветных, note серой полосой без заливки).
+
+## Сохранность данных
+
+- Все записи проектных файлов (`DitaDocument.Save`, `.ditaval`, `.ditastudio-*`) идут через
+  `Core/IO/AtomicFile` — временный файл `.~dita-*.tmp` в той же папке + `File.Replace`.
+  Новую запись файлов пользователя делать так же, не через `File.WriteAllText`.
+- `DitaDocument.DiskStamp` (время записи + размер) запоминается при чтении и сохранении;
+  `HasChangedOnDisk()` отличает чужую запись от своей. `App/ExternalChangeWatcher` —
+  `FileSystemWatcher` на папку проекта + проверка при активации окна.
+- `App/AutoRecovery` раз в 30 с пишет несохранённые вкладки в `RecoveryStore`
+  (`%LOCALAPPDATA%\DitaStudio\Recovery\<проект>-<хэш>`), удаляет копию при сохранении
+  или явном отказе, предлагает восстановление в `ProjectViewModel.LoadProject`.
+- `DocumentsViewModel.ConfirmClose` возвращает false, если сохранить не удалось, —
+  окно или смена проекта тогда отменяются.
 
 ## Плагины
 

@@ -22,7 +22,7 @@ namespace DitaStudio.Tests;
 /// Проверки ядра без внешних библиотек: запускаются командой
 /// <c>dotnet run --project tests/DitaStudio.Tests</c>.
 /// </summary>
-public static class Program
+public static partial class Program
 {
     private static int _passed;
     private static readonly List<string> Failures = new();
@@ -78,6 +78,7 @@ public static class Program
         ImageSizeFormatsTests();
         HtmlRendererMiscTests();
         ListAndStepsDispatchTests();
+        FileSafetyTests();
 
         Console.WriteLine();
         Console.WriteLine($"Пройдено проверок: {_passed}");

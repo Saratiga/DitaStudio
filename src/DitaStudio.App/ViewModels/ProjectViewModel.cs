@@ -46,6 +46,15 @@ public partial class ProjectViewModel : ObservableObject
 
     public void LoadProject(string path)
     {
+        // Смена проекта закрывает все вкладки — несохранённые правки не должны пропасть молча.
+        if (!_main.Documents.ConfirmClose())
+        {
+            return;
+        }
+
+        _main.Recovery.Detach();
+        _main.ExternalChanges.Detach();
+
         var project = new DitaProject(path);
         _main.Project = project;
         _main.Panes.Clear();
@@ -73,6 +82,10 @@ public partial class ProjectViewModel : ObservableObject
 
         var dtdNote = MergeExternalDtdIfLinked(project);
         _main.StatusText = $"Проект открыт: {project.Files.Count} файлов, {project.Keys.Count} ключей.{dtdNote}";
+
+        _main.Recovery.Attach(project);
+        _main.ExternalChanges.Attach(project);
+        _main.Recovery.OfferRestore();
     }
 
     /// <summary>Если к проекту подключён внешний DTD — разбирает его заново и вливает элементы в

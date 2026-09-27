@@ -96,6 +96,9 @@ public sealed class DocumentPane : Grid
 
     public event EventHandler? DirtyChanged;
 
+    /// <summary>Документ успешно записан на диск.</summary>
+    public event EventHandler? Saved;
+
     public event EventHandler? SelectionChanged;
 
     public EditorMode Mode
@@ -365,6 +368,7 @@ public sealed class DocumentPane : Grid
             }
 
             RaiseDirty();
+            Saved?.Invoke(this, EventArgs.Empty);
             return true;
         }
         catch (Exception ex)
@@ -372,6 +376,74 @@ public sealed class DocumentPane : Grid
             error = ex.Message;
             return false;
         }
+    }
+
+    /// <summary>
+    /// Текущий текст документа для копии восстановления — без побочных эффектов для
+    /// истории отмены и режима. В режиме исходного кода берётся сам текст редактора,
+    /// даже если он пока не разбирается как XML.
+    /// </summary>
+    public string SnapshotXml()
+    {
+        if (Mode == EditorMode.Source)
+        {
+            return Source.Text;
+        }
+
+        Author.FlushPendingEdits();
+        return Document.ToXmlString();
+    }
+
+    /// <summary>
+    /// Перечитывает файл с диска (его изменила другая программа). Несохранённые правки
+    /// кладутся в историю отмены — их можно вернуть через «Отменить».
+    /// </summary>
+    public void ReloadFromDisk()
+    {
+        CommitPendingEdits();
+        if (Document.IsDirty)
+        {
+            Undo.Push(Document, "Перезагрузка с диска");
+        }
+
+        Document.Reload();
+        ReloadViews();
+    }
+
+    /// <summary>Файл пропал с диска: вкладка остаётся, документ помечается несохранённым,
+    /// чтобы «Сохранить» записал его заново.</summary>
+    public void MarkMissingOnDisk()
+    {
+        Document.DiskStamp = null;
+        Document.IsDirty = true;
+        RaiseDirty();
+    }
+
+    /// <summary>Подставляет текст из копии восстановления. Если текст не разбирается
+    /// (правили исходный код и не дописали), он открывается в режиме исходного кода как есть.</summary>
+    public void RestoreFromRecovery(string content)
+    {
+        DitaDocument parsed;
+        try
+        {
+            parsed = DitaDocument.Parse(content);
+        }
+        catch (Exception)
+        {
+            Mode = EditorMode.Source;
+            Source.Text = content;
+            Document.IsDirty = true;
+            RaiseDirty();
+            return;
+        }
+
+        Undo.Push(Document, "Восстановление после сбоя");
+        Document.Root = parsed.Root;
+        Document.DoctypeName = parsed.DoctypeName;
+        Document.DoctypePublicId = parsed.DoctypePublicId;
+        Document.DoctypeSystemId = parsed.DoctypeSystemId;
+        Document.IsDirty = true;
+        ReloadViews();
     }
 
     public void ReloadViews()

@@ -1,4 +1,6 @@
+using System.Text;
 using System.Text.RegularExpressions;
+using DitaStudio.Core.IO;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Schema;
 using DitaStudio.Core.Schema.Dtd;
@@ -171,7 +173,7 @@ public sealed class DitaProject
             }
             else
             {
-                File.WriteAllText(settingsPath, CustomCssPath);
+                AtomicFile.WriteAllText(settingsPath, CustomCssPath, new UTF8Encoding(false));
             }
         }
         catch
@@ -338,7 +340,7 @@ public sealed class DitaProject
             }
             else
             {
-                File.WriteAllText(settingsPath, DitavalPath);
+                AtomicFile.WriteAllText(settingsPath, DitavalPath, new UTF8Encoding(false));
             }
         }
         catch
@@ -414,7 +416,7 @@ public sealed class DitaProject
             }
             else
             {
-                File.WriteAllText(settingsPath, ExternalDtdPath);
+                AtomicFile.WriteAllText(settingsPath, ExternalDtdPath, new UTF8Encoding(false));
             }
         }
         catch

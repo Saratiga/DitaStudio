@@ -55,6 +55,13 @@ public partial class DocumentsViewModel : ObservableObject
         var tab = new TabViewModel(this, pane, full);
         pane.DirtyChanged += (_, _) => tab.RefreshTitle();
         pane.SelectionChanged += (_, _) => _main.RefreshEditorContext?.Invoke();
+        pane.Saved += (_, _) =>
+        {
+            if (pane.FilePath is { } saved)
+            {
+                _main.Recovery.Forget(saved);
+            }
+        };
 
         Tabs.Add(tab);
         SelectedTab = tab;
@@ -96,6 +103,8 @@ public partial class DocumentsViewModel : ObservableObject
             }
         }
 
+        // Сохранено или пользователь отказался от правок — копия для восстановления не нужна.
+        _main.Recovery.Forget(tab.FullPath);
         _main.Panes.Remove(tab.FullPath);
         Tabs.Remove(tab);
     }
@@ -159,7 +168,10 @@ public partial class DocumentsViewModel : ObservableObject
     }
 
     // Вызывается из MainWindow.OnClosing — там же живой Window.OnClosing,
-    // которого у VM быть не может.
+    // которого у VM быть не может, — и перед сменой проекта.
+    // true — можно закрывать: всё сохранено или пользователь отказался от
+    // правок (тогда и копии для восстановления удаляются). Если сохранить
+    // не удалось, возвращает false — иначе правки пропали бы молча.
     public bool ConfirmClose()
     {
         foreach (var tab in Tabs)
@@ -187,8 +199,13 @@ public partial class DocumentsViewModel : ObservableObject
         if (answer == MessageBoxResult.Yes)
         {
             SaveAll();
+            if (Tabs.Any(t => t.Pane.IsDirty))
+            {
+                return false;
+            }
         }
 
+        _main.Recovery.ForgetAll();
         return true;
     }
 }

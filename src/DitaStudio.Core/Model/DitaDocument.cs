@@ -1,5 +1,6 @@
 using System.Text;
 using System.Xml;
+using DitaStudio.Core.IO;
 using DitaStudio.Core.Schema;
 
 namespace DitaStudio.Core.Model;
@@ -40,6 +41,12 @@ public sealed class DitaDocument
     public List<DitaNode> Prolog { get; } = new();
 
     public bool IsDirty { get; set; }
+
+    /// <summary>
+    /// Отпечаток файла на момент последнего чтения или сохранения этим редактором.
+    /// По нему <see cref="HasChangedOnDisk"/> отличает свою запись от чужой.
+    /// </summary>
+    public FileStamp? DiskStamp { get; set; }
 
     public DitaDocumentKind Kind
     {
@@ -86,10 +93,45 @@ public sealed class DitaDocument
 
     public static DitaDocument Load(string path)
     {
+        var stamp = FileStamp.Of(path);
         var text = File.ReadAllText(path);
         var doc = Parse(text);
         doc.FilePath = path;
+        doc.DiskStamp = stamp;
         return doc;
+    }
+
+    /// <summary>
+    /// Файл на диске изменён (или удалён) после того, как этот документ его прочитал
+    /// или сохранил. Документ без пути или без запомненного отпечатка — не изменён.
+    /// </summary>
+    public bool HasChangedOnDisk()
+    {
+        if (FilePath is null || DiskStamp is null)
+        {
+            return false;
+        }
+
+        return FileStamp.Of(FilePath) != DiskStamp;
+    }
+
+    /// <summary>
+    /// Перечитывает файл с диска в этот же экземпляр — ссылки на документ из проекта,
+    /// вкладок и истории отмены остаются действительными. Правки в памяти теряются.
+    /// </summary>
+    public void Reload()
+    {
+        var path = FilePath ?? throw new InvalidOperationException("Не задан путь к файлу.");
+        var fresh = Load(path);
+        Root = fresh.Root;
+        DoctypeName = fresh.DoctypeName;
+        DoctypePublicId = fresh.DoctypePublicId;
+        DoctypeSystemId = fresh.DoctypeSystemId;
+        XmlEncoding = fresh.XmlEncoding;
+        Prolog.Clear();
+        Prolog.AddRange(fresh.Prolog);
+        DiskStamp = fresh.DiskStamp;
+        IsDirty = false;
     }
 
     public static DitaDocument Parse(string xml)
@@ -275,14 +317,9 @@ public sealed class DitaDocument
     public void Save(string? path = null)
     {
         var target = path ?? FilePath ?? throw new InvalidOperationException("Не задан путь к файлу.");
-        var dir = System.IO.Path.GetDirectoryName(target);
-        if (!string.IsNullOrEmpty(dir))
-        {
-            Directory.CreateDirectory(dir);
-        }
-
-        File.WriteAllText(target, ToXmlString(), new UTF8Encoding(false));
+        AtomicFile.WriteAllText(target, ToXmlString(), new UTF8Encoding(false));
         FilePath = target;
+        DiskStamp = FileStamp.Of(target);
         IsDirty = false;
     }
 

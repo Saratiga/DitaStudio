@@ -27,6 +27,17 @@ public partial class App : Application
 
     private void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
+        // Сначала страховочная копия правок: после такой ошибки состояние приложения
+        // может оказаться нерабочим, и пользователь закроет его, не сохранившись.
+        try
+        {
+            (MainWindow as MainWindow)?.SnapshotForRecovery();
+        }
+        catch
+        {
+            // копия не получилась — сообщение об исходной ошибке важнее
+        }
+
         MessageBox.Show(
             $"Непредвиденная ошибка:\n\n{e.Exception.Message}\n\n{e.Exception.StackTrace}",
             "DITA Studio",

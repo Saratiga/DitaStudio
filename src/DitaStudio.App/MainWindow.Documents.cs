@@ -26,8 +26,21 @@ public partial class MainWindow
             return;
         }
 
+        ViewModel.Recovery.Detach();
+        ViewModel.ExternalChanges.Detach();
         base.OnClosing(e);
     }
+
+    // Вернулись в окно после другой программы — сверяем открытые файлы с диском
+    // (подстраховка к FileSystemWatcher, который может пропустить событие).
+    protected override void OnActivated(EventArgs e)
+    {
+        base.OnActivated(e);
+        ViewModel.ExternalChanges.CheckNow();
+    }
+
+    /// <summary>Немедленная копия несохранённых правок — из обработчика непредвиденных ошибок.</summary>
+    public void SnapshotForRecovery() => ViewModel.Recovery.SnapshotAll();
 
     private void OnNewDocument(object sender, RoutedEventArgs e) => NewDocument();
 
