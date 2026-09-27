@@ -340,10 +340,10 @@ li::marker { color: #1a5fb4; }
             Check(!body.Descendants<Text>().Any(t => t.Text.Contains("  ") || t.Text.Contains('\n')),
                 "docx-export: пробелы и переносы строк исходного XML схлопываются, как в HTML");
             var numbering = doc.MainDocumentPart.NumberingDefinitionsPart!.Numbering!;
-            var ordered = numbering.Elements<NumberingInstance>().Where(n => n.AbstractNumId?.Val == 1001).ToList();
-            Check(ordered.Count > 0 && ordered.All(n => n.Elements<LevelOverride>().Any(o => o.StartOverrideNumberingValue?.Val == 1)),
+            var ordered = numbering.Elements<NumberingInstance>().Where(n => n.AbstractNumId?.Val?.Value == 1001).ToList();
+            Check(ordered.Count > 0 && ordered.All(n => n.Elements<LevelOverride>().Any(o => o.StartOverrideNumberingValue?.Val?.Value == 1)),
                 "docx-export: каждый нумерованный список начинается с 1, а не продолжает предыдущий");
-            var bulletLevel = numbering.Elements<AbstractNum>().First(a => a.AbstractNumberId == 1000).Elements<Level>().First();
+            var bulletLevel = numbering.Elements<AbstractNum>().First(a => a.AbstractNumberId?.Value == 1000).Elements<Level>().First();
             Check(bulletLevel.LevelText?.Val == "\uF0B7", "docx-export: у маркированного списка есть символ маркера");
             var bulletFonts = bulletLevel.NumberingSymbolRunProperties!.GetFirstChild<RunFonts>()!;
             Check(bulletFonts.EastAsia == "Symbol" && bulletFonts.ComplexScript == "Symbol",
@@ -389,7 +389,7 @@ li::marker { color: #1a5fb4; }
             Check(body.Descendants<TableCell>().Any(c => c.TableCellProperties?.Shading?.Fill?.Value == "DDEEFF"),
                 "docx-export: фон th → заливка ячеек шапки");
             var numberingDefs = doc.MainDocumentPart.NumberingDefinitionsPart!.Numbering!;
-            var bulletLevels = numberingDefs.Elements<AbstractNum>().First(a => a.AbstractNumberId == 1000).Elements<Level>().ToList();
+            var bulletLevels = numberingDefs.Elements<AbstractNum>().First(a => a.AbstractNumberId?.Value == 1000).Elements<Level>().ToList();
             Check(bulletLevels[0].LevelText?.Val == "\uF0A7" && bulletLevels[0].NumberingSymbolRunProperties?.GetFirstChild<Color>()?.Val == "1A5FB4",
                 "docx-export: ul { list-style-type: square } и li::marker { color } → маркер и цвет первого уровня");
             Check(bulletLevels[1].LevelText?.Val == "\uF0A7", "docx-export: правило ul действует и на вложенные уровни");
@@ -430,7 +430,7 @@ li::marker { color: #1a5fb4; }
                 "docx-layout: подзаголовок на титуле");
             Check(body.Descendants<SimpleField>().Any(f => f.Instruction?.Value?.Contains("\"1-2\"") == true), "docx-layout: глубина оглавления");
             var heading1 = main.StyleDefinitionsPart!.Styles!.Elements<Style>().First(s => s.StyleId == "Heading1");
-            Check(heading1.StyleParagraphProperties?.NumberingProperties?.NumberingId?.Val == 9000,
+            Check(heading1.StyleParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value == 9000,
                 "docx-layout: нумерация заголовков привязана к стилю Heading1");
             Check(heading1.StyleParagraphProperties?.PageBreakBefore is not null, "docx-layout: разрыв страницы перед топиком верхнего уровня");
             var heading3 = main.StyleDefinitionsPart.Styles.Elements<Style>().First(s => s.StyleId == "Heading3");

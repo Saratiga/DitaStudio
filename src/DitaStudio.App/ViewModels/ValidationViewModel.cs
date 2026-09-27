@@ -105,54 +105,54 @@ public partial class ValidationViewModel : ObservableObject
     /// <summary>Сравнивает открытый документ с версией из последнего коммита git — через `git show`,
     /// без библиотеки libgit2. Требует git в PATH и файл внутри репозитория.</summary>
     [RelayCommand]
-    private void CompareWithGitHead()
-    {
-        var path = _main.Current?.FilePath;
-        if (path is null)
-        {
-            Dialogs.Message("Сравнение с git", "Откройте документ.");
-            return;
-        }
-
-        var headContent = GitHistory.ReadRevision(path);
-        if (headContent is null)
-        {
-            Dialogs.Message("Сравнение с git",
-                "Файл не найден в истории git: нет репозитория, файл не отслеживается, или git не установлен.");
-            return;
-        }
-
-        // Несохранённые правки в текущей вкладке diff не увидит — как и обычное «Сравнить файлы…».
-        var tempPath = Path.Combine(Path.GetTempPath(), $"ditastudio-git-head-{Path.GetFileName(path)}");
-        File.WriteAllText(tempPath, headContent);
-
-        DiffWindow.Show(tempPath, path);
-    }
+    private Task CompareWithGitHeadAsync() =>
+        CompareWithHistoryAsync("git", "Сравнение с git", "git-head", path => GitHistory.ReadRevision(path),
+            "Файл не найден в истории git: нет репозитория, файл не отслеживается, или git не установлен.");
 
     /// <summary>Сравнивает открытый документ с версией BASE из SVN — через `svn cat`, без
     /// клиентской библиотеки. Требует svn в PATH и файл под версионным контролем.</summary>
     [RelayCommand]
-    private void CompareWithSvnBase()
+    private Task CompareWithSvnBaseAsync() =>
+        CompareWithHistoryAsync("svn", "Сравнение с SVN", "svn-base", path => SvnHistory.ReadRevision(path),
+            "Файл не найден в истории SVN: не под версионным контролем, или svn не установлен.");
+
+    /// <summary>Общая часть сравнения с историей VCS. Клиент (git/svn) запускается в фоне: на
+    /// большом репозитории или сетевом диске он отвечает секундами, окно при этом не замирает.
+    /// Пока чтение идёт, команда недоступна (AsyncRelayCommand) — повторный щелчок не запустит
+    /// второй процесс.</summary>
+    private async Task CompareWithHistoryAsync(string client, string title, string tempPrefix,
+        Func<string, string?> readRevision, string notFoundMessage)
     {
         var path = _main.Current?.FilePath;
         if (path is null)
         {
-            Dialogs.Message("Сравнение с SVN", "Откройте документ.");
+            Dialogs.Message(title, "Откройте документ.");
             return;
         }
 
-        var baseContent = SvnHistory.ReadRevision(path);
-        if (baseContent is null)
+        _main.StatusText = $"Чтение версии из {client}…";
+        var content = await Task.Run(() => readRevision(path));
+        if (content is null)
         {
-            Dialogs.Message("Сравнение с SVN",
-                "Файл не найден в истории SVN: не под версионным контролем, или svn не установлен.");
+            _main.StatusText = string.Empty;
+            Dialogs.Message(title, notFoundMessage);
             return;
         }
 
         // Несохранённые правки в текущей вкладке diff не увидит — как и обычное «Сравнить файлы…».
-        var tempPath = Path.Combine(Path.GetTempPath(), $"ditastudio-svn-base-{Path.GetFileName(path)}");
-        File.WriteAllText(tempPath, baseContent);
+        var tempPath = Path.Combine(Path.GetTempPath(), $"ditastudio-{tempPrefix}-{Path.GetFileName(path)}");
+        try
+        {
+            File.WriteAllText(tempPath, content);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _main.StatusText = string.Empty;
+            Dialogs.Message(title, $"Не удалось записать временный файл: {ex.Message}");
+            return;
+        }
 
+        _main.StatusText = string.Empty;
         DiffWindow.Show(tempPath, path);
     }
 

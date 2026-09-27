@@ -51,6 +51,8 @@ public sealed class CoreTests
     [Fact] public void DtdCatalogLoaderTests() => Run(CoreChecks.DtdCatalogLoaderTests);
     [Fact] public void DtdReaderMiscTests() => Run(CoreChecks.DtdReaderMiscTests);
     [Fact] public void DtdCatalogLoaderPropertyTests() => Run(CoreChecks.DtdCatalogLoaderPropertyTests);
+    [Fact] public void ProjectCatalogTests() => Run(CoreChecks.ProjectCatalogTests);
+    [Fact] public void SampleProjectsTests() => Run(CoreChecks.SampleProjectsTests);
     [Fact] public void PluginLoaderTests() => Run(CoreChecks.PluginLoaderTests);
     [Fact] public void DitaProjectValidateAllWithPluginsTests() => Run(CoreChecks.DitaProjectValidateAllWithPluginsTests);
     [Fact] public void DitavalFlagTests() => Run(CoreChecks.DitavalFlagTests);
@@ -76,6 +78,10 @@ public sealed class CoreTests
     {
         var result = CoreChecks.Run(section);
         _output.WriteLine($"{result.Title}: пройдено проверок {result.Passed}");
+        foreach (var note in result.Notes)
+        {
+            _output.WriteLine("  " + note);
+        }
         if (result.Failures.Count > 0)
         {
             Assert.Fail(

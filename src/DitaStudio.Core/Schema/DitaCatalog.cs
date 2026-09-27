@@ -15,14 +15,59 @@ public sealed class DitaCatalog
     private readonly Dictionary<string, string> _entities = new(StringComparer.Ordinal);
     private readonly Dictionary<string, AttributeDef> _attrLibrary = new(StringComparer.Ordinal);
 
-    public static DitaCatalog Default => Lazy.Value;
+    private static DitaCatalog? _active;
 
-    /// <summary>Добавляет/переопределяет элементы — используется при подключении внешнего DTD
-    /// (см. Dtd.DtdCatalogLoader). Действует на весь сеанс редактора: DitaCatalog.Default —
-    /// общий на приложение экземпляр, поэтому любой код, уже вызывающий Default.Get(...), сразу
-    /// увидит новые элементы, без перезапуска и без правки мест использования каталога.</summary>
+    /// <summary>Встроенный каталог DITA 1.3. Никогда не меняется: элементы внешних DTD живут
+    /// в каталогах проектов (<see cref="WithElements"/>), а не вливаются сюда.</summary>
+    public static DitaCatalog Builtin => Lazy.Value;
+
+    /// <summary>
+    /// Каталог активного проекта — его видит код, у которого нет ссылки на проект (палитра,
+    /// режим «Автор», разбор и запись документов). Редактор переключает его через
+    /// <see cref="Activate"/> при открытии проекта и при подключении/отключении внешнего DTD;
+    /// без активного проекта это <see cref="Builtin"/>. Код, у которого проект есть (валидация
+    /// проекта, публикация), берёт <c>DitaProject.Catalog</c> напрямую.
+    /// </summary>
+    public static DitaCatalog Default => Volatile.Read(ref _active) ?? Builtin;
+
+    /// <summary>Делает каталог активным (null — вернуть встроенный).</summary>
+    public static void Activate(DitaCatalog? catalog) => Volatile.Write(ref _active, catalog);
+
+    /// <summary>Новый каталог: копия этого плюс элементы <paramref name="extra"/> (одноимённые
+    /// заменяются). Сам каталог не меняется — так внешний DTD одного проекта не затрагивает
+    /// ни встроенный каталог, ни другие проекты.</summary>
+    public DitaCatalog WithElements(IEnumerable<ElementDef> extra)
+    {
+        var copy = new DitaCatalog();
+        foreach (var (name, def) in _elements)
+        {
+            copy._elements[name] = def;
+        }
+
+        foreach (var (name, value) in _entities)
+        {
+            copy._entities[name] = value;
+        }
+
+        foreach (var (name, def) in _attrLibrary)
+        {
+            copy._attrLibrary[name] = def;
+        }
+
+        copy.Merge(extra);
+        return copy;
+    }
+
+    /// <summary>Добавляет/переопределяет элементы в этом экземпляре. Встроенный каталог так
+    /// менять нельзя — для внешнего DTD есть <see cref="WithElements"/>.</summary>
     public void Merge(IEnumerable<ElementDef> extra)
     {
+        if (ReferenceEquals(this, Builtin))
+        {
+            throw new InvalidOperationException(
+                "Встроенный каталог не меняется — используйте WithElements(...) и каталог проекта.");
+        }
+
         foreach (var def in extra)
         {
             _elements[def.Name] = def;

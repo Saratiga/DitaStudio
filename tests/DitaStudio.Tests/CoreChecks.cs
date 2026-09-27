@@ -19,7 +19,7 @@ using DocumentFormat.OpenXml.Wordprocessing;
 namespace DitaStudio.Tests;
 
 /// <summary>Итог одного раздела проверок.</summary>
-internal sealed record SectionResult(string Title, int Passed, IReadOnlyList<string> Failures);
+internal sealed record SectionResult(string Title, int Passed, IReadOnlyList<string> Failures, IReadOnlyList<string> Notes);
 
 /// <summary>
 /// Проверки ядра и DOCX-экспорта, сгруппированные по разделам. Каждый раздел — тест xUnit
@@ -32,6 +32,7 @@ internal static partial class CoreChecks
     // как сделал бы Assert. Состояние статическое, поэтому тесты сборки идут последовательно
     // (CollectionBehavior в CoreTests.cs).
     private static readonly List<string> Failures = new();
+    private static readonly List<string> Notes = new();
     private static int _passed;
     private static string _section = string.Empty;
 
@@ -39,10 +40,11 @@ internal static partial class CoreChecks
     internal static SectionResult Run(Action section)
     {
         Failures.Clear();
+        Notes.Clear();
         _passed = 0;
         _section = string.Empty;
         section();
-        return new SectionResult(_section, _passed, Failures.ToList());
+        return new SectionResult(_section, _passed, Failures.ToList(), Notes.ToList());
     }
 
     private static void Check(bool condition, string description)
@@ -56,6 +58,9 @@ internal static partial class CoreChecks
             Failures.Add(description);
         }
     }
+
+    /// <summary>Пометка в вывод теста (например, «git недоступен — раздел пропущен»).</summary>
+    private static void Note(string text) => Notes.Add(text);
 
     private static void Section(string title)
     {
@@ -489,6 +494,11 @@ internal static partial class CoreChecks
         Section("DitaValidator: атрибуты/EMPTY/незакрытая модель/стилевые правила (по отчёту покрытия)");
 
         var structural = new DitaValidator { CheckStyleRules = false };
+
+        var reused = DitaDocument.Parse(
+            "<topic id=\"t\"><title>T</title><body><p conref=\"a.dita#a/p1\"/><p conkeyref=\"k/p1\"/><p/></body></topic>");
+        Check(new DitaValidator().Validate(reused).Count(i => i.Message == "Пустой элемент <p>.") == 1,
+            "пустой <p> — предупреждение, а <p conref/conkeyref> без содержимого — нет (текст подставится из ссылки)");
 
         var unusualRoot = DitaDocument.Parse("<p>Просто абзац как корень.</p>");
         Check(structural.Validate(unusualRoot).Any(i => i.Severity == IssueSeverity.Warning && i.Message.Contains("обычно не используется как корень")),
@@ -3423,7 +3433,7 @@ x
 
         if (browser is null)
         {
-            Console.WriteLine("  (Edge/Chrome не найден по стандартным путям — остальные проверки раздела пропущены)");
+            Note("Edge/Chrome не найден по стандартным путям — остальные проверки раздела пропущены");
             return;
         }
 
@@ -3499,7 +3509,7 @@ x
             RunExternalOrSkip("git", root, "init");
             if (!Directory.Exists(Path.Combine(root, ".git")))
             {
-                Console.WriteLine("  (git недоступен в окружении — раздел пропущен)");
+                Note("git недоступен в окружении — раздел пропущен");
                 return;
             }
 
@@ -3551,7 +3561,7 @@ x
             {
                 Check(!SvnHistory.IsInRepository(Path.Combine(Path.GetTempPath(), "nonexistent.dita")),
                     "svn недоступен — IsInRepository не падает, возвращает false");
-                Console.WriteLine("  (svn недоступен в окружении — остальные проверки раздела пропущены)");
+                Note("svn недоступен в окружении — остальные проверки раздела пропущены");
                 return;
             }
 
@@ -3560,7 +3570,7 @@ x
             RunExternalOrSkip("svn", wcPath, "checkout", repoUrl, ".");
             if (!Directory.Exists(Path.Combine(wcPath, ".svn")))
             {
-                Console.WriteLine("  (svn checkout не удался — остальные проверки раздела пропущены)");
+                Note("svn checkout не удался — остальные проверки раздела пропущены");
                 return;
             }
 

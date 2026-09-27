@@ -54,7 +54,7 @@ public sealed partial class DocxRenderer
     private readonly DitaProject _project;
     private readonly MainDocumentPart _mainPart;
     private readonly DocxRenderOptions _options;
-    private readonly DitaCatalog _catalog = DitaCatalog.Default;
+    private readonly DitaCatalog _catalog;
     private readonly NumberingDefinitionsPart _numberingPart;
 
     private DitaDocument _document = null!;
@@ -73,6 +73,7 @@ public sealed partial class DocxRenderer
         DocxRenderOptions? options = null)
     {
         _project = project;
+        _catalog = project.Catalog;
         _mainPart = mainPart;
         _numberingPart = numberingPart;
         _options = options ?? new DocxRenderOptions();

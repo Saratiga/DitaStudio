@@ -49,7 +49,7 @@ public sealed class HtmlRenderer
 {
     private readonly DitaProject _project;
     private readonly RenderOptions _options;
-    private readonly DitaCatalog _catalog = DitaCatalog.Default;
+    private readonly DitaCatalog _catalog;
 
     private DitaDocument _document = null!;
     private List<DitaNode> _footnotes = new();
@@ -61,6 +61,7 @@ public sealed class HtmlRenderer
     public HtmlRenderer(DitaProject project, RenderOptions? options = null)
     {
         _project = project;
+        _catalog = project.Catalog;
         _options = options ?? new RenderOptions();
     }
 

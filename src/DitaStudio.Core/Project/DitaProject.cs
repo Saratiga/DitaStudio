@@ -407,6 +407,7 @@ public sealed class DitaProject
     public void SetExternalDtdPath(string? relativePath)
     {
         ExternalDtdPath = string.IsNullOrWhiteSpace(relativePath) ? null : relativePath.Replace('\\', '/');
+        _catalog = null; // каталог со старым DTD больше не действителен
         var settingsPath = System.IO.Path.Combine(RootPath, ExternalDtdSettingsFile);
         try
         {
@@ -447,10 +448,27 @@ public sealed class DitaProject
         }
     }
 
+    /// <summary>
+    /// Каталог элементов этого проекта: встроенный DITA 1.3 плюс элементы подключённого внешнего
+    /// DTD. Строится при первом обращении; после смены DTD — заново (<see cref="LoadCatalog"/>).
+    /// </summary>
+    public DitaCatalog Catalog => _catalog ?? LoadCatalog().Catalog;
+
+    private DitaCatalog? _catalog;
+
+    /// <summary>Перечитывает внешний DTD с диска и заново строит <see cref="Catalog"/>.
+    /// Dtd — результат разбора (предупреждения для пользователя) или null без DTD.</summary>
+    public (DitaCatalog Catalog, DtdLoadResult? Dtd) LoadCatalog()
+    {
+        var dtd = ResolveExternalDtd();
+        var catalog = dtd is null ? DitaCatalog.Builtin : DitaCatalog.Builtin.WithElements(dtd.Elements);
+        _catalog = catalog;
+        return (catalog, dtd);
+    }
+
     /// <summary>Разбирает связанный .dtd заново с диска (см. DtdCatalogLoader) — правки файлов
-    /// подхватываются сами. Null, если внешний DTD не подключён. Результат нужно самостоятельно
-    /// влить в каталог через DitaCatalog.Default.Merge(...) — сам метод глобальный каталог не
-    /// трогает.</summary>
+    /// подхватываются сами. Null, если внешний DTD не подключён. Каталог проекта из него
+    /// строит <see cref="LoadCatalog"/>.</summary>
     public DtdLoadResult? ResolveExternalDtd()
     {
         if (ExternalDtdPath is null)
@@ -1295,7 +1313,7 @@ public sealed class DitaProject
     /// падение одного плагина на одном файле не прерывает проверку остальных.</summary>
     public IReadOnlyList<ValidationIssue> ValidateAll(IReadOnlyList<IValidationRulePlugin>? plugins = null)
     {
-        var validator = new DitaValidator();
+        var validator = new DitaValidator(Catalog);
         var issues = new List<ValidationIssue>();
 
         foreach (var file in _files)

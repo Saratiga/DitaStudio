@@ -58,6 +58,10 @@ public partial class ProjectViewModel : ObservableObject
         var project = new DitaProject(path);
         _main.Project = project;
         _main.Panes.Clear();
+
+        // Каталог проекта активируем до Scan: тип документа (топик/карта) определяется по нему,
+        // и корневые элементы специализации из внешнего DTD должны уже быть известны.
+        var dtdNote = ActivateProjectCatalog(project);
         _main.Documents.Tabs.Clear();
 
         try
@@ -80,7 +84,6 @@ public partial class ProjectViewModel : ObservableObject
         RecentProjects.Add(path);
         _main.RefreshRecentProjectsMenu?.Invoke();
 
-        var dtdNote = MergeExternalDtdIfLinked(project);
         _main.StatusText = $"Проект открыт: {project.Files.Count} файлов, {project.Keys.Count} ключей.{dtdNote}";
 
         _main.Recovery.Attach(project);
@@ -88,23 +91,19 @@ public partial class ProjectViewModel : ObservableObject
         _main.Recovery.OfferRestore();
     }
 
-    /// <summary>Если к проекту подключён внешний DTD — разбирает его заново и вливает элементы в
-    /// общий каталог (DitaCatalog.Default действует на весь сеанс редактора, см. DitaCatalog.Merge).
+    /// <summary>Строит каталог проекта (встроенный + элементы внешнего DTD, если подключён) и делает
+    /// его активным — <see cref="DitaCatalog.Default"/> для палитры, режима «Автор» и остального
+    /// кода без ссылки на проект. Элементы DTD прежнего проекта при этом пропадают.
     /// Возвращает короткую приписку к статусной строке (пусто, если DTD не подключён).</summary>
-    private static string MergeExternalDtdIfLinked(DitaProject project)
+    private static string ActivateProjectCatalog(DitaProject project)
     {
-        if (project.ExternalDtdPath is null)
-        {
-            return string.Empty;
-        }
-
-        var result = project.ResolveExternalDtd();
+        var (catalog, result) = project.LoadCatalog();
+        DitaCatalog.Activate(catalog);
         if (result is null)
         {
             return string.Empty;
         }
 
-        DitaCatalog.Default.Merge(result.Elements);
         var warningsNote = result.Warnings.Count > 0 ? $", предупреждений {result.Warnings.Count}" : string.Empty;
         return $" Из внешнего DTD подключено элементов: {result.Elements.Count}{warningsNote}.";
     }
@@ -123,11 +122,14 @@ public partial class ProjectViewModel : ObservableObject
             pane.CommitPendingEdits();
         }
 
+        // Пересканирование перечитывает и внешний DTD — правки .dtd подхватываются без переоткрытия.
+        var dtdNote = ActivateProjectCatalog(project);
         project.Scan();
         _main.RefreshProjectTree?.Invoke();
         _main.RefreshMapSelector?.Invoke();
         RefreshKeysList();
-        _main.StatusText = $"Проект обновлён: {project.Files.Count} файлов.";
+        _main.RefreshEditorContext?.Invoke();
+        _main.StatusText = $"Проект обновлён: {project.Files.Count} файлов.{dtdNote}";
     }
 
     public void RefreshKeysList()
@@ -219,10 +221,10 @@ public partial class ProjectViewModel : ObservableObject
         _main.StatusText = "Все проекты-источники ключей отключены.";
     }
 
-    /// <summary>Подключает внешний .dtd (кастомная специализация DITA) — элементы вливаются в
-    /// общий каталог редактора (DitaCatalog.Default.Merge), поэтому доступны везде: в контент-
-    /// моделях, палитре вставки, валидации, публикации. Связь сохраняется вместе с проектом и
-    /// подхватывается заново при каждом открытии/пересканировании.</summary>
+    /// <summary>Подключает внешний .dtd (кастомная специализация DITA) — его элементы попадают в
+    /// каталог проекта (DitaProject.Catalog), который становится активным, поэтому доступны везде:
+    /// в контент-моделях, палитре вставки, валидации, публикации. Другие проекты их не видят.
+    /// Связь сохраняется вместе с проектом и подхватывается заново при каждом открытии/пересканировании.</summary>
     [RelayCommand]
     private void AttachExternalDtd()
     {
@@ -242,14 +244,15 @@ public partial class ProjectViewModel : ObservableObject
         var relativePath = Path.GetRelativePath(project.RootPath, dialog.FileName).Replace('\\', '/');
         project.SetExternalDtdPath(relativePath);
 
-        var result = project.ResolveExternalDtd();
+        var (catalog, result) = project.LoadCatalog();
+        DitaCatalog.Activate(catalog);
+        _main.RefreshEditorContext?.Invoke();
         if (result is null)
         {
             _main.StatusText = $"Подключён внешний DTD: {relativePath}.";
             return;
         }
 
-        DitaCatalog.Default.Merge(result.Elements);
         var warningsNote = result.Warnings.Count > 0 ? $", предупреждений {result.Warnings.Count}" : string.Empty;
         _main.StatusText = $"Подключён внешний DTD: {relativePath}. Элементов подключено: {result.Elements.Count}{warningsNote}.";
 
@@ -269,6 +272,8 @@ public partial class ProjectViewModel : ObservableObject
         }
 
         project.SetExternalDtdPath(null);
-        _main.StatusText = "Внешний DTD отключён (уже влитые в каталог элементы остаются в этом сеансе редактора).";
+        DitaCatalog.Activate(project.LoadCatalog().Catalog);
+        _main.RefreshEditorContext?.Invoke();
+        _main.StatusText = "Внешний DTD отключён — его элементы убраны из каталога проекта.";
     }
 }
