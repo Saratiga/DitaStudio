@@ -3618,7 +3618,10 @@ x
             var tracked = Path.Combine(wcPath, "topic.dita");
             File.WriteAllText(tracked, "версия из репозитория");
             RunExternalOrSkip("svn", wcPath, "add", "topic.dita");
-            RunExternalOrSkip("svn", wcPath, "commit", "-m", "начальный коммит");
+            // Сообщение коммита — ASCII: svn перекодирует его из системной кодировки, и без
+            // UTF-8-локали (Linux с LANG=C, Windows не с кириллической кодовой страницей)
+            // кириллица роняет commit, а раздел молча проверял бы файл без истории.
+            RunExternalOrSkip("svn", wcPath, "commit", "-m", "initial commit");
 
             File.WriteAllText(tracked, "рабочая копия, ещё не закоммичена");
 
@@ -3630,7 +3633,7 @@ x
             var withAt = Path.Combine(wcPath, "logo@2x.dita");
             File.WriteAllText(withAt, "файл с @ в имени");
             RunExternalOrSkip("svn", wcPath, "add", "logo@2x.dita@");
-            RunExternalOrSkip("svn", wcPath, "commit", "-m", "файл с @");
+            RunExternalOrSkip("svn", wcPath, "commit", "-m", "file with at sign");
             File.WriteAllText(withAt, "правка в рабочей копии");
             Check(SvnHistory.ReadRevision(withAt)?.Trim() == "файл с @ в имени",
                 "ReadRevision: «@» в имени файла не принимается за peg-ревизию");
