@@ -4,6 +4,7 @@ using System.Windows.Media;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Templates;
 using Microsoft.Win32;
+using DitaStudio.Core.IO;
 
 namespace DitaStudio.App.Views;
 
@@ -904,7 +905,7 @@ public static partial class Dialogs
 
             try
             {
-                File.WriteAllText(dialog.FileName, DefaultCustomCss);
+                AtomicFile.WriteAllText(dialog.FileName, DefaultCustomCss, new System.Text.UTF8Encoding(false));
             }
             catch (Exception ex)
             {

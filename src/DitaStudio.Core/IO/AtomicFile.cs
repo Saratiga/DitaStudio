@@ -13,22 +13,37 @@ public static class AtomicFile
     /// <summary>Префикс временных файлов — по нему их можно опознать и не показывать в проекте.</summary>
     public const string TempPrefix = ".~dita-";
 
-    public static void WriteAllText(string path, string text, Encoding encoding)
+    public static void WriteAllText(string path, string text, Encoding encoding) =>
+        Write(path, stream =>
+        {
+            using var writer = new StreamWriter(stream, encoding, bufferSize: -1, leaveOpen: true);
+            writer.Write(text);
+        });
+
+    /// <summary>Запись через поток (например, <c>XDocument.Save(stream)</c>): поток ведёт во
+    /// временный файл, оригинал подменяется, только если запись дошла до конца без исключения.</summary>
+    public static void Write(string path, Action<Stream> write) =>
+        WriteVia(path, temp =>
+        {
+            using var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            write(stream);
+            stream.Flush(flushToDisk: true);
+        });
+
+    /// <summary>Для библиотек, которые сами создают файл по пути (OpenXML и т. п.):
+    /// <paramref name="writeTemp"/> получает путь временного файла в той же папке и должен
+    /// полностью записать и закрыть его; затем временный файл подменяет оригинал.</summary>
+    public static void WriteVia(string path, Action<string> writeTemp)
     {
         var full = Path.GetFullPath(path);
         var dir = Path.GetDirectoryName(full)!;
         Directory.CreateDirectory(dir);
 
+        // Расширение .tmp обязательно: по нему недописанный файл не попадает в проект.
         var temp = Path.Combine(dir, TempPrefix + Path.GetFileName(full) + "." + Guid.NewGuid().ToString("N")[..8] + ".tmp");
         try
         {
-            using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-            using (var writer = new StreamWriter(stream, encoding))
-            {
-                writer.Write(text);
-                writer.Flush();
-                stream.Flush(flushToDisk: true);
-            }
+            writeTemp(temp);
 
             if (File.Exists(full))
             {

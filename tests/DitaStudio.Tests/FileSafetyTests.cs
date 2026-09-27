@@ -68,6 +68,57 @@ internal static partial class CoreChecks
         Check(File.ReadAllText(path) == "вторая", "atomic: при ошибке записи оригинал остаётся прежним");
         leftovers = Directory.GetFiles(Path.GetDirectoryName(path)!, AtomicFile.TempPrefix + "*");
         Check(leftovers.Length == 0, "atomic: при ошибке временный файл удалён");
+
+        // Запись через поток и через путь временного файла (для библиотек вроде OpenXML):
+        // исключение посреди записи оставляет прежний файл и не оставляет мусора.
+        var streamed = Path.Combine(root, "atomic", "export.xliff");
+        AtomicFile.Write(streamed, stream => new System.Xml.Linq.XDocument(new System.Xml.Linq.XElement("xliff")).Save(stream));
+        Check(File.ReadAllText(streamed).Contains("<xliff"), "atomic.Write: поток записан в файл");
+
+        var threw = false;
+        try
+        {
+            AtomicFile.Write(streamed, stream =>
+            {
+                stream.WriteByte((byte)'x');
+                throw new InvalidOperationException("сбой посреди записи");
+            });
+        }
+        catch (InvalidOperationException)
+        {
+            threw = true;
+        }
+
+        Check(threw && File.ReadAllText(streamed).Contains("<xliff"), "atomic.Write: исключение при записи — оригинал цел");
+
+        var viaPath = Path.Combine(root, "atomic", "book.docx");
+        File.WriteAllText(viaPath, "прежний");
+        string? tempSeen = null;
+        AtomicFile.WriteVia(viaPath, temp =>
+        {
+            tempSeen = temp;
+            File.WriteAllText(temp, "новый");
+        });
+        Check(File.ReadAllText(viaPath) == "новый" && tempSeen is not null &&
+              Path.GetDirectoryName(tempSeen) == Path.GetDirectoryName(Path.GetFullPath(viaPath)) &&
+              tempSeen.EndsWith(".tmp", StringComparison.Ordinal),
+            "atomic.WriteVia: временный файл в той же папке с расширением .tmp, затем подменяет оригинал");
+
+        try
+        {
+            AtomicFile.WriteVia(viaPath, temp =>
+            {
+                File.WriteAllText(temp, "обрезанный");
+                throw new InvalidOperationException("сбой сборки DOCX");
+            });
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        leftovers = Directory.GetFiles(Path.GetDirectoryName(path)!, AtomicFile.TempPrefix + "*");
+        Check(File.ReadAllText(viaPath) == "новый" && leftovers.Length == 0,
+            "atomic.WriteVia: сбой — оригинал цел, временный файл удалён");
     }
 
     private static void DiskStampChecks(string root)

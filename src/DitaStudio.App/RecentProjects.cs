@@ -1,3 +1,5 @@
+using DitaStudio.Core.IO;
+
 namespace DitaStudio.App;
 
 /// <summary>Список недавно открытых папок проектов, сохраняется между запусками (по образцу ThemeManager).</summary>
@@ -38,7 +40,10 @@ public static class RecentProjects
             list.Insert(0, full);
 
             Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
-            File.WriteAllLines(SettingsPath, list.Take(MaxEntries));
+            // Атомарно: при сбое посреди записи список не обнулится.
+            AtomicFile.WriteAllText(SettingsPath,
+                string.Join(Environment.NewLine, list.Take(MaxEntries)) + Environment.NewLine,
+                new System.Text.UTF8Encoding(false));
         }
         catch
         {

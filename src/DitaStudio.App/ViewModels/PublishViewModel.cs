@@ -9,6 +9,7 @@ using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Docx;
 using Microsoft.Win32;
+using DitaStudio.Core.IO;
 
 namespace DitaStudio.App.ViewModels;
 
@@ -344,7 +345,16 @@ public partial class PublishViewModel : ObservableObject
         }
 
         var xliff = XliffConverter.Export(pane.Document, "ru", "en");
-        xliff.Save(dialog.FileName);
+        try
+        {
+            AtomicFile.Write(dialog.FileName, stream => xliff.Save(stream));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Dialogs.Message("Экспорт в XLIFF", $"Не удалось записать файл: {ex.Message}");
+            return;
+        }
+
         _main.StatusText = $"Экспортировано в XLIFF: {dialog.FileName}";
     }
 

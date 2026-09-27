@@ -166,7 +166,10 @@ DOCX-приближённо (тот же HTML со скином `Assets.WordPrev
 
 - Все записи проектных файлов (`DitaDocument.Save`, `.ditaval`, `.ditastudio-*`) идут через
   `Core/IO/AtomicFile` — временный файл `.~dita-*.tmp` в той же папке + `File.Replace`.
-  Новую запись файлов пользователя делать так же, не через `File.WriteAllText`.
+  Новую запись файлов пользователя делать так же, не через `File.WriteAllText`:
+  текст — `WriteAllText`, поток (`XDocument.Save`) — `Write`, библиотека, которая сама
+  открывает файл по пути (OpenXML/DOCX), — `WriteVia` (получает путь временного файла).
+  Так же пишутся экспорт XLIFF, DOCX, шаблон CSS, настройки темы и недавних проектов.
 - `DitaDocument.DiskStamp` (время записи + размер) запоминается при чтении и сохранении;
   `HasChangedOnDisk()` отличает чужую запись от своей. `App/ExternalChangeWatcher` —
   `FileSystemWatcher` на папку проекта + проверка при активации окна.
