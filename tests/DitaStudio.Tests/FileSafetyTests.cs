@@ -6,9 +6,9 @@ namespace DitaStudio.Tests;
 
 // Защита от потери данных: атомарная запись, отпечаток файла на диске
 // (обнаружение чужих изменений) и копии для восстановления после сбоя.
-public static partial class Program
+internal static partial class CoreChecks
 {
-    private static void FileSafetyTests()
+    internal static void FileSafetyTests()
     {
         Section("Защита файлов: атомарная запись, внешние изменения, восстановление");
 

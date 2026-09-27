@@ -24,7 +24,7 @@ while ($true) {
         "EXITCODE=$code" | Out-File $log -Append -Encoding utf8
 
         if ($code -eq 0) {
-            & dotnet run --project (Join-Path $root 'tests\DitaStudio.Tests') --nologo 2>&1 | Out-File $tlog -Encoding utf8
+            & dotnet test (Join-Path $root 'tests\DitaStudio.Tests') --no-build --nologo 2>&1 | Out-File $tlog -Encoding utf8
             "EXITCODE=$LASTEXITCODE" | Out-File $tlog -Append -Encoding utf8
             Write-Host "  OK, tests done"
         } else {

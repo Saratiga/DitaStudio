@@ -7,13 +7,22 @@ WPF, .NET 8, Windows. Интерфейс и комментарии — на ру
 
 ```powershell
 dotnet build DitaStudio.sln -c Debug          # сборка
-dotnet run --project tests\DitaStudio.Tests   # 855 проверок ядра, код возврата 0 = всё прошло
+dotnet test tests\DitaStudio.Tests          # ~860 проверок ядра (xUnit, 50 разделов)
 dotnet run --project src\DitaStudio.App       # запуск редактора
 dotnet test tests\DitaStudio.UiTests          # автоматизированное подмножество TESTPLAN.md (реальный DitaStudio.exe)
 ```
 
-Тестовый проект — обычное консольное приложение со своим `Check(...)`, без xunit.
+Тестовый проект — xUnit, но проверки пишутся «мягким» `Check(условие, описание)` внутри
+разделов `CoreChecks` (`CoreChecks.cs` и соседние partial-файлы): раздел доходит до конца
+и падает со списком всех непрошедших проверок. Новый раздел — `internal static void XxxTests()`
+в `CoreChecks` + строка `[Fact]` в `CoreTests.cs`. Тесты идут последовательно
+(`DisableTestParallelization`) — у `CoreChecks` статическое состояние.
 Новую логику сопровождать проверкой там же; прогон должен оставаться зелёным.
+
+CI — `.github/workflows/ci.yml`: на каждый пуш Windows-раннер собирает `DitaStudio.sln`
+и запускает `dotnet test tests/DitaStudio.Tests`. UI-тесты в CI не входят.
+На Linux три проверки `FileSafetyTests` падают ожидаемо (регистр в путях, root игнорирует
+«только для чтения»), а svn-тест требует UTF-8-локаль — целевая платформа Windows.
 
 Демо-проект для ручной проверки: **Файл → Открыть папку проекта** → `samples\GuideSample`.
 
@@ -72,7 +81,7 @@ src/DitaStudio.Core/     ядро, не знает про WPF — переисп
 src/DitaStudio.App/      WPF
   Authoring/             режим «Автор» (AuthorView, InlineEditor), редактор XML на AvalonEdit
   Views/                 вкладка документа, диалоги
-tests/DitaStudio.Tests/  проверки ядра
+tests/DitaStudio.Tests/  проверки ядра (xUnit)
 tests/DitaStudio.UiTests/ автоматизированные UI-тесты (xUnit + FlaUI, см. ниже)
 tools/UiHarness/         CLI для ручной UI-проверки (тот же FlaUI-драйвер)
 tools/DitaStudio.UiAutomation/ общая FlaUI-библиотека для двух пунктов выше

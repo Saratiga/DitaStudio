@@ -9,9 +9,9 @@ using DocumentFormat.OpenXml.Wordprocessing;
 namespace DitaStudio.Tests;
 
 // Оформление DOCX: пользовательский CSS → стили Word и вёрстка «Оформление DOCX» (DocxLayout).
-public static partial class Program
+internal static partial class CoreChecks
 {
-    private static void DocxStylingTests()
+    internal static void DocxStylingTests()
     {
         Section("DOCX: оформление из CSS и вёрстка");
         CssParserChecks();

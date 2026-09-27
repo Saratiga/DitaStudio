@@ -148,13 +148,17 @@ dotnet publish src\DitaStudio.App -c Release -r win-x64 --self-contained true -o
 ## Тесты
 
 ```powershell
-dotnet run --project tests\DitaStudio.Tests   # 855 проверок ядра и DOCX-экспорта
+dotnet test tests\DitaStudio.Tests          # ~860 проверок ядра и DOCX-экспорта
 dotnet test tests\DitaStudio.UiTests          # UI-тесты на реальном DitaStudio.exe
 ```
 
-Проверки ядра — обычная консольная программа без xunit: код возврата 0 означает, что всё
-прошло. Помимо примеров там есть property-based проверки (контент-модели, DTD, XLIFF,
+Проверки ядра — проект xUnit: каждый раздел проверок (каталог, валидация, DOCX и т. д.) —
+отдельный тест, и упавший тест перечисляет все непрошедшие проверки раздела, а не только
+первую. Помимо примеров там есть property-based проверки (контент-модели, DTD, XLIFF,
 `.ditaval`) со случайными входными данными на фиксированном зерне.
+
+На каждый пуш GitHub Actions (`.github/workflows/ci.yml`, Windows-раннер) собирает всё
+решение и прогоняет проверки ядра; UI-тесты в CI не запускаются.
 
 UI-тесты (xUnit + FlaUI) запускают собранный `DitaStudio.exe` и управляют им через UI
 Automation, поэтому решение нужно собрать заранее. Та же библиотека управления доступна
@@ -223,7 +227,7 @@ src/DitaStudio.App/             интерфейс WPF (MVVM на CommunityToolk
   ViewModels/                   модели представления главного окна по областям
   Views/                        вкладка документа, диалоги, окно сравнения
   Plugins/                      контракт команд «Автора» и реестр плагинов
-tests/DitaStudio.Tests/         проверки ядра и DOCX-экспорта (консольная программа)
+tests/DitaStudio.Tests/         проверки ядра и DOCX-экспорта (xUnit)
 tests/DitaStudio.UiTests/       UI-тесты (xUnit + FlaUI)
 tests/TestPlugin/               пример плагина
 tools/DitaStudio.UiAutomation/  общая библиотека UI-автоматизации (FlaUI/UIA3)

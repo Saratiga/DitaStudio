@@ -1,0 +1,57 @@
+# Сборка всего решения и тесты ядра на каждый пуш.
+# Windows-раннер: приложение — WPF (net8.0-windows), а часть проверок ядра рассчитана на
+# файловую систему Windows (регистр в путях, атрибут «только для чтения»).
+# UI-тесты (tests/DitaStudio.UiTests) здесь не запускаются: им нужен живой рабочий стол
+# и запущенный DitaStudio.exe — прогоняются локально, см. CLAUDE.md.
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Кэш NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Восстановление пакетов
+        run: dotnet restore DitaStudio.sln
+
+      - name: Сборка
+        run: dotnet build DitaStudio.sln -c Debug --no-restore
+
+      - name: Тесты ядра
+        run: >
+          dotnet test tests/DitaStudio.Tests -c Debug --no-build
+          --logger "trx;LogFileName=core-tests.trx"
+          --logger "console;verbosity=normal"
+          --results-directory TestResults
+
+      - name: Результаты тестов
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults
+          if-no-files-found: ignore

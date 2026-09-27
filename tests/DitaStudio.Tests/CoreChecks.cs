@@ -18,85 +18,31 @@ using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace DitaStudio.Tests;
 
+/// <summary>Итог одного раздела проверок.</summary>
+internal sealed record SectionResult(string Title, int Passed, IReadOnlyList<string> Failures);
+
 /// <summary>
-/// Проверки ядра без внешних библиотек: запускаются командой
-/// <c>dotnet run --project tests/DitaStudio.Tests</c>.
+/// Проверки ядра и DOCX-экспорта, сгруппированные по разделам. Каждый раздел — тест xUnit
+/// в <see cref="CoreTests"/>; запуск — <c>dotnet test tests/DitaStudio.Tests</c>.
 /// </summary>
-public static partial class Program
+internal static partial class CoreChecks
 {
-    private static int _passed;
+    // Раздел проверок = один тест xUnit (см. CoreTests). Check внутри раздела — «мягкая»
+    // проверка: раздел доходит до конца и сообщает все провалы разом, а не только первый,
+    // как сделал бы Assert. Состояние статическое, поэтому тесты сборки идут последовательно
+    // (CollectionBehavior в CoreTests.cs).
     private static readonly List<string> Failures = new();
+    private static int _passed;
+    private static string _section = string.Empty;
 
-    public static int Main()
+    /// <summary>Выполняет раздел проверок и возвращает его итог.</summary>
+    internal static SectionResult Run(Action section)
     {
-        Console.OutputEncoding = Encoding.UTF8;
-
-        CatalogTests();
-        DitaCatalogMiscTests();
-        ContentModelTests();
-        ContentModelMiscTests();
-        ModelAutomatonPropertyTests();
-        RoundTripTests();
-        XmlSerializerMiscTests();
-        ValidationTests();
-        DitaValidatorMiscTests();
-        ValidationIssueTests();
-        TemplateTests();
-        EditingTests();
-        EditCommandsExtraTests();
-        UndoStackExtraTests();
-        ProjectTests();
-        HtmlPublisherMiscTests();
-        KeyScopeTests();
-        KeyDefinitionMiscTests();
-        MultiProjectWorkspaceTests();
-        ValidationAndAnchorFixTests();
-        RelTableTests();
-        MapTreeMiscTests();
-        RevChangeTests();
-        TrackChangesTests();
-        XliffTests();
-        XliffConverterPropertyTests();
-        DtdAttributeListParserTests();
-        DtdCatalogLoaderTests();
-        DtdReaderMiscTests();
-        DtdCatalogLoaderPropertyTests();
-        PluginLoaderTests();
-        DitaProjectValidateAllWithPluginsTests();
-        DitavalFlagTests();
-        DitavalPropertyTests();
-        RefResolverTests();
-        RefactorTests();
-        ExtractToConrefTests();
-        PdfExporterTests();
-        DiffTests();
-        GitHistoryTests();
-        SvnHistoryTests();
-        DocxTests();
-        DocxRendererMiscTests();
-        AdvancedRenderingTests();
-        ImageSizeFormatsTests();
-        HtmlRendererMiscTests();
-        ListAndStepsDispatchTests();
-        FileSafetyTests();
-        XmlSafetyTests();
-        DocxStylingTests();
-
-        Console.WriteLine();
-        Console.WriteLine($"Пройдено проверок: {_passed}");
-        if (Failures.Count == 0)
-        {
-            Console.WriteLine("Все проверки пройдены.");
-            return 0;
-        }
-
-        Console.WriteLine($"Не пройдено: {Failures.Count}");
-        foreach (var failure in Failures)
-        {
-            Console.WriteLine("  ✗ " + failure);
-        }
-
-        return 1;
+        Failures.Clear();
+        _passed = 0;
+        _section = string.Empty;
+        section();
+        return new SectionResult(_section, _passed, Failures.ToList());
     }
 
     private static void Check(bool condition, string description)
@@ -104,24 +50,24 @@ public static partial class Program
         if (condition)
         {
             _passed++;
-            Console.WriteLine("  ✓ " + description);
         }
         else
         {
             Failures.Add(description);
-            Console.WriteLine("  ✗ " + description);
         }
     }
 
     private static void Section(string title)
     {
-        Console.WriteLine();
-        Console.WriteLine(title);
+        if (_section.Length == 0)
+        {
+            _section = title;
+        }
     }
 
     // ------------------------------------------------------------- каталог
 
-    private static void CatalogTests()
+    internal static void CatalogTests()
     {
         Section("Каталог DITA 1.3");
         var catalog = DitaCatalog.Default;
@@ -150,7 +96,7 @@ public static partial class Program
         Check(catalog.PublicIdFor("task") is not null, "для task известен публичный идентификатор DOCTYPE");
     }
 
-    private static void DitaCatalogMiscTests()
+    internal static void DitaCatalogMiscTests()
     {
         Section("DitaCatalog: InsertableAt/ReplacementsFor/ElementIndexFor/DOCTYPE (по отчёту покрытия)");
 
@@ -207,7 +153,7 @@ public static partial class Program
             "ElementIndexFor(число_детей) — все элементы пройдены (текстовые не считаются)");
     }
 
-    private static void ContentModelTests()
+    internal static void ContentModelTests()
     {
         Section("Контент-модели");
         var catalog = DitaCatalog.Default;
@@ -253,7 +199,7 @@ public static partial class Program
         Check(!ulNode.Automaton.CanRemoveAt(new[] { "li" }, 0), "нельзя удалить единственный li — ul опустеет и станет невалидным");
     }
 
-    private static void ContentModelMiscTests()
+    internal static void ContentModelMiscTests()
     {
         Section("ContentModel: EMPTY/ANY, ToString(), CanRemoveAt (по отчёту покрытия)");
 
@@ -377,7 +323,7 @@ public static partial class Program
         }
     }
 
-    private static void ModelAutomatonPropertyTests()
+    internal static void ModelAutomatonPropertyTests()
     {
         Section("Property-based: ModelParser + ModelAutomaton (случайные контент-модели)");
 
@@ -426,7 +372,7 @@ public static partial class Program
 
     // ------------------------------------------------------- разбор и запись
 
-    private static void RoundTripTests()
+    internal static void RoundTripTests()
     {
         Section("Разбор и запись XML");
 
@@ -468,7 +414,7 @@ public static partial class Program
         Check(escaped.ToXmlString().Contains("a &amp; b &lt; c"), "спецсимволы экранированы при записи");
     }
 
-    private static void XmlSerializerMiscTests()
+    internal static void XmlSerializerMiscTests()
     {
         Section("XmlSerializer: Comment/PI, неизвестный элемент, экранирование атрибутов (по отчёту покрытия)");
 
@@ -499,7 +445,7 @@ public static partial class Program
 
     // ------------------------------------------------------------- проверка
 
-    private static void ValidationTests()
+    internal static void ValidationTests()
     {
         Section("Валидация");
         var validator = new DitaValidator { CheckStyleRules = false };
@@ -538,7 +484,7 @@ public static partial class Program
         Check(validator.Validate(conrefSkipped).Count == 0, "элемент с conref не проверяется по модели");
     }
 
-    private static void DitaValidatorMiscTests()
+    internal static void DitaValidatorMiscTests()
     {
         Section("DitaValidator: атрибуты/EMPTY/незакрытая модель/стилевые правила (по отчёту покрытия)");
 
@@ -627,7 +573,7 @@ public static partial class Program
             "image с дочерним <alt> тоже гасит подсказку (не только атрибут)");
     }
 
-    private static void ValidationIssueTests()
+    internal static void ValidationIssueTests()
     {
         Section("ValidationIssue: SeverityText/Location/ToString (по отчёту покрытия)");
 
@@ -651,7 +597,7 @@ public static partial class Program
         Check(info.ToString() == "Сведения: инфо ()", $"ToString() без узла и без строки не добавляет ', строка N': '{info}'");
     }
 
-    private static void TemplateTests()
+    internal static void TemplateTests()
     {
         Section("Заготовки документов");
         var validator = new DitaValidator { CheckStyleRules = false };
@@ -696,7 +642,7 @@ public static partial class Program
             $"SuggestId обрезает результат до 60 символов: {DocumentTemplates.SuggestId(longTitle, "topic").Length}");
     }
 
-    private static void EditingTests()
+    internal static void EditingTests()
     {
         Section("Редактирование");
 
@@ -790,7 +736,7 @@ public static partial class Program
             "объединение по вертикали не опустошает строку целиком");
     }
 
-    private static void EditCommandsExtraTests()
+    internal static void EditCommandsExtraTests()
     {
         Section("EditCommands: остальные операции (по отчёту покрытия)");
 
@@ -876,7 +822,7 @@ public static partial class Program
         Check(EditCommands.MergeTableCellRight(detachedEntry) is null, "MergeTableCellRight отклоняет entry вне tgroup");
     }
 
-    private static void UndoStackExtraTests()
+    internal static void UndoStackExtraTests()
     {
         Section("UndoStack: Redo, лимит, событие Changed (по отчёту покрытия)");
 
@@ -935,7 +881,7 @@ public static partial class Program
 
     // -------------------------------------------------------------- проект
 
-    private static void ProjectTests()
+    internal static void ProjectTests()
     {
         Section("Проект и публикация");
 
@@ -1304,7 +1250,7 @@ public static partial class Program
         }
     }
 
-    private static void HtmlPublisherMiscTests()
+    internal static void HtmlPublisherMiscTests()
     {
         Section("HtmlPublisher: многофайловая сборка, RenderPreview для карты (по отчёту покрытия)");
 
@@ -1403,7 +1349,7 @@ public static partial class Program
 
     // ------------------------------------------------------------ keyscope
 
-    private static void KeyScopeTests()
+    internal static void KeyScopeTests()
     {
         Section("Области ключей (keyscope)");
 
@@ -1507,7 +1453,7 @@ public static partial class Program
         }
     }
 
-    private static void KeyDefinitionMiscTests()
+    internal static void KeyDefinitionMiscTests()
     {
         Section("KeyDefinition: KeyText через navtitle, KeyContent, ToString() (по отчёту покрытия)");
 
@@ -1554,7 +1500,7 @@ public static partial class Program
         }
     }
 
-    private static void MultiProjectWorkspaceTests()
+    internal static void MultiProjectWorkspaceTests()
     {
         Section("Мультипроектный workspace (проекты-источники ключей)");
 
@@ -1676,7 +1622,7 @@ public static partial class Program
         }
     }
 
-    private static void ValidationAndAnchorFixTests()
+    internal static void ValidationAndAnchorFixTests()
     {
         Section("Исправления: валидация keyscope-ключей и якоря вложенных элементов");
 
@@ -1756,7 +1702,7 @@ public static partial class Program
 
     // -------------------------------------------------- таблицы соответствий
 
-    private static void RelTableTests()
+    internal static void RelTableTests()
     {
         Section("Таблицы соответствий (reltable)");
 
@@ -1851,7 +1797,7 @@ public static partial class Program
         }
     }
 
-    private static void MapTreeMiscTests()
+    internal static void MapTreeMiscTests()
     {
         Section("MapTree: mapref, keyref-topicref, заголовки узлов карты (по отчёту покрытия)");
 
@@ -1956,7 +1902,7 @@ public static partial class Program
 
     // ------------------------------------------------- пометка изменений (rev)
 
-    private static void RevChangeTests()
+    internal static void RevChangeTests()
     {
         Section("Пометка изменений (rev)");
 
@@ -2023,7 +1969,7 @@ public static partial class Program
         }
     }
 
-    private static void TrackChangesTests()
+    internal static void TrackChangesTests()
     {
         Section("Track changes (status=\"new\"/\"deleted\")");
 
@@ -2129,7 +2075,7 @@ public static partial class Program
         }
     }
 
-    private static void XliffTests()
+    internal static void XliffTests()
     {
         Section("Экспорт/импорт XLIFF");
 
@@ -2326,7 +2272,7 @@ public static partial class Program
         }
     }
 
-    private static void XliffConverterPropertyTests()
+    internal static void XliffConverterPropertyTests()
     {
         Section("Property-based: экспорт/импорт XLIFF (случайные фразовые деревья)");
 
@@ -2419,7 +2365,7 @@ public static partial class Program
             $"{iterations} случайных фразовых деревьев: экспорт/импорт XLIFF без потерь формы и содержимого ({iterations - failures}/{iterations})");
     }
 
-    private static void DtdAttributeListParserTests()
+    internal static void DtdAttributeListParserTests()
     {
         Section("DtdAttributeListParser: типы атрибутов (по отчёту покрытия)");
 
@@ -2455,7 +2401,7 @@ public static partial class Program
         Check(danglingName.Count == 0, "имя атрибута без типа/умолчания (оборванный текст) не добавляется как половинчатая запись");
     }
 
-    private static void DtdCatalogLoaderTests()
+    internal static void DtdCatalogLoaderTests()
     {
         Section("Загрузка внешнего DTD");
 
@@ -2522,7 +2468,7 @@ public static partial class Program
         }
     }
 
-    private static void DtdReaderMiscTests()
+    internal static void DtdReaderMiscTests()
     {
         Section("DtdReader: PUBLIC-сущности, циклы, повреждённый синтаксис (по отчёту покрытия)");
 
@@ -2630,7 +2576,7 @@ x
     /// @class) → ElementDef.Automaton — если где-то на этом пути модель или @class потеряются
     /// или исказятся, сгенерированная валидная последовательность перестанет проходить, а
     /// ожидаемый DisplayKind разойдётся с фактическим.</summary>
-    private static void DtdCatalogLoaderPropertyTests()
+    internal static void DtdCatalogLoaderPropertyTests()
     {
         Section("Property-based: DtdReader + DtdCatalogLoader (случайные DTD-фрагменты)");
 
@@ -2756,7 +2702,7 @@ x
             $"{iterations} случайных DTD-фрагментов (сущности + ELEMENT/ATTLIST + @class) разобраны и провалидированы без расхождений ({iterations - failures}/{iterations})");
     }
 
-    private static void PluginLoaderTests()
+    internal static void PluginLoaderTests()
     {
         Section("Плагины: загрузка сборки через AssemblyLoadContext");
 
@@ -2764,12 +2710,15 @@ x
         // на ссылке на DitaStudio.Core, как и полагается настоящему плагину) — единственный способ
         // проверить, что typeof(T).IsAssignableFrom(type) реально работает через границу отдельно
         // загруженной сборки, а не просто на бумаге.
-        var testPluginDir = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "TestPlugin", "bin", "Debug", "net8.0");
+        // Проект тестов ссылается на TestPlugin (ReferenceOutputAssembly=false) — плагин всегда
+        // собран в той же конфигурации, что и тесты (bin/<Конфигурация>/net8.0).
+        var configuration = new DirectoryInfo(AppContext.BaseDirectory).Parent!.Name;
+        var testPluginDir = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "TestPlugin", "bin", configuration, "net8.0");
         var testPluginDll = Path.Combine(testPluginDir, "TestPlugin.dll");
 
         if (!File.Exists(testPluginDll))
         {
-            Console.WriteLine($"  (TestPlugin.dll не найден по {testPluginDll} — раздел пропущен; соберите весь DitaStudio.sln)");
+            Check(false, $"TestPlugin.dll собран вместе с тестами: не найден по {testPluginDll}");
             return;
         }
 
@@ -2824,7 +2773,7 @@ x
                 .Select(n => new ValidationIssue(IssueSeverity.Info, "[из тестового плагина] найден note", n, document.FilePath));
     }
 
-    private static void DitaProjectValidateAllWithPluginsTests()
+    internal static void DitaProjectValidateAllWithPluginsTests()
     {
         Section("DitaProject.ValidateAll с плагинами");
 
@@ -2884,7 +2833,7 @@ x
         }
     }
 
-    private static void DitavalFlagTests()
+    internal static void DitavalFlagTests()
     {
         Section("Подсветка .ditaval (action=\"flag\")");
 
@@ -3039,7 +2988,7 @@ x
         return true;
     }
 
-    private static void DitavalPropertyTests()
+    internal static void DitavalPropertyTests()
     {
         Section("Property-based: DitavalWriter + DitavalReader (случайные правила .ditaval)");
 
@@ -3100,7 +3049,7 @@ x
             $"{iterations} случайных наборов правил .ditaval пережили Write→Read без потерь ({iterations - failures}/{iterations})");
     }
 
-    private static void RefResolverTests()
+    internal static void RefResolverTests()
     {
         Section("RefResolver: Parse/ResolvePath/FindTarget/ResolveConref/ExpandConrefs (по отчёту покрытия)");
 
@@ -3289,7 +3238,7 @@ x
 
     // -------------------------------------------------------------- рефакторинг
 
-    private static void RefactorTests()
+    internal static void RefactorTests()
     {
         Section("Рефакторинг: переименование id и перенос файла");
 
@@ -3382,7 +3331,7 @@ x
         }
     }
 
-    private static void ExtractToConrefTests()
+    internal static void ExtractToConrefTests()
     {
         Section("Рефакторинг: вынесение в conref");
 
@@ -3465,7 +3414,7 @@ x
         }
     }
 
-    private static void PdfExporterTests()
+    internal static void PdfExporterTests()
     {
         Section("Экспорт в PDF через headless-браузер (по отчёту покрытия)");
 
@@ -3514,7 +3463,7 @@ x
         }
     }
 
-    private static void DiffTests()
+    internal static void DiffTests()
     {
         Section("Сравнение файлов (построчный diff)");
 
@@ -3536,7 +3485,7 @@ x
             "удалённая строка распознана без ложного добавления");
     }
 
-    private static void GitHistoryTests()
+    internal static void GitHistoryTests()
     {
         Section("Сравнение с git-историей");
 
@@ -3588,7 +3537,7 @@ x
         }
     }
 
-    private static void SvnHistoryTests()
+    internal static void SvnHistoryTests()
     {
         Section("Сравнение с историей SVN");
 
@@ -3695,7 +3644,7 @@ x
 
     // ---------------------------------------------------------------- DOCX
 
-    private static void DocxTests()
+    internal static void DocxTests()
     {
         Section("Экспорт в DOCX");
 
@@ -3811,7 +3760,7 @@ x
         }
     }
 
-    private static void DocxRendererMiscTests()
+    internal static void DocxRendererMiscTests()
     {
         Section("DocxRenderer: топик-уровневые ветки, CALS-таблица, сноски, закладки (по отчёту покрытия)");
 
@@ -4032,7 +3981,7 @@ x
         return bytes.ToArray();
     }
 
-    private static void ImageSizeFormatsTests()
+    internal static void ImageSizeFormatsTests()
     {
         Section("ImageSize через DocxRenderer.RenderImage: GIF/BMP/JPEG, единицы измерения (по отчёту покрытия)");
 
@@ -4111,7 +4060,7 @@ x
     /// Один и тот же проект публикуется и в HTML, и в DOCX — расхождения в поведении между
     /// рендерерами (например, внешние изображения) фиксируются как есть, не как баг.
     /// </summary>
-    private static void AdvancedRenderingTests()
+    internal static void AdvancedRenderingTests()
     {
         Section("HTML/DOCX: figure/dl/parml/simpletable/image/xref (по отчёту покрытия)");
 
@@ -4294,7 +4243,7 @@ x
     /// (overline/q/cite/menucascade/state/boolean/tm), spectitle-заголовок раздела, hazardstatement,
     /// вложенный топик (RenderNestedTopic) и глоссарная статья как отдельный тип топика.
     /// </summary>
-    private static void HtmlRendererMiscTests()
+    internal static void HtmlRendererMiscTests()
     {
         Section("HtmlRenderer: таблица/медиа/foreign/сноски/указатель/abbreviated-form (по отчёту покрытия)");
 
@@ -4466,7 +4415,7 @@ x
     /// DocxRenderer расходятся тут по возможностям формата. Фиксируют текущее поведение,
     /// чтобы следующий шаг унификации диспетчера не сломал его молча.
     /// </summary>
-    private static void ListAndStepsDispatchTests()
+    internal static void ListAndStepsDispatchTests()
     {
         Section("Списки и шаги: защита перед унификацией диспетчера рендера");
 

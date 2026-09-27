@@ -8,9 +8,9 @@ namespace DitaStudio.Tests;
 
 // Разбор недоверенного XML: сущности DOCTYPE раскрываются, но с пределом — файл
 // с вложенными сущностями («billion laughs») не должен вешать редактор.
-public static partial class Program
+internal static partial class CoreChecks
 {
-    private static void XmlSafetyTests()
+    internal static void XmlSafetyTests()
     {
         Section("Разбор XML: предел раскрытия сущностей");
 
