@@ -13,12 +13,23 @@
 
   <topicref href="concepts/overview.dita">
     <topicref href="concepts/author-mode.dita"/>
+    <topicref href="concepts/data-safety.dita"/>
   </topicref>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Основы DITA</navtitle>
+    </topicmeta>
+    <topicref href="concepts/topic-types.dita"/>
+    <topicref href="concepts/maps.dita"/>
+    <topicref href="concepts/keys.dita"/>
+  </topichead>
 
   <topichead>
     <topicmeta>
       <navtitle>Работа с проектом</navtitle>
     </topicmeta>
+    <topicref href="tasks/create-project.dita"/>
     <topicref href="tasks/open-project.dita"/>
     <topicref href="tasks/edit-content.dita"/>
     <topicref href="tasks/insert-elements.dita"/>
@@ -41,6 +52,7 @@
       <navtitle>Справочные материалы</navtitle>
     </topicmeta>
     <topicref href="reference/keyboard-shortcuts.dita"/>
+    <topicref href="reference/topic-structure.dita"/>
     <topicref href="reference/author-mode-limits.dita"/>
   </topichead>
 

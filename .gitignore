@@ -11,3 +11,6 @@ build.done
 build.request
 coverage.xml
 coverage-report/
+
+# Реальный проект заказчика — хранится только локально, не в репозитории
+samples/CE207R7/

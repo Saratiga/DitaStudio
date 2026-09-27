@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="topic-types" xml:lang="ru-RU">
+  <title>Типы топиков</title>
+  <shortdesc>Чем отличаются концепция, задача, справка, устранение неполадки, статья глоссария и
+    универсальный топик и какой тип выбрать для своего текста.</shortdesc>
+  <conbody>
+    <p>В DITA текст делится на небольшие самостоятельные части — топики. Снаружи все топики
+      устроены одинаково: заголовок <codeph>title</codeph>, краткое описание
+      <codeph>shortdesc</codeph>, пролог с метаданными <codeph>prolog</codeph>, тело и связанные
+      ссылки <codeph>related-links</codeph>. Тип топика определяет, что можно положить в тело.
+      <keyword keyref="product-name"/> знает эти правила: панель «Вставка» показывает только
+      допустимые элементы, а проверка сообщает, если порядок нарушен. Сводные таблицы —
+      в <xref href="../reference/topic-structure.dita#topic-structure">Структура топиков</xref>.</p>
+
+    <section id="concept">
+      <title>Концепция</title>
+      <p>Отвечает на вопросы «что это?» и «зачем?»: описание продукта, принципа работы,
+        понятия. Пошаговых инструкций в концепции быть не должно — их место в задаче, на которую
+        концепция может сослаться. Тело <codeph>conbody</codeph> принимает абзацы, списки,
+        таблицы, рисунки, примечания, блоки кода, разделы <codeph>section</codeph> и примеры
+        <codeph>example</codeph>.</p>
+      <codeblock>&lt;concept id="about-backup"&gt;
+  &lt;title&gt;Резервное копирование&lt;/title&gt;
+  &lt;shortdesc&gt;Копия защищает данные от сбоя диска.&lt;/shortdesc&gt;
+  &lt;conbody&gt;
+    &lt;p&gt;Программа сохраняет копию раз в сутки…&lt;/p&gt;
+  &lt;/conbody&gt;
+&lt;/concept&gt;</codeblock>
+    </section>
+
+    <section id="task">
+      <title>Задача</title>
+      <p>Инструкция, которую читатель выполняет по шагам. Части тела <codeph>taskbody</codeph>
+        необязательны, но идут строго по порядку: условия <codeph>prereq</codeph>, контекст
+        <codeph>context</codeph>, шаги, результат <codeph>result</codeph>, что делать при неудаче
+        <codeph>tasktroubleshooting</codeph>, примеры <codeph>example</codeph>, дальнейшие действия
+        <codeph>postreq</codeph>.</p>
+      <p>Шаги бывают нумерованные <codeph>steps</codeph>, в любом порядке
+        <codeph>steps-unordered</codeph> и свободным текстом <codeph>steps-informal</codeph>.
+        Шаг <codeph>step</codeph> начинается с команды <codeph>cmd</codeph> — одного действия в
+        повелительном наклонении. За ней могут идти пояснение <codeph>info</codeph>, подшаги
+        <codeph>substeps</codeph>, пример <codeph>stepxmp</codeph>, варианты
+        <codeph>choices</codeph> или <codeph>choicetable</codeph>, примечание; в конце — результат
+        шага <codeph>stepresult</codeph>. Атрибут <parmname>importance</parmname> со значением
+        <codeph>optional</codeph> помечает необязательный шаг.</p>
+      <p>В режиме «Автор» <shortcut>Enter</shortcut> в конце команды создаёт следующий шаг,
+        <shortcut>Tab</shortcut> и <shortcut>Shift+Tab</shortcut> меняют уровень вложенности.</p>
+      <codeblock>&lt;taskbody&gt;
+  &lt;prereq&gt;&lt;p&gt;Нужны права администратора.&lt;/p&gt;&lt;/prereq&gt;
+  &lt;steps&gt;
+    &lt;step&gt;&lt;cmd&gt;Откройте меню Сервис.&lt;/cmd&gt;&lt;/step&gt;
+    &lt;step&gt;
+      &lt;cmd&gt;Выберите Резервная копия.&lt;/cmd&gt;
+      &lt;stepresult&gt;&lt;p&gt;Откроется окно выбора папки.&lt;/p&gt;&lt;/stepresult&gt;
+    &lt;/step&gt;
+  &lt;/steps&gt;
+  &lt;result&gt;&lt;p&gt;Копия появится в выбранной папке.&lt;/p&gt;&lt;/result&gt;
+&lt;/taskbody&gt;</codeblock>
+    </section>
+
+    <section id="reference">
+      <title>Справка</title>
+      <p>Сведения, которые не читают подряд, а ищут глазами: параметры, коды ошибок, команды,
+        характеристики. Тело <codeph>refbody</codeph> состоит из разделов, синтаксиса
+        <codeph>refsyn</codeph>, примеров, таблиц и таблиц свойств <codeph>properties</codeph>.
+        Таблица свойств — это строки <codeph>property</codeph> из трёх ячеек: тип
+        <codeph>proptype</codeph>, значение <codeph>propvalue</codeph>, описание
+        <codeph>propdesc</codeph>. В режиме «Автор» она правится по ячейкам.</p>
+    </section>
+
+    <section id="troubleshooting">
+      <title>Устранение неполадки</title>
+      <p>Разбор проблемы по схеме «признак → причина → решение». Тело
+        <codeph>troublebody</codeph> начинается с признака <codeph>condition</codeph>, за ним —
+        один или несколько вариантов <codeph>troubleSolution</codeph>, каждый из причины
+        <codeph>cause</codeph> и решения <codeph>remedy</codeph>. Решение содержит шаги, как в
+        задаче, и при необходимости — кто их выполняет (<codeph>responsibleParty</codeph>).
+        Располагайте варианты от самой вероятной причины к самой редкой.</p>
+    </section>
+
+    <section id="glossentry">
+      <title>Статья глоссария</title>
+      <p>Одна статья — один термин: вместо заголовка термин <codeph>glossterm</codeph>, вместо
+        краткого описания — определение <codeph>glossdef</codeph>. Необязательное тело
+        <codeph>glossBody</codeph> уточняет полную форму термина
+        (<codeph>glossSurfaceForm</codeph>), сокращения и синонимы (<codeph>glossAlt</codeph> с
+        <codeph>glossAcronym</codeph>, <codeph>glossAbbreviation</codeph>,
+        <codeph>glossSynonym</codeph>), правила употребления.</p>
+      <p>Статью удобно подключать к тексту через ключ: <codeph>&lt;abbreviated-form
+        keyref="plc"/&gt;</codeph> выводит сокращение из статьи, а если его нет — сам термин.
+        Несколько коротких статей можно собрать в одном файле с корнем
+        <codeph>glossgroup</codeph>.</p>
+    </section>
+
+    <section id="topic">
+      <title>Универсальный топик</title>
+      <p>Базовый тип <codeph>topic</codeph> с телом <codeph>body</codeph> без ограничений на
+        структуру. Подходит для вводных страниц и текстов, которые не являются ни объяснением,
+        ни инструкцией, ни справкой. Если текст ложится в специализированный тип, выбирайте его:
+        структура помогает автору, читателю и проверке.</p>
+    </section>
+
+    <section id="learning">
+      <title>Учебные топики</title>
+      <p>Типы DITA Learning and Training (<codeph>learningOverview</codeph>,
+        <codeph>learningContent</codeph>, <codeph>learningSummary</codeph>,
+        <codeph>learningAssessment</codeph>, <codeph>learningPlan</codeph>) есть в каталоге
+        редактора, но готовых заготовок для них нет. Создайте универсальный топик и в режиме
+        «Исходный код» замените корневой элемент и строку <codeph>DOCTYPE</codeph>. Так же
+        создаётся и группа глоссария <codeph>glossgroup</codeph>.</p>
+    </section>
+
+    <section id="nested">
+      <title>Вложенные топики</title>
+      <p>После тела топик может содержать дочерние топики. Это удобно для коротких связанных
+        частей, которые не заслуживают отдельного файла, но в публикации получают свои
+        заголовки.</p>
+    </section>
+  </conbody>
+</concept>

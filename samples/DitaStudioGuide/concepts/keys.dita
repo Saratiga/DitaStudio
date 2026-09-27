@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="keys" xml:lang="ru-RU">
+  <title>Ключи и ключевые слова</title>
+  <shortdesc>Ключ хранит значение — текст, ссылку, картинку или фрагмент — в одном месте карты,
+    а топики ссылаются на него по имени. Там же: области ключей, ключевые слова в прологе и
+    предметный указатель.</shortdesc>
+  <conbody>
+    <p>Топики ссылаются на имя ключа (<codeph>keyref="product"</codeph>), а значение задаётся один
+      раз в карте. Поменялось название продукта или адрес — правится одна строка карты, а не
+      каждый топик. Каждая карта может задать свои значения, поэтому из одних и тех же топиков
+      собираются разные публикации. Например, название этого редактора —
+      <keyword keyref="product-name"/> — в руководстве взято из ключа
+      <codeph>product-name</codeph>.</p>
+
+    <section id="define">
+      <title>Как определить и использовать ключ</title>
+      <p>Ключ определяет атрибут <parmname>keys</parmname> — обычно на <codeph>keydef</codeph> в
+        карте. Одно определение может задавать несколько имён через пробел.</p>
+      <simpletable relcolwidth="2* 5* 4*">
+        <sthead>
+          <stentry>Что хранит</stentry>
+          <stentry>Определение в карте</stentry>
+          <stentry>Использование в топике</stentry>
+        </sthead>
+        <strow>
+          <stentry>Текст</stentry>
+          <stentry><codeph>keydef</codeph> с <codeph>topicmeta/keywords/keyword</codeph></stentry>
+          <stentry><codeph>&lt;keyword keyref="product"/&gt;</codeph>, <codeph>&lt;ph keyref="…"/&gt;</codeph></stentry>
+        </strow>
+        <strow>
+          <stentry>Ссылку на топик</stentry>
+          <stentry><codeph>&lt;keydef keys="install" href="tasks/install.dita"/&gt;</codeph> и
+            <codeph>navtitle</codeph> для текста ссылки</stentry>
+          <stentry><codeph>&lt;xref keyref="install"/&gt;</codeph></stentry>
+        </strow>
+        <strow>
+          <stentry>Внешний адрес</stentry>
+          <stentry><codeph>keydef</codeph> с <codeph>href="https://…"</codeph> и
+            <codeph>scope="external"</codeph></stentry>
+          <stentry><codeph>&lt;xref keyref="site"/&gt;</codeph></stentry>
+        </strow>
+        <strow>
+          <stentry>Картинку</stentry>
+          <stentry><codeph>&lt;keydef keys="logo" href="images/logo.png"/&gt;</codeph></stentry>
+          <stentry><codeph>&lt;image keyref="logo"/&gt;</codeph></stentry>
+        </strow>
+        <strow>
+          <stentry>Термин глоссария</stentry>
+          <stentry><codeph>&lt;keydef keys="plc" href="glossary/plc.dita"/&gt;</codeph></stentry>
+          <stentry><codeph>&lt;abbreviated-form keyref="plc"/&gt;</codeph></stentry>
+        </strow>
+        <strow>
+          <stentry>Общий фрагмент</stentry>
+          <stentry><codeph>&lt;keydef keys="shared" href="reusable/shared.dita"/&gt;</codeph></stentry>
+          <stentry><codeph>&lt;p conkeyref="shared/warning"/&gt;</codeph> — вставляет элемент с
+            <codeph>id="warning"</codeph></stentry>
+        </strow>
+      </simpletable>
+      <p>Текст ключа берётся из <codeph>topicmeta/keywords/keyword</codeph>, а если его нет — из
+        <codeph>topicmeta/navtitle</codeph>. В режиме «Автор» атрибут
+        <parmname>keyref</parmname> ставится на вкладке «Атрибуты»: выделите элемент, выберите
+        <parmname>keyref</parmname> в списке «Добавить атрибут» и впишите имя ключа.</p>
+    </section>
+
+    <section id="rules">
+      <title>Правила, о которых стоит помнить</title>
+      <ul>
+        <li><b>Текст подставляется только в пустой элемент.</b> Так требует спецификация DITA:
+          собственный текст элемента остаётся, и его можно использовать как запасное
+          значение.</li>
+        <li><b>Первое определение побеждает.</b> Ключи собираются из всех карт проекта. Держите
+          их в одном месте — например, в отдельной карте, подключённой через
+          <codeph>mapref</codeph>.</li>
+        <li><b>Ключи пересобираются при сохранении.</b> Добавили <codeph>keydef</codeph> —
+          сохраните карту, и ключ появится на вкладке «Ключи».</li>
+        <li><b>Необъявленный ключ — ошибка проверки.</b> <shortcut>F7</shortcut> находит
+          <parmname>keyref</parmname> и <parmname>conkeyref</parmname> на несуществующие
+          ключи.</li>
+      </ul>
+    </section>
+
+    <section id="keyscope">
+      <title>Области ключей</title>
+      <p>Атрибут <parmname>keyscope</parmname> на <codeph>topicref</codeph> или
+        <codeph>topichead</codeph> создаёт для ветки карты свою область ключей. Ключ ищется
+        сначала в своей области, потом в родительских, вплоть до корня. Так в одной публикации
+        можно описать две модели устройства: в ветке <codeph>keyscope="basic"</codeph> ключ
+        <codeph>model</codeph> означает «Базовая», в ветке <codeph>keyscope="pro"</codeph> —
+        «Про», а топики используют один и тот же <codeph>keyref="model"</codeph>. К ключу
+        конкретной области можно обратиться явно: <codeph>keyref="pro.model"</codeph>.</p>
+      <p>Общие ключи нескольких проектов можно хранить отдельно и подключать как проект-источник,
+        см. <xref href="extensions.dita#extensions/referenced-projects">Проекты-источники
+        ключей</xref>.</p>
+    </section>
+
+    <section id="keywords">
+      <title>Ключевые слова</title>
+      <p>Слово «ключевые» в DITA встречается в двух разных смыслах:</p>
+      <ul>
+        <li><codeph>keyword</codeph> внутри определения ключа — это значение ключа, текст для
+          подстановки;</li>
+        <li><codeph>keywords</codeph> в прологе топика
+          (<codeph>prolog/metadata/keywords</codeph>) — это метаданные: слова, описывающие
+          содержание топика для поиска и каталогизации. В текст публикации они не
+          выводятся.</li>
+      </ul>
+      <p>Элемент <codeph>keyword</codeph> в тексте без <parmname>keyref</parmname> просто помечает
+        слово как ключевое понятие и выводится как обычный текст.</p>
+    </section>
+
+    <section id="index">
+      <title>Предметный указатель</title>
+      <p>Термин указателя <codeph>indexterm</codeph> ставится прямо в текст топика или в
+        ключевые слова пролога; вложенный <codeph>indexterm</codeph> — подпункт. Алфавитный
+        указатель собирается при публикации единого HTML-файла и в PDF, который из него
+        печатается. В многостраничном сайте и в DOCX указатель не выводится.</p>
+      <codeblock>&lt;indexterm&gt;резервная копия&lt;indexterm&gt;восстановление&lt;/indexterm&gt;&lt;/indexterm&gt;</codeblock>
+    </section>
+  </conbody>
+</concept>

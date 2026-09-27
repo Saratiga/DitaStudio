@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="create-project" xml:lang="ru-RU">
+  <title>Создание проекта с нуля</title>
+  <shortdesc>Путь от пустой папки до готового HTML-сайта: структура папок, карта, первые
+    топики, ключи, проверка и публикация.</shortdesc>
+  <taskbody>
+    <context>
+      <p>Проект <keyword keyref="product-name"/> — это обычная папка с картами
+        (<filepath>.ditamap</filepath>), топиками (<filepath>.dita</filepath>), картинками и
+        служебными файлами настроек <filepath>.ditastudio-*</filepath>. Отдельный «файл проекта»
+        создавать не нужно.</p>
+    </context>
+
+    <steps>
+      <step>
+        <cmd>Создайте в Проводнике папку проекта и подпапки для разных видов содержимого.</cmd>
+        <info>
+          <p>Диалог «Создать документ» предлагает только существующие папки, поэтому удобнее
+            создать их заранее. Типичная структура:</p>
+          <codeblock>MyProduct/
+  myproduct.ditamap     главная карта публикации
+  keys.ditamap          (по желанию) ключи отдельной картой
+  concepts/             концепции
+  tasks/                задачи
+  reference/            справка
+  troubleshooting/      устранение неполадок
+  glossary/             статьи глоссария
+  reusable/             общие фрагменты для conref
+  images/               рисунки</codeblock>
+          <p>Скрытые папки и папки <filepath>out</filepath>, <filepath>bin</filepath>,
+            <filepath>obj</filepath>, <filepath>temp</filepath>, <filepath>node_modules</filepath>
+            редактор не сканирует. Сборку он по умолчанию предлагает класть в
+            <filepath>out</filepath>.</p>
+        </info>
+      </step>
+      <step>
+        <cmd>Откройте папку: <menucascade><uicontrol>Файл</uicontrol>
+          <uicontrol>Открыть папку проекта…</uicontrol></menucascade>
+          (<shortcut>Ctrl+Shift+O</shortcut>).</cmd>
+        <stepresult><p>Пустая папка — нормальный проект: дерево на вкладке «Проект» пока
+          пустое.</p></stepresult>
+      </step>
+      <step>
+        <cmd>Создайте карту: <menucascade><uicontrol>Файл</uicontrol>
+          <uicontrol>Создать документ…</uicontrol></menucascade> → <uicontrol>Карта</uicontrol>.</cmd>
+        <info><p>Заголовок — название будущей публикации, папка — корень проекта. Для книги с
+          главами и приложениями выберите <uicontrol>Карта книги</uicontrol>, см.
+          <xref href="../concepts/maps.dita#maps">Карты публикации</xref>.</p></info>
+      </step>
+      <step>
+        <cmd>Создайте первые топики через <shortcut>Ctrl+N</shortcut>, выбирая тип по
+          содержанию.</cmd>
+        <choicetable>
+          <chhead>
+            <choptionhd>Если вы пишете…</choptionhd>
+            <chdeschd>Выберите</chdeschd>
+          </chhead>
+          <chrow><choption>что это и зачем</choption><chdesc>Концепция</chdesc></chrow>
+          <chrow><choption>как сделать, по шагам</choption><chdesc>Задача</chdesc></chrow>
+          <chrow><choption>параметры, коды, команды</choption><chdesc>Справка</chdesc></chrow>
+          <chrow><choption>не работает — почему — что делать</choption><chdesc>Устранение неполадки</chdesc></chrow>
+          <chrow><choption>определение термина</choption><chdesc>Статья глоссария</chdesc></chrow>
+        </choicetable>
+        <stepresult><p>Документ открывается в режиме «Автор» с заготовкой. Заполните краткое
+          описание — одно-два предложения о том, что даёт топик, — и основную часть. Подробно
+          о типах: <xref href="../concepts/topic-types.dita#topic-types">Типы топиков</xref>.</p></stepresult>
+      </step>
+      <step>
+        <cmd>Добавьте топики в карту на вкладке <uicontrol>Карта</uicontrol>.</cmd>
+        <info>
+          <ul>
+            <li><uicontrol>+ Топик</uicontrol> добавляет ссылку на файл после выделенной строки
+              или в конец карты.</li>
+            <li><uicontrol>+ Раздел</uicontrol> добавляет заголовок раздела без своей страницы;
+              его текст правится в <codeph>navtitle</codeph>, если открыть карту как документ.</li>
+            <li><uicontrol>→</uicontrol> вкладывает строку в предыдущую, <uicontrol>←</uicontrol>
+              выносит, <uicontrol>↑</uicontrol> / <uicontrol>↓</uicontrol> и перетаскивание меняют
+              порядок.</li>
+          </ul>
+        </info>
+        <stepresult><p>Порядок строк карты — это порядок и вложенность страниц в
+          публикации.</p></stepresult>
+      </step>
+      <step>
+        <cmd>Заведите ключи для того, что повторяется и может измениться: название продукта,
+          версию, адрес сайта.</cmd>
+        <info>
+          <p>Откройте карту, перейдите в режим «Исходный код» и добавьте определения:</p>
+          <codeblock>&lt;keydef keys="product"&gt;
+  &lt;topicmeta&gt;&lt;keywords&gt;&lt;keyword&gt;МойПродукт&lt;/keyword&gt;&lt;/keywords&gt;&lt;/topicmeta&gt;
+&lt;/keydef&gt;
+&lt;keydef keys="install" href="tasks/install.dita"/&gt;</codeblock>
+          <p>После сохранения ключи появятся на вкладке «Ключи». Как их использовать —
+            <xref href="../concepts/keys.dita#keys">Ключи и ключевые слова</xref>.</p>
+        </info>
+      </step>
+      <step>
+        <cmd>Проверьте проект: <shortcut>F7</shortcut>.</cmd>
+        <info><p>Ошибки (недопустимый порядок элементов, битые ссылки, необъявленные ключи,
+          повторяющиеся <codeph>id</codeph>) исправьте до публикации. Двойной щелчок по строке
+          переходит к месту ошибки.</p></info>
+      </step>
+      <step>
+        <cmd>Посмотрите результат на вкладке <uicontrol>Предпросмотр</uicontrol> и соберите
+          сайт: <shortcut>F5</shortcut>.</cmd>
+      </step>
+    </steps>
+
+    <result>
+      <p>В выбранной папке появится HTML-сайт с оглавлением. Тем же меню
+        <uicontrol>Публикация</uicontrol> собираются единый HTML, PDF и DOCX.</p>
+    </result>
+
+    <postreq>
+      <p>Советы по устройству проекта:</p>
+      <ul>
+        <li><b>Один топик — одна мысль.</b> Топик должен читаться отдельно от соседей. Если
+          заголовок приходится писать через «и», это, скорее всего, два топика.</li>
+        <li><b>Стабильный <codeph>id</codeph>.</b> На него ссылаются <codeph>href</codeph> и
+          <codeph>conref</codeph>; меняйте его через <menucascade><uicontrol>Структура</uicontrol>
+          <uicontrol>Переименовать id…</uicontrol></menucascade> — ссылки обновятся сами.</li>
+        <li><b>Имя файла совпадает с <codeph>id</codeph>.</b> Переносите файлы правым щелчком на
+          вкладке «Проект», а не в Проводнике, — тогда редактор обновит ссылки.</li>
+        <li><b>Контроль версий.</b> Папку сборки <filepath>out</filepath> в репозиторий не
+          добавляйте. Файлы <filepath>.ditastudio-*</filepath> — настройки проекта; добавьте их,
+          если настройки нужны всем, но проверьте, что пути в них не абсолютные.</li>
+      </ul>
+    </postreq>
+  </taskbody>
+</task>

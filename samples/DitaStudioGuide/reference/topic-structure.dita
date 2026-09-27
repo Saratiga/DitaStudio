@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="topic-structure" xml:lang="ru-RU">
+  <title>Структура топиков</title>
+  <shortdesc>Сводные таблицы: общие части всех топиков, корневые элементы и тела типов, части
+    задачи и шага.</shortdesc>
+  <refbody>
+    <section id="common">
+      <title>Общие части</title>
+      <simpletable relcolwidth="1* 1* 3*">
+        <sthead>
+          <stentry>Часть</stentry>
+          <stentry>Элемент</stentry>
+          <stentry>Назначение</stentry>
+        </sthead>
+        <strow>
+          <stentry>Заголовок</stentry>
+          <stentry><codeph>title</codeph></stentry>
+          <stentry>Обязателен. Заголовок страницы и строка оглавления.</stentry>
+        </strow>
+        <strow>
+          <stentry>Краткое описание</stentry>
+          <stentry><codeph>shortdesc</codeph>, <codeph>abstract</codeph></stentry>
+          <stentry>Суть топика в одном-двух предложениях. Показывается в подсказках ссылок и в
+            поиске.</stentry>
+        </strow>
+        <strow>
+          <stentry>Пролог</stentry>
+          <stentry><codeph>prolog</codeph></stentry>
+          <stentry>Метаданные: автор, даты, ключевые слова. В текст публикации не
+            выводится.</stentry>
+        </strow>
+        <strow>
+          <stentry>Тело</stentry>
+          <stentry>зависит от типа</stentry>
+          <stentry>Основное содержимое.</stentry>
+        </strow>
+        <strow>
+          <stentry>Связанные ссылки</stentry>
+          <stentry><codeph>related-links</codeph></stentry>
+          <stentry>Ссылки «Смотрите также», заданные в самом топике.</stentry>
+        </strow>
+      </simpletable>
+    </section>
+
+    <section id="types">
+      <title>Типы топиков</title>
+      <simpletable relcolwidth="2* 2* 3* 2*">
+        <sthead>
+          <stentry>Тип</stentry>
+          <stentry>Корень / тело</stentry>
+          <stentry>Для чего</stentry>
+          <stentry>Заготовка</stentry>
+        </sthead>
+        <strow>
+          <stentry>Концепция</stentry>
+          <stentry><codeph>concept</codeph> / <codeph>conbody</codeph></stentry>
+          <stentry>Что это, как устроено, зачем</stentry>
+          <stentry>есть</stentry>
+        </strow>
+        <strow>
+          <stentry>Задача</stentry>
+          <stentry><codeph>task</codeph> / <codeph>taskbody</codeph></stentry>
+          <stentry>Пошаговая инструкция</stentry>
+          <stentry>есть</stentry>
+        </strow>
+        <strow>
+          <stentry>Справка</stentry>
+          <stentry><codeph>reference</codeph> / <codeph>refbody</codeph></stentry>
+          <stentry>Параметры, коды, синтаксис</stentry>
+          <stentry>есть</stentry>
+        </strow>
+        <strow>
+          <stentry>Устранение неполадки</stentry>
+          <stentry><codeph>troubleshooting</codeph> / <codeph>troublebody</codeph></stentry>
+          <stentry>Признак, причина, решение</stentry>
+          <stentry>есть</stentry>
+        </strow>
+        <strow>
+          <stentry>Статья глоссария</stentry>
+          <stentry><codeph>glossentry</codeph> / <codeph>glossBody</codeph></stentry>
+          <stentry>Определение термина</stentry>
+          <stentry>есть</stentry>
+        </strow>
+        <strow>
+          <stentry>Группа глоссария</stentry>
+          <stentry><codeph>glossgroup</codeph></stentry>
+          <stentry>Несколько статей в одном файле</stentry>
+          <stentry>нет</stentry>
+        </strow>
+        <strow>
+          <stentry>Универсальный топик</stentry>
+          <stentry><codeph>topic</codeph> / <codeph>body</codeph></stentry>
+          <stentry>Свободная структура</stentry>
+          <stentry>есть</stentry>
+        </strow>
+        <strow>
+          <stentry>Учебные топики</stentry>
+          <stentry><codeph>learningContent</codeph> и др.</stentry>
+          <stentry>Учебные курсы</stentry>
+          <stentry>нет</stentry>
+        </strow>
+      </simpletable>
+    </section>
+
+    <section id="taskbody">
+      <title>Части задачи</title>
+      <p>Все части необязательны и идут только в этом порядке.</p>
+      <simpletable relcolwidth="2* 3*">
+        <sthead>
+          <stentry>Элемент</stentry>
+          <stentry>Содержание</stentry>
+        </sthead>
+        <strow><stentry><codeph>prereq</codeph></stentry><stentry>Что должно быть готово до начала</stentry></strow>
+        <strow><stentry><codeph>context</codeph></stentry><stentry>Зачем и когда выполняется задача</stentry></strow>
+        <strow><stentry><codeph>steps</codeph>, <codeph>steps-unordered</codeph>, <codeph>steps-informal</codeph></stentry><stentry>Шаги по порядку, в любом порядке или свободным текстом</stentry></strow>
+        <strow><stentry><codeph>result</codeph></stentry><stentry>Что получится в конце</stentry></strow>
+        <strow><stentry><codeph>tasktroubleshooting</codeph></stentry><stentry>Что делать, если результат не достигнут</stentry></strow>
+        <strow><stentry><codeph>example</codeph></stentry><stentry>Пример выполнения, может быть несколько</stentry></strow>
+        <strow><stentry><codeph>postreq</codeph></stentry><stentry>Что сделать после</stentry></strow>
+      </simpletable>
+    </section>
+
+    <section id="step">
+      <title>Части шага</title>
+      <simpletable relcolwidth="2* 3*">
+        <sthead>
+          <stentry>Элемент</stentry>
+          <stentry>Содержание</stentry>
+        </sthead>
+        <strow><stentry><codeph>cmd</codeph></stentry><stentry>Обязательно, первым: одно действие в повелительном наклонении</stentry></strow>
+        <strow><stentry><codeph>info</codeph></stentry><stentry>Пояснение к действию</stentry></strow>
+        <strow><stentry><codeph>substeps</codeph></stentry><stentry>Подшаги</stentry></strow>
+        <strow><stentry><codeph>stepxmp</codeph></stentry><stentry>Пример к шагу</stentry></strow>
+        <strow><stentry><codeph>choices</codeph>, <codeph>choicetable</codeph></stentry><stentry>Варианты действия списком или таблицей</stentry></strow>
+        <strow><stentry><codeph>stepresult</codeph></stentry><stentry>Что произойдёт после шага</stentry></strow>
+        <strow><stentry><codeph>steptroubleshooting</codeph></stentry><stentry>Что делать, если шаг не удался</stentry></strow>
+      </simpletable>
+    </section>
+  </refbody>
+</reference>

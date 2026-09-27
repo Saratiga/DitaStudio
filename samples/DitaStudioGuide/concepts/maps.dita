@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="maps" xml:lang="ru-RU">
+  <title>Карты публикации</title>
+  <shortdesc>Карта задаёт, какие топики входят в публикацию, в каком порядке и с какой
+    вложенностью. Обычная карта, карта книги и схема категорий решают разные задачи.</shortdesc>
+  <conbody>
+    <p>Карта не содержит текста — только ссылки на топики и сведения о публикации. Один и тот же
+      топик может входить в несколько карт: например, в полное руководство и в краткую
+      памятку.</p>
+
+    <section id="map">
+      <title>Обычная карта</title>
+      <simpletable relcolwidth="2* 5*">
+        <sthead>
+          <stentry>Элемент</stentry>
+          <stentry>Что делает</stentry>
+        </sthead>
+        <strow><stentry><codeph>title</codeph></stentry><stentry>Заголовок публикации.</stentry></strow>
+        <strow><stentry><codeph>topicref</codeph></stentry><stentry>Ссылка на топик; вложенные ссылки — подразделы.</stentry></strow>
+        <strow><stentry><codeph>topichead</codeph></stentry><stentry>Заголовок раздела без собственной страницы; текст — в <codeph>topicmeta/navtitle</codeph>.</stentry></strow>
+        <strow><stentry><codeph>topicgroup</codeph></stentry><stentry>Группа ссылок без заголовка.</stentry></strow>
+        <strow><stentry><codeph>keydef</codeph></stentry><stentry>Определение ключа; в оглавление не попадает.</stentry></strow>
+        <strow><stentry><codeph>mapref</codeph></stentry><stentry>Подключение другой карты целиком — большая публикация собирается из частей.</stentry></strow>
+        <strow><stentry><codeph>reltable</codeph></stentry><stentry>Таблица соответствий: связи «Смотрите также» между топиками.</stentry></strow>
+      </simpletable>
+      <p>Полезные атрибуты ссылки на топик:</p>
+      <ul>
+        <li><parmname>navtitle</parmname> (или элемент <codeph>topicmeta/navtitle</codeph>) — свой
+          текст строки оглавления вместо заголовка топика;</li>
+        <li><parmname>processing-role</parmname> со значением <codeph>resource-only</codeph> —
+          топик нужен для ссылок и ключей, но отдельной страницей в публикацию не выходит;</li>
+        <li><parmname>keyscope</parmname> — своя область ключей для ветки карты.</li>
+      </ul>
+      <note>Условные атрибуты (<parmname>product</parmname>, <parmname>audience</parmname> и
+        другие) на самих ссылках карты при сборке пока не учитываются. Ставьте их на элементы
+        внутри топиков — там условия работают.</note>
+    </section>
+
+    <section id="bookmap">
+      <title>Карта книги</title>
+      <p>Для публикаций в виде книги (PDF, DOCX). Вместо <codeph>title</codeph> — заголовок
+        <codeph>booktitle</codeph> с основным названием <codeph>mainbooktitle</codeph>, дальше:</p>
+      <ul>
+        <li><codeph>frontmatter</codeph> — начало книги: перечни <codeph>booklists</codeph>
+          (например, оглавление <codeph>toc</codeph>), предисловие, уведомления;</li>
+        <li><codeph>part</codeph> — части, внутри которых главы;</li>
+        <li><codeph>chapter</codeph> — главы, в них вкладываются обычные ссылки на топики;</li>
+        <li><codeph>appendix</codeph> — приложения;</li>
+        <li><codeph>backmatter</codeph> — завершающая часть.</li>
+      </ul>
+      <p>Заготовка «Карта книги» уже содержит заголовок и оглавление.</p>
+    </section>
+
+    <section id="subjectscheme">
+      <title>Схема категорий</title>
+      <p>Карта особого вида: описывает допустимые значения условных атрибутов — например, что
+        <parmname>product</parmname> может быть только <codeph>basic</codeph> или
+        <codeph>pro</codeph>. <keyword keyref="product-name"/> знает структуру схемы и проверяет
+        её, но значения атрибутов в топиках по ней не проверяет: список значений для условий
+        сборки собирается из фактически использованных в проекте.</p>
+    </section>
+  </conbody>
+</concept>
