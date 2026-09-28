@@ -20,6 +20,7 @@ jobs:
     env:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
+      AVALONIA_TELEMETRY_OPTOUT: 1
 
     steps:
       - uses: actions/checkout@v7
@@ -67,3 +68,44 @@ jobs:
           name: test-results
           path: TestResults
           if-no-files-found: ignore
+
+  # Кроссплатформенная версия на Avalonia (src/DitaStudio.Desktop) — собирается и проверяется
+  # на Linux: headless-тесты интерфейса и снимки главного окна в обеих темах (артефакт).
+  desktop-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      AVALONIA_TELEMETRY_OPTOUT: 1
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Кэш NuGet
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Сборка
+        run: dotnet build tests/DitaStudio.Desktop.Tests -c Debug
+
+      - name: Тесты интерфейса (headless)
+        run: >
+          dotnet test tests/DitaStudio.Desktop.Tests -c Debug --no-build
+          --logger "console;verbosity=normal"
+
+      - name: Снимки окон
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-screenshots
+          path: tests/DitaStudio.Desktop.Tests/bin/Debug/net8.0/screenshots
+          if-no-files-found: ignore
+

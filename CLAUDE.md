@@ -33,6 +33,16 @@ CI — `.github/workflows/`:
 
 Демо-проект для ручной проверки: **Файл → Открыть папку проекта** → `samples\GuideSample`.
 
+## Перенос на Avalonia (идёт)
+
+Кроссплатформенная версия — `src/DitaStudio.Desktop` (Avalonia 11.3, не 12: из-за
+CefGlue), растёт параллельно с WPF `src/DitaStudio.App`; план, решения и статус этапов —
+`docs/AVALONIA_MIGRATION.md`. Дизайн переносится один в один: палитра
+`Themes/Palette.axaml` = цвета `Themes/Light|Dark.xaml`, стили `Themes/Controls.axaml`
+повторяют WPF-шаблоны. В своих шаблонах части **не называть `PART_…`** — к ним цепляются
+стили темы Fluent. Проверка — `tests/DitaStudio.Desktop.Tests` (Avalonia.Headless, снимки
+окон в `bin/.../screenshots`, в CI — артефакт `desktop-screenshots`).
+
 ## Документация
 
 Пользовательская документация живёт в трёх местах, и их нужно держать согласованными
@@ -89,7 +99,9 @@ src/DitaStudio.Core/     ядро, не знает про WPF — переисп
 src/DitaStudio.App/      WPF
   Authoring/             режим «Автор» (AuthorView, InlineEditor), редактор XML на AvalonEdit
   Views/                 вкладка документа, диалоги
+src/DitaStudio.Desktop/  кроссплатформенная версия на Avalonia (переносится, см. выше)
 tests/DitaStudio.Tests/  проверки ядра (xUnit)
+tests/DitaStudio.Desktop.Tests/ headless-тесты Avalonia-версии
 tests/DitaStudio.UiTests/ автоматизированные UI-тесты (xUnit + FlaUI, см. ниже)
 tools/UiHarness/         CLI для ручной UI-проверки (тот же FlaUI-драйвер)
 tools/DitaStudio.UiAutomation/ общая FlaUI-библиотека для двух пунктов выше

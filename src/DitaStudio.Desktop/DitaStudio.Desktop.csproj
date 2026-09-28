@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Кроссплатформенная версия редактора на Avalonia (Windows, Linux, macOS). Переносится
+       параллельно с WPF-приложением src/DitaStudio.App, пока не достигнет паритета. -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>DitaStudio.Desktop</RootNamespace>
+    <AssemblyName>DitaStudio.Desktop</AssemblyName>
+    <Version>0.3.0</Version>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <!-- Привязки пока по отражению: ViewModel'и переедут в общий проект на этапе 2. -->
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.13" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DitaStudio.Core\DitaStudio.Core.csproj" />
+    <ProjectReference Include="..\DitaStudio.Docx\DitaStudio.Docx.csproj" />
+  </ItemGroup>
+
+</Project>
