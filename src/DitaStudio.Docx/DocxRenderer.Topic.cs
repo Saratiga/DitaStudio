@@ -2,6 +2,7 @@ using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Validation;
 using DitaStudio.Docx.Styling;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
@@ -32,6 +33,18 @@ public sealed partial class DocxRenderer
 
             switch (child.Name)
             {
+                case "title" when DitaValidator.IsEmptyTitle(child):
+                    // Топик без заголовка: абзаца-заголовка нет (и в оглавление он не попадает),
+                    // закладка для ссылок на топик ставится прямо в тело перед содержимым.
+                    if (bookmarkName is not null)
+                    {
+                        var id = (_nextBookmarkId++).ToString();
+                        body.Append(new W.BookmarkStart { Id = id, Name = bookmarkName }, new W.BookmarkEnd { Id = id });
+                        bookmarkName = null;
+                    }
+
+                    break;
+
                 case "title":
                 case "glossterm":
                     W.Paragraph heading;

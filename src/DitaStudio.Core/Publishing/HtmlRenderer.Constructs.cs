@@ -331,7 +331,8 @@ public sealed partial class HtmlRenderer
             }
         }
 
-        return topic.FirstElement("title")?.InnerText.Trim() ?? doc.Title;
+        var title = topic.FirstElement("title")?.InnerText.Trim();
+        return string.IsNullOrEmpty(title) ? doc.Title : title;
     }
 
     private string RenderRelatedLinks(DitaNode node)

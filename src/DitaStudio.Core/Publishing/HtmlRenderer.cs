@@ -3,6 +3,7 @@ using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Validation;
 
 namespace DitaStudio.Core.Publishing;
 
@@ -113,6 +114,10 @@ public sealed partial class HtmlRenderer
 
             switch (child.Name)
             {
+                case "title" when DitaValidator.IsEmptyTitle(child):
+                    // Топик без заголовка (например, из одной таблицы) — пустой заголовок не печатается.
+                    break;
+
                 case "title":
                 case "glossterm":
                     sb.Append('<').Append(H(headingLevel)).Append(OptionalClassAttr(child))

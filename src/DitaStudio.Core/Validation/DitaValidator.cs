@@ -247,7 +247,17 @@ public sealed class DitaValidator
         }
 
         var title = root.FirstElement("title") ?? root.FirstElement("glossterm");
-        if (title is null || string.IsNullOrWhiteSpace(title.InnerText))
+        if (title is { Name: "title" } && IsEmptyTitle(title))
+        {
+            // Пустой <title/> допустим по DTD — так делают топик из одной таблицы: при публикации
+            // заголовок не печатается и в оглавление не попадает.
+            issues.Add(new ValidationIssue(
+                IssueSeverity.Info,
+                $"Пустой заголовок: топик публикуется без заголовка и не попадает в оглавление; в карте и ссылках он называется «{document.Title}».",
+                title,
+                document.FilePath));
+        }
+        else if (title is null || string.IsNullOrWhiteSpace(title.InnerText))
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Error,
@@ -266,10 +276,19 @@ public sealed class DitaValidator
         }
     }
 
+    /// <summary>Заголовок топика без текста и без подстановки (conref/keyref) — топик без заголовка.</summary>
+    public static bool IsEmptyTitle(DitaNode title) =>
+        string.IsNullOrWhiteSpace(title.InnerText) &&
+        !title.Descendants().Any(n => n.Kind == NodeKind.Element) &&
+        string.IsNullOrWhiteSpace(title.GetAttribute("conref")) &&
+        string.IsNullOrWhiteSpace(title.GetAttribute("conkeyref"));
+
     private static void ValidateNodeStyle(DitaNode node, DitaDocument document, List<ValidationIssue> issues)
     {
         // Элемент с conref/conkeyref не пуст: содержимое подставляется из другого топика.
+        // Пустой заголовок самого топика — отдельный случай (см. ValidateTopicStyle).
         if (node.Name is "p" or "li" or "cmd" or "title" or "entry" or "stentry" &&
+            !(node.Name == "title" && node.Parent is { } owner && DitaCatalog.Default.Get(owner.Name)?.IsTopicType == true) &&
             node.Children.Count == 0 &&
             string.IsNullOrWhiteSpace(node.GetAttribute("conref")) &&
             string.IsNullOrWhiteSpace(node.GetAttribute("conkeyref")))

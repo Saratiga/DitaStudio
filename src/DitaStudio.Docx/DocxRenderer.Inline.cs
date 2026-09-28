@@ -290,7 +290,8 @@ public sealed partial class DocxRenderer
         }
 
         var topic = RefResolver.FindById(doc.Root, reference.TopicId);
-        return topic?.FirstElement("title")?.InnerText.Trim() ?? doc.Title;
+        var title = topic?.FirstElement("title")?.InnerText.Trim();
+        return string.IsNullOrEmpty(title) ? doc.Title : title;
     }
 
     private IEnumerable<OpenXmlCompositeElement> RenderRelatedLinks(DitaNode node)
