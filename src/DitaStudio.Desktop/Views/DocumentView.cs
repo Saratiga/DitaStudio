@@ -19,14 +19,14 @@ namespace DitaStudio.Desktop.Views;
 /// Вкладка документа Avalonia-оболочки: «Автор», «Исходный код», «Предпросмотр» — как WPF
 /// DocumentPane. Промежуточная версия этапа 3 переноса: «Автор» показывает структуру документа
 /// (выбор элемента, структурные команды, атрибуты, палитра), текст правится в «Исходном коде»;
-/// полноценный визуальный редактор — этап 5, AvaloniaEdit — этап 4, встроенный предпросмотр —
-/// этап 6 (пока — во внешнем браузере).
+/// «Исходный код» — AvaloniaEdit с автодополнением по каталогу; полноценный визуальный
+/// редактор — этап 5, встроенный предпросмотр — этап 6 (пока — во внешнем браузере).
 /// </summary>
 public sealed class DocumentView : UserControl, IDocumentView
 {
     private readonly DitaProject _project;
     private readonly TabControl _tabs = new();
-    private readonly TextBox _source;
+    private readonly XmlSourceEditor _source = new();
     private readonly TreeView _structure = new();
     private readonly StructureAuthorSurface _author;
     private bool _syncing;
@@ -37,17 +37,7 @@ public sealed class DocumentView : UserControl, IDocumentView
         Document = document;
         _author = new StructureAuthorSurface(this);
 
-        _source = new TextBox
-        {
-            AcceptsReturn = true,
-            AcceptsTab = true,
-            TextWrapping = TextWrapping.NoWrap,
-            BorderThickness = new Thickness(0),
-            CornerRadius = new CornerRadius(0),
-            FontSize = 13
-        };
-        _source.Bind(TextBox.FontFamilyProperty, _source.GetResourceObservable("MonoFont"));
-        _source.TextChanged += (_, _) =>
+        _source.TextEdited += (_, _) =>
         {
             if (!_syncing)
             {
@@ -230,19 +220,7 @@ public sealed class DocumentView : UserControl, IDocumentView
     public void GoToSourceLine(int line)
     {
         Mode = EditorMode.Source;
-        var text = _source.Text ?? string.Empty;
-        var offset = 0;
-        for (var i = 1; i < line && offset >= 0; i++)
-        {
-            offset = text.IndexOf('\n', offset) + 1;
-            if (offset == 0)
-            {
-                return;
-            }
-        }
-
-        _source.CaretIndex = offset;
-        _source.Focus();
+        _source.GoToLine(line);
     }
 
     // ------------------------------------------------------------ предпросмотр

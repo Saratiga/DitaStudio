@@ -4,6 +4,7 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using DitaStudio.Desktop.Views;
 using DitaStudio.Presentation.ViewModels;
 using Xunit;
@@ -100,6 +101,27 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    [AvaloniaFact]
+    public async Task SourceMode_EditsGoBackToModel()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+
+        pane.Mode = DitaStudio.Presentation.Services.EditorMode.Source;
+        Dispatcher.UIThread.RunJobs();
+        var editor = window.GetVisualDescendants().OfType<XmlSourceEditor>().Single();
+        Assert.Contains("<concept", editor.Text);
+
+        editor.Text = editor.Text.Replace("О продукте", "О продукте (правка)");
+        Assert.True(pane.IsDirty);
+        Assert.Null(pane.CommitPendingEdits());
+        Assert.Equal("О продукте (правка)", pane.Document.Title);
+
+        editor.Text = "<concept><title>незакрытый";
+        Assert.NotNull(pane.CommitPendingEdits());
+        window.Close();
+    }
+
     [AvaloniaTheory]
     [InlineData("light")]
     [InlineData("dark")]
@@ -115,6 +137,11 @@ public sealed class MainWindowTests : IDisposable
             Dispatcher.UIThread.RunJobs();
 
             Save(window, $"main-window-{theme}");
+
+            pane.Mode = DitaStudio.Presentation.Services.EditorMode.Source;
+            Dispatcher.UIThread.RunJobs();
+            Save(window, $"source-editor-{theme}");
+            pane.Mode = DitaStudio.Presentation.Services.EditorMode.Author;
 
             _ = vm.Dialogs.AboutAsync();
             Dispatcher.UIThread.RunJobs();
