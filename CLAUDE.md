@@ -41,7 +41,17 @@ CefGlue), растёт параллельно с WPF `src/DitaStudio.App`; пл�
 `Themes/Palette.axaml` = цвета `Themes/Light|Dark.xaml`, стили `Themes/Controls.axaml`
 повторяют WPF-шаблоны. В своих шаблонах части **не называть `PART_…`** — к ним цепляются
 стили темы Fluent. Проверка — `tests/DitaStudio.Desktop.Tests` (Avalonia.Headless, снимки
-окон в `bin/.../screenshots`, в CI — артефакт `desktop-screenshots`).
+окон в `bin/.../screenshots`, в CI — артефакт `desktop-screenshots`). WPF-версия после
+переноса **не удаляется** — остаётся как легаси.
+
+«Автор» в Avalonia (`Desktop/Authoring`) — без RichTextBox: блок = `BlockEditor`
+(AvaloniaEdit, одна строка), фразовые элементы — `Presentation/Authoring/InlineContent`
+(цепочка элементов на символ; плашка — символ U+FFFC), раскраска и плашки — через
+`LineTransformers`/`ElementGenerators`. Текст вперемешку с вложенными блоками (пункт со
+вложенным списком, заметка из абзацев) — участки `InlineContent.Segment` между блоками.
+Структурные правки перестраивают **только затронутые блоки** (`RefreshChildren`/
+`RebuildAround`), полный `Rebuild` — последнее средство: на топике из 500 абзацев он ~1,5 с.
+Орфография — WeCantSpell.Hunspell, словари `Desktop/Dictionaries` (ru_RU — BSD, en_US — SCOWL).
 
 ## Документация
 

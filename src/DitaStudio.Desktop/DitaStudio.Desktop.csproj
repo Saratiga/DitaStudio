@@ -19,6 +19,8 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+    <!-- Словари Hunspell для проверки орфографии (ru_RU — BSD, en_US — SCOWL; лицензии в README_*.txt). -->
+    <None Include="Dictionaries\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

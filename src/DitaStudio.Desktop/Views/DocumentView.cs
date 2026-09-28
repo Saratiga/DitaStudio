@@ -2,10 +2,9 @@ using System.Security.Cryptography;
 using System.Text;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Templates;
+using DitaStudio.Desktop.Authoring;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Styling;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
@@ -17,25 +16,26 @@ namespace DitaStudio.Desktop.Views;
 
 /// <summary>
 /// Вкладка документа Avalonia-оболочки: «Автор», «Исходный код», «Предпросмотр» — как WPF
-/// DocumentPane. Промежуточная версия этапа 3 переноса: «Автор» показывает структуру документа
-/// (выбор элемента, структурные команды, атрибуты, палитра), текст правится в «Исходном коде»;
-/// «Исходный код» — AvaloniaEdit с автодополнением по каталогу; полноценный визуальный
-/// редактор — этап 5, встроенный предпросмотр — этап 6 (пока — во внешнем браузере).
+/// DocumentPane. «Автор» — визуальный редактор (<see cref="AuthorView"/>), «Исходный код» —
+/// AvaloniaEdit с автодополнением по каталогу; встроенный предпросмотр — этап 6 переноса
+/// (пока — во внешнем браузере).
 /// </summary>
 public sealed class DocumentView : UserControl, IDocumentView
 {
     private readonly DitaProject _project;
     private readonly TabControl _tabs = new();
     private readonly XmlSourceEditor _source = new();
-    private readonly TreeView _structure = new();
-    private readonly StructureAuthorSurface _author;
+    private readonly AuthorView _author = new();
     private bool _syncing;
 
     public DocumentView(DitaProject project, DitaDocument document)
     {
         _project = project;
         Document = document;
-        _author = new StructureAuthorSurface(this);
+        _author.Load(document);
+        _author.DocumentModified += (_, _) => RaiseDirty();
+        _author.SelectionChanged += (_, _) => SelectionChanged?.Invoke(this, EventArgs.Empty);
+        _author.BeforeStructuralEdit += (_, description) => Undo.Push(Document, description);
 
         _source.TextEdited += (_, _) =>
         {
@@ -46,31 +46,14 @@ public sealed class DocumentView : UserControl, IDocumentView
             }
         };
 
-        // Структура документа раскрыта целиком — как текст в режиме «Автор».
-        _structure.Styles.Add(new Style(x => x.OfType<TreeViewItem>())
-        {
-            Setters = { new Setter(TreeViewItem.IsExpandedProperty, true) }
-        });
-        _structure.ItemTemplate = new FuncTreeDataTemplate<StructureItem>(
-            (item, _) => BuildStructureRow(item), item => item.Children);
-        _structure.SelectionChanged += (_, _) =>
-        {
-            if (_structure.SelectedItem is StructureItem item)
-            {
-                _author.Select(item.Node);
-            }
-        };
-
         _tabs.ItemsSource = new[]
         {
-            new TabItem { Header = "Автор", Content = BuildAuthorPane() },
+            new TabItem { Header = "Автор", Content = _author },
             new TabItem { Header = "Исходный код", Content = _source },
             new TabItem { Header = "Предпросмотр", Content = BuildPreviewPane() }
         };
         _tabs.SelectionChanged += OnTabChanged;
         Content = _tabs;
-
-        RebuildStructure();
     }
 
     public DitaDocument Document { get; }
@@ -83,7 +66,10 @@ public sealed class DocumentView : UserControl, IDocumentView
 
     public bool IsDirty => Document.IsDirty;
 
-    public IAuthorSurface Author => _author;
+    public IAuthorSurface Author => _author.Surface;
+
+    /// <summary>Визуальный редактор (для тестов).</summary>
+    public AuthorView AuthorEditor => _author;
 
     public event EventHandler? DirtyChanged;
 
@@ -97,56 +83,6 @@ public sealed class DocumentView : UserControl, IDocumentView
         set => _tabs.SelectedIndex = value switch { EditorMode.Source => 1, EditorMode.Preview => 2, _ => 0 };
     }
 
-    // ------------------------------------------------------------ «Автор» (структура)
-
-    private Control BuildAuthorPane()
-    {
-        var hint = new TextBlock
-        {
-            Text = "Промежуточный режим: выберите элемент — доступны палитра вставки, атрибуты и команды меню " +
-                   "«Структура». Текст правится на вкладке «Исходный код»; визуальный редактор переносится.",
-            TextWrapping = TextWrapping.Wrap,
-            FontSize = 11.5,
-            Margin = new Thickness(10, 8, 10, 6)
-        };
-        hint.Bind(TextBlock.ForegroundProperty, hint.GetResourceObservable("TextMuted"));
-        DockPanel.SetDock(hint, Dock.Top);
-
-        var dock = new DockPanel();
-        dock.Children.Add(hint);
-        dock.Children.Add(_structure);
-        return dock;
-    }
-
-    private static Control BuildStructureRow(StructureItem item)
-    {
-        var row = new StackPanel { Orientation = Orientation.Horizontal };
-        var name = new TextBlock { Text = item.Node.Name, FontSize = 12 };
-        name.Bind(TextBlock.FontFamilyProperty, name.GetResourceObservable("MonoFont"));
-        name.Bind(TextBlock.ForegroundProperty, name.GetResourceObservable("Accent"));
-        row.Children.Add(name);
-
-        if (item.Text.Length > 0)
-        {
-            var text = new TextBlock { Text = "  " + item.Text, FontSize = 12.5, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 720 };
-            row.Children.Add(text);
-        }
-
-        return row;
-    }
-
-    internal void RebuildStructure(DitaNode? focus = null)
-    {
-        var root = new StructureItem(Document.Root, 0);
-        _structure.ItemsSource = new[] { root };
-        if (focus is not null && root.Find(focus) is { } selected)
-        {
-            _structure.SelectedItem = selected;
-        }
-    }
-
-    internal void RaiseSelection() => SelectionChanged?.Invoke(this, EventArgs.Empty);
-
     internal void RaiseDirty() => DirtyChanged?.Invoke(this, EventArgs.Empty);
 
     // ------------------------------------------------------------ исходный код
@@ -158,15 +94,27 @@ public sealed class DocumentView : UserControl, IDocumentView
             return;
         }
 
-        if (e.RemovedItems.Count > 0 && ReferenceEquals(e.RemovedItems[0], ((TabItem[])_tabs.ItemsSource!)[1]))
+        var tabs = (TabItem[])_tabs.ItemsSource!;
+        foreach (var removed in e.RemovedItems)
         {
-            // Уход из исходного кода: правки переносятся в модель (если XML разбирается).
-            ApplySourceToModel();
+            if (ReferenceEquals(removed, tabs[0]))
+            {
+                _author.FlushPendingEdits();
+            }
+            else if (ReferenceEquals(removed, tabs[1]))
+            {
+                // Уход из исходного кода: правки переносятся в модель (если XML разбирается).
+                ApplySourceToModel();
+            }
         }
 
         if (Mode == EditorMode.Source)
         {
             LoadSourceFromModel();
+        }
+        else if (Mode == EditorMode.Author)
+        {
+            _author.Rebuild(_author.CurrentNode);
         }
     }
 
@@ -205,7 +153,7 @@ public sealed class DocumentView : UserControl, IDocumentView
             Document.DoctypePublicId = parsed.DoctypePublicId;
             Document.DoctypeSystemId = parsed.DoctypeSystemId;
             Document.IsDirty = true;
-            RebuildStructure();
+            _author.Rebuild();
             RaiseDirty();
             return null;
         }
@@ -215,7 +163,19 @@ public sealed class DocumentView : UserControl, IDocumentView
         }
     }
 
-    public string? CommitPendingEdits() => Mode == EditorMode.Source ? ApplySourceToModel() : null;
+    public string? CommitPendingEdits()
+    {
+        switch (Mode)
+        {
+            case EditorMode.Author:
+                _author.FlushPendingEdits();
+                return null;
+            case EditorMode.Source:
+                return ApplySourceToModel();
+            default:
+                return null;
+        }
+    }
 
     public void GoToSourceLine(int line)
     {
@@ -311,7 +271,16 @@ public sealed class DocumentView : UserControl, IDocumentView
         }
     }
 
-    public string SnapshotXml() => Mode == EditorMode.Source ? _source.Text ?? string.Empty : Document.ToXmlString();
+    public string SnapshotXml()
+    {
+        if (Mode == EditorMode.Source)
+        {
+            return _source.Text ?? string.Empty;
+        }
+
+        _author.FlushPendingEdits();
+        return Document.ToXmlString();
+    }
 
     public void ReloadFromDisk()
     {
@@ -359,7 +328,7 @@ public sealed class DocumentView : UserControl, IDocumentView
 
     public void ReloadViews()
     {
-        RebuildStructure(_author.CurrentNode);
+        _author.Rebuild(_author.CurrentNode);
         if (Mode == EditorMode.Source)
         {
             LoadSourceFromModel();
@@ -394,80 +363,12 @@ public sealed class DocumentView : UserControl, IDocumentView
 
     public bool FocusNode(DitaNode node)
     {
+        if (_author.EditorFor(node) is null)
+        {
+            return false;
+        }
+
         Mode = EditorMode.Author;
-        RebuildStructure(node);
-        _author.Select(node);
-        return true;
+        return _author.FocusNode(node);
     }
-
-    /// <summary>Строка дерева структуры.</summary>
-    private sealed class StructureItem
-    {
-        public StructureItem(DitaNode node, int depth)
-        {
-            Node = node;
-            var own = string.Concat(node.Children.Where(c => c.Kind == NodeKind.Text).Select(c => c.Value)).Trim();
-            var text = own.Length > 0 ? own : node.ElementChildren().Any() ? string.Empty : node.InnerText.Trim();
-            Text = text.Length > 90 ? text[..90] + "…" : text;
-            Children = node.ElementChildren().Select(c => new StructureItem(c, depth + 1)).ToList();
-        }
-
-        public DitaNode Node { get; }
-
-        public string Text { get; }
-
-        public List<StructureItem> Children { get; }
-
-        public StructureItem? Find(DitaNode node) =>
-            ReferenceEquals(Node, node) ? this : Children.Select(c => c.Find(node)).FirstOrDefault(f => f is not null);
-    }
-}
-
-/// <summary>Операции «Автора» над элементом, выбранным в дереве структуры (промежуточный режим).</summary>
-internal sealed class StructureAuthorSurface : AuthorSurfaceBase
-{
-    private readonly DocumentView _view;
-    private DitaNode? _current;
-
-    public StructureAuthorSurface(DocumentView view)
-    {
-        _view = view;
-    }
-
-    public override DitaDocument? Document => _view.Document;
-
-    public override DitaNode? CurrentNode
-    {
-        get => _current;
-        protected set => _current = value;
-    }
-
-    public void Select(DitaNode node)
-    {
-        if (ReferenceEquals(_current, node))
-        {
-            return;
-        }
-
-        _current = node;
-        _view.RaiseSelection();
-    }
-
-    protected override void BeforeStructuralEdit(string description) => _view.PushUndo(description);
-
-    protected override void AfterStructuralEdit(DitaNode? focus)
-    {
-        _current = focus;
-        _view.RebuildStructure(focus);
-        _view.RaiseDirty();
-        _view.RaiseSelection();
-    }
-
-    public override void Rebuild() => _view.RebuildStructure(_current);
-
-    // Оформление выделенного текста и вставка внутрь строки требуют текстового редактора —
-    // появятся вместе с визуальным режимом «Автор».
-    public override bool WrapCurrentInline(string element) => false;
-
-    public override bool InsertInlineNode(DitaNode node) => false;
 }

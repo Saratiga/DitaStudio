@@ -23,8 +23,13 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
     /// <summary>Перед правкой — снимок для отмены (<paramref name="description"/> — её название).</summary>
     protected abstract void BeforeStructuralEdit(string description);
 
-    /// <summary>После правки: документ изменён, представление перестраивается с курсором в <paramref name="focus"/>.</summary>
-    protected abstract void AfterStructuralEdit(DitaNode? focus);
+    /// <summary>
+    /// После правки: документ изменён, представление обновляется с курсором в <paramref name="focus"/>.
+    /// <paramref name="parent"/> — элемент, у которого менялись дети (null — неизвестно, перестроить
+    /// всё), <paramref name="changed"/> — его дети с изменённым содержимым или атрибутами;
+    /// добавленные, удалённые и переставленные дети определяются по самому родителю.
+    /// </summary>
+    protected abstract void AfterStructuralEdit(DitaNode? focus, DitaNode? parent, IReadOnlyList<DitaNode> changed);
 
     /// <summary>Записывает в модель незаписанный ввод редактора (если есть).</summary>
     public virtual void FlushPendingEdits()
@@ -51,10 +56,10 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         return node;
     }
 
-    private void Changed(DitaNode? focus)
+    private void Changed(DitaNode? focus, DitaNode? parent, params DitaNode[] changed)
     {
         Document!.IsDirty = true;
-        AfterStructuralEdit(focus);
+        AfterStructuralEdit(focus, parent, changed);
     }
 
     public bool InsertElement(string name)
@@ -85,7 +90,7 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
             return false;
         }
 
-        Changed(FirstEditable(created));
+        Changed(FirstEditable(created), created.Parent);
         return true;
     }
 
@@ -100,7 +105,7 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         var focus = EditCommands.PreviousElement(CurrentNode) ?? parent;
         EditCommands.Delete(CurrentNode);
         CurrentNode = null;
-        Changed(FirstEditable(focus));
+        Changed(FirstEditable(focus), parent);
         return true;
     }
 
@@ -117,7 +122,7 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
             return false;
         }
 
-        Changed(FirstEditable(CurrentNode));
+        Changed(FirstEditable(CurrentNode), CurrentNode.Parent);
         return true;
     }
 
@@ -139,7 +144,7 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         }
 
         CurrentNode = merged;
-        Changed(FirstEditable(merged));
+        Changed(FirstEditable(merged), merged.Parent, merged);
         return true;
     }
 
@@ -152,7 +157,7 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
 
         BeforeStructuralEdit("Изменение оформления вывода");
         var enabled = EditCommands.ToggleOutputClassToken(CurrentNode, className);
-        Changed(FirstEditable(CurrentNode));
+        Changed(FirstEditable(CurrentNode), CurrentNode.Parent, CurrentNode);
         return enabled;
     }
 
@@ -166,7 +171,7 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         BeforeStructuralEdit("Отметка изменения (rev)");
         var hasRev = !string.IsNullOrWhiteSpace(CurrentNode.GetAttribute("rev"));
         CurrentNode.SetAttribute("rev", hasRev ? null : "changed");
-        Changed(FirstEditable(CurrentNode));
+        Changed(FirstEditable(CurrentNode), CurrentNode.Parent, CurrentNode);
         return !hasRev;
     }
 
@@ -183,7 +188,7 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
 
         BeforeStructuralEdit(description);
         mark(CurrentNode);
-        Changed(FirstEditable(CurrentNode));
+        Changed(FirstEditable(CurrentNode), CurrentNode.Parent, CurrentNode);
     }
 
     public void AcceptCurrentTrackedChange()
@@ -195,8 +200,9 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
 
         BeforeStructuralEdit("Принятие правки (track changes)");
         var wasDeleted = TrackChanges.IsDeleted(node);
+        var parent = node.Parent;
         TrackChanges.Accept(node);
-        Changed(wasDeleted ? null : FirstEditable(node));
+        Changed(wasDeleted ? null : FirstEditable(node), parent, node);
     }
 
     public void RejectCurrentTrackedChange()
@@ -208,7 +214,8 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
 
         BeforeStructuralEdit("Отклонение правки (track changes)");
         var wasInserted = TrackChanges.IsInserted(node);
+        var parent = node.Parent;
         TrackChanges.Reject(node);
-        Changed(wasInserted ? null : FirstEditable(node));
+        Changed(wasInserted ? null : FirstEditable(node), parent, node);
     }
 }
