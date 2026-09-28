@@ -1,5 +1,6 @@
 using System.Text;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 
 namespace DitaStudio.Presentation.Authoring;
@@ -252,7 +253,8 @@ public sealed class InlineContent
                 AppendText(child.Value, path.Count == 0 ? InlineChain.Empty : new InlineChain(path.ToArray(), null));
                 break;
 
-            case NodeKind.Element when IsInline(child) && child.Children.Count > 0:
+            // Сноска — всегда плашка с номером: её текст правится в области «Сноски» внизу топика.
+            case NodeKind.Element when IsInline(child) && child.Children.Count > 0 && child.Name != "fn":
                 // В непустой фразовый элемент спускаемся на любую глубину — каждый лист (текст,
                 // картинка, чужая плашка) получает своё представление (как в WPF InlineEditor).
                 path.Add(child);
@@ -315,6 +317,32 @@ public sealed class InlineContent
         offset = Math.Clamp(offset, 0, _text.Length);
         removedLength = Math.Clamp(removedLength, 0, _text.Length - offset);
 
+        // Редактор может заменить кусок шире настоящей правки (выделение поверх границы
+        // элемента, вставка, автозамена). Совпадающие начало и конец остаются со своим
+        // оформлением — иначе весь кусок получил бы одну цепочку и, например, <fn> внутри
+        // него исчезла бы, а её текст слился с абзацем.
+        if (removedLength > 0 && inserted.Length > 0)
+        {
+            var max = Math.Min(removedLength, inserted.Length);
+            var prefix = 0;
+            while (prefix < max && _text[offset + prefix] == inserted[prefix])
+            {
+                prefix++;
+            }
+
+            var suffix = 0;
+            while (suffix < max - prefix && _text[offset + removedLength - 1 - suffix] == inserted[inserted.Length - 1 - suffix])
+            {
+                suffix++;
+            }
+
+            if (prefix + suffix > 0)
+            {
+                Replace(offset + prefix, removedLength - prefix - suffix, inserted.Substring(prefix, inserted.Length - prefix - suffix));
+                return;
+            }
+        }
+
         // Замена выделения (исправление слова, набор поверх) сохраняет его оформление.
         var replacedChain = removedLength > 0 ? _chains[offset].TextChain : null;
         if (removedLength > 0)
@@ -364,13 +392,38 @@ public sealed class InlineContent
         }
     }
 
+    /// <summary>Вставляет в позицию новый фразовый элемент с текстом (сноска, термин).</summary>
+    public void InsertElementText(int offset, DitaNode element, string text)
+    {
+        offset = Math.Clamp(offset, 0, _text.Length);
+        var chain = new InlineChain(ContextAt(offset).Append(element).ToArray(), null);
+        _text.Insert(offset, text.Replace(ChipChar, ' '));
+        _chains.InsertRange(offset, Enumerable.Repeat(chain, text.Length));
+    }
+
     /// <summary>Вставляет узел плашкой (ссылка, картинка, сноска) в позицию.</summary>
     public void InsertChip(int offset, DitaNode node)
     {
         offset = Math.Clamp(offset, 0, _text.Length);
-        var nodes = offset > 0 ? _chains[offset - 1].Nodes : Array.Empty<DitaNode>();
         _text.Insert(offset, ChipChar);
-        _chains.Insert(offset, new InlineChain(nodes, node));
+        _chains.Insert(offset, new InlineChain(ContextAt(offset).ToArray(), node));
+    }
+
+    /// <summary>
+    /// Фразовые элементы, внутрь которых встаёт новый элемент в позиции: общие предки соседних
+    /// символов — у конца полужирного новый элемент встаёт рядом с ним, а не внутрь.
+    /// </summary>
+    private IEnumerable<DitaNode> ContextAt(int offset)
+    {
+        var left = offset > 0 ? _chains[offset - 1].Nodes : Array.Empty<DitaNode>();
+        var right = offset < _chains.Count ? _chains[offset].Nodes : Array.Empty<DitaNode>();
+        var common = 0;
+        while (common < left.Count && common < right.Count && ReferenceEquals(left[common], right[common]))
+        {
+            common++;
+        }
+
+        return left.Take(common);
     }
 
     /// <summary>
@@ -378,11 +431,14 @@ public sealed class InlineContent
     /// участка предками, поэтому частично оформленный текст вкладывается в него целиком
     /// (<c>&lt;w&gt;x&lt;b&gt;y&lt;/b&gt;&lt;/w&gt;</c>, а не два отдельных <c>w</c>).
     /// </summary>
-    public bool Wrap(int start, int length, string elementName)
+    public bool Wrap(int start, int length, string elementName) => WrapNode(start, length, elementName) is not null;
+
+    /// <summary>Как <see cref="Wrap"/>, но возвращает новый элемент (чтобы задать ему атрибуты).</summary>
+    public DitaNode? WrapNode(int start, int length, string elementName)
     {
         if (length <= 0 || start < 0 || start + length > _text.Length)
         {
-            return false;
+            return null;
         }
 
         var common = _chains[start].Nodes.Count;
@@ -416,7 +472,79 @@ public sealed class InlineContent
             _chains[i] = updated;
         }
 
-        return true;
+        return wrapper;
+    }
+
+    /// <summary>
+    /// Фразовый элемент <paramref name="elementName"/>, который покрывает ровно участок (ни
+    /// символом больше, ни меньше), — самый глубокий; null — такого нет.
+    /// </summary>
+    public DitaNode? ExactWrapper(int start, int length, string elementName)
+    {
+        if (length <= 0 || start < 0 || start + length > _text.Length)
+        {
+            return null;
+        }
+
+        bool Has(int index, DitaNode node) =>
+            index >= 0 && index < _chains.Count && _chains[index].Nodes.Any(n => ReferenceEquals(n, node));
+
+        foreach (var node in _chains[start].Nodes.Where(n => n.Name == elementName).Reverse())
+        {
+            if (!Has(start - 1, node) && !Has(start + length, node) &&
+                Enumerable.Range(start, length).All(i => Has(i, node)))
+            {
+                return node;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Снимает класс группы <paramref name="prefix"/> с фразовых элементов участка; ph, у которого
+    /// после этого не осталось атрибутов, разворачивается (его текст остаётся на месте).
+    /// </summary>
+    public bool ClearClass(int start, int length, string prefix)
+    {
+        var nodes = new List<DitaNode>();
+        for (var i = Math.Max(start, 0); i < Math.Min(start + length, _chains.Count); i++)
+        {
+            foreach (var node in _chains[i].Nodes)
+            {
+                if (!nodes.Any(n => ReferenceEquals(n, node)) && TextFormatting.Token(node, prefix) is not null)
+                {
+                    nodes.Add(node);
+                }
+            }
+        }
+
+        foreach (var node in nodes)
+        {
+            TextFormatting.SetToken(node, prefix, null);
+            if (node.Name == "ph" && node.Attributes.Count == 0)
+            {
+                var mapped = new Dictionary<InlineChain, InlineChain>(ReferenceEqualityComparer.Instance);
+                for (var i = 0; i < _chains.Count; i++)
+                {
+                    var chain = _chains[i];
+                    if (!chain.Nodes.Any(n => ReferenceEquals(n, node)))
+                    {
+                        continue;
+                    }
+
+                    if (!mapped.TryGetValue(chain, out var updated))
+                    {
+                        updated = new InlineChain(chain.Nodes.Where(n => !ReferenceEquals(n, node)).ToArray(), chain.Chip);
+                        mapped[chain] = updated;
+                    }
+
+                    _chains[i] = updated;
+                }
+            }
+        }
+
+        return nodes.Count > 0;
     }
 
     /// <summary>Снимает фразовое оформление с участка; плашки остаются, но выходят из фразовых элементов.</summary>
@@ -439,10 +567,13 @@ public sealed class InlineContent
             return;
         }
 
+        // Прежние дети — по ссылкам и до сборки: плашки переносятся в новые узлы сами (не копии),
+        // и индексы детей при этом сдвигаются.
+        var old = Node.Children.Skip(range.Start).Take(range.End - range.Start).ToList();
         var nodes = BuildNodes(0, _text.Length);
-        for (var i = range.End - 1; i >= range.Start; i--)
+        foreach (var child in old.Where(c => ReferenceEquals(c.Parent, Node)))
         {
-            Node.Remove(Node.Children[i]);
+            Node.Remove(child);
         }
 
         for (var i = 0; i < nodes.Count; i++)
@@ -466,13 +597,13 @@ public sealed class InlineContent
         }
 
         offset = Math.Clamp(offset, 0, _text.Length);
+        var old = Node.Children.Skip(range.Start).ToList();
+        var following = Node.Children.Skip(range.End).ToList();
         var head = BuildNodes(0, offset);
         var tail = BuildNodes(offset, _text.Length);
-        var following = Node.Children.Skip(range.End).ToList();
-
-        for (var i = Node.Children.Count - 1; i >= range.Start; i--)
+        foreach (var child in old.Where(c => ReferenceEquals(c.Parent, Node)))
         {
-            Node.Remove(Node.Children[i]);
+            Node.Remove(child);
         }
 
         head.ForEach(Node.Add);
@@ -533,6 +664,7 @@ public sealed class InlineContent
         end = Math.Clamp(end, start, _text.Length);
         var text = new StringBuilder();
         IReadOnlyList<DitaNode>? textChain = null;
+        var usedChips = new HashSet<DitaNode>(ReferenceEqualityComparer.Instance);
 
         void FlushText()
         {
@@ -553,7 +685,9 @@ public sealed class InlineContent
             {
                 FlushText();
                 Descend(chain.Nodes);
-                Append(chip.CloneDeep());
+                // Плашка переносится сама, не копией: на неё могут ссылаться другие редакторы
+                // (текст сноски в области «Сноски»). Повтор той же плашки — копией.
+                Append(usedChips.Add(chip) ? chip : chip.CloneDeep());
                 continue;
             }
 
@@ -625,7 +759,7 @@ public sealed class InlineContent
             }
 
             case "fn":
-                return "ˣ сноска";
+                return $"сноска {FootnoteNumber(node)}";
 
             case "indexterm":
             {
@@ -648,6 +782,31 @@ public sealed class InlineContent
 
         var text = node.InnerText.Trim();
         return text.Length > 0 ? $"<{node.Name}> {Shorten(text)}" : $"<{node.Name}/>";
+    }
+
+    /// <summary>Номер сноски по порядку в документе (как в области «Сноски»).</summary>
+    public static int FootnoteNumber(DitaNode fn)
+    {
+        var root = fn;
+        while (root.Parent is not null)
+        {
+            root = root.Parent;
+        }
+
+        var index = 0;
+        foreach (var node in root.DescendantsAndSelf())
+        {
+            if (node.Kind == NodeKind.Element && node.Name == "fn")
+            {
+                index++;
+                if (ReferenceEquals(node, fn))
+                {
+                    return index;
+                }
+            }
+        }
+
+        return 1;
     }
 
     private static string Shorten(string value) => value.Length <= 24 ? value : value[..24] + "…";

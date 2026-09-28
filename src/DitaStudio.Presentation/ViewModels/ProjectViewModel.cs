@@ -348,8 +348,17 @@ public partial class ProjectViewModel : ObservableObject
     [RelayCommand]
     private async Task MoveSelectedFile()
     {
+        if (SelectedTreeNode?.File is { } file)
+        {
+            await MoveFileAsync(file);
+        }
+    }
+
+    /// <summary>Переименовывает/переносит файл с запросом нового имени и обновлением ссылок.</summary>
+    public async Task MoveFileAsync(ProjectFile file)
+    {
         var project = _main.Project;
-        if (project is null || SelectedTreeNode?.File is not { } file)
+        if (project is null)
         {
             return;
         }
@@ -409,6 +418,35 @@ public partial class ProjectViewModel : ObservableObject
         _main.StatusText = $"Файл перенесён: {file.RelativePath} → {newRelative}. Обновлено ссылок: {result.UpdatedReferences}.";
     }
 
+    /// <summary>
+    /// Удаляет файл с диска без вопросов (подтверждение — забота вызывающего): открытая вкладка
+    /// закрывается без сохранения, файл уходит из проекта. null — удалён, иначе текст ошибки.
+    /// </summary>
+    public string? DeleteFile(ProjectFile file)
+    {
+        var project = _main.Project;
+        if (project is null)
+        {
+            return "Проект не открыт.";
+        }
+
+        try
+        {
+            File.Delete(file.FullPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return ex.Message;
+        }
+
+        _main.Documents.DiscardTab(file.FullPath);
+        project.RemoveFile(file.FullPath);
+        _main.RefreshProjectTree?.Invoke();
+        _main.RefreshMapSelector?.Invoke();
+        RefreshKeysList();
+        return null;
+    }
+
     /// <summary>Создаёт документ по шаблону — в папке, выбранной в дереве проекта (или в папке
     /// выбранного файла), и открывает его.</summary>
     [RelayCommand]
@@ -464,6 +502,15 @@ public partial class ProjectViewModel : ObservableObject
         _main.RefreshProjectTree?.Invoke();
         _main.RefreshMapSelector?.Invoke();
         RefreshKeysList();
+
+        // Топик сразу попадает в карту, открытую на вкладке «Карта» (карта — нет: её место в
+        // иерархии выбирают вручную).
+        var isMap = DitaCatalog.Default.Get(document.Root.Name)?.IsMapType ?? false;
+        var added = !isMap && _main.Map.AddCreatedTopic(path);
         _main.OpenDocument?.Invoke(path);
+        if (added)
+        {
+            _main.StatusText = $"Создан {result.FileName} и добавлен в карту {_main.Map.SelectedMap!.RelativePath} (не забудьте сохранить карту).";
+        }
     }
 }

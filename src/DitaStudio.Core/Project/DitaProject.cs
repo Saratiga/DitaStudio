@@ -912,6 +912,18 @@ public sealed class DitaProject
         _files.Sort((a, b) => string.Compare(a.RelativePath, b.RelativePath, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>Убирает файл из проекта (после удаления с диска); ключи перестраиваются.</summary>
+    public void RemoveFile(string fullPath)
+    {
+        if (FindFile(fullPath) is { } file)
+        {
+            _files.Remove(file);
+        }
+
+        Invalidate(fullPath);
+        RebuildKeySpace();
+    }
+
     public void RefreshFileInfo(string fullPath)
     {
         var file = FindFile(fullPath);
@@ -1156,6 +1168,46 @@ public sealed class DitaProject
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Все ссылки проекта на файл <paramref name="targetPath"/> — @href и @conref в картах и топиках
+    /// (topicref, keydef, xref, conref…), кроме внешних.
+    /// </summary>
+    public IReadOnlyList<SearchHit> FindReferencesTo(string targetPath)
+    {
+        var target = System.IO.Path.GetFullPath(targetPath);
+        var result = new List<SearchHit>();
+        foreach (var file in _files)
+        {
+            // Ссылки файла на самого себя (href="#id") — не ссылки «на файл».
+            if (string.Equals(file.FullPath, target, StringComparison.OrdinalIgnoreCase) ||
+                TryGetDocument(file.FullPath) is not { } doc)
+            {
+                continue;
+            }
+
+            foreach (var node in doc.Root.DescendantsAndSelf().Where(n => n.Kind == NodeKind.Element))
+            {
+                foreach (var attribute in new[] { "href", "conref" })
+                {
+                    var value = node.GetAttribute(attribute);
+                    if (string.IsNullOrWhiteSpace(value) || RefResolver.IsExternal(value!) ||
+                        node.GetAttribute("scope") is "external" or "peer")
+                    {
+                        continue;
+                    }
+
+                    var reference = RefResolver.Parse(file.FullPath, value!);
+                    if (reference.Path is not null && string.Equals(System.IO.Path.GetFullPath(reference.Path), target, StringComparison.OrdinalIgnoreCase))
+                    {
+                        result.Add(new SearchHit(file, node, $"<{node.Name} {attribute}=\"{value}\">"));
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 
     public IReadOnlyList<SearchHit> Search(string query, bool caseSensitive = false, bool elementNames = false,

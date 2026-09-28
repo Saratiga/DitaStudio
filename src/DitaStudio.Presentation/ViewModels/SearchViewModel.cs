@@ -32,6 +32,16 @@ public partial class SearchViewModel : ObservableObject
         _main = main;
     }
 
+    /// <summary>Показывает готовый список (например, ссылки на файл) вместо результатов поиска.</summary>
+    public void ShowResults(IEnumerable<DitaProject.SearchHit> hits)
+    {
+        Results.Clear();
+        foreach (var hit in hits)
+        {
+            Results.Add(hit);
+        }
+    }
+
     [RelayCommand]
     private void Run()
     {

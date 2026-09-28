@@ -32,8 +32,46 @@ public sealed partial class DocxRenderer
         return paragraph;
     }
 
-    private W.Paragraph HeadingParagraph(List<OpenXmlElement> runs, int level) =>
-        Para(DocxStyleCatalog.Heading(level), runs);
+    private W.Paragraph HeadingParagraph(List<OpenXmlElement> runs, int level, bool unnumbered = false)
+    {
+        // Нумерованные абзацы после заголовка — на уровень ниже его (2.3 → 2.3.1), простая
+        // нумерация абзацев начинается заново.
+        _paragraphNumId = null;
+        if (!unnumbered)
+        {
+            _lastHeadingLevel = level;
+        }
+
+        return Para(unnumbered ? DocxStyleCatalog.HeadingPlain(level) : DocxStyleCatalog.Heading(level), runs);
+    }
+
+    private int _lastHeadingLevel;
+    private int? _paragraphNumId;
+
+    /// <summary>
+    /// Нумерованный абзац: в списке заголовков — на уровень ниже последнего заголовка (номер
+    /// «2.3.1» Word считает сам), без нумерации заголовков — простой список «1, 2, 3» в разделе.
+    /// </summary>
+    private void NumberParagraph(W.Paragraph paragraph)
+    {
+        var (numId, level) = _options.HeadingNumId is { } headings
+            ? (headings, Math.Min(_lastHeadingLevel, 8))
+            : (_paragraphNumId ??= AllocateNumbering(ordered: true), 0);
+        var numbering = new W.NumberingProperties(new W.NumberingLevelReference { Val = level }, new W.NumberingId { Val = numId });
+
+        // numPr — после pStyle, keepNext, keepLines, pageBreakBefore, framePr, widowControl.
+        var properties = EnsureParagraphProperties(paragraph);
+        var before = properties.ChildElements.LastOrDefault(e => e is W.ParagraphStyleId or W.KeepNext or W.KeepLines
+            or W.PageBreakBefore or W.FrameProperties or W.WidowControl);
+        if (before is null)
+        {
+            properties.PrependChild(numbering);
+        }
+        else
+        {
+            properties.InsertAfter(numbering, before);
+        }
+    }
 
     private static W.ParagraphProperties EnsureParagraphProperties(W.Paragraph paragraph) =>
         paragraph.ParagraphProperties ??= new W.ParagraphProperties();

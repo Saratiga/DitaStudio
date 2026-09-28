@@ -11,6 +11,7 @@ using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Authoring;
 
@@ -116,6 +117,9 @@ public sealed class BlockEditor : TextEditor
     /// <summary>Текст изменён пользователем (для отметки «не сохранено»).</summary>
     public event EventHandler? ContentChanged;
 
+    /// <summary>Меню по правой кнопке строится: подписчик добавляет свои пункты (например, «Вставить»).</summary>
+    public event Action<BlockEditor, List<Control>>? ContextMenuBuilding;
+
     public event EventHandler? Focused;
 
     public int PlainTextLength => Document.TextLength;
@@ -145,7 +149,11 @@ public sealed class BlockEditor : TextEditor
 
         _dirty = false;
         _content.WriteBack();
+        Written?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>Содержимое записано в модель (например, по уходу фокуса).</summary>
+    public event EventHandler? Written;
 
     /// <summary>Перечитывает содержимое из модели (после отмены или правки исходного кода).</summary>
     public void Reload()
@@ -243,6 +251,76 @@ public sealed class BlockEditor : TextEditor
         }
 
         CaretOffset = offset + 1;
+        CommitFormatting();
+    }
+
+    /// <summary>
+    /// Вставляет у курсора фразовый элемент с текстом (сноска, термин): выделение оборачивается,
+    /// иначе внутрь ставится выделенная заготовка — набор сразу её заменяет.
+    /// </summary>
+    public void InsertInlineElement(DitaNode element, string placeholder)
+    {
+        if (!TextArea.Selection.IsEmpty && WrapSelection(element.Name))
+        {
+            return;
+        }
+
+        var offset = CaretOffset;
+        _content.InsertElementText(offset, element, placeholder);
+        _syncing = true;
+        try
+        {
+            Document.Insert(offset, placeholder);
+        }
+        finally
+        {
+            _syncing = false;
+        }
+
+        Select(offset, placeholder.Length);
+        CommitFormatting();
+    }
+
+    /// <summary>
+    /// Класс оформления (размер, цвет) для выделения: уже оформленный ровно этим участком ph
+    /// получает новый класс, иначе выделение оборачивается в ph с классом. Без выделения у курсора
+    /// появляется выделенная заготовка с классом — дальше текст печатается уже так. null — снять
+    /// класс группы с выделения (или с фрагмента у курсора).
+    /// </summary>
+    public void ApplyInlineClass(string prefix, string? token)
+    {
+        var selection = TextArea.Selection;
+        if (token is null)
+        {
+            var (start, length) = selection.IsEmpty
+                ? (Math.Max(0, CaretOffset - 1), 1)
+                : (selection.SurroundingSegment.Offset, selection.SurroundingSegment.Length);
+            if (_content.ClearClass(start, length, prefix))
+            {
+                CommitFormatting();
+            }
+
+            return;
+        }
+
+        if (selection.IsEmpty)
+        {
+            var ph = DitaNode.Element("ph");
+            ph.SetAttribute("outputclass", token);
+            InsertInlineElement(ph, "текст");
+            return;
+        }
+
+        var segment = selection.SurroundingSegment;
+        if (_content.ExactWrapper(segment.Offset, segment.Length, "ph") is { } existing)
+        {
+            TextFormatting.SetToken(existing, prefix, token);
+        }
+        else if (_content.WrapNode(segment.Offset, segment.Length, "ph") is { } wrapper)
+        {
+            wrapper.SetAttribute("outputclass", token);
+        }
+
         CommitFormatting();
     }
 
@@ -548,6 +626,14 @@ public sealed class BlockEditor : TextEditor
         items.Add(copy);
         items.Add(paste);
 
+        var extra = new List<Control>();
+        ContextMenuBuilding?.Invoke(this, extra);
+        if (extra.Count > 0)
+        {
+            items.Add(new Separator());
+            items.AddRange(extra);
+        }
+
         return new ContextMenu { ItemsSource = items };
     }
 
@@ -594,12 +680,13 @@ public sealed class BlockEditor : TextEditor
                     continue;
                 }
 
-                var names = span.Chain.Nodes.Select(n => n.Name).ToArray();
+                var nodes = span.Chain.Nodes;
                 ChangeLinePart(start, end, element =>
                 {
-                    foreach (var name in names)
+                    foreach (var node in nodes)
                     {
-                        InlineStyles.Apply(element.TextRunProperties, name, _editor.ThemeBrush, mono);
+                        InlineStyles.Apply(element.TextRunProperties, node.Name, _editor.ThemeBrush, mono);
+                        InlineStyles.ApplyFormatting(element.TextRunProperties, node);
                     }
                 });
             }
@@ -635,8 +722,16 @@ public sealed class BlockEditor : TextEditor
         }
     }
 
+    /// <summary>Свой вид плашки (например, картинка вместо подписи); null — обычная плашка.</summary>
+    public Func<DitaNode, Control?>? ChipFactory { get; set; }
+
     private Control BuildChip(DitaNode? node)
     {
+        if (node is not null && ChipFactory?.Invoke(node) is { } custom)
+        {
+            return custom;
+        }
+
         var label = node is null ? "?" : InlineContent.DescribeChip(node);
         var chip = new Border
         {

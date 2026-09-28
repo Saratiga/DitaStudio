@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Presentation.Authoring;
 
 namespace DitaStudio.Desktop.Authoring;
@@ -51,14 +52,15 @@ public sealed partial class AuthorView
         var columns = colNames.Count;
 
         var grid = new Grid();
+        var fractions = TableLayout.CalsFractions(tgroup) is { } f && f.Length == columns ? f : null;
         for (var c = 0; c < columns; c++)
         {
-            grid.ColumnDefinitions.Add(new ColumnDefinition(1, GridUnitType.Star));
+            grid.ColumnDefinitions.Add(new ColumnDefinition(fractions?[c] * 100 ?? 1, GridUnitType.Star));
         }
 
         for (var r = 0; r < rows.Count; r++)
         {
-            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            grid.RowDefinitions.Add(RowDefinitionFor(rows[r]));
         }
 
         // occupied[r, c] — колонка занята объединением ячейки из более ранней строки (rowspan).
@@ -68,7 +70,26 @@ public sealed partial class AuthorView
             PlaceCalsRowCells(grid, rows, r, columns, headerCount, colNames, occupied);
         }
 
+        TableResizeHandles.Attach(grid,
+            weights => ResizeTable("Ширина столбцов", () => TableLayout.SetCalsWidths(tgroup, weights)),
+            (row, height) => ResizeTable("Высота строки", () => TableLayout.SetRowHeight(rows[row], ToMm(height))));
         return grid;
+    }
+
+    /// <summary>Строка сетки: высота по содержимому, но не меньше заданной классом row-height-Nmm.</summary>
+    private static RowDefinition RowDefinitionFor(DitaNode row) => new(GridLength.Auto)
+    {
+        MinHeight = TableLayout.RowHeightMm(row) is { } mm ? mm * 96 / 25.4 : 0
+    };
+
+    private static double? ToMm(double? pixels) => pixels is { } px && px > 0 ? px * 25.4 / 96 : null;
+
+    /// <summary>Ширина столбцов или высота строки, заданные мышью: в модель, с точкой отмены.</summary>
+    private void ResizeTable(string description, Action change)
+    {
+        BeforeStructuralEdit?.Invoke(this, description);
+        change();
+        Modified();
     }
 
     private void PlaceCalsRowCells(Grid grid, List<DitaNode> rows, int r, int columns, int headerCount, List<string> colNames, bool[,] occupied)
@@ -147,6 +168,7 @@ public sealed partial class AuthorView
 
         var editor = CreateEditor(InlineContent.FromNode(cellNode));
         editor.FontWeight = isHeader ? FontWeight.SemiBold : FontWeight.Normal;
+        ApplyBlockFormat(editor, cellNode);
         border.Child = editor;
         AttachSelection(border, cellNode);
         return border;
@@ -197,14 +219,15 @@ public sealed partial class AuthorView
         var columns = rows.Count == 0 ? 1 : rows.Max(r => r.ElementChildren().Count(c => allNames.Contains(c.Name)));
 
         var grid = new Grid();
+        var fractions = TableLayout.SimpleFractions(node, columns) is { } f && f.Length == columns ? f : null;
         for (var c = 0; c < columns; c++)
         {
-            grid.ColumnDefinitions.Add(new ColumnDefinition(1, GridUnitType.Star));
+            grid.ColumnDefinitions.Add(new ColumnDefinition(fractions?[c] * 100 ?? 1, GridUnitType.Star));
         }
 
         for (var r = 0; r < rows.Count; r++)
         {
-            grid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            grid.RowDefinitions.Add(RowDefinitionFor(rows[r]));
             var cells = rows[r].ElementChildren().Where(c => allNames.Contains(c.Name)).ToList();
             for (var c = 0; c < columns; c++)
             {
@@ -214,6 +237,10 @@ public sealed partial class AuthorView
                 grid.Children.Add(cell);
             }
         }
+
+        TableResizeHandles.Attach(grid,
+            weights => ResizeTable("Ширина столбцов", () => TableLayout.SetSimpleWidths(node, weights)),
+            (row, height) => ResizeTable("Высота строки", () => TableLayout.SetRowHeight(rows[row], ToMm(height))));
 
         var border = new Border { Child = grid, Margin = new Thickness(0, 10, 0, 10) };
         AttachSelection(border, node);

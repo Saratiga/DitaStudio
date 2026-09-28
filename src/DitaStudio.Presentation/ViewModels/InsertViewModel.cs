@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Plugins;
@@ -51,8 +52,44 @@ public partial class InsertViewModel : ObservableObject
         _main.StatusText = $"Вставлен <{name}>";
     }
 
+    /// <summary>
+    /// Что можно вставить у курсора текущей вкладки: фразовые элементы — в строку текущего блока,
+    /// блочные — после него (как это делает <see cref="InsertElementCommand"/>). По описанию.
+    /// </summary>
+    public (IReadOnlyList<ElementDef> Inline, IReadOnlyList<ElementDef> After) InsertCandidates()
+    {
+        var node = _main.Current?.Author.CurrentNode;
+        if (node is null)
+        {
+            return (Array.Empty<ElementDef>(), Array.Empty<ElementDef>());
+        }
+
+        var catalog = DitaCatalog.Default;
+        var inline = catalog.Get(node.Name) is { IsMixed: true }
+            ? catalog.InsertableAt(node, DitaCatalog.ChildNames(node).Count)
+                .Where(d => d.Display is DisplayKind.Inline or DisplayKind.Empty)
+                .ToList()
+            : new List<ElementDef>();
+
+        var after = node.Parent is { } parent
+            ? catalog.InsertableAt(parent, EditCommands.ElementIndexOf(parent, node) + 1)
+                .Where(d => d.Display is not (DisplayKind.Inline or DisplayKind.Empty))
+                .ToList()
+            : new List<ElementDef>();
+
+        static List<ElementDef> Sorted(IEnumerable<ElementDef> defs) =>
+            defs.DistinctBy(d => d.Name)
+                .OrderBy(d => string.IsNullOrEmpty(d.Description) ? d.Name : d.Description, StringComparer.CurrentCulture)
+                .ToList();
+
+        return (Sorted(inline), Sorted(after));
+    }
+
     [RelayCommand]
     private void InsertParagraph() => InsertElement("p");
+
+    [RelayCommand]
+    private void InsertSection() => InsertElement("section");
 
     [RelayCommand]
     private void InsertUl() => InsertElement("ul");
@@ -257,6 +294,9 @@ public partial class InsertViewModel : ObservableObject
     private void FormatItalic() => Format("i");
 
     [RelayCommand]
+    private void FormatUnderline() => Format("u");
+
+    [RelayCommand]
     private void FormatCode() => Format("codeph");
 
     [RelayCommand]
@@ -391,6 +431,30 @@ public partial class InsertViewModel : ObservableObject
         _main.StatusText = $"Элемент вынесен в conref (id «{dialogResult.ElementId}»).";
     }
 
+    /// <summary>Строки и столбцы таблицы под курсором (меню ячейки, панель инструментов).</summary>
+    [RelayCommand]
+    private void EditTable(TableOperation operation)
+    {
+        if (_main.Current?.Author.EditCurrentTable(operation) == true)
+        {
+            _main.Documents.RefreshAllTabTitles();
+            _main.RefreshAttributePanel?.Invoke();
+            _main.RefreshOutline?.Invoke();
+            _main.StatusText = TableCommands.Describe(operation) + " — выполнено.";
+        }
+        else
+        {
+            _main.StatusText = operation switch
+            {
+                TableOperation.DeleteRow => "Строку удалить нельзя: в таблице должна остаться хотя бы одна строка.",
+                TableOperation.DeleteColumn => "Столбец удалить нельзя: он последний или число столбцов задано типом таблицы.",
+                TableOperation.SplitCell => "Ячейка не объединена — делить нечего.",
+                TableOperation.InsertColumnLeft or TableOperation.InsertColumnRight => "В этой таблице число столбцов задано её типом.",
+                _ => "Поставьте курсор в ячейку таблицы."
+            };
+        }
+    }
+
     [RelayCommand]
     private void MergeCellRight()
     {
@@ -437,6 +501,131 @@ public partial class InsertViewModel : ObservableObject
         _main.StatusText = enabled == true
             ? "Разрыв страницы перед заголовком включён."
             : "Разрыв страницы перед заголовком выключен.";
+    }
+
+    /// <summary>Выравнивание текущего блока: align-left (по умолчанию — класс снимается), -center, -right, -justify.</summary>
+    [RelayCommand]
+    private void SetAlignment(string? token)
+    {
+        var author = _main.Current?.Author;
+        if (author?.CurrentNode is null)
+        {
+            _main.StatusText = "Поставьте курсор в абзац, заголовок или ячейку.";
+            return;
+        }
+
+        var value = token is null or "align-left" ? null : token;
+        if (author.SetCurrentBlockFormat(TextFormatting.AlignPrefix, value))
+        {
+            _main.Documents.RefreshAllTabTitles();
+            _main.RefreshAttributePanel?.Invoke();
+            _main.StatusText = "Выравнивание: " + TextFormatting.Alignments.First(a => a.Token == (value ?? "align-left")).Label.ToLowerInvariant() + ".";
+        }
+    }
+
+    /// <summary>Размеры шрифта для списка на панели: «Обычный» и размеры в пт.</summary>
+    public IReadOnlyList<string> FontSizes { get; } = new[] { NormalSize }.Concat(TextFormatting.Sizes.Select(s => s.ToString())).ToList();
+
+    public const string NormalSize = "Обычный";
+
+    /// <summary>Размер шрифта выделения или дальнейшего набора: "10" (пт) или «Обычный»/null — снять.</summary>
+    [RelayCommand]
+    private void SetFontSize(string? size)
+    {
+        var token = int.TryParse(size, out var points) ? TextFormatting.SizeToken(points) : null;
+        ApplyTextFormat(TextFormatting.SizePrefix, token, token is null ? "Размер шрифта снят." : $"Размер шрифта {points} пт.");
+    }
+
+    /// <summary>Цвет выделения или дальнейшего набора: color-red… или null — снять.</summary>
+    [RelayCommand]
+    private void SetTextColor(string? token)
+    {
+        var color = TextFormatting.Colors.FirstOrDefault(c => c.Token == token);
+        ApplyTextFormat(TextFormatting.ColorPrefix, color.Token,
+            color.Token is null ? "Цвет текста снят." : $"Цвет текста: {color.Label.ToLowerInvariant()}.");
+    }
+
+    private void ApplyTextFormat(string prefix, string? token, string done)
+    {
+        var author = _main.Current?.Author;
+        if (author?.CurrentNode is null)
+        {
+            _main.StatusText = "Поставьте курсор в текст или выделите его.";
+            return;
+        }
+
+        if (author.ApplyTextFormat(prefix, token))
+        {
+            _main.Documents.RefreshAllTabTitles();
+            _main.RefreshAttributePanel?.Invoke();
+            _main.StatusText = done;
+        }
+        else
+        {
+            _main.StatusText = "Здесь оформление текста недоступно.";
+        }
+    }
+
+    /// <summary>
+    /// Положение блока на отдельном листе PDF/DOCX: "place-bottom-right" и т. п. (<see cref="PagePlacement"/>),
+    /// null — обычное, в тексте.
+    /// </summary>
+    [RelayCommand]
+    private void SetPagePlacement(string? token)
+    {
+        var author = _main.Current?.Author;
+        if (author?.CurrentNode is null || PagePlacement.PlaceableFor(author.CurrentNode) is null)
+        {
+            _main.StatusText = "Поставьте курсор в абзац, рисунок, таблицу или заметку прямо в тексте топика (не в списке).";
+            return;
+        }
+
+        if (author.SetCurrentBlockFormat(PagePlacement.Prefix, token))
+        {
+            _main.Documents.RefreshAllTabTitles();
+            _main.RefreshAttributePanel?.Invoke();
+            _main.StatusText = PagePlacement.LabelOf(token) is { } label
+                ? $"Блок на отдельном листе PDF и DOCX: {label.ToLowerInvariant()}."
+                : "Блок снова идёт в тексте.";
+        }
+    }
+
+    /// <summary>Нумерованный абзац (пункт): номер по заголовкам — 2.3.1 (outputclass numbered).</summary>
+    [RelayCommand]
+    private void ToggleNumberedParagraph()
+    {
+        var node = _main.Current?.Author.CurrentNode;
+        if (node is null || node.Name != "p")
+        {
+            _main.StatusText = "Поставьте курсор в абзац.";
+            return;
+        }
+
+        var enabled = _main.Current!.Author.ToggleCurrentOutputClass(HeadingNumbering.NumberedClass);
+        _main.Documents.RefreshAllTabTitles();
+        _main.RefreshAttributePanel?.Invoke();
+        _main.StatusText = enabled == true
+            ? "Абзац нумерованный: при публикации получит номер по заголовкам (например, 2.3.1)."
+            : "Абзац больше не нумеруется.";
+    }
+
+    /// <summary>Заголовок «без номера»: не нумеруется и не попадает в оглавление (outputclass nonumber).</summary>
+    [RelayCommand]
+    private void ToggleUnnumberedTitle()
+    {
+        var node = _main.Current?.Author.CurrentNode;
+        if (node is null || node.Name != "title")
+        {
+            _main.StatusText = "Поставьте курсор в заголовок топика или раздела.";
+            return;
+        }
+
+        var enabled = _main.Current!.Author.ToggleCurrentOutputClass(TocRules.NoNumberClass);
+        _main.Documents.RefreshAllTabTitles();
+        _main.RefreshAttributePanel?.Invoke();
+        _main.StatusText = enabled == true
+            ? "Заголовок без номера: при публикации не нумеруется и не попадает в оглавление."
+            : "Заголовок снова нумеруется и попадает в оглавление.";
     }
 
     [RelayCommand]

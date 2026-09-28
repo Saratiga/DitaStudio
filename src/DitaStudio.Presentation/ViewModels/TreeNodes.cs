@@ -46,7 +46,8 @@ public sealed partial class MapTreeNode : ObservableObject
     public MapTreeNode(MapItem item, bool isRoot)
     {
         Item = item;
-        Icon = isRoot ? "🗺" : item.IsResourceOnly ? "🔑" : item.TargetPath is null ? "▸" : "📄";
+        IsRoot = isRoot;
+        Icon = isRoot ? "🗺" : item.Node.Name == "keydef" ? "🔑" : item.TargetPath is null ? "▸" : "📄";
     }
 
     public MapItem Item { get; }
@@ -58,6 +59,17 @@ public sealed partial class MapTreeNode : ObservableObject
     public string ElementName => "  " + Item.ElementName;
 
     public bool IsBroken => Item.IsBroken;
+
+    public bool IsRoot { get; }
+
+    /// <summary>Флажок «публиковать»: у строк-топиков и разделов, не у корня и keydef.</summary>
+    public bool CanExclude => !IsRoot && Item.Node.Name != "keydef";
+
+    /// <summary>Строка попадает в публикацию (флажок в карте установлен).</summary>
+    public bool IsPublished => !Item.IsResourceOnly;
+
+    /// <summary>Исключена флажком (сама или веткой выше) — в дереве показывается перечёркнутой.</summary>
+    public bool IsExcluded => Item.IsExcluded;
 
     public ObservableCollection<MapTreeNode> Children { get; } = new();
 

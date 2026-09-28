@@ -1,11 +1,27 @@
 using Avalonia.Media;
 using AvaloniaEdit.Rendering;
+using DitaStudio.Core.Model;
+using DitaStudio.Core.Publishing;
 
 namespace DitaStudio.Desktop.Authoring;
 
 /// <summary>Оформление фразовых элементов DITA в режиме «Автор» — те же правила, что в WPF-версии.</summary>
 public static class InlineStyles
 {
+    /// <summary>Классы оформления из «Автора» у фразового элемента: размер (пт) и цвет текста.</summary>
+    public static void ApplyFormatting(VisualLineElementTextRunProperties run, DitaNode node)
+    {
+        if (TextFormatting.SizeOf(node) is { } points)
+        {
+            run.SetFontRenderingEmSize(points * 4.0 / 3);
+        }
+
+        if (TextFormatting.ColorOf(node) is { } hex)
+        {
+            run.SetForegroundBrush(new SolidColorBrush(Color.Parse(hex)));
+        }
+    }
+
     /// <summary>Применяет оформление элемента к участку текста редактора блока.</summary>
     /// <param name="brush">Кисть из текущей темы по ключу палитры.</param>
     /// <param name="mono">Моноширинный шрифт темы.</param>
@@ -84,6 +100,12 @@ public static class InlineStyles
             case "link":
                 run.SetForegroundBrush(brush("Accent"));
                 run.SetTextDecorations(TextDecorations.Underline);
+                break;
+            case "fn":
+                // Текст сноски выделен фоном плашки — видно, где сноска начинается и кончается.
+                run.SetBackgroundBrush(brush("EditorChipBackground"));
+                run.SetForegroundBrush(brush("EditorChipText"));
+                run.SetFontRenderingEmSize(run.FontRenderingEmSize * 0.9);
                 break;
         }
     }

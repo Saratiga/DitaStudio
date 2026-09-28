@@ -38,7 +38,7 @@ public partial class MainWindow : Window
             files,
             new AvaloniaUiPlatform(),
             pdfPrinter,
-            (project, document) => new DocumentView(project, document, pdfPrinter)));
+            (project, document) => CreateDocumentView(project, document, pdfPrinter)));
 
         ViewModel.OpenDocument = path => ViewModel.Documents.OpenDocument(path);
         ViewModel.UpdateTabHeaders = ViewModel.Documents.RefreshAllTabTitles;
@@ -67,6 +67,8 @@ public partial class MainWindow : Window
         MapTreeView.AddHandler(PointerMovedEvent, OnMapPointerMoved, RoutingStrategies.Tunnel);
         MapTreeView.AddHandler(DragDrop.DragOverEvent, OnMapDragOver);
         MapTreeView.AddHandler(DragDrop.DropEvent, OnMapDrop);
+        MapTreeView.AddHandler(Button.ClickEvent, OnMapPublishClick);
+        BuildColorPalette();
     }
 
     public MainViewModel ViewModel { get; }
@@ -173,6 +175,19 @@ public partial class MainWindow : Window
 
     private void OnMapTreeDoubleTapped(object? sender, TappedEventArgs e) =>
         ViewModel.Map.OpenSelectedCommand.Execute(null);
+
+    private void OnToggleEnterSuggestions(object? sender, RoutedEventArgs e) =>
+        Authoring.AuthorView.EnterSuggestionsEnabled = EnterSuggestionsMenu.IsChecked;
+
+    /// <summary>Флажок «публиковать» у строки карты.</summary>
+    private void OnMapPublishClick(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is CheckBox { DataContext: MapTreeNode node } box && box.Classes.Contains("publish"))
+        {
+            ViewModel.Map.TogglePublishedCommand.Execute(node);
+            e.Handled = true;
+        }
+    }
 
     private void OnKeyDoubleTapped(object? sender, TappedEventArgs e) =>
         ViewModel.ProjectPanel.OpenSelectedKeyCommand.Execute(null);

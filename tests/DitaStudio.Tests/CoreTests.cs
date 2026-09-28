@@ -73,6 +73,20 @@ public sealed class CoreTests
     [Fact] public void FileSafetyTests() => Run(CoreChecks.FileSafetyTests);
     [Fact] public void XmlSafetyTests() => Run(CoreChecks.XmlSafetyTests);
     [Fact] public void DocxStylingTests() => Run(CoreChecks.DocxStylingTests);
+    [Fact] public void UntitledTopicTests() => Run(CoreChecks.UntitledTopicTests);
+    [Fact] public void FileReferencesTests() => Run(CoreChecks.FileReferencesTests);
+    [Fact] public void TableEditingTests() => Run(CoreChecks.TableEditingTests);
+    [Fact] public void PageSetupTests() => Run(CoreChecks.PageSetupTests);
+    [Fact] public void TocTests() => Run(CoreChecks.TocTests);
+    [Fact] public void UnnumberedTitleTests() => Run(CoreChecks.UnnumberedTitleTests);
+    [Fact] public void ExcludeFromPublicationTests() => Run(CoreChecks.ExcludeFromPublicationTests);
+    [Fact] public void HeaderImageTests() => Run(CoreChecks.HeaderImageTests);
+    [Fact] public void TextAlignmentTests() => Run(CoreChecks.TextAlignmentTests);
+    [Fact] public void TextSizeTests() => Run(CoreChecks.TextSizeTests);
+    [Fact] public void TextColorTests() => Run(CoreChecks.TextColorTests);
+    [Fact] public void TableResizeTests() => Run(CoreChecks.TableResizeTests);
+    [Fact] public void NumberedParagraphTests() => Run(CoreChecks.NumberedParagraphTests);
+    [Fact] public void PagePlacementTests() => Run(CoreChecks.PagePlacementTests);
 
     private void Run(Action section)
     {

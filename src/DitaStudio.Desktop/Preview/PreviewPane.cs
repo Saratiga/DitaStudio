@@ -127,7 +127,7 @@ public sealed class PreviewPane : UserControl
             {
                 _status.Text = "Печать в PDF…";
                 var pdfPath = Path.Combine(dir, baseName + ".pdf");
-                var error = await _pdfPrinter.ExportAsync(htmlPath, pdfPath, _project.PdfShowHeaderFooter, _project.PdfHeaderText, _project.PdfFooterText);
+                var error = await _pdfPrinter.ExportAsync(htmlPath, pdfPath, PdfPageDecoration.For(_project));
                 if (requestId != _requestId)
                 {
                     return CurrentFile;

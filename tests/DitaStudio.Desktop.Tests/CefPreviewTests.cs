@@ -43,6 +43,57 @@ public sealed class CefPreviewTests
         Assert.True(pages >= 2, $"ожидалось несколько страниц, получено {pages}");
     }
 
+    [AvaloniaFact]
+    public async Task PrintToPdf_WithLogoInHeader()
+    {
+        if (!Enabled)
+        {
+            return;
+        }
+
+        var dir = Path.Combine(Path.GetTempPath(), "DitaStudioCefTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var html = Path.Combine(dir, "page.html");
+        var pdf = Path.Combine(dir, "page.pdf");
+        await File.WriteAllTextAsync(html, "<html><body><h1>Логотип в шапке</h1><p>Текст без картинок.</p></body></html>");
+        const string logo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+        var error = await new CefPdfPrinter().ExportAsync(html, pdf,
+            new DitaStudio.Presentation.Services.PdfPageDecoration(true, "Шапка", "Подвал", logo, Core.Publishing.DocxHeaderAlignment.Left, 10));
+
+        Assert.Null(error);
+        var text = System.Text.Encoding.Latin1.GetString(await File.ReadAllBytesAsync(pdf));
+        Assert.Matches(@"/Subtype\s*/Image", text);
+    }
+
+    [AvaloniaFact]
+    public async Task PrintToPdf_PlacedBlockGetsItsOwnPage()
+    {
+        if (!Enabled)
+        {
+            return;
+        }
+
+        // Блок «внизу листа» — своя страница между текстом, блок в конце — последний лист без
+        // пустого за ним: 4 листа вместо одного.
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioCefTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        await File.WriteAllTextAsync(Path.Combine(root, "a.dita"),
+            "<concept id=\"a\"><title>Глава</title><conbody><p>До</p><p outputclass=\"place-bottom-right\">Гриф</p><p>После</p><p outputclass=\"place-top-left\">Конец</p></conbody></concept>");
+        await File.WriteAllTextAsync(Path.Combine(root, "guide.ditamap"), "<map><title>Книга</title><topicref href=\"a.dita\"/></map>");
+        var project = new DitaProject(root);
+        project.Scan();
+        var single = new Core.Publishing.HtmlPublisher(project).Publish(Path.Combine(root, "guide.ditamap"),
+            new Core.Publishing.PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true });
+        var pdf = Path.Combine(root, "book.pdf");
+
+        var error = await new CefPdfPrinter().ExportAsync(single.EntryFile, pdf, showHeaderFooter: false, headerText: null, footerText: null);
+
+        Assert.Null(error);
+        var pages = Regex.Matches(System.Text.Encoding.Latin1.GetString(await File.ReadAllBytesAsync(pdf)), @"/Type\s*/Page[^s]").Count;
+        Assert.Equal(4, pages);
+    }
+
     [AvaloniaTheory]
     [InlineData(PreviewFormat.Html)]
     [InlineData(PreviewFormat.Pdf)]

@@ -16,6 +16,7 @@ public static class DocumentTemplates
         new("concept", "concept", "Концепция", "Объясняет, что это такое и зачем нужно", ".dita"),
         new("task", "task", "Задача", "Пошаговая инструкция", ".dita"),
         new("reference", "reference", "Справка", "Таблицы, параметры, синтаксис", ".dita"),
+        new("table", "reference", "Таблица (без заголовка)", "Топик из одной таблицы: заголовок топика не печатается", ".dita"),
         new("troubleshooting", "troubleshooting", "Устранение неполадки", "Признак, причина, решение", ".dita"),
         new("topic", "topic", "Универсальный топик", "Свободная структура", ".dita"),
         new("glossentry", "glossentry", "Статья глоссария", "Термин и его определение", ".dita"),
@@ -37,6 +38,7 @@ public static class DocumentTemplates
             "concept" => Concept(id, title),
             "task" => Task(id, title),
             "reference" => Reference(id, title),
+            "table" => TableTopic(id, title),
             "troubleshooting" => Troubleshooting(id, title),
             "glossentry" => GlossEntry(id, title),
             "map" => Map(title),
@@ -155,6 +157,39 @@ public static class DocumentTemplates
               <title>Описание</title>
               <p></p>
             </section>
+          </refbody>
+        </reference>
+        """;
+
+    /// <summary>
+    /// Топик из одной таблицы: заголовок топика пустой (не печатается и не попадает в оглавление),
+    /// введённое название становится подписью таблицы — по нему топик виден в карте.
+    /// </summary>
+    private static string TableTopic(string id, string title) =>
+        Header("reference", "-//OASIS//DTD DITA Reference//EN", "reference.dtd") +
+        $"""
+        <reference id="{id}" xml:lang="ru-RU">
+          <title/>
+          <refbody>
+            <table>
+              <title>{E(title)}</title>
+              <tgroup cols="2">
+                <colspec colname="c1" colwidth="1*"/>
+                <colspec colname="c2" colwidth="2*"/>
+                <thead>
+                  <row>
+                    <entry>Параметр</entry>
+                    <entry>Значение</entry>
+                  </row>
+                </thead>
+                <tbody>
+                  <row>
+                    <entry></entry>
+                    <entry></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </table>
           </refbody>
         </reference>
         """;

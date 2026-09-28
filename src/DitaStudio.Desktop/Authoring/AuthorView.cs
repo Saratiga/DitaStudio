@@ -24,6 +24,13 @@ public sealed partial class AuthorView : UserControl
 {
     private readonly StackPanel _panel = new() { Margin = new Thickness(24, 18, 24, 120) };
     private readonly ScrollViewer _scroll;
+
+    // Область «Сноски» внизу топика: текст каждой сноски правится здесь, в строке — плашка с номером.
+    private readonly StackPanel _footnotes = new() { Margin = new Thickness(0, 28, 0, 0) };
+    private List<DitaNode> _shownFootnotes = new();
+
+    // Корень: прокрутка с блоками и всплывающие подсказки (им нужно место в дереве — ресурсы темы).
+    private readonly Panel _root = new();
     private readonly Dictionary<DitaNode, BlockEditor> _editors = new();
     private readonly List<BlockEditor> _order = new();
     private readonly Dictionary<DitaNode, Control> _views = new();
@@ -45,7 +52,8 @@ public sealed partial class AuthorView : UserControl
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
         };
-        Content = _scroll;
+        _root.Children.Add(_scroll);
+        Content = _root;
         Themed(this, BackgroundProperty, "Surface");
         Surface = new AuthorViewSurface(this);
     }
@@ -81,6 +89,9 @@ public sealed partial class AuthorView : UserControl
     /// <summary>Просьба сохранить состояние для отмены перед структурной операцией.</summary>
     public event EventHandler<string>? BeforeStructuralEdit;
 
+    /// <summary>Меню правой кнопки у блока строится — можно добавить свои пункты.</summary>
+    public event Action<BlockEditor, List<Control>>? ContextMenuBuilding;
+
     /// <summary>Редакторы блоков в порядке документа (для тестов и переходов).</summary>
     public IReadOnlyList<BlockEditor> Editors => _order;
 
@@ -88,6 +99,9 @@ public sealed partial class AuthorView : UserControl
     public BlockEditor? EditorFor(DitaNode node) => _editors.TryGetValue(node, out var editor) ? editor : null;
 
     /// <summary>Редактор, в котором последним был курсор, если он относится к узлу, иначе — первый редактор узла.</summary>
+    /// <summary>Отрисованный блок узла (рамка, строка текста) или null.</summary>
+    public Control? ViewFor(DitaNode node) => _views.TryGetValue(node, out var view) ? view : null;
+
     public BlockEditor? ActiveEditorFor(DitaNode node) =>
         _activeEditor is { } active && ReferenceEquals(active.Node, node) && _order.Contains(active) ? active : EditorFor(node);
 
@@ -108,6 +122,7 @@ public sealed partial class AuthorView : UserControl
         _childPanels.Clear();
         _activeEditor = null;
         _panel.Children.Clear();
+        _shownFootnotes = new List<DitaNode>();
         ClearHighlight();
 
         if (Document is null)
@@ -125,6 +140,7 @@ public sealed partial class AuthorView : UserControl
 
     private void FocusAfterRebuild(DitaNode? focusNode, int caretOffset)
     {
+        RefreshFootnotes();
         if (focusNode is not null && _editors.TryGetValue(focusNode, out var editor))
         {
             CurrentNode = focusNode;
@@ -180,6 +196,86 @@ public sealed partial class AuthorView : UserControl
         }
 
         AfterPartialRebuild(focusNode, caretOffset);
+    }
+
+    /// <summary>
+    /// Область «Сноски»: перестраивается, если сноски документа (набор или порядок) изменились —
+    /// после записи абзаца, структурной правки, отмены.
+    /// </summary>
+    public void RefreshFootnotes()
+    {
+        if (Document is null)
+        {
+            return;
+        }
+
+        var notes = Document.Root.Descendants().Where(n => n.Kind == NodeKind.Element && n.Name == "fn").ToList();
+        if (notes.Count == _shownFootnotes.Count && notes.Zip(_shownFootnotes).All(pair => ReferenceEquals(pair.First, pair.Second)))
+        {
+            return;
+        }
+
+        foreach (var old in _shownFootnotes)
+        {
+            if (_editors.Remove(old, out var editor))
+            {
+                _order.Remove(editor);
+            }
+
+            ForgetViews(old);
+        }
+
+        _footnotes.Children.Clear();
+        _panel.Children.Remove(_footnotes);
+        _shownFootnotes = notes;
+        if (notes.Count > 0)
+        {
+            var rule = new Border { Height = 1, Width = 180, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left, Margin = new Thickness(0, 0, 0, 6) };
+            Themed(rule, Border.BackgroundProperty, "Line");
+            var header = new TextBlock { Text = "Сноски", FontWeight = FontWeight.SemiBold, FontSize = 12, Margin = new Thickness(0, 0, 0, 4) };
+            Themed(header, TextBlock.ForegroundProperty, "TextMuted");
+            _footnotes.Children.Add(rule);
+            _footnotes.Children.Add(header);
+            for (var i = 0; i < notes.Count; i++)
+            {
+                var number = new TextBlock { Text = $"{i + 1}.", Margin = new Thickness(0, 5, 6, 0), HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right };
+                Themed(number, TextBlock.ForegroundProperty, "EditorChipText");
+                var view = BuildNode(notes[i], 0) ?? new Panel();
+                var row = new Grid { ColumnDefinitions = new ColumnDefinitions("26,*") };
+                Grid.SetColumn(view, 1);
+                row.Children.Add(number);
+                row.Children.Add(view);
+                _footnotes.Children.Add(row);
+            }
+
+            _panel.Children.Add(_footnotes);
+        }
+
+        // Номера на плашках сносок в тексте — по новому порядку.
+        foreach (var editor in _order)
+        {
+            editor.TextArea.TextView.Redraw();
+        }
+    }
+
+    /// <summary>Курсор — в текст сноски в области «Сноски» (весь текст выделен, если нужно).</summary>
+    public void FocusFootnote(DitaNode fn, bool selectAll)
+    {
+        RefreshFootnotes();
+        if (!_editors.TryGetValue(fn, out var editor))
+        {
+            return;
+        }
+
+        CurrentNode = fn;
+        Dispatcher.UIThread.Post(() =>
+        {
+            editor.FocusEditor(0);
+            if (selectAll)
+            {
+                editor.SelectAll();
+            }
+        }, DispatcherPriority.Background);
     }
 
     private void ForgetViews(DitaNode root)
@@ -286,7 +382,8 @@ public sealed partial class AuthorView : UserControl
     /// <summary>Сохраняет незаписанные правки всех редакторов блоков в модель.</summary>
     public void FlushPendingEdits()
     {
-        foreach (var editor in _order)
+        // Копия: запись абзаца может перестроить область «Сноски», а с ней и список редакторов.
+        foreach (var editor in _order.ToList())
         {
             editor.Flush();
         }
@@ -446,6 +543,67 @@ public sealed partial class AuthorView : UserControl
 
             _view.BeforeStructuralEdit?.Invoke(_view, $"Оформление <{element}>");
             editor.WrapSelection(element);
+            return true;
+        }
+
+        public override bool ApplyTextFormat(string prefix, string? token)
+        {
+            if (CurrentNode is null || _view.ActiveEditorFor(CurrentNode) is not { } editor)
+            {
+                return false;
+            }
+
+            var selection = editor.TextArea.Selection;
+            var wholeBlock = !selection.IsEmpty && selection.SurroundingSegment.Offset == 0 &&
+                             selection.SurroundingSegment.Length == editor.Document.TextLength;
+            if (wholeBlock)
+            {
+                // Весь текст блока — класс на самом абзаце, без лишней обёртки; фразы внутри с
+                // классом той же группы больше не нужны.
+                _view.BeforeStructuralEdit?.Invoke(_view, "Оформление текста");
+                editor.ApplyInlineClass(prefix, null);
+                return SetCurrentBlockFormat(prefix, token);
+            }
+
+            _view.BeforeStructuralEdit?.Invoke(_view, "Оформление текста");
+            if (token is null && selection.IsEmpty && TextFormatting.Token(CurrentNode, prefix) is not null)
+            {
+                return SetCurrentBlockFormat(prefix, null);
+            }
+
+            editor.ApplyInlineClass(prefix, token);
+            editor.TextArea.Focus();
+            return true;
+        }
+
+        public override bool InsertInlineElement(DitaNode element, string placeholder)
+        {
+            if (CurrentNode is null || _view.ActiveEditorFor(CurrentNode) is not { } editor)
+            {
+                return false;
+            }
+
+            _view.BeforeStructuralEdit?.Invoke(_view, $"Вставка <{element.Name}>");
+            if (element.Name == "fn")
+            {
+                // Сноска — плашкой у курсора, её текст (выделенный или заготовка) — в области
+                // «Сноски» внизу, куда и переходит курсор.
+                var selection = editor.TextArea.Selection;
+                string? selected = null;
+                if (!selection.IsEmpty)
+                {
+                    var segment = selection.SurroundingSegment;
+                    selected = editor.Document.GetText(segment).Replace(InlineContent.ChipChar.ToString(), string.Empty).Trim();
+                    editor.Document.Remove(segment.Offset, segment.Length);
+                }
+
+                element.Add(DitaNode.Text(string.IsNullOrEmpty(selected) ? placeholder : selected));
+                editor.InsertInlineNode(element);
+                _view.FocusFootnote(element, selectAll: string.IsNullOrEmpty(selected));
+                return true;
+            }
+
+            editor.InsertInlineElement(element, placeholder);
             return true;
         }
 

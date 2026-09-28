@@ -76,8 +76,16 @@ public sealed class DitaDocument
     {
         get
         {
-            var t = Root.FirstElement("title") ?? Root.FindDescendant("title");
-            var text = t?.InnerText.Trim();
+            // Пустой заголовок (топик из одной таблицы) — название по первому непустому
+            // заголовку внутри, например по подписи таблицы.
+            var text = Root.FirstElement("title")?.InnerText.Trim();
+            if (string.IsNullOrEmpty(text))
+            {
+                text = Root.Descendants()
+                    .FirstOrDefault(n => n.Kind == NodeKind.Element && n.Name == "title" && !string.IsNullOrWhiteSpace(n.InnerText))
+                    ?.InnerText.Trim();
+            }
+
             if (!string.IsNullOrEmpty(text))
             {
                 return text!;

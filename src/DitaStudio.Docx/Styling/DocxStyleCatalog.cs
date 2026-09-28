@@ -70,6 +70,14 @@ public static class DocxStyleCatalog
 
     public static string Heading(int level) => "Heading" + Math.Clamp(level, 1, 6);
 
+    /// <summary>Префикс стилей заголовков «без номера» (не нумеруются, не попадают в оглавление).</summary>
+    public const string HeadingPlainPrefix = "HeadingPlain";
+
+    public static string HeadingPlain(int level) => HeadingPlainPrefix + Math.Clamp(level, 1, 6);
+
+    /// <summary>Стиль строки оглавления уровня <paramref name="level"/>.</summary>
+    public static string Toc(int level) => "TOC" + Math.Clamp(level, 1, 6);
+
     public static readonly IReadOnlyList<DocxStyleDef> Styles = Build();
 
     private static readonly Dictionary<string, DocxStyleDef> ById =
@@ -143,6 +151,21 @@ public static class DocxStyleCatalog
                 P(p => { p.Bold = true; p.FontSizePt = size; p.KeepNext = true; p.SpaceBeforePt = 12; p.SpaceAfterPt = 6; }),
                 new[] { "h" + level },
                 OutlineLevel: level - 1));
+        }
+
+        for (var level = 1; level <= 6; level++)
+        {
+            list.Add(new DocxStyleDef(HeadingPlain(level), $"Заголовок {level} без номера", DocxStyleKind.Paragraph, Heading(level),
+                new DocxStyleProps(), new[] { $"h{level}.nonumber" }));
+        }
+
+        // Строки оглавления: имена «toc N» — встроенные стили Word, их же он берёт при обновлении поля.
+        for (var level = 1; level <= 6; level++)
+        {
+            var indent = (level - 1) * 11.35;
+            list.Add(new DocxStyleDef(Toc(level), "toc " + level, DocxStyleKind.Paragraph, Normal,
+                P(p => { p.IndentLeftPt = indent; p.SpaceAfterPt = 3; }),
+                new[] { ".doc-toc-" + level }));
         }
 
         list.AddRange(new DocxStyleDef[]

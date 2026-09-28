@@ -1,6 +1,7 @@
 using System.Text;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
+using DitaStudio.Core.Validation;
 
 namespace DitaStudio.Core.Publishing;
 
@@ -127,7 +128,8 @@ public sealed class HtmlPublisher
             ShowDraftComments = options.ShowDraftComments,
             ImageSource = ImageSource,
             Filter = node => PublishFilter.IsIncluded(node, options),
-            FlagRules = options.FlagConditions
+            FlagRules = options.FlagConditions,
+            Numbering = new HeadingNumbering(_project.DocxLayout.NumberHeadings, _project.DocxLayout.NumberingDepth)
         };
 
         if (options.SingleFile)
@@ -180,6 +182,8 @@ public sealed class HtmlPublisher
                 : RefResolver.FindById(expanded.Root, item.TargetTopicId) ?? expanded.Root;
 
             renderOptions.CurrentKeyScope = item.KeyScopeChain;
+            renderOptions.TopicLevel = Math.Clamp(item.Level, 1, 9);
+            renderOptions.TopicUnnumbered = TocRules.IsHiddenInMap(item.Node);
             renderOptions.RelatedTopics = tree.RelatedLinks.TryGetValue(Path.GetFullPath(path), out var related) ? related : null;
             var body = renderer.RenderTopic(expanded, topicNode);
             var pageToc = BuildToc(tree, fileNames, item);
@@ -227,8 +231,9 @@ public sealed class HtmlPublisher
         var body = new StringBuilder();
 
         body.Append("<h1 class=\"book-title\">").Append(HtmlRenderer.Escape(tree.Root.Title)).Append("</h1>\n");
-        body.Append("<nav class=\"toc-inline\">\n<h2>").Append(HtmlRenderer.Escape(labels.Contents)).Append("</h2>\n<ul>\n");
-        foreach (var item in topics)
+        var tocTitle = _project.DocxLayout.TocTitle.Length > 0 ? _project.DocxLayout.TocTitle : labels.Contents;
+        body.Append("<nav class=\"toc-inline\">\n<h2>").Append(HtmlRenderer.Escape(tocTitle)).Append("</h2>\n<ul>\n");
+        foreach (var item in topics.Where(i => TocRules.Includes(_project, i)))
         {
             var full = Path.GetFullPath(item.TargetPath!);
             var anchor = AnchorFor(full, item.TargetTopicId ?? RootIdOf(full));
@@ -257,6 +262,8 @@ public sealed class HtmlPublisher
             body.Append("<div class=\"topic-chunk").Append(level == 1 ? " chapter-heading" : string.Empty)
                 .Append("\" id=\"").Append(anchor).Append("\">\n");
             renderOptions.CurrentKeyScope = item.KeyScopeChain;
+            renderOptions.TopicLevel = Math.Clamp(item.Level, 1, 9);
+            renderOptions.TopicUnnumbered = TocRules.IsHiddenInMap(item.Node);
             renderOptions.RelatedTopics = tree.RelatedLinks.TryGetValue(Path.GetFullPath(item.TargetPath!), out var related)
                 ? related
                 : null;
@@ -286,6 +293,8 @@ public sealed class HtmlPublisher
         {
             Labels = labels,
             ShowDraftComments = true,
+            // Предпросмотр одного топика: номеров по изданию не знает — нумерованные абзацы 1, 2, 3.
+            Numbering = new HeadingNumbering(numberHeadings: false, depth: 1),
             ImageSource = absolute => new Uri(absolute).AbsoluteUri,
             TopicLink = (path, id) => id is null ? new Uri(path).AbsoluteUri : new Uri(path).AbsoluteUri + "#" + id,
             // В отличие от Publish() — предпросмотр показывает помеченное на удаление содержимое
@@ -359,6 +368,7 @@ public sealed class HtmlPublisher
 
     // ------------------------------------------------------------- служебное
 
+
     private static Dictionary<string, string> AssignFileNames(IEnumerable<MapItem> topics)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -430,13 +440,18 @@ public sealed class HtmlPublisher
         return sb.ToString();
     }
 
+    private static bool HasPublished(MapItem item) =>
+        item.Children.Any(c => !c.IsResourceOnly && c.TargetPath is not null || HasPublished(c));
+
     private static void AppendTocItem(
         StringBuilder sb,
         MapItem item,
         IReadOnlyDictionary<string, string> fileNames,
         MapItem? current)
     {
-        if (item.IsResourceOnly && item.Children.Count == 0)
+        // Только ресурс (в том числе исключённая флажком ветка) без публикуемых потомков — в
+        // навигации нечего показывать.
+        if (item.IsResourceOnly && !HasPublished(item))
         {
             return;
         }
@@ -521,6 +536,15 @@ public sealed class HtmlPublisher
 
     /// <summary>Читает подключённый к проекту файл пользовательских стилей (см. DitaProject.CustomCssPath).
     /// Возвращает null, если CSS не подключён; предупреждение — если подключён, но файл не найден.</summary>
-    private string? LoadCustomCss(out string? warning) => _project.ReadCustomCss(out warning);
+    /// <summary>
+    /// Классы оформления из «Автора» (выравнивание, размер, цвет), затем CSS проекта (может их
+    /// переопределить) и @page из параметров страницы проекта (они главнее).
+    /// </summary>
+    private string? LoadCustomCss(out string? warning)
+    {
+        var css = _project.ReadCustomCss(out warning);
+        var page = _project.DocxLayout.PageCss();
+        return string.Join("\n", new[] { TextFormatting.Css, css, page }.Where(part => !string.IsNullOrEmpty(part)));
+    }
 
 }

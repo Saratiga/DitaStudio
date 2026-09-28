@@ -2,6 +2,7 @@ using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Docx;
 using DitaStudio.Docx.Styling;
+using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Validation;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -332,7 +333,7 @@ li::marker { color: #1a5fb4; }
             Check(body.Descendants<Paragraph>().Any(p => p.ParagraphProperties?.ParagraphStyleId?.Val == "Title") &&
                   body.Descendants<Paragraph>().Any(p => p.ParagraphProperties?.ParagraphStyleId?.Val == "TOCHeading"),
                 "docx-export: по умолчанию есть титул и заголовок оглавления");
-            Check(body.Descendants<SimpleField>().Any(f => f.Instruction?.Value?.Contains("\"1-3\"") == true),
+            Check(TocInstruction(body)?.Contains("\"1-3\"") == true,
                 "docx-export: оглавление по умолчанию — 3 уровня");
             Check(!styles.Elements<Style>().Any(s => s.StyleId!.Value!.Contains("warning_box")),
                 "docx-export: без CSS производных стилей для классов не создаётся");
@@ -428,7 +429,7 @@ li::marker { color: #1a5fb4; }
             var body = main.Document.Body!;
             Check(body.Descendants<Paragraph>().Any(p => p.ParagraphProperties?.ParagraphStyleId?.Val == "Subtitle" && p.InnerText == "Руководство"),
                 "docx-layout: подзаголовок на титуле");
-            Check(body.Descendants<SimpleField>().Any(f => f.Instruction?.Value?.Contains("\"1-2\"") == true), "docx-layout: глубина оглавления");
+            Check(TocInstruction(body)?.Contains("\"1-2\"") == true, "docx-layout: глубина оглавления");
             var heading1 = main.StyleDefinitionsPart!.Styles!.Elements<Style>().First(s => s.StyleId == "Heading1");
             Check(heading1.StyleParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value == 9000,
                 "docx-layout: нумерация заголовков привязана к стилю Heading1");
@@ -471,6 +472,17 @@ li::marker { color: #1a5fb4; }
 
     /// <summary>Любой собранный DOCX обязан проходить проверку схемы OpenXML — иначе Word
     /// откроет его с сообщением о повреждении или молча выбросит часть содержимого.</summary>
+    /// <summary>Строка готового оглавления (стили TOC1…TOC6).</summary>
+    private static bool IsTocRow(Paragraph paragraph) =>
+        paragraph.ParagraphProperties?.ParagraphStyleId?.Val?.Value is { } style &&
+        style.StartsWith("TOC", StringComparison.Ordinal) && style != "TOCHeading";
+
+    /// <summary>Команда поля оглавления: простое поле (пустое оглавление) или составное с готовыми строками.</summary>
+    private static string? TocInstruction(OpenXmlElement body) =>
+        body.Descendants<SimpleField>().Select(f => f.Instruction?.Value)
+            .Concat(body.Descendants<FieldCode>().Select(f => f.Text))
+            .FirstOrDefault(text => text?.Contains("TOC") == true);
+
     private static void CheckValidDocx(string path, string where)
     {
         var errors = ValidationErrors(path);

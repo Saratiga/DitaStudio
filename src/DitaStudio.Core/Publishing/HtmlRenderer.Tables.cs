@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
@@ -46,20 +47,8 @@ public sealed partial class HtmlRenderer
         var sb = new StringBuilder("<table").Append(OptionalClassAttr(table)).Append(">\n");
         if (colspecs.Count > 0)
         {
-            sb.Append("<colgroup>\n");
-            foreach (var cs in colspecs)
-            {
-                var width = cs.GetAttribute("colwidth");
-                sb.Append("<col");
-                if (!string.IsNullOrWhiteSpace(width) && width!.EndsWith("*", StringComparison.Ordinal) is false)
-                {
-                    sb.Append(" style=\"width:").Append(Escape(width!)).Append('"');
-                }
-
-                sb.Append(" />\n");
-            }
-
-            sb.Append("</colgroup>\n");
+            // Ширины столбцов — доли таблицы (colwidth «N*» и абсолютные — пропорционально).
+            sb.Append(ColGroup(TableLayout.CalsFractions(tgroup), colspecs.Count));
         }
 
         var thead = tgroup.FirstElement("thead");
@@ -90,9 +79,33 @@ public sealed partial class HtmlRenderer
         return sb.ToString();
     }
 
+    /// <summary>colgroup с шириной каждого столбца в процентах; без ширин — пустые col.</summary>
+    private static string ColGroup(double[]? fractions, int columns)
+    {
+        var sb = new StringBuilder("<colgroup>\n");
+        for (var i = 0; i < columns; i++)
+        {
+            sb.Append("<col");
+            if (fractions is not null && i < fractions.Length)
+            {
+                sb.Append(" style=\"width:").Append((fractions[i] * 100).ToString("0.##", CultureInfo.InvariantCulture)).Append("%\"");
+            }
+
+            sb.Append(" />\n");
+        }
+
+        return sb.Append("</colgroup>\n").ToString();
+    }
+
+    /// <summary>Открывающий tr: минимальная высота строки из row-height-Nmm.</summary>
+    private static string RowStart(DitaNode row) =>
+        TableLayout.RowHeightMm(row) is { } mm
+            ? $"<tr style=\"height:{mm.ToString("0.#", CultureInfo.InvariantCulture)}mm\">\n"
+            : "<tr>\n";
+
     private string RenderRow(DitaNode row, Dictionary<string, int> colNames, string cellTag, int level)
     {
-        var sb = new StringBuilder("<tr>\n");
+        var sb = new StringBuilder(RowStart(row));
         foreach (var entry in row.ElementChildren().Where(e => e.Name == "entry"))
         {
             sb.Append('<').Append(cellTag);
@@ -163,6 +176,12 @@ public sealed partial class HtmlRenderer
         }
 
         sb.Append("<table class=\"").Append(node.Name).Append("\">\n");
+        var columns = node.ElementChildren().Where(e => e.Name is "sthead" or "strow" or "prophead" or "property" or "chhead" or "chrow")
+            .Select(r => r.ElementChildren().Count()).DefaultIfEmpty(0).Max();
+        if (TableLayout.SimpleFractions(node, columns) is { } fractions)
+        {
+            sb.Append(ColGroup(fractions, columns));
+        }
 
         var head = node.ElementChildren().FirstOrDefault(e => e.Name is "sthead" or "prophead" or "chhead");
         if (head is not null)
@@ -196,7 +215,7 @@ public sealed partial class HtmlRenderer
         sb.Append("<tbody>\n");
         foreach (var row in node.ElementChildren().Where(e => e.Name is "strow" or "property" or "chrow"))
         {
-            sb.Append("<tr>\n");
+            sb.Append(RowStart(row));
             foreach (var cell in row.ElementChildren().Where(c => rowNames.Contains(c.Name)))
             {
                 sb.Append("<td>").Append(RenderInlineChildren(cell)).Append("</td>\n");

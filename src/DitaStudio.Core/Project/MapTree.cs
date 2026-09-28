@@ -35,7 +35,28 @@ public sealed class MapItem
 
     public string? Keys => Node.GetAttribute("keys");
 
-    public bool IsResourceOnly => Node.GetAttribute("processing-role") == "resource-only" || Node.Name == "keydef";
+    /// <summary>
+    /// Только ресурс — в публикацию и оглавление не попадает (ключи и conref из него работают):
+    /// keydef или processing-role="resource-only" у строки либо её предка в карте (атрибут
+    /// наследуется, ближайшее явное значение главнее — потомок может вернуть "normal").
+    /// </summary>
+    public bool IsResourceOnly => Node.Name == "keydef" || ProcessingRole(Node) == "resource-only";
+
+    /// <summary>Не публикуется по решению автора (флажок в карте), а не keydef.</summary>
+    public bool IsExcluded => Node.Name != "keydef" && ProcessingRole(Node) == "resource-only";
+
+    private static string? ProcessingRole(DitaNode node)
+    {
+        for (var current = node; current is not null; current = current.Parent)
+        {
+            if (current.GetAttribute("processing-role") is { Length: > 0 } role)
+            {
+                return role;
+            }
+        }
+
+        return null;
+    }
 
     public bool IsMapRef => Node.Name == "mapref" || Node.GetAttribute("format") == "ditamap";
 

@@ -32,12 +32,14 @@ public sealed partial class HtmlRenderer
         if (explicitTitle is not null)
         {
             sb.Append('<').Append(H(level + 1)).Append(MergedClassAttr("title", explicitTitle)).Append('>')
+              .Append(HeadingNumber(level + 1, TocRules.IsUnnumbered(explicitTitle)))
               .Append(RenderInlineChildren(explicitTitle))
               .Append("</").Append(H(level + 1)).Append(">\n");
         }
         else if (label is not null)
         {
             sb.Append('<').Append(H(level + 1)).Append(" class=\"generated-title\">")
+              .Append(HeadingNumber(level + 1, unnumbered: false))
               .Append(Escape(label)).Append("</").Append(H(level + 1)).Append(">\n");
         }
 
@@ -331,7 +333,8 @@ public sealed partial class HtmlRenderer
             }
         }
 
-        return topic.FirstElement("title")?.InnerText.Trim() ?? doc.Title;
+        var title = topic.FirstElement("title")?.InnerText.Trim();
+        return string.IsNullOrEmpty(title) ? doc.Title : title;
     }
 
     private string RenderRelatedLinks(DitaNode node)

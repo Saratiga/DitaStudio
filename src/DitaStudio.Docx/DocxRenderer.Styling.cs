@@ -252,12 +252,21 @@ public sealed partial class DocxRenderer
     }
 
     /// <summary>Ячейка простой таблицы (simpletable, properties, choicetable).</summary>
-    private W.TableCell Cell(IEnumerable<OpenXmlElement> runs, bool isHeader)
+    private W.TableCell Cell(IEnumerable<OpenXmlElement> runs, bool isHeader, int column = -1)
     {
         var paragraph = Para(isHeader ? DocxStyleCatalog.TableHeading : DocxStyleCatalog.TableText, runs);
-        return CellShading(isHeader) is { } shading
-            ? new W.TableCell(new W.TableCellProperties(shading), paragraph)
-            : new W.TableCell(paragraph);
+        var properties = new W.TableCellProperties();
+        if (CellWidth(column, 1) is { } width)
+        {
+            properties.Append(width);
+        }
+
+        if (CellShading(isHeader) is { } shading)
+        {
+            properties.Append(shading);
+        }
+
+        return properties.HasChildren ? new W.TableCell(properties, paragraph) : new W.TableCell(paragraph);
     }
 
     /// <summary>Копии знаков для гиперссылки: знакам без своего стиля — стиль «Hyperlink».</summary>

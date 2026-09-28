@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Authoring;
@@ -18,6 +19,11 @@ public sealed partial class AuthorView
     private Control? BuildNode(DitaNode node, int depth)
     {
         var view = BuildNodeCore(node, depth);
+        if (view is not null && PagePlacement.Of(node) is { } place)
+        {
+            view = WithPlacementMark(place, view);
+        }
+
         if (view is not null)
         {
             _views[node] = view;
@@ -25,6 +31,25 @@ public sealed partial class AuthorView
         }
 
         return view;
+    }
+
+    /// <summary>
+    /// Блок «на отдельном листе» (outputclass place-…): над ним — подпись с положением. В самом
+    /// «Авторе» блок остаётся в тексте: лист есть только у печатного издания (PDF, DOCX).
+    /// </summary>
+    private static Control WithPlacementMark(string place, Control view)
+    {
+        var mark = new TextBlock
+        {
+            Text = "▣ Отдельный лист · " + PagePlacement.LabelOf(place)?.ToLowerInvariant(),
+            FontSize = 11,
+            Margin = new Thickness(4, 4, 0, 0),
+            Tag = "placement-mark"
+        };
+        Themed(mark, TextBlock.ForegroundProperty, "Accent");
+        ToolTip.SetTip(mark, "В PDF и DOCX блок стоит на своей странице в выбранной области листа; на сайте — в тексте. " +
+                             "Изменить: контекстное меню → Оформление → Положение на листе.");
+        return new StackPanel { Children = { mark, view } };
     }
 
     private Control? BuildNodeCore(DitaNode node, int depth)
@@ -158,9 +183,32 @@ public sealed partial class AuthorView
         return BuildContainer(node, depth, header, background);
     }
 
+    /// <summary>
+    /// Блок-обёртка без собственного вида (div, bodydiv, section, sectiondiv, fig и их
+    /// специализации — по @class): его границы в «Авторе» показываются полосой слева и подписью.
+    /// </summary>
+    private static bool IsFramedWrapper(DitaNode node) =>
+        DitaCatalog.Default.Get(node.Name)?.ClassAttr.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Any(token => token is "topic/div" or "topic/bodydiv" or "topic/section" or "topic/sectiondiv" or
+                "topic/fig" or "topic/figgroup" or "topic/abstract") == true;
+
     private Control BuildContainer(DitaNode node, int depth, string? headerText, string? backgroundKey)
     {
         var stack = new StackPanel();
+        var framed = headerText is null && backgroundKey is null && IsFramedWrapper(node);
+        if (framed)
+        {
+            var outputclass = node.GetAttribute("outputclass");
+            var label = new TextBlock
+            {
+                Text = string.IsNullOrWhiteSpace(outputclass) ? node.Name : $"{node.Name} · {outputclass}",
+                FontSize = 10.5,
+                Margin = new Thickness(0, 0, 0, 2)
+            };
+            Themed(label, TextBlock.FontFamilyProperty, "MonoFont");
+            Themed(label, TextBlock.ForegroundProperty, "EditorTag");
+            stack.Children.Add(label);
+        }
 
         if (headerText is not null)
         {
@@ -265,6 +313,14 @@ public sealed partial class AuthorView
             border.Margin = new Thickness(0, 12, 0, 8);
         }
 
+        if (framed)
+        {
+            border.BorderThickness = new Thickness(2, 0, 0, 0);
+            border.Padding = new Thickness(10, 2, 0, 2);
+            border.CornerRadius = new CornerRadius(0);
+            Themed(border, Border.BorderBrushProperty, "EditorChipBorder");
+        }
+
         AttachSelection(border, node);
         return border;
     }
@@ -327,10 +383,76 @@ public sealed partial class AuthorView
             BorderBrush = Brushes.Transparent
         };
         editor.Margin = new Thickness(editor.Margin.Left, 0, editor.Margin.Right, 0);
+        ApplyBlockFormat(editor, node);
 
-        container.Child = TaggedRow(node, editor);
+        container.Child = TaggedRow(node, WithTitleBadge(node, editor));
         AttachSelection(container, node);
         return container;
+    }
+
+    /// <summary>
+    /// Оформление блока из «Автора» (классы align-…, у ячейки — @align): редактор смещается
+    /// целиком — AvaloniaEdit не выравнивает строки внутри себя, поэтому короткий текст (заголовок,
+    /// подпись, ячейка) стоит как в публикации, а у длинного абзаца видна только сторона.
+    /// </summary>
+    internal static void ApplyBlockFormat(BlockEditor editor, DitaNode node)
+    {
+        editor.HorizontalAlignment = TextFormatting.AlignmentOf(node) switch
+        {
+            "center" => HorizontalAlignment.Center,
+            "right" => HorizontalAlignment.Right,
+            _ => HorizontalAlignment.Stretch
+        };
+        editor.MinWidth = editor.HorizontalAlignment == HorizontalAlignment.Stretch ? 0 : 40;
+        if (TextFormatting.SizeOf(node) is { } points)
+        {
+            editor.FontSize = points * 4.0 / 3;
+        }
+
+        if (TextFormatting.ColorOf(node) is { } hex)
+        {
+            // Цвет текста редактора привязан к ресурсу темы — своя привязка его вытесняет.
+            editor.Bind(ForegroundProperty, new Avalonia.Data.Binding { Source = new SolidColorBrush(Color.Parse(hex)) });
+        }
+    }
+
+    /// <summary>
+    /// Пометки, видные без атрибутов: у заголовка «без номера» — справа, у нумерованного абзаца —
+    /// «№» слева (сам номер зависит от места в карте и считается при публикации).
+    /// </summary>
+    private static Control WithTitleBadge(DitaNode node, BlockEditor editor)
+    {
+        if (node.Name == "p" && HeadingNumbering.IsNumbered(node))
+        {
+            var mark = new TextBlock { Text = "№", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 1, 6, 0) };
+            Themed(mark, TextBlock.ForegroundProperty, "Accent");
+            ToolTip.SetTip(mark, "Нумерованный абзац: номер по заголовкам (например, 2.3.1) — при публикации");
+            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+            Grid.SetColumn(editor, 1);
+            row.Children.Add(mark);
+            row.Children.Add(editor);
+            return row;
+        }
+
+        if (node.Name != "title" || !TocRules.IsUnnumbered(node))
+        {
+            return editor;
+        }
+
+        var badge = new TextBlock
+        {
+            Text = "без номера · не в оглавлении",
+            FontSize = 11,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(10, 0, 0, 0)
+        };
+        Themed(badge, TextBlock.ForegroundProperty, "EditorTag");
+        ToolTip.SetTip(badge, "При публикации заголовок не нумеруется и не попадает в оглавление (outputclass=\"nonumber\").");
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        Grid.SetColumn(badge, 1);
+        grid.Children.Add(editor);
+        grid.Children.Add(badge);
+        return grid;
     }
 
     /// <summary>Расстояние от верха блока до первой строки текста — чтобы номер или маркер
@@ -382,6 +504,12 @@ public sealed partial class AuthorView
         var node = content.Node;
         var editor = new BlockEditor(content);
         editor.ContentChanged += (_, _) => Modified();
+        editor.ContextMenuBuilding += (sender, items) => ContextMenuBuilding?.Invoke(sender, items);
+        editor.Written += (_, _) => RefreshFootnotes();
+        editor.ChipFactory = chip => chip.Name == "image" && TryLoadImage(chip) is { } bitmap
+            ? new ResizableImage(bitmap, ResizableImage.WidthFromAttributes(chip.GetAttribute("width"), chip.GetAttribute("height"), bitmap),
+                480, 240, width => ResizeImage(chip, width, editor))
+            : null;
         editor.Focused += (_, _) =>
         {
             _activeEditor = editor;
@@ -433,12 +561,10 @@ public sealed partial class AuthorView
 
         if (TryLoadImage(node) is { } bitmap)
         {
-            panel.Children.Add(new Image
+            panel.Children.Add(new ResizableImage(bitmap,
+                ResizableImage.WidthFromAttributes(node.GetAttribute("width"), node.GetAttribute("height"), bitmap),
+                520, 260, width => ResizeImage(node, width, null))
             {
-                Source = bitmap,
-                MaxHeight = 260,
-                MaxWidth = 520,
-                Stretch = Stretch.Uniform,
                 Margin = new Thickness(0, 0, 10, 0)
             });
         }
@@ -471,6 +597,16 @@ public sealed partial class AuthorView
 
         AttachSelection(border, node);
         return border;
+    }
+
+    /// <summary>Размер картинки мышью: @width в px, @height снимается — пропорции сохраняются.</summary>
+    private void ResizeImage(DitaNode image, double width, BlockEditor? editor)
+    {
+        BeforeStructuralEdit?.Invoke(this, "Размер изображения");
+        image.SetAttribute("width", width.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "px");
+        image.RemoveAttribute("height");
+        Modified();
+        editor?.TextArea.TextView.Redraw();
     }
 
     private Bitmap? TryLoadImage(DitaNode node)

@@ -65,7 +65,8 @@ public sealed class DocxPublisher
                 warnings.Add(cssWarning);
             }
 
-            styles = DocxStyleSheet.FromCss(css);
+            // Классы оформления из «Автора» — раньше CSS проекта, чтобы тот мог их переопределить.
+            styles = DocxStyleSheet.FromCss(TextFormatting.Css + "\n" + css);
         }
 
         warnings.AddRange(styles.Warnings);
@@ -88,6 +89,10 @@ public sealed class DocxPublisher
         var topics = tree.PublicationOrder.ToList();
         var bookmarks = AssignBookmarks(topics);
         var title = tree.Root.Title;
+        var tocEntries = topics
+            .Where(i => i.TargetPath is not null && Math.Clamp(i.Level, 1, 6) <= layout.TocDepth && TocRules.Includes(_project, i))
+            .Select(i => new TocEntry(Math.Clamp(i.Level, 1, 6), i.Title, bookmarks[BookmarkKey(i.TargetPath!, i.TargetTopicId)]))
+            .ToList();
 
         // Документ собирается во временный файл рядом и подменяет прежний, только когда готов
         // целиком: сбой посреди сборки не оставит вместо прошлого DOCX обрезанный.
@@ -104,7 +109,7 @@ public sealed class DocxPublisher
             AddSettings(wordDocument, layout);
             SetDocumentProperties(wordDocument, title, layout);
 
-            WriteFrontMatter(body, title, date, labels, layout);
+            WriteFrontMatter(body, title, date, labels, layout, tocEntries);
 
             var renderOptions = new DocxRenderOptions
             {
@@ -113,7 +118,8 @@ public sealed class DocxPublisher
                 Filter = node => PublishFilter.IsIncluded(node, options),
                 TopicBookmark = (path, id) => bookmarks.TryGetValue(BookmarkKey(path, id), out var name) ? name : null,
                 Styles = styles,
-                NumberFiguresAndTables = layout.NumberFiguresAndTables
+                NumberFiguresAndTables = layout.NumberFiguresAndTables,
+                HeadingNumId = layout.NumberHeadings ? HeadingNumId : null
             };
             var renderer = new DocxRenderer(_project, mainPart, numberingPart, renderOptions);
 
@@ -136,10 +142,13 @@ public sealed class DocxPublisher
                 renderOptions.RelatedTopics = tree.RelatedLinks.TryGetValue(Path.GetFullPath(item.TargetPath!), out var related)
                     ? related
                     : null;
-                renderer.RenderTopic(expanded, topicNode, body, Math.Clamp(item.Level, 1, 6), bookmarkName);
+                renderer.RenderTopic(expanded, topicNode, body, Math.Clamp(item.Level, 1, 6), bookmarkName,
+                    unnumbered: TocRules.IsHiddenInMap(item.Node));
             }
 
-            body.Append(BuildSectionProperties(mainPart, styles.Page, layout, title, date));
+            var mainSection = BuildSectionProperties(mainPart, WithLayoutPage(styles.Page, layout), layout, title, date, warnings);
+            body.Append(mainSection);
+            FinishPlacedSections(body, mainSection);
 
             warnings.AddRange(renderOptions.Warnings);
             mainPart.Document.Save();
@@ -162,7 +171,14 @@ public sealed class DocxPublisher
 
     // ============================================================ титул и оглавление
 
-    private static void WriteFrontMatter(W.Body body, string title, string date, Labels labels, DocxLayout layout)
+    /// <summary>Уровень структуры «основной текст» — абзац не попадает в оглавление Word.</summary>
+    private const int BodyTextOutlineLevel = 9;
+
+    /// <summary>Строка оглавления: уровень, текст, закладка топика.</summary>
+    private sealed record TocEntry(int Level, string Text, string Bookmark);
+
+    private static void WriteFrontMatter(W.Body body, string title, string date, Labels labels, DocxLayout layout,
+        IReadOnlyList<TocEntry> tocEntries)
     {
         var any = false;
         if (layout.TitlePage)
@@ -193,8 +209,11 @@ public sealed class DocxPublisher
                 body.Append(PageBreakParagraph());
             }
 
-            body.Append(StyledParagraph(DocxStyleCatalog.TocHeading, labels.Contents));
-            body.Append(BuildTocParagraph(layout.TocDepth));
+            body.Append(StyledParagraph(DocxStyleCatalog.TocHeading, layout.TocTitle.Length > 0 ? layout.TocTitle : labels.Contents));
+            foreach (var paragraph in BuildTocParagraphs(layout.TocDepth, tocEntries))
+            {
+                body.Append(paragraph);
+            }
             any = true;
         }
 
@@ -213,25 +232,193 @@ public sealed class DocxPublisher
     private static W.Paragraph PageBreakParagraph() =>
         new(new W.Run(new W.Break { Type = W.BreakValues.Page }));
 
-    private static W.Paragraph BuildTocParagraph(int depth)
+    /// <summary>
+    /// Поле TOC, заранее заполненное строками-ссылками на топики: оглавление видно сразу — в
+    /// LibreOffice, просмотрщиках, в Word до обновления полей; Word при открытии пересобирает его
+    /// с номерами страниц (поле помечено устаревшим, в настройках — обновление при открытии).
+    /// </summary>
+    private static IEnumerable<W.Paragraph> BuildTocParagraphs(int depth, IReadOnlyList<TocEntry> entries)
     {
-        var field = new W.SimpleField(
-            new W.Run(new W.Text("Обновите оглавление: F9 или правой кнопкой → «Обновить поле»")))
+        var instruction = $" TOC \\o \"1-{Math.Clamp(depth, 1, 6)}\" \\h \\z \\u ";
+        if (entries.Count == 0)
         {
-            Instruction = $"TOC \\o \"1-{Math.Clamp(depth, 1, 6)}\" \\h \\z \\u"
-        };
+            yield return new W.Paragraph(new W.SimpleField(
+                new W.Run(new W.Text("Обновите оглавление: F9 или правой кнопкой → «Обновить поле»")))
+            {
+                Instruction = instruction.Trim()
+            });
+            yield break;
+        }
 
-        return new W.Paragraph(field);
+        for (var i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            var paragraph = new W.Paragraph(new W.ParagraphProperties(new W.ParagraphStyleId { Val = DocxStyleCatalog.Toc(entry.Level) }));
+            if (i == 0)
+            {
+                paragraph.Append(
+                    new W.Run(new W.FieldChar { FieldCharType = W.FieldCharValues.Begin, Dirty = true }),
+                    new W.Run(new W.FieldCode(instruction) { Space = SpaceProcessingModeValues.Preserve }),
+                    new W.Run(new W.FieldChar { FieldCharType = W.FieldCharValues.Separate }));
+            }
+
+            paragraph.Append(new W.Hyperlink(new W.Run(new W.Text(entry.Text) { Space = SpaceProcessingModeValues.Preserve }))
+            {
+                Anchor = entry.Bookmark,
+                History = true
+            });
+
+            if (i == entries.Count - 1)
+            {
+                paragraph.Append(new W.Run(new W.FieldChar { FieldCharType = W.FieldCharValues.End }));
+            }
+
+            yield return paragraph;
+        }
     }
 
     // ================================================================ колонтитулы
 
-    private static W.SectionProperties BuildSectionProperties(MainDocumentPart mainPart, DocxPageSetup page,
-        DocxLayout layout, string title, string date)
+    /// <summary>Размер бумаги, ориентация и поля из параметров страницы проекта — поверх @page CSS.</summary>
+    private static DocxPageSetup WithLayoutPage(DocxPageSetup page, DocxLayout layout)
+    {
+        var (width, height) = (page.WidthPt, page.HeightPt);
+        if (DocxLayout.PaperSizesMm.TryGetValue(layout.PaperSize, out var paper))
+        {
+            (width, height) = (paper.Width * DocxPageSetup.MmToPt, paper.Height * DocxPageSetup.MmToPt);
+        }
+
+        if (layout.Landscape && width < height)
+        {
+            (width, height) = (height, width);
+        }
+
+        static double Pt(double? mm, double fallback) => mm is { } value ? value * DocxPageSetup.MmToPt : fallback;
+        return new DocxPageSetup(width, height,
+            Pt(layout.MarginTopMm, page.TopPt), Pt(layout.MarginRightMm, page.RightPt),
+            Pt(layout.MarginBottomMm, page.BottomPt), Pt(layout.MarginLeftMm, page.LeftPt));
+    }
+
+    /// <summary>
+    /// Разделы блоков «на отдельном листе» (<see cref="PagePlacement"/>): метки, которые оставил
+    /// рендер, получают параметры страницы и колонтитулы основного раздела. Пустые разделы (блок в
+    /// начале документа, два таких блока подряд, блок в конце) не создаются — иначе пустой лист.
+    /// «Особый первый лист» (titlePg) остаётся только у первого раздела.
+    /// </summary>
+    internal static void FinishPlacedSections(W.Body body, W.SectionProperties mainSection)
+    {
+        static W.SectionProperties? Mark(OpenXmlElement? element) =>
+            (element as W.Paragraph)?.ParagraphProperties?.SectionProperties;
+
+        var marks = body.Elements<W.Paragraph>().Where(p => Mark(p) is not null).ToList();
+        if (marks.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var paragraph in marks)
+        {
+            var section = Mark(paragraph)!;
+            if (section.HasChildren)
+            {
+                continue;
+            }
+
+            // Начало блока: разрыв ставится в конец предыдущего абзаца, а не отдельной строкой.
+            var previous = paragraph.PreviousSibling();
+            if (previous is null || Mark(previous) is not null)
+            {
+                paragraph.Remove();
+            }
+            else if (previous is W.Paragraph before)
+            {
+                section.Remove();
+                (before.ParagraphProperties ??= new W.ParagraphProperties()).SectionProperties = section;
+                paragraph.Remove();
+            }
+        }
+
+        marks = body.Elements<W.Paragraph>().Where(p => Mark(p) is not null).ToList();
+        var lastMark = marks.LastOrDefault();
+        if (lastMark is not null && lastMark.NextSibling() is W.SectionProperties)
+        {
+            // Блок в самом конце: его выравнивание переходит к последнему (основному) разделу.
+            var vertical = Mark(lastMark)!.GetFirstChild<W.VerticalTextAlignmentOnPage>();
+            if (vertical is not null)
+            {
+                InsertVerticalAlignment(mainSection, (W.VerticalTextAlignmentOnPage)vertical.CloneNode(true));
+            }
+
+            if (lastMark.ChildElements.All(c => c is W.ParagraphProperties))
+            {
+                lastMark.Remove();
+            }
+            else
+            {
+                Mark(lastMark)!.Remove();
+            }
+
+            marks.RemoveAt(marks.Count - 1);
+        }
+
+        for (var i = 0; i < marks.Count; i++)
+        {
+            var mark = Mark(marks[i])!;
+            var filled = (W.SectionProperties)mainSection.CloneNode(true);
+            filled.RemoveAllChildren<W.VerticalTextAlignmentOnPage>();
+            if (i > 0)
+            {
+                filled.RemoveAllChildren<W.TitlePage>();
+            }
+
+            if (mark.GetFirstChild<W.VerticalTextAlignmentOnPage>() is { } vertical)
+            {
+                InsertVerticalAlignment(filled, (W.VerticalTextAlignmentOnPage)vertical.CloneNode(true));
+            }
+
+            marks[i].ParagraphProperties!.SectionProperties = filled;
+        }
+
+        if (marks.Count > 0)
+        {
+            mainSection.RemoveAllChildren<W.TitlePage>();
+        }
+    }
+
+    // В sectPr порядок строгий: vAlign — перед titlePg, после pgMar.
+    private static void InsertVerticalAlignment(W.SectionProperties section, W.VerticalTextAlignmentOnPage vertical)
+    {
+        section.RemoveAllChildren<W.VerticalTextAlignmentOnPage>();
+        if (section.GetFirstChild<W.TitlePage>() is { } titlePage)
+        {
+            section.InsertBefore(vertical, titlePage);
+        }
+        else
+        {
+            section.Append(vertical);
+        }
+    }
+
+    private W.SectionProperties BuildSectionProperties(MainDocumentPart mainPart, DocxPageSetup page,
+        DocxLayout layout, string title, string date, List<string> warnings)
     {
         var section = new W.SectionProperties();
-        var hasHeader = layout.HeaderText.Trim().Length > 0;
-        var hasFooter = layout.FooterText.Trim().Length > 0;
+        string? Image(string relative)
+        {
+            var full = DocxLayout.ResolveImage(_project.RootPath, relative);
+            if (full is null && relative.Trim().Length > 0)
+            {
+                warnings.Add($"Картинка колонтитула не найдена или не PNG/JPEG/GIF/BMP: {relative}");
+            }
+
+            return full;
+        }
+
+        var headerImage = Image(layout.HeaderImage);
+        var footerImage = Image(layout.FooterImage);
+        var textWidthPt = page.WidthPt - page.LeftPt - page.RightPt - layout.GutterMm * DocxPageSetup.MmToPt;
+        var hasHeader = layout.HeaderText.Trim().Length > 0 || headerImage is not null;
+        var hasFooter = layout.FooterText.Trim().Length > 0 || footerImage is not null;
         var distinctFirst = layout.NoHeaderOnFirstPage && (hasHeader || hasFooter);
 
         // Схема требует: сначала все headerReference, потом footerReference.
@@ -240,13 +427,14 @@ public sealed class DocxPublisher
             section.Append(new W.HeaderReference
             {
                 Type = W.HeaderFooterValues.Default,
-                Id = AddHeader(mainPart, HeaderFooterParagraph(DocxStyleCatalog.PageHeader, layout.HeaderText, layout.HeaderAlignment, title, date))
+                Id = AddHeader(mainPart, part => HeaderFooterBlock(part, DocxStyleCatalog.PageHeader, layout.HeaderText, layout.HeaderAlignment,
+                    headerImage, layout.HeaderImageAlignment, layout.HeaderImageHeightMm, textWidthPt, title, date, 9001))
             });
         }
 
         if (distinctFirst)
         {
-            section.Append(new W.HeaderReference { Type = W.HeaderFooterValues.First, Id = AddHeader(mainPart, new W.Paragraph()) });
+            section.Append(new W.HeaderReference { Type = W.HeaderFooterValues.First, Id = AddHeader(mainPart, _ => new W.Paragraph()) });
         }
 
         if (hasFooter)
@@ -254,13 +442,14 @@ public sealed class DocxPublisher
             section.Append(new W.FooterReference
             {
                 Type = W.HeaderFooterValues.Default,
-                Id = AddFooter(mainPart, HeaderFooterParagraph(DocxStyleCatalog.PageFooter, layout.FooterText, layout.FooterAlignment, title, date))
+                Id = AddFooter(mainPart, part => HeaderFooterBlock(part, DocxStyleCatalog.PageFooter, layout.FooterText, layout.FooterAlignment,
+                    footerImage, layout.FooterImageAlignment, layout.FooterImageHeightMm, textWidthPt, title, date, 9002))
             });
         }
 
         if (distinctFirst)
         {
-            section.Append(new W.FooterReference { Type = W.HeaderFooterValues.First, Id = AddFooter(mainPart, new W.Paragraph()) });
+            section.Append(new W.FooterReference { Type = W.HeaderFooterValues.First, Id = AddFooter(mainPart, _ => new W.Paragraph()) });
         }
 
         var width = (uint)DocxPropsWriter.Twips(page.WidthPt);
@@ -291,18 +480,71 @@ public sealed class DocxPublisher
         return section;
     }
 
-    private static string AddHeader(MainDocumentPart mainPart, W.Paragraph paragraph)
+    // Абзац строится, когда часть колонтитула уже есть: картинка кладётся в неё самую.
+    private static string AddHeader(MainDocumentPart mainPart, Func<OpenXmlPart, W.Paragraph> build)
     {
         var part = mainPart.AddNewPart<HeaderPart>();
-        part.Header = new W.Header(paragraph);
+        part.Header = new W.Header(build(part));
         return mainPart.GetIdOfPart(part);
     }
 
-    private static string AddFooter(MainDocumentPart mainPart, W.Paragraph paragraph)
+    private static string AddFooter(MainDocumentPart mainPart, Func<OpenXmlPart, W.Paragraph> build)
     {
         var part = mainPart.AddNewPart<FooterPart>();
-        part.Footer = new W.Footer(paragraph);
+        part.Footer = new W.Footer(build(part));
         return mainPart.GetIdOfPart(part);
+    }
+
+    /// <summary>
+    /// Колонтитул с картинкой: три места — слева, по центру (табуляция по центру строки) и справа
+    /// (табуляция по правому краю). Картинка и текст — каждый на своём месте, а при одинаковом
+    /// выравнивании — рядом. Без картинки — прежний абзац с выравниванием текста.
+    /// </summary>
+    private static W.Paragraph HeaderFooterBlock(OpenXmlPart part, string styleId, string text, DocxHeaderAlignment textAlignment,
+        string? image, DocxHeaderAlignment imageAlignment, double imageHeightMm, double textWidthPt, string title, string date, uint imageId)
+    {
+        var textParagraph = HeaderFooterParagraph(styleId, text, textAlignment, title, date);
+        if (image is null || DocxPictures.AddImage(part, image) is not { } relId)
+        {
+            return textParagraph;
+        }
+
+        var (naturalWidth, naturalHeight) = ImageSize.ReadEmuSize(image, null, null);
+        var heightEmu = (long)(imageHeightMm * 36000);
+        var widthEmu = naturalHeight > 0 ? (long)(naturalWidth * (double)heightEmu / naturalHeight) : heightEmu;
+        var picture = DocxPictures.Inline(relId, widthEmu, heightEmu, imageId, Path.GetFileName(image), "Логотип");
+        var textRuns = textParagraph.ChildElements.Where(e => e is not W.ParagraphProperties).Select(e => e.CloneNode(true)).ToList();
+
+        var paragraph = new W.Paragraph(new W.ParagraphProperties(
+            new W.ParagraphStyleId { Val = styleId },
+            new W.Tabs(
+                new W.TabStop { Val = W.TabStopValues.Center, Position = DocxPropsWriter.Twips(textWidthPt / 2) },
+                new W.TabStop { Val = W.TabStopValues.Right, Position = DocxPropsWriter.Twips(textWidthPt) }),
+            new W.Justification { Val = W.JustificationValues.Left }));
+
+        foreach (var slot in new[] { DocxHeaderAlignment.Left, DocxHeaderAlignment.Center, DocxHeaderAlignment.Right })
+        {
+            if (slot != DocxHeaderAlignment.Left)
+            {
+                paragraph.Append(new W.Run(new W.TabChar()));
+            }
+
+            if (slot == imageAlignment)
+            {
+                paragraph.Append(picture);
+                if (slot == textAlignment && textRuns.Count > 0)
+                {
+                    paragraph.Append(TextRun("  "));
+                }
+            }
+
+            if (slot == textAlignment)
+            {
+                paragraph.Append(textRuns);
+            }
+        }
+
+        return paragraph;
     }
 
     private static readonly Regex FieldPattern = new(@"\{(page|pages|title|date)\}", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -438,7 +680,9 @@ public sealed class DocxPublisher
         abstractNum.Append(new W.MultiLevelType { Val = W.MultiLevelValues.Multilevel });
         for (var i = 0; i < 9; i++)
         {
-            var numbered = i < depth;
+            // Все уровни десятичные: глубже настройки номера получают только нумерованные абзацы
+            // (стили заголовков к этим уровням не привязаны).
+            var numbered = true;
             var text = string.Join(".", Enumerable.Range(1, i + 1).Select(n => "%" + n));
             var level = new W.Level
             {
@@ -451,7 +695,7 @@ public sealed class DocxPublisher
                 PreviousParagraphProperties = new W.PreviousParagraphProperties(new W.Indentation { Left = "0", FirstLine = "0" })
             };
 
-            if (numbered && i < 6)
+            if (i < depth && i < 6)
             {
                 level.ParagraphStyleIdInLevel = new W.ParagraphStyleIdInLevel { Val = DocxStyleCatalog.Heading(i + 1) };
             }
@@ -533,9 +777,18 @@ public sealed class DocxPublisher
                 }
             }
 
-            var primary = isHeading || def.Id is DocxStyleCatalog.Normal or DocxStyleCatalog.Title or DocxStyleCatalog.Subtitle;
+            // Заголовок «без номера»: как обычный, но без нумерации и без уровня структуры —
+            // поэтому и поле TOC в Word его не соберёт.
+            var plainHeading = def.Id.StartsWith(DocxStyleCatalog.HeadingPlainPrefix, StringComparison.Ordinal);
+            if (plainHeading && layout.NumberHeadings)
+            {
+                numbering = new W.NumberingProperties(new W.NumberingId { Val = 0 });
+            }
+
+            var primary = isHeading || plainHeading || def.Id is DocxStyleCatalog.Normal or DocxStyleCatalog.Title or DocxStyleCatalog.Subtitle;
             styles.Append(DocxStyleWriter.Create(def.Id, def.Name, def.Kind, def.BasedOn, props,
-                primary, next: isHeading ? DocxStyleCatalog.Normal : null, numbering, def.OutlineLevel));
+                primary, next: isHeading || plainHeading ? DocxStyleCatalog.Normal : null, numbering,
+                plainHeading ? BodyTextOutlineLevel : def.OutlineLevel));
         }
 
         stylesPart.Styles = styles;

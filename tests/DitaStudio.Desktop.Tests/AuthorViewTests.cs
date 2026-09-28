@@ -6,8 +6,10 @@ using Avalonia.Input;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Desktop.Authoring;
+using DitaStudio.Presentation.Authoring;
 using Xunit;
 
 namespace DitaStudio.Desktop.Tests;
@@ -276,6 +278,376 @@ public sealed class AuthorViewTests
         Assert.True(author.Surface.InsertInlineNode(xref));
         Assert.Equal("<p>Второй<xref href=\"other.dita\"/> абзац.</p>", XmlSerializer.ToXml(second));
         Assert.Contains(InlineChar, author.EditorFor(second)!.Text);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void InsertElement_InlineGoesToCaret_BlockGoesAfter()
+    {
+        // Замечание: сноска и картинка из палитры вставлялись блоком после абзаца, а не у курсора.
+        var (window, author, document, undo) = Show();
+        var second = Paragraphs(document)[1];
+        var editor = Focus(window, author, second, "Второй".Length);
+
+        Assert.True(author.Surface.InsertElement("fn"));
+        Assert.Equal("<p>Второй<fn>Текст сноски</fn> абзац.</p>", XmlSerializer.ToXml(second));
+        Assert.Contains("Вставка <fn>", undo);
+
+        // Курсор — в текст сноски в области «Сноски», заготовка выделена, набор её заменяет.
+        Dispatcher.UIThread.RunJobs();
+        var fn = second.FirstElement("fn")!;
+        Assert.Equal("Текст сноски", author.EditorFor(fn)!.SelectedText);
+        window.KeyTextInput("Пояснение");
+        Dispatcher.UIThread.RunJobs();
+        author.FlushPendingEdits();
+        Assert.Equal("<p>Второй<fn>Пояснение</fn> абзац.</p>", XmlSerializer.ToXml(second));
+
+        // Выделенный текст оборачивается целиком.
+        var first = Paragraphs(document)[0];
+        editor = Focus(window, author, first, 0);
+        editor.Select(0, "Первый".Length);
+        Assert.True(author.Surface.InsertElement("term"));
+        Assert.Equal("<p><term>Первый</term> <b>жирный</b> абзац.</p>", XmlSerializer.ToXml(first));
+
+        // Картинка из палитры — плашкой у курсора, у конца полужирного — рядом с ним.
+        Focus(window, author, first, "Первый жирный".Length);
+        Assert.True(author.Surface.InsertElement("image"));
+        Assert.Equal("<p><term>Первый</term> <b>жирный</b><image/> абзац.</p>", XmlSerializer.ToXml(first));
+
+        // Блочный элемент — по-прежнему после текущего абзаца.
+        Focus(window, author, first, 2);
+        Assert.True(author.Surface.InsertElement("note"));
+        Assert.Equal("note", EditCommands.NextElement(first)!.Name);
+        window.Close();
+    }
+
+    [AvaloniaTheory]
+    [InlineData("light")]
+    [InlineData("dark")]
+    public void Wrappers_HaveFrameAndLabel_ParagraphsDoNot(string theme)
+    {
+        // Замечание: в «Авторе» не видно, где начинается и кончается div, section, fn.
+        Application.Current!.RequestedThemeVariant = theme == "dark" ? ThemeVariant.Dark : ThemeVariant.Light;
+        try
+        {
+            var (window, author, document, _) = Show(
+                "<concept id=\"c\"><title>Обёртки</title><conbody>" +
+                "<p>Абзац со сноской<fn>Текст сноски.</fn> и продолжением.</p>" +
+                "<div outputclass=\"warning-box\"><p>Внутри div.</p><ul><li>пункт</li></ul></div>" +
+                "<section><title>Раздел</title><sectiondiv><p>Внутри sectiondiv.</p></sectiondiv></section>" +
+                "</conbody></concept>");
+
+            Border Frame(string name) => (Border)author.ViewFor(document.Root.DescendantsAndSelf().First(n => n.Name == name))!;
+            string? Label(Border border) => ((StackPanel)border.Child!).Children.OfType<TextBlock>().FirstOrDefault()?.Text;
+
+            Assert.Equal(2, Frame("div").BorderThickness.Left);
+            Assert.Equal("div · warning-box", Label(Frame("div")));
+            Assert.Equal("section", Label(Frame("section")));
+            Assert.Equal("sectiondiv", Label(Frame("sectiondiv")));
+            Assert.Null(Label(Frame("ul")));
+            Assert.Equal(0, Frame("ul").BorderThickness.Left);
+
+            var frame = window.CaptureRenderedFrame();
+            var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+            Directory.CreateDirectory(dir);
+            frame!.Save(Path.Combine(dir, $"author-wrappers-{theme}.png"));
+            window.Close();
+        }
+        finally
+        {
+            Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
+        }
+    }
+
+    [AvaloniaFact]
+    public void FontSize_WrapsSelection_ReusesWrapper_WholeBlock_Caret_Reset()
+    {
+        // Замечание: «печатали 14 пт, дальше надо 10 пт» — без правки XML.
+        var (window, author, document, _) = Show();
+        var second = Paragraphs(document)[1];
+        var editor = Focus(window, author, second, 0);
+        const string size = Core.Publishing.TextFormatting.SizePrefix;
+
+        editor.Select(0, "Второй".Length);
+        Assert.True(author.Surface.ApplyTextFormat(size, "size-10"));
+        author.FlushPendingEdits();
+        Assert.Equal("<p><ph outputclass=\"size-10\">Второй</ph> абзац.</p>", XmlSerializer.ToXml(second));
+
+        // Тот же участок ещё раз — меняется класс, без вложенной обёртки.
+        editor = Focus(window, author, second, 0);
+        editor.Select(0, "Второй".Length);
+        author.Surface.ApplyTextFormat(size, "size-14");
+        author.FlushPendingEdits();
+        Assert.Equal("<p><ph outputclass=\"size-14\">Второй</ph> абзац.</p>", XmlSerializer.ToXml(second));
+
+        // Весь текст блока — класс на самом абзаце, лишняя фраза уходит.
+        editor = Focus(window, author, second, 0);
+        editor.Select(0, editor.Document.TextLength);
+        author.Surface.ApplyTextFormat(size, "size-12");
+        Dispatcher.UIThread.RunJobs();
+        author.FlushPendingEdits();
+        Assert.Equal("<p outputclass=\"size-12\">Второй абзац.</p>", XmlSerializer.ToXml(second));
+        Assert.Equal(16, author.EditorFor(second)!.FontSize);
+
+        // Без выделения — заготовка у курсора, набор идёт уже этим размером.
+        editor = Focus(window, author, second, "Второй абзац.".Length);
+        author.Surface.ApplyTextFormat(size, "size-8");
+        window.KeyTextInput(" Мелко");
+        Dispatcher.UIThread.RunJobs();
+        author.FlushPendingEdits();
+        Assert.Equal("<p outputclass=\"size-12\">Второй абзац.<ph outputclass=\"size-8\"> Мелко</ph></p>", XmlSerializer.ToXml(second));
+
+        // Сброс на выделении — фраза без других атрибутов разворачивается.
+        editor = Focus(window, author, second, 0);
+        editor.Select("Второй абзац.".Length, " Мелко".Length);
+        author.Surface.ApplyTextFormat(size, null);
+        author.FlushPendingEdits();
+        Assert.Equal("<p outputclass=\"size-12\">Второй абзац. Мелко</p>", XmlSerializer.ToXml(second));
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void EnterAtEnd_ShowsSuggestions_DefaultSplits_FilterInserts()
+    {
+        // Замечание: по Enter — панелька с подсказкой, какой блок будет (как в Oxygen).
+        var (window, author, document, undo) = Show();
+        var first = Paragraphs(document)[0];
+        Focus(window, author, first, InlineContent.FromNode(first).Length);
+        Press(window, Key.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+
+        var popup = Assert.IsType<ElementSuggestions>(author.Suggestions);
+        Assert.True(popup.IsOpen);
+        Assert.Null(popup.Visible[0].Element);
+        Assert.Contains("как обычно", popup.Visible[0].Title);
+        Assert.Contains(popup.Visible, s => s.Element == "note");
+        Assert.DoesNotContain(popup.Visible, s => s.Element == "b");
+        var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+        Directory.CreateDirectory(dir);
+        window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "author-enter-suggestions.png"));
+
+        // Первая строка — прежний Enter: новый абзац после текущего.
+        popup.Apply();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(3, Paragraphs(document).Count);
+        Assert.Null(author.Suggestions);
+
+        // Фильтр и выбор элемента.
+        var second = Paragraphs(document)[1];
+        Focus(window, author, second, 0);
+        Press(window, Key.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        author.Suggestions!.Filter("note");
+        Assert.Equal("note", author.Suggestions.Selected?.Element);
+        author.Suggestions.Apply();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("note", EditCommands.NextElement(second)!.Name);
+        Assert.Contains("Вставка <note>", undo);
+
+        // В конце последнего пункта списка — элементы и после самого списка.
+        var lastItem = document.Root.Descendants().Last(n => n.Name == "li");
+        Focus(window, author, lastItem, InlineContent.FromNode(lastItem).Length);
+        Press(window, Key.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains(author.Suggestions!.Visible, s => s.Element == "p" && s.Title.EndsWith("после <ul>"));
+        author.Suggestions.Filter("после <ul>");
+        var p = author.Suggestions.Visible.First(s => s.Element == "p");
+        author.Suggestions.Filter(string.Empty);
+        author.Suggestions.IsOpen = false; // Esc / щелчок мимо — ничего не меняется
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(lastItem, author.CurrentNode);
+        Assert.Equal(2, document.Root.Descendants().Count(n => n.Name == "li"));
+        Assert.NotNull(p);
+
+        // Флажок выключен — Enter снова сразу создаёт блок.
+        AuthorView.EnterSuggestionsEnabled = false;
+        try
+        {
+            Focus(window, author, lastItem, InlineContent.FromNode(lastItem).Length);
+            Press(window, Key.Enter, RawInputModifiers.None);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Null(author.Suggestions);
+            Assert.Equal(3, document.Root.Descendants().Count(n => n.Name == "li"));
+        }
+        finally
+        {
+            AuthorView.EnterSuggestionsEnabled = true;
+        }
+
+        window.Close();
+    }
+
+    [AvaloniaTheory]
+    [InlineData("light")]
+    [InlineData("dark")]
+    public void Footnotes_AreChipsInText_EditedInFootnotesArea(string theme)
+    {
+        // Замечание: сноски в «Авторе» — не частью сплошного текста, а внизу.
+        Application.Current!.RequestedThemeVariant = theme == "dark" ? ThemeVariant.Dark : ThemeVariant.Light;
+        try
+        {
+            var (window, author, document, _) = Show(
+                "<concept id=\"c\"><title>Сноски</title><conbody>" +
+                "<p>Версия ВПО на ЖКИ<fn>Вывод на ЖКИ по умолчанию.</fn> см. рисунок 93.</p>" +
+                "<p>Второй<fn>Вторая сноска.</fn> абзац.</p></conbody></concept>");
+            var first = Paragraphs(document)[0];
+            var fn1 = first.FirstElement("fn")!;
+            var fn2 = Paragraphs(document)[1].FirstElement("fn")!;
+
+            // В тексте — плашка с номером, текста сноски в строке нет.
+            var text = author.EditorFor(first)!.Text;
+            Assert.DoesNotContain("Вывод", text);
+            Assert.Contains(InlineChar, text);
+            Assert.Equal("сноска 2", InlineContent.DescribeChip(fn2));
+
+            // Внизу — область «Сноски» с редакторами текста сносок.
+            Assert.Contains(author.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "Сноски");
+            var note = author.EditorFor(fn1)!;
+            Assert.Equal("Вывод на ЖКИ по умолчанию.", note.Text);
+            note.FocusEditor(note.Text.Length);
+            Dispatcher.UIThread.RunJobs();
+            window.KeyTextInput(" Уточнение.");
+            Press(window, Key.Enter, RawInputModifiers.None); // Enter в сноске ничего не делает
+            Dispatcher.UIThread.RunJobs();
+            Assert.Null(author.Suggestions);
+            author.FlushPendingEdits();
+            Assert.Equal("<p>Версия ВПО на ЖКИ<fn>Вывод на ЖКИ по умолчанию. Уточнение.</fn> см. рисунок 93.</p>", XmlSerializer.ToXml(first));
+
+            // Правка абзаца со сноской не отвязывает её от области «Сноски».
+            var editor = Focus(window, author, first, 0);
+            window.KeyTextInput("Тут: ");
+            author.FlushPendingEdits();
+            Assert.Same(fn1, first.FirstElement("fn"));
+            note = author.EditorFor(fn1)!;
+            note.FocusEditor(0);
+            Dispatcher.UIThread.RunJobs();
+            window.KeyTextInput("!");
+            author.FlushPendingEdits();
+            Assert.Equal("!Вывод на ЖКИ по умолчанию. Уточнение.", fn1.InnerText);
+
+            var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+            Directory.CreateDirectory(dir);
+            window.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"author-footnotes-{theme}.png"));
+
+            // Удалили плашку из абзаца — сноска уходит и из области.
+            editor = Focus(window, author, first, 0);
+            var chip = editor.Text.IndexOf(InlineChar);
+            editor.Document.Remove(chip, 1);
+            author.FlushPendingEdits();
+            Dispatcher.UIThread.RunJobs();
+            Assert.Null(first.FirstElement("fn"));
+            Assert.Null(author.EditorFor(fn1));
+            Assert.NotNull(author.EditorFor(fn2));
+            Assert.Equal("сноска 1", InlineContent.DescribeChip(fn2));
+            window.Close();
+        }
+        finally
+        {
+            Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
+        }
+    }
+
+    [AvaloniaFact]
+    public void Images_ShownAsPictures_ResizeWritesWidth()
+    {
+        // Замечание: изображение в «Авторе» — картинкой, а не надписью, и размер меняется мышью.
+        const string png = "iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAIAAABwJOjsAAAAJ0lEQVR4nGM8oaHBMBCAaUBsHbV41OJRi0ctHrV41OJRi0ctHhAAABx5AUDfR9jWAAAAAElFTkSuQmCC";
+        var dir = Path.Combine(Path.GetTempPath(), "DitaStudioImageTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        File.WriteAllBytes(Path.Combine(dir, "pic.png"), Convert.FromBase64String(png));
+        var path = Path.Combine(dir, "topic.dita");
+        File.WriteAllText(path, "<concept id=\"c\"><title>Картинки</title><conbody>" +
+            "<p>Значок <image href=\"pic.png\" height=\"10px\"/> в строке.</p>" +
+            "<fig><image href=\"pic.png\" placement=\"break\"/></fig></conbody></concept>");
+        var document = DitaDocument.Load(path);
+        var author = new AuthorView();
+        var undo = new List<string>();
+        author.BeforeStructuralEdit += (_, description) => undo.Add(description);
+        author.Load(document);
+        var window = new Window { Width = 900, Height = 700, Content = author };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var images = author.GetVisualDescendants().OfType<ResizableImage>().ToList();
+        Assert.Equal(2, images.Count);
+        var inline = images.First(i => i.FindAncestorOfType<BlockEditor>() is not null);
+        Assert.Equal(20, inline.ShownWidth, 1); // height="10px" при пропорциях 2:1
+        Assert.DoesNotContain(author.GetVisualDescendants().OfType<TextBlock>(), t => t.Text?.StartsWith("🖼") == true);
+
+        // Перетаскивание маркера в углу картинки-блока мышью.
+        var block = images.Single(i => !ReferenceEquals(i, inline));
+        var before = block.ShownWidth;
+        var inside = block.TranslatePoint(new Point(5, 5), window)!.Value;
+        window.CaptureRenderedFrame(); // проверка попадания идёт по отрисованному кадру
+        window.MouseMove(new Point(1, 1), RawInputModifiers.None);
+        window.MouseMove(inside, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        var thumb = block.Children.OfType<Border>().Single();
+        Assert.True(thumb.IsVisible);
+        var corner = thumb.TranslatePoint(new Point(5, 5), window)!.Value;
+        window.MouseDown(corner, MouseButton.Left, RawInputModifiers.None);
+        window.MouseMove(corner + new Vector(60, 0), RawInputModifiers.LeftMouseButton);
+        window.MouseUp(corner + new Vector(60, 0), MouseButton.Left, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(before + 60, block.ShownWidth, 1);
+        Assert.Equal($"{Math.Round(before + 60)}px", document.Root.Descendants().Last(n => n.Name == "image").GetAttribute("width"));
+
+        inline.ResizeTo(64);
+        var image = document.Root.Descendants().First(n => n.Name == "image");
+        Assert.Equal("64px", image.GetAttribute("width"));
+        Assert.Null(image.GetAttribute("height"));
+        Assert.True(document.IsDirty);
+        Assert.Contains("Размер изображения", undo);
+        author.FlushPendingEdits();
+        Assert.Contains("<image href=\"pic.png\" width=\"64px\"/>", XmlSerializer.ToXml(document.Root));
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void TableBorders_DragResizesColumnsAndRows()
+    {
+        // Замечание: растягивать столбцы и строки мышью, без правки XML.
+        var (window, author, document, undo) = Show(
+            "<concept id=\"c\"><title>Таблица</title><conbody><table><tgroup cols=\"2\">" +
+            "<colspec colname=\"c1\"/><colspec colname=\"c2\"/><tbody>" +
+            "<row><entry>Параметр</entry><entry>Значение</entry></row>" +
+            "<row><entry>a</entry><entry>b</entry></row></tbody></tgroup></table></conbody></concept>");
+        var handles = author.GetVisualDescendants().OfType<Border>().Where(b => b.Tag is "column-handle" or "row-handle").ToList();
+        var column = handles.Single(h => h.Tag is "column-handle");
+        var grid = (Grid)column.Parent!;
+        var before = grid.ColumnDefinitions.Select(d => d.ActualWidth).ToArray();
+        Assert.Equal(before[0], before[1], 1);
+
+        window.CaptureRenderedFrame(); // проверка попадания идёт по отрисованному кадру
+        var at = column.TranslatePoint(new Point(3, 10), window)!.Value;
+        window.MouseDown(at, MouseButton.Left, RawInputModifiers.None);
+        window.MouseMove(at + new Vector(100, 0), RawInputModifiers.LeftMouseButton);
+        window.MouseUp(at + new Vector(100, 0), MouseButton.Left, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+
+        var colspecs = document.Root.Descendants().Where(n => n.Name == "colspec").ToList();
+        var widths = colspecs.Select(c => double.Parse(c.GetAttribute("colwidth")!.TrimEnd('*'), System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        Assert.True(widths[0] > widths[1], $"первый столбец шире: {string.Join(", ", widths)}");
+        Assert.Equal(100, widths.Sum(), 1);
+        Assert.Contains("Ширина столбцов", undo);
+        Assert.True(document.IsDirty);
+
+        // Нижняя граница первой строки — ниже; высота пишется классом.
+        window.CaptureRenderedFrame();
+        var rowHandle = author.GetVisualDescendants().OfType<Border>().First(b => b.Tag is "row-handle");
+        var rowAt = rowHandle.TranslatePoint(new Point(40, 3), window)!.Value;
+        window.MouseDown(rowAt, MouseButton.Left, RawInputModifiers.None);
+        window.MouseMove(rowAt + new Vector(0, 40), RawInputModifiers.LeftMouseButton);
+        window.MouseUp(rowAt + new Vector(0, 40), MouseButton.Left, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        var firstRow = document.Root.Descendants().First(n => n.Name == "row");
+        Assert.Matches(@"^row-height-\d+mm$", firstRow.GetAttribute("outputclass"));
+        Assert.Contains("Высота строки", undo);
+
+        // Двойной щелчок по нижней границе — высота снова по содержимому.
+        rowHandle.RaiseEvent(new Avalonia.Input.TappedEventArgs(InputElement.DoubleTappedEvent, null!));
+        Assert.Null(firstRow.GetAttribute("outputclass"));
         window.Close();
     }
 

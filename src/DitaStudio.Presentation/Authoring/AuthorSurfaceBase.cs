@@ -1,5 +1,6 @@
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Services;
 
@@ -42,6 +43,19 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
 
     public abstract bool InsertInlineNode(DitaNode node);
 
+    /// <summary>
+    /// Размер или цвет выделенного текста: весь текст блока — классом на самом блоке, часть —
+    /// фразой ph с классом, без выделения — заготовкой у курсора. false — оболочка так не умеет.
+    /// </summary>
+    public virtual bool ApplyTextFormat(string prefix, string? token) => false;
+
+    /// <summary>
+    /// Вставляет у курсора фразовый элемент с текстом: выделение оборачивается, иначе внутрь
+    /// ставится выделенная заготовка <paramref name="placeholder"/>. false — оболочка так не умеет
+    /// (тогда элемент вставляется блоком после текущего).
+    /// </summary>
+    public virtual bool InsertInlineElement(DitaNode element, string placeholder) => false;
+
     /// <summary>Первый элемент со смешанным содержимым внутри узла — куда ставить курсор после правки.</summary>
     protected static DitaNode FirstEditable(DitaNode node)
     {
@@ -69,6 +83,12 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
             return false;
         }
 
+        // Фразовый элемент (сноска, термин, картинка) — в строку у курсора, а не блоком после абзаца.
+        if (TryInsertInline(CurrentNode, name))
+        {
+            return true;
+        }
+
         FlushPendingEdits();
         BeforeStructuralEdit($"Вставка <{name}>");
 
@@ -93,6 +113,30 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         Changed(FirstEditable(created), created.Parent);
         return true;
     }
+
+    private bool TryInsertInline(DitaNode current, string name)
+    {
+        var catalog = DitaCatalog.Default;
+        if (catalog.Get(name) is not { Display: DisplayKind.Inline or DisplayKind.Empty } def ||
+            catalog.Get(current.Name) is not { IsMixed: true } ||
+            !catalog.CanInsert(current, name, current.ElementChildren().Count()))
+        {
+            return false;
+        }
+
+        var element = catalog.CreateElement(name);
+        return def.IsMixed && element.Children.Count == 0
+            ? InsertInlineElement(element, PlaceholderFor(def))
+            : InsertInlineNode(element);
+    }
+
+    /// <summary>Заготовка текста нового фразового элемента — выделена, набор её заменяет.</summary>
+    public static string PlaceholderFor(ElementDef def) => def.Name switch
+    {
+        "fn" => "Текст сноски",
+        _ when def.Description.Length is > 0 and <= 40 => def.Description,
+        _ => "текст"
+    };
 
     public bool DeleteCurrent()
     {
@@ -130,6 +174,26 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
 
     public bool MergeCurrentCellDown() => MergeCell(EditCommands.MergeTableCellDown, "Объединение ячеек по вертикали");
 
+    public bool EditCurrentTable(TableOperation operation)
+    {
+        if (Document is null || CurrentNode is null || TableCommands.CellOf(CurrentNode) is not { } cell ||
+            TableCommands.TableOf(cell) is not { Parent: { } holder } table)
+        {
+            return false;
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit(TableCommands.Describe(operation));
+        if (TableCommands.Apply(cell, operation) is not { } focus)
+        {
+            return false;
+        }
+
+        CurrentNode = focus;
+        Changed(FirstEditable(focus), holder, table);
+        return true;
+    }
+
     private bool MergeCell(Func<DitaNode, DitaNode?> merge, string description)
     {
         if (Document is null || CurrentNode is null)
@@ -159,6 +223,60 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         var enabled = EditCommands.ToggleOutputClassToken(CurrentNode, className);
         Changed(FirstEditable(CurrentNode), CurrentNode.Parent, CurrentNode);
         return enabled;
+    }
+
+    /// <summary>
+    /// Оформление текущего блока (абзац, заголовок, ячейка): ставит класс группы
+    /// <paramref name="prefix"/> вместо прежнего или снимает (null). Выравнивание ячейки CALS —
+    /// стандартным @align.
+    /// </summary>
+    public bool SetCurrentBlockFormat(string prefix, string? token)
+    {
+        if (Document is null || CurrentNode is null)
+        {
+            return false;
+        }
+
+        var node = CurrentNode;
+        if (prefix == PagePlacement.Prefix)
+        {
+            // Положение на листе — у всего блока: курсор в подписи рисунка или ячейке таблицы
+            // ставит на лист рисунок или таблицу целиком.
+            if (PagePlacement.PlaceableFor(node) is not { } block)
+            {
+                return false;
+            }
+
+            node = block;
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit("Оформление блока");
+        if (prefix == PagePlacement.Prefix)
+        {
+            PagePlacement.Set(node, token);
+        }
+        else if (prefix == TextFormatting.AlignPrefix && node.Name == "entry")
+        {
+            var value = TextFormatting.Alignments.FirstOrDefault(a => a.Token == token).Css;
+            if (value is null)
+            {
+                node.RemoveAttribute("align");
+            }
+            else
+            {
+                node.SetAttribute("align", value);
+            }
+
+            TextFormatting.SetToken(node, prefix, null);
+        }
+        else
+        {
+            TextFormatting.SetToken(node, prefix, token);
+        }
+
+        Changed(FirstEditable(node), node.Parent, node);
+        return true;
     }
 
     public bool? ToggleCurrentRev()

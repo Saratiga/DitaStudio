@@ -2,6 +2,7 @@ using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Validation;
 using DitaStudio.Docx.Styling;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
@@ -15,7 +16,9 @@ namespace DitaStudio.Docx;
 public sealed partial class DocxRenderer
 {
     /// <summary>Отрисовывает один топик и добавляет его содержимое в конец body.</summary>
-    public void RenderTopic(DitaDocument document, DitaNode topic, W.Body body, int headingLevel, string? bookmarkName)
+    /// <param name="unnumbered">Заголовок без номера и вне оглавления (строка карты с toc="no").</param>
+    public void RenderTopic(DitaDocument document, DitaNode topic, W.Body body, int headingLevel, string? bookmarkName,
+        bool unnumbered = false)
     {
         _document = document;
         using var topicScope = BlockScope(topic);
@@ -32,12 +35,24 @@ public sealed partial class DocxRenderer
 
             switch (child.Name)
             {
+                case "title" when DitaValidator.IsEmptyTitle(child):
+                    // Топик без заголовка: абзаца-заголовка нет (и в оглавление он не попадает),
+                    // закладка для ссылок на топик ставится прямо в тело перед содержимым.
+                    if (bookmarkName is not null)
+                    {
+                        var id = (_nextBookmarkId++).ToString();
+                        body.Append(new W.BookmarkStart { Id = id, Name = bookmarkName }, new W.BookmarkEnd { Id = id });
+                        bookmarkName = null;
+                    }
+
+                    break;
+
                 case "title":
                 case "glossterm":
                     W.Paragraph heading;
                     using (BlockScope(child))
                     {
-                        heading = HeadingParagraph(RenderInlineRuns(child), headingLevel);
+                        heading = HeadingParagraph(RenderInlineRuns(child), headingLevel, unnumbered || TocRules.IsUnnumbered(child));
                     }
 
                     if (bookmarkName is not null)

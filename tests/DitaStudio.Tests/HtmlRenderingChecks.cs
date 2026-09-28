@@ -314,7 +314,7 @@ internal static partial class CoreChecks
             Check(html.Contains("class=\"typeoftext\"") && html.Contains("ОПАСНО") && html.Contains("Не делайте так."),
                 "hazardstatement/messagepanel отрисован по произвольным именам дочерних элементов");
 
-            Check(System.Text.RegularExpressions.Regex.IsMatch(html, "<col style=\"width:2\\*\"[^>]*/>|<col />"), "CALS-таблица: colgroup сгенерирован");
+            Check(System.Text.RegularExpressions.Regex.IsMatch(html, "<col style=\"width:[0-9.]+%\" />"), "CALS-таблица: colgroup с шириной столбцов в процентах");
             Check(html.Contains("<th>H1</th>") || html.Contains("<th>H1"), "CALS-таблица: заголовок thead/th отрисован");
             Check(html.Contains("colspan=\"2\""), "CALS-таблица: namest/nameend дали colspan");
             Check(html.Contains("rowspan=\"2\""), "CALS-таблица: morerows=1 дал rowspan=2 (morerows+1)");

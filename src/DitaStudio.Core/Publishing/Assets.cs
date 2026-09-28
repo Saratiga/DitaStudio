@@ -42,6 +42,7 @@ h2 { font-size: 23px; }
 h3 { font-size: 19px; }
 h4 { font-size: 17px; }
 p { margin: .7em 0; }
+.heading-number, .para-number { margin-right: .35em; }
 a { color: var(--accent); }
 .shortdesc { font-size: 17px; color: var(--muted); margin-bottom: 1.2em; }
 .section { margin: 1.4em 0; }
@@ -116,8 +117,20 @@ li { margin: .3em 0; }
   table.page-break-auto { page-break-inside: auto; break-inside: auto; }
   thead { display: table-header-group; }
   tfoot { display: table-footer-group; }
+  /* Блок на отдельном листе (outputclass="place-…", PagePlacement): 100vh при печати —
+     высота области текста листа при любых полях. */
+  .page-place { break-before: page; page-break-before: always; break-after: page; page-break-after: always;
+    box-sizing: border-box; height: 100vh; display: flex; flex-direction: column; }
+  .page-place:last-child { break-after: auto; page-break-after: auto; } /* иначе пустой лист в конце */
+  .page-place > * { margin-top: 0; margin-bottom: 0; }
+  .page-place.place-top-left, .page-place.place-top-center, .page-place.place-top-right { justify-content: flex-start; }
+  .page-place.place-middle-left, .page-place.place-middle-center, .page-place.place-middle-right { justify-content: center; }
+  .page-place.place-bottom-left, .page-place.place-bottom-center, .page-place.place-bottom-right { justify-content: flex-end; }
+  .page-place.place-top-left, .page-place.place-middle-left, .page-place.place-bottom-left { align-items: flex-start; }
+  .page-place.place-top-center, .page-place.place-middle-center, .page-place.place-bottom-center { align-items: center; }
+  .page-place.place-top-right, .page-place.place-middle-right, .page-place.place-bottom-right { align-items: flex-end; }
 }
-@media (max-width: 900px) {
+@media screen and (max-width: 900px) {
   .layout { display: block; }
   .toc { width: auto; position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--line); }
   main { padding: 24px 20px 64px; }

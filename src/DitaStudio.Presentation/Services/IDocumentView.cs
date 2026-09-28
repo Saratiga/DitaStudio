@@ -1,3 +1,4 @@
+using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 
 namespace DitaStudio.Presentation.Services;
@@ -96,6 +97,15 @@ public interface IAuthorSurface
     bool MergeCurrentCellRight();
 
     bool MergeCurrentCellDown();
+
+    /// <summary>Оформление выделенного текста (или текста, который будет набран у курсора).</summary>
+    bool ApplyTextFormat(string prefix, string? token) => false;
+
+    /// <summary>Оформление текущего блока — класс группы вместо прежнего (null — снять).</summary>
+    bool SetCurrentBlockFormat(string prefix, string? token) => false;
+
+    /// <summary>Строки и столбцы таблицы под курсором; false — здесь невозможно (или оболочка не умеет).</summary>
+    bool EditCurrentTable(TableOperation operation) => false;
 
     /// <summary>Переключает класс в outputclass текущего элемента; null — элемента нет.</summary>
     bool? ToggleCurrentOutputClass(string className);

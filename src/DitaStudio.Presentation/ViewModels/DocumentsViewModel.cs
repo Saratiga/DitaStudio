@@ -78,6 +78,18 @@ public partial class DocumentsViewModel : ObservableObject
         }
     }
 
+    /// <summary>Закрывает вкладку файла без сохранения (файл удалён).</summary>
+    public void DiscardTab(string fullPath)
+    {
+        foreach (var tab in Tabs.Where(t => string.Equals(t.FullPath, fullPath, StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            _main.Recovery.Forget(tab.FullPath);
+            _main.Panes.Remove(tab.FullPath);
+            Tabs.Remove(tab);
+            (tab.Pane as IDisposable)?.Dispose();
+        }
+    }
+
     public async Task CloseTabAsync(TabViewModel tab)
     {
         var pane = tab.Pane;

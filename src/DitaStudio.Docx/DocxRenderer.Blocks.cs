@@ -30,7 +30,89 @@ public sealed partial class DocxRenderer
         }
     }
 
-    private IEnumerable<OpenXmlCompositeElement> RenderBlock(DitaNode node, int level)
+    private IEnumerable<OpenXmlCompositeElement> RenderBlock(DitaNode node, int level) =>
+        Include(node) && PagePlacement.Of(node) is { } place
+            ? PlacedOnPage(RenderBlockCore(node, level), place)
+            : RenderBlockCore(node, level);
+
+    /// <summary>
+    /// Блок на отдельном листе: свой раздел Word с вертикальным выравниванием страницы (vAlign)
+    /// между разрывами разделов, по горизонтали — выравнивание абзацев и таблиц. Метки разделов
+    /// пока пустые — параметры страницы в них копирует <see cref="DocxPublisher"/> в конце сборки
+    /// (<c>FinishPlacedSections</c>).
+    /// </summary>
+    private static IEnumerable<OpenXmlCompositeElement> PlacedOnPage(IEnumerable<OpenXmlCompositeElement> blocks, string place)
+    {
+        yield return SectionMark(null);
+
+        W.Paragraph? last = null;
+        OpenXmlCompositeElement? lastBlock = null;
+        var justification = PagePlacement.Horizontal(place) switch
+        {
+            "center" => W.JustificationValues.Center,
+            "right" => W.JustificationValues.Right,
+            _ => W.JustificationValues.Left
+        };
+        foreach (var block in blocks)
+        {
+            switch (block)
+            {
+                case W.Paragraph paragraph:
+                    (paragraph.ParagraphProperties ??= new W.ParagraphProperties()).Justification =
+                        new W.Justification { Val = justification };
+                    paragraph.ParagraphProperties.PageBreakBefore = null;
+                    last = paragraph;
+                    break;
+                case W.Table table:
+                    (table.GetFirstChild<W.TableProperties>() ?? table.PrependChild(new W.TableProperties())).TableJustification =
+                        new W.TableJustification { Val = justification == W.JustificationValues.Left ? W.TableRowAlignmentValues.Left
+                            : justification == W.JustificationValues.Center ? W.TableRowAlignmentValues.Center : W.TableRowAlignmentValues.Right };
+                    last = null;
+                    break;
+                default:
+                    last = null;
+                    break;
+            }
+
+            lastBlock = block;
+            yield return block;
+        }
+
+        var vertical = PagePlacement.Vertical(place) switch
+        {
+            "middle" => W.VerticalJustificationValues.Center,
+            "bottom" => W.VerticalJustificationValues.Bottom,
+            _ => W.VerticalJustificationValues.Top
+        };
+        if (last is not null && ReferenceEquals(last, lastBlock))
+        {
+            // Раздел кончается последним абзацем блока — лишней пустой строки внизу листа нет.
+            last.ParagraphProperties!.SectionProperties = new W.SectionProperties(new W.VerticalTextAlignmentOnPage { Val = vertical });
+        }
+        else
+        {
+            yield return SectionMark(vertical);
+        }
+    }
+
+    /// <summary>Пустой абзац-метка разрыва раздела: без строки высотой в абзац.</summary>
+    private static W.Paragraph SectionMark(W.VerticalJustificationValues? vertical)
+    {
+        var section = new W.SectionProperties();
+        if (vertical is { } value)
+        {
+            section.Append(new W.VerticalTextAlignmentOnPage { Val = value });
+        }
+
+        return new W.Paragraph(new W.ParagraphProperties
+        {
+            SpacingBetweenLines = new W.SpacingBetweenLines { Before = "0", After = "0", Line = "20", LineRule = W.LineSpacingRuleValues.Exact },
+            ParagraphMarkRunProperties = new W.ParagraphMarkRunProperties(new W.FontSize { Val = "2" }),
+            SectionProperties = section
+        });
+    }
+
+    private IEnumerable<OpenXmlCompositeElement> RenderBlockCore(DitaNode node, int level)
     {
         if (!Include(node))
         {
@@ -96,6 +178,14 @@ public sealed partial class DocxRenderer
 
         switch (node.Name)
         {
+            case "p" when HeadingNumbering.IsNumbered(node):
+            {
+                var paragraph = Para(DocxStyleCatalog.BodyText, RenderInlineRuns(node));
+                NumberParagraph(paragraph);
+                yield return WithOutputClass(paragraph, node);
+                yield break;
+            }
+
             case "p":
                 yield return WithOutputClass(Para(DocxStyleCatalog.BodyText, RenderInlineRuns(node)), node);
                 yield break;
@@ -233,7 +323,7 @@ public sealed partial class DocxRenderer
         var explicitTitle = node.FirstElement("title");
         if (explicitTitle is not null)
         {
-            yield return HeadingParagraph(RenderInlineRuns(explicitTitle), Math.Min(level + 1, 6));
+            yield return HeadingParagraph(RenderInlineRuns(explicitTitle), Math.Min(level + 1, 6), TocRules.IsUnnumbered(explicitTitle));
         }
         else if (label is not null)
         {

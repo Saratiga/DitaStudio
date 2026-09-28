@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Authoring;
 
 namespace DitaStudio.Desktop.Authoring;
@@ -42,7 +44,111 @@ public sealed partial class AuthorView
         RefreshChildren(parent, changed, focus, focus is null || caret is null ? 0 : caret(focus));
     }
 
+    /// <summary>Подсказка по Enter в конце блока включена («Структура → Подсказка по Enter»).</summary>
+    public static bool EnterSuggestionsEnabled { get; set; } = true;
+
+    /// <summary>Открытая сейчас подсказка по Enter (или null).</summary>
+    public ElementSuggestions? Suggestions { get; private set; }
+
     private bool HandleSplit(BlockEditor editor, int caretOffset)
+    {
+        if (editor.Node.Name == "fn")
+        {
+            return true; // текст сноски — один абзац: Enter в нём ничего не делает
+        }
+
+        if (EnterSuggestionsEnabled && caretOffset >= editor.Content.Length && editor.Content.IsLastSegment)
+        {
+            ShowSuggestions(editor);
+            return true;
+        }
+
+        return SplitNow(editor, caretOffset);
+    }
+
+    /// <summary>
+    /// Подсказка по Enter: первой строкой — прежнее действие Enter, дальше элементы, допустимые
+    /// после текущего блока, и (если блок последний в родителе) — после родителя.
+    /// </summary>
+    private void ShowSuggestions(BlockEditor editor)
+    {
+        var node = editor.Node;
+        var catalog = DitaCatalog.Default;
+        var items = new List<ElementSuggestion>();
+        var anchors = new Dictionary<ElementSuggestion, DitaNode>();
+        var defaultTitle = node.Name == "cmd" && node.Parent is { Name: "step" or "substep" }
+            ? "Следующий шаг"
+            : Describe(node.Name);
+        items.Add(new ElementSuggestion(null, defaultTitle + " — как обычно",
+            "То, что Enter делал без подсказки: следующий блок того же вида. Двойной Enter — сразу он."));
+
+        var anchor = node;
+        for (var level = 0; level < 3 && anchor.Parent is { } parent; level++)
+        {
+            var where = level == 0 ? string.Empty : $" — после <{anchor.Name}>";
+            foreach (var def in catalog.InsertableAt(parent, EditCommands.ElementIndexOf(parent, anchor) + 1)
+                         .Where(d => d.Display is not (DisplayKind.Inline or DisplayKind.Empty))
+                         .DistinctBy(d => d.Name)
+                         .OrderBy(d => string.IsNullOrEmpty(d.Description) ? d.Name : d.Description, StringComparer.CurrentCulture))
+            {
+                var item = new ElementSuggestion(def.Name, $"{Describe(def.Name)}  <{def.Name}>{where}",
+                    $"<{def.Name}>\n\n{def.Description}\n\nСодержимое: {def.ModelText}");
+                items.Add(item);
+                anchors[item] = anchor;
+            }
+
+            // Выше поднимаемся, только если блок — последний в родителе (конец списка, раздела).
+            if (EditCommands.NextElement(anchor) is not null || catalog.Get(parent.Name)?.IsTopicType == true)
+            {
+                break;
+            }
+
+            anchor = parent;
+        }
+
+        var caret = editor.TextArea.Caret.CalculateCaretRectangle();
+        var textView = editor.TextArea.TextView;
+        var rect = new Rect(caret.X - textView.ScrollOffset.X, caret.Y - textView.ScrollOffset.Y, 1, caret.Height);
+        var popup = new ElementSuggestions(textView, rect, items, chosen =>
+        {
+            if (chosen.Element is null)
+            {
+                SplitNow(editor, editor.Content.Length);
+            }
+            else
+            {
+                InsertAfterBlock(anchors[chosen], chosen.Element);
+            }
+        });
+        popup.Cancelled += (_, _) => editor.FocusEditor(editor.CaretOffset);
+        popup.Closed += (_, _) =>
+        {
+            _root.Children.Remove(popup);
+            Suggestions = null;
+        };
+        _root.Children.Add(popup);
+        Suggestions = popup;
+        popup.IsOpen = true;
+    }
+
+    private static string Describe(string name) =>
+        DitaCatalog.Default.Get(name)?.Description is { Length: > 0 } description ? description : name;
+
+    /// <summary>Новый блок после <paramref name="anchor"/>, курсор — в его первое текстовое место.</summary>
+    private void InsertAfterBlock(DitaNode anchor, string element)
+    {
+        BeforeStructuralEdit?.Invoke(this, $"Вставка <{element}>");
+        if (EditCommands.InsertAfter(anchor, element) is not { } created)
+        {
+            return;
+        }
+
+        Modified();
+        var focus = created.DescendantsAndSelf().FirstOrDefault(n => n.Kind == NodeKind.Element && DitaCatalog.Default.Get(n.Name) is { IsMixed: true }) ?? created;
+        RefreshChildren(anchor.Parent!, Array.Empty<DitaNode>(), focus);
+    }
+
+    private bool SplitNow(BlockEditor editor, int caretOffset)
     {
         var node = editor.Node;
         // В шаге Enter создаёт следующий шаг, а не второй cmd.
@@ -77,6 +183,11 @@ public sealed partial class AuthorView
 
     private bool HandleMerge(DitaNode node)
     {
+        if (node.Name == "fn")
+        {
+            return false; // Backspace в начале текста сноски не сливает её с соседями
+        }
+
         if (EditCommands.PreviousElement(node) is not { } previous)
         {
             return false;

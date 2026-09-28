@@ -22,6 +22,9 @@ public sealed class DocxRenderOptions
 
     public bool NumberFiguresAndTables { get; set; } = true;
 
+    /// <summary>Список заголовков Word (нумерация включена) — в него же входят нумерованные абзацы; null — нумерации нет.</summary>
+    public int? HeadingNumId { get; set; }
+
     /// <summary>Оформление: стили Word из пользовательского CSS (по умолчанию — встроенное).</summary>
     public DocxStyleSheet Styles { get; set; } = DocxStyleSheet.Default;
 
