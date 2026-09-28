@@ -88,6 +88,9 @@ public partial class InsertViewModel : ObservableObject
     private void InsertParagraph() => InsertElement("p");
 
     [RelayCommand]
+    private void InsertSection() => InsertElement("section");
+
+    [RelayCommand]
     private void InsertUl() => InsertElement("ul");
 
     [RelayCommand]
@@ -288,6 +291,9 @@ public partial class InsertViewModel : ObservableObject
 
     [RelayCommand]
     private void FormatItalic() => Format("i");
+
+    [RelayCommand]
+    private void FormatUnderline() => Format("u");
 
     [RelayCommand]
     private void FormatCode() => Format("codeph");

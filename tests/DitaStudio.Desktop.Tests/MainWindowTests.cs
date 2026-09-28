@@ -269,6 +269,31 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task Toolbar_HasEditingButtons_UnderlineWrapsSelection()
+    {
+        var (window, vm) = await OpenAsync();
+        var toolbar = window.GetLogicalDescendants().OfType<WrapPanel>().Single(p => p.Name == "MainToolbar");
+        var tips = toolbar.Children.OfType<Button>().Select(b => ToolTip.GetTip(b) as string).ToList();
+        foreach (var expected in new[] { "Подчёркнутый (Ctrl+U)", "Перекрёстная ссылка…", "Изображение…", "Сноска у курсора",
+                     "Нумерованный список", "Маркированный список", "Таблица…", "Вставить строку ниже", "Удалить столбец", "Разделить объединённую ячейку" })
+        {
+            Assert.Contains(expected, tips);
+        }
+
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.StartsWith("Проект"));
+        var editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        editor.Select(0, "Проект".Length);
+        toolbar.Children.OfType<Button>().Single(b => ToolTip.GetTip(b) as string == "Подчёркнутый (Ctrl+U)").Command!.Execute(null);
+        pane.AuthorEditor.FlushPendingEdits();
+        Assert.StartsWith("<p><u>Проект</u>", DitaStudio.Core.Model.XmlSerializer.ToXml(p));
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void TopMenuItems_FitTheirText()
     {
         // Полоса меню Fluent была фиксированной высоты — пункты сжимались, текст срезался снизу.

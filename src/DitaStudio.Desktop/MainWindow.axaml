@@ -147,7 +147,8 @@
         </Menu>
 
         <Border DockPanel.Dock="Top" Classes="toolbar">
-            <StackPanel Orientation="Horizontal">
+            <!-- В узком окне кнопки переносятся на вторую строку, а не обрезаются. -->
+            <WrapPanel Name="MainToolbar" Orientation="Horizontal">
                 <Button Classes="tool" Content="📂" Command="{Binding ProjectPanel.OpenProjectCommand}" ToolTip.Tip="Открыть папку проекта (Ctrl+Shift+O)" />
                 <Button Classes="tool" Content="➕" Command="{Binding ProjectPanel.NewDocumentCommand}" ToolTip.Tip="Создать документ (Ctrl+N)" />
                 <Button Classes="tool" Content="💾" Command="{Binding Documents.SaveCurrentCommand}" ToolTip.Tip="Сохранить (Ctrl+S)" />
@@ -157,18 +158,58 @@
                 <Rectangle Classes="separator" />
                 <Button Classes="tool" Content="Ж" FontWeight="Bold" Command="{Binding Insert.FormatBoldCommand}" ToolTip.Tip="Полужирный (Ctrl+B)" />
                 <Button Classes="tool" Content="К" FontStyle="Italic" Command="{Binding Insert.FormatItalicCommand}" ToolTip.Tip="Курсив (Ctrl+I)" />
+                <Button Classes="tool" Command="{Binding Insert.FormatUnderlineCommand}" ToolTip.Tip="Подчёркнутый (Ctrl+U)">
+                    <TextBlock Text="Ч" TextDecorations="Underline" />
+                </Button>
                 <Button Classes="tool" Content="&lt;/&gt;" FontFamily="{DynamicResource MonoFont}" FontSize="12" Command="{Binding Insert.FormatCodeCommand}" ToolTip.Tip="Код в строке" />
+                <Rectangle Classes="separator" />
+                <Button Classes="tool" Content="🔗" Command="{Binding Insert.InsertXrefCommand}" ToolTip.Tip="Перекрёстная ссылка…" />
+                <Button Classes="tool" Content="🖼" Command="{Binding Insert.InsertImageCommand}" ToolTip.Tip="Изображение…" />
+                <Button Classes="tool" Content="¹" FontWeight="Bold" Command="{Binding Insert.InsertFootnoteCommand}" ToolTip.Tip="Сноска у курсора" />
+                <Rectangle Classes="separator" />
+                <Button Classes="tool" Content="§" Command="{Binding Insert.InsertSectionCommand}" ToolTip.Tip="Раздел (section) после текущего блока" />
+                <Button Classes="tool" Content="¶" Command="{Binding Insert.InsertParagraphCommand}" ToolTip.Tip="Абзац после текущего блока" />
+                <Button Classes="tool" Command="{Binding Insert.InsertOlCommand}" ToolTip.Tip="Нумерованный список">
+                    <Path Classes="icon" Data="M1,2.5 H2.5 V6 M1,6 H4 M7,3.5 H15 M1,10 C1,8.6 4,8.6 4,10 C4,11.2 1,12 1,13.5 H4 M7,11.5 H15" />
+                </Button>
+                <Button Classes="tool" Command="{Binding Insert.InsertUlCommand}" ToolTip.Tip="Маркированный список">
+                    <Path Classes="icon" Data="M2,3.5 H2.2 M7,3.5 H15 M2,8 H2.2 M7,8 H15 M2,12.5 H2.2 M7,12.5 H15" StrokeThickness="2.4" />
+                </Button>
+                <Rectangle Classes="separator" />
+                <Button Classes="tool" Command="{Binding Insert.InsertTableCommand}" ToolTip.Tip="Таблица…">
+                    <Path Classes="icon" Data="M1,2 H15 V14 H1 Z M1,6 H15 M1,10 H15 M6,2 V14 M11,2 V14" />
+                </Button>
+                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertRowAbove}" ToolTip.Tip="Вставить строку выше">
+                    <Panel><Path Classes="icon" Data="M1,7 H15 V15 H1 Z M1,11 H15 M8,7 V15" /><Path Classes="icon accent" Data="M8,0.5 V5.5 M5.5,3 H10.5" /></Panel>
+                </Button>
+                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertRowBelow}" ToolTip.Tip="Вставить строку ниже">
+                    <Panel><Path Classes="icon" Data="M1,1 H15 V9 H1 Z M1,5 H15 M8,1 V9" /><Path Classes="icon accent" Data="M8,10.5 V15.5 M5.5,13 H10.5" /></Panel>
+                </Button>
+                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.DeleteRow}" ToolTip.Tip="Удалить строку">
+                    <Panel><Path Classes="icon" Data="M1,1 H15 V9 H1 Z M1,5 H15 M8,1 V9" /><Path Classes="icon accent" Data="M5.5,10.5 L10.5,15.5 M10.5,10.5 L5.5,15.5" /></Panel>
+                </Button>
+                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertColumnLeft}" ToolTip.Tip="Вставить столбец слева">
+                    <Panel><Path Classes="icon" Data="M7,1 H15 V15 H7 Z M11,1 V15 M7,8 H15" /><Path Classes="icon accent" Data="M3,5.5 V10.5 M0.5,8 H5.5" /></Panel>
+                </Button>
+                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertColumnRight}" ToolTip.Tip="Вставить столбец справа">
+                    <Panel><Path Classes="icon" Data="M1,1 H9 V15 H1 Z M5,1 V15 M1,8 H9" /><Path Classes="icon accent" Data="M13,5.5 V10.5 M10.5,8 H15.5" /></Panel>
+                </Button>
+                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.DeleteColumn}" ToolTip.Tip="Удалить столбец">
+                    <Panel><Path Classes="icon" Data="M1,1 H9 V15 H1 Z M5,1 V15 M1,8 H9" /><Path Classes="icon accent" Data="M10.5,5.5 L15.5,10.5 M15.5,5.5 L10.5,10.5" /></Panel>
+                </Button>
+                <Button Classes="tool" Content="⇔" Command="{Binding Insert.MergeCellRightCommand}" ToolTip.Tip="Объединить ячейку таблицы со следующей (Ctrl+Alt+→)" />
+                <Button Classes="tool" Content="⇕" Command="{Binding Insert.MergeCellDownCommand}" ToolTip.Tip="Объединить ячейку таблицы со строкой ниже (Ctrl+Alt+↓)" />
+                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.SplitCell}" ToolTip.Tip="Разделить объединённую ячейку">
+                    <Panel><Path Classes="icon" Data="M1,3 H15 V13 H1 Z M8,3 V13" /><Path Classes="icon accent" Data="M6,8 H3.5 M4.5,6.8 L3.3,8 L4.5,9.2 M10,8 H12.5 M11.5,6.8 L12.7,8 L11.5,9.2" /></Panel>
+                </Button>
                 <Rectangle Classes="separator" />
                 <Button Classes="tool" Content="↑" Command="{Binding Insert.MoveUpCommand}" ToolTip.Tip="Переместить элемент вверх (Ctrl+Shift+Up)" />
                 <Button Classes="tool" Content="↓" Command="{Binding Insert.MoveDownCommand}" ToolTip.Tip="Переместить элемент вниз (Ctrl+Shift+Down)" />
                 <Button Classes="tool" Content="🗑" Command="{Binding Insert.DeleteElementCommand}" ToolTip.Tip="Удалить элемент" />
                 <Rectangle Classes="separator" />
-                <Button Classes="tool" Content="⇔" Command="{Binding Insert.MergeCellRightCommand}" ToolTip.Tip="Объединить ячейку таблицы со следующей (Ctrl+Alt+→)" />
-                <Button Classes="tool" Content="⇕" Command="{Binding Insert.MergeCellDownCommand}" ToolTip.Tip="Объединить ячейку таблицы со строкой ниже (Ctrl+Alt+↓)" />
-                <Rectangle Classes="separator" />
                 <Button Classes="tool" Content="✔" Command="{Binding Validation.ValidateProjectCommand}" ToolTip.Tip="Проверить проект (F7)" />
                 <Button Classes="tool" Content="▶" Command="{Binding Publish.PublishSiteCommand}" ToolTip.Tip="Собрать сайт HTML (F5)" />
-            </StackPanel>
+            </WrapPanel>
         </Border>
 
         <Border DockPanel.Dock="Bottom" Classes="statusbar">
