@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
 using DitaStudio.Desktop.Services;
+using DitaStudio.Desktop.Preview;
 using DitaStudio.Desktop.Views;
 using DitaStudio.Presentation;
 using DitaStudio.Presentation.Services;
@@ -31,12 +32,13 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         var files = new AvaloniaFilePicker(() => this);
+        var pdfPrinter = new CefPdfPrinter();
         ViewModel = new MainViewModel(new UiServices(
             new AvaloniaDialogService(() => this, files),
             files,
             new AvaloniaUiPlatform(),
-            new PendingPdfPrinter(),
-            (project, document) => new DocumentView(project, document)));
+            pdfPrinter,
+            (project, document) => new DocumentView(project, document, pdfPrinter)));
 
         ViewModel.OpenDocument = path => ViewModel.Documents.OpenDocument(path);
         ViewModel.UpdateTabHeaders = ViewModel.Documents.RefreshAllTabTitles;

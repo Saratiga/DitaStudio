@@ -67,6 +67,11 @@ public partial class ProjectViewModel : ObservableObject
         // считает, что условия/CSS/DTD сохранены, а после перезапуска их не окажется.
         project.SettingsWarning += message => _ = _main.Dialogs.MessageAsync("Настройки проекта", message);
         _main.Project = project;
+        foreach (var pane in _main.Panes.Values)
+        {
+            (pane as IDisposable)?.Dispose();
+        }
+
         _main.Panes.Clear();
 
         // Каталог проекта активируем до Scan: тип документа (топик/карта) определяется по нему,

@@ -52,6 +52,10 @@ CefGlue), растёт параллельно с WPF `src/DitaStudio.App`; пл�
 Структурные правки перестраивают **только затронутые блоки** (`RefreshChildren`/
 `RebuildAround`), полный `Rebuild` — последнее средство: на топике из 500 абзацев он ~1,5 с.
 Орфография — WeCantSpell.Hunspell, словари `Desktop/Dictionaries` (ru_RU — BSD, en_US — SCOWL).
+Предпросмотр и печать в PDF — встроенный Chromium через CefGlue (`Desktop/Preview`):
+`CefHost` запускает его лениво и сообщает причину, если не вышло (тогда внешний браузер);
+`UnderlyingBrowser` у контрола защищённый — доступ к хосту через `HostedCefBrowser`.
+Настоящий Chromium в тестах — только `DITASTUDIO_CEF_TESTS=1` под `xvfb-run` (`CefPreviewTests`).
 
 ## Документация
 

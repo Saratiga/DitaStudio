@@ -31,6 +31,7 @@ public partial class App : Application
         {
             var window = new MainWindow();
             desktop.MainWindow = window;
+            desktop.Exit += (_, _) => Preview.CefHost.Shutdown();
             Dispatcher.UIThread.UnhandledException += (_, e) =>
             {
                 // Сначала страховочная копия правок: после такой ошибки состояние приложения

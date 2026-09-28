@@ -41,7 +41,12 @@
    меню). Сверх WPF: разделение блока сохраняет фразовые элементы, смешанное содержимое
    (пункт со вложенным списком) — отдельные участки вместо плашки, правки перестраивают
    только затронутые блоки. ✅
-6. **Предпросмотр** (HTML, PDF, DOCX-приближённо) и печать в PDF с колонтитулами через CefGlue.
+6. **Предпросмотр** (HTML, PDF, DOCX-приближённо) и печать в PDF с колонтитулами через CefGlue:
+   `Preview/PreviewPane` (встроенный Chromium, PDF — в его просмотрщике с настоящей
+   разбивкой на страницы), `Preview/CefPdfPrinter` (экспорт в PDF: шапка по центру, подвал
+   слева, «стр. N из M» справа). Chromium запускается лениво (`CefHost`) — при первом
+   предпросмотре или экспорте; если не запустился, предпросмотр открывается внешним
+   приложением, а экспорт уходит в печать установленным Edge/Chrome. ✅
 7. **Завершение** — UI-тесты паритета, релизные сборки для win/linux/osx, документация.
    WPF-проект остаётся в репозитории как легаси.
 
@@ -51,6 +56,12 @@
 dotnet run --project src/DitaStudio.Desktop                 # запуск (Linux/macOS/Windows)
 dotnet test tests/DitaStudio.Desktop.Tests                  # headless-тесты интерфейса
 # снимки окон: tests/DitaStudio.Desktop.Tests/bin/Debug/net8.0/screenshots/*.png
+DITASTUDIO_CEF_TESTS=1 xvfb-run -a dotnet test tests/DitaStudio.Desktop.Tests \
+  --filter FullyQualifiedName~CefPreviewTests                # настоящий Chromium (нужен X-сервер)
 ```
+
+Сборка с Chromium весит ~700 МБ (нативный CEF под текущую ОС копируется в вывод, процесс
+браузера — в `CefGlueBrowserProcess/`). В headless-тестах Chromium отключён
+(`CefHost.Disabled`), вручную — `DITASTUDIO_NO_CEF=1`.
 
 `AVALONIA_TELEMETRY_OPTOUT=1` отключает телеметрию сборки Avalonia (в CI задано).

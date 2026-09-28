@@ -73,7 +73,7 @@ jobs:
   # на Linux: headless-тесты интерфейса и снимки главного окна в обеих темах (артефакт).
   desktop-linux:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
@@ -100,6 +100,15 @@ jobs:
         run: >
           dotnet test tests/DitaStudio.Desktop.Tests -c Debug --no-build
           --logger "console;verbosity=normal"
+
+      # Встроенный Chromium (CefGlue) — предпросмотр и печать в PDF с колонтитулами; ему
+      # нужен X-сервер, поэтому отдельный прогон под xvfb-run.
+      - name: Предпросмотр и PDF во встроенном Chromium
+        env:
+          DITASTUDIO_CEF_TESTS: 1
+        run: >
+          xvfb-run -a dotnet test tests/DitaStudio.Desktop.Tests -c Debug --no-build
+          --filter FullyQualifiedName~CefPreviewTests --logger "console;verbosity=normal"
 
       - name: Снимки окон
         if: always()

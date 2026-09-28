@@ -1,8 +1,7 @@
-using System.Security.Cryptography;
-using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using DitaStudio.Desktop.Authoring;
+using DitaStudio.Desktop.Preview;
 using Avalonia.Layout;
 using Avalonia.Media;
 using DitaStudio.Core.Editing;
@@ -17,21 +16,23 @@ namespace DitaStudio.Desktop.Views;
 /// <summary>
 /// Вкладка документа Avalonia-оболочки: «Автор», «Исходный код», «Предпросмотр» — как WPF
 /// DocumentPane. «Автор» — визуальный редактор (<see cref="AuthorView"/>), «Исходный код» —
-/// AvaloniaEdit с автодополнением по каталогу; встроенный предпросмотр — этап 6 переноса
-/// (пока — во внешнем браузере).
+/// AvaloniaEdit с автодополнением по каталогу, «Предпросмотр» — встроенный Chromium
+/// (<see cref="PreviewPane"/>).
 /// </summary>
-public sealed class DocumentView : UserControl, IDocumentView
+public sealed class DocumentView : UserControl, IDocumentView, IDisposable
 {
     private readonly DitaProject _project;
     private readonly TabControl _tabs = new();
     private readonly XmlSourceEditor _source = new();
     private readonly AuthorView _author = new();
+    private readonly PreviewPane _preview;
     private bool _syncing;
 
-    public DocumentView(DitaProject project, DitaDocument document)
+    public DocumentView(DitaProject project, DitaDocument document, IPdfPrinter pdfPrinter)
     {
         _project = project;
         Document = document;
+        _preview = new PreviewPane(project, document, CommitPendingEdits, pdfPrinter);
         _author.Load(document);
         _author.DocumentModified += (_, _) => RaiseDirty();
         _author.SelectionChanged += (_, _) => SelectionChanged?.Invoke(this, EventArgs.Empty);
@@ -50,7 +51,7 @@ public sealed class DocumentView : UserControl, IDocumentView
         {
             new TabItem { Header = "Автор", Content = _author },
             new TabItem { Header = "Исходный код", Content = _source },
-            new TabItem { Header = "Предпросмотр", Content = BuildPreviewPane() }
+            new TabItem { Header = "Предпросмотр", Content = _preview }
         };
         _tabs.SelectionChanged += OnTabChanged;
         Content = _tabs;
@@ -115,6 +116,10 @@ public sealed class DocumentView : UserControl, IDocumentView
         else if (Mode == EditorMode.Author)
         {
             _author.Rebuild(_author.CurrentNode);
+        }
+        else if (Mode == EditorMode.Preview)
+        {
+            _ = _preview.RefreshAsync();
         }
     }
 
@@ -185,61 +190,11 @@ public sealed class DocumentView : UserControl, IDocumentView
 
     // ------------------------------------------------------------ предпросмотр
 
-    private Control BuildPreviewPane()
-    {
-        var panel = new StackPanel { Margin = new Thickness(16), Spacing = 10 };
-        var note = new TextBlock
-        {
-            Text = "Встроенный предпросмотр (HTML, PDF, DOCX-приближённо) переносится на Chromium (CefGlue). " +
-                   "Пока документ можно посмотреть в браузере по умолчанию.",
-            TextWrapping = TextWrapping.Wrap
-        };
-        note.Bind(TextBlock.ForegroundProperty, note.GetResourceObservable("TextMuted"));
-        var open = new Button { Content = "Открыть предпросмотр в браузере", HorizontalAlignment = HorizontalAlignment.Left };
-        open.Click += (_, _) => OpenPreviewInBrowser();
-        panel.Children.Add(note);
-        panel.Children.Add(open);
-        return panel;
-    }
+    /// <summary>Вкладка предпросмотра (для тестов).</summary>
+    public PreviewPane Preview => _preview;
 
-    private void OpenPreviewInBrowser()
-    {
-        CommitPendingEdits();
-        string html;
-        try
-        {
-            html = new HtmlPublisher(_project).RenderPreview(Document);
-        }
-        catch (Exception ex)
-        {
-            html = "<html><body><p>Не удалось построить предпросмотр:</p><pre>" +
-                   System.Net.WebUtility.HtmlEncode(ex.Message) + "</pre></body></html>";
-        }
-
-        try
-        {
-            var dir = Path.Combine(Path.GetTempPath(), "DitaStudioPreview");
-            Directory.CreateDirectory(dir);
-            var path = Path.Combine(dir, PreviewFileBaseName(Document.FilePath) + ".html");
-            File.WriteAllText(path, html, Encoding.UTF8);
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
-        {
-            // без браузера предпросмотр просто не откроется — редактор продолжает работать
-        }
-    }
-
-    private static string PreviewFileBaseName(string? filePath)
-    {
-        if (filePath is null)
-        {
-            return "preview";
-        }
-
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(filePath).ToUpperInvariant()));
-        return Path.GetFileNameWithoutExtension(filePath) + "-" + Convert.ToHexString(hash, 0, 4).ToLowerInvariant();
-    }
+    /// <summary>Закрытие вкладки документа: освобождаем встроенный браузер предпросмотра.</summary>
+    public void Dispose() => _preview.DisposeBrowser();
 
     // ------------------------------------------------------------ сохранение и отмена
 

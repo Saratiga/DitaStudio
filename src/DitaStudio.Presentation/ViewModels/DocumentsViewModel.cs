@@ -102,6 +102,9 @@ public partial class DocumentsViewModel : ObservableObject
         _main.Recovery.Forget(tab.FullPath);
         _main.Panes.Remove(tab.FullPath);
         Tabs.Remove(tab);
+
+        // Вкладка оболочки может держать тяжёлые ресурсы (встроенный браузер предпросмотра).
+        (pane as IDisposable)?.Dispose();
     }
 
     [RelayCommand]
