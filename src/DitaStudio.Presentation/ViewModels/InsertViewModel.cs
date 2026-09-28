@@ -51,6 +51,39 @@ public partial class InsertViewModel : ObservableObject
         _main.StatusText = $"Вставлен <{name}>";
     }
 
+    /// <summary>
+    /// Что можно вставить у курсора текущей вкладки: фразовые элементы — в строку текущего блока,
+    /// блочные — после него (как это делает <see cref="InsertElementCommand"/>). По описанию.
+    /// </summary>
+    public (IReadOnlyList<ElementDef> Inline, IReadOnlyList<ElementDef> After) InsertCandidates()
+    {
+        var node = _main.Current?.Author.CurrentNode;
+        if (node is null)
+        {
+            return (Array.Empty<ElementDef>(), Array.Empty<ElementDef>());
+        }
+
+        var catalog = DitaCatalog.Default;
+        var inline = catalog.Get(node.Name) is { IsMixed: true }
+            ? catalog.InsertableAt(node, DitaCatalog.ChildNames(node).Count)
+                .Where(d => d.Display is DisplayKind.Inline or DisplayKind.Empty)
+                .ToList()
+            : new List<ElementDef>();
+
+        var after = node.Parent is { } parent
+            ? catalog.InsertableAt(parent, EditCommands.ElementIndexOf(parent, node) + 1)
+                .Where(d => d.Display is not (DisplayKind.Inline or DisplayKind.Empty))
+                .ToList()
+            : new List<ElementDef>();
+
+        static List<ElementDef> Sorted(IEnumerable<ElementDef> defs) =>
+            defs.DistinctBy(d => d.Name)
+                .OrderBy(d => string.IsNullOrEmpty(d.Description) ? d.Name : d.Description, StringComparer.CurrentCulture)
+                .ToList();
+
+        return (Sorted(inline), Sorted(after));
+    }
+
     [RelayCommand]
     private void InsertParagraph() => InsertElement("p");
 

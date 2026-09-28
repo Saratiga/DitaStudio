@@ -81,6 +81,9 @@ public sealed partial class AuthorView : UserControl
     /// <summary>Просьба сохранить состояние для отмены перед структурной операцией.</summary>
     public event EventHandler<string>? BeforeStructuralEdit;
 
+    /// <summary>Меню правой кнопки у блока строится — можно добавить свои пункты.</summary>
+    public event Action<BlockEditor, List<Control>>? ContextMenuBuilding;
+
     /// <summary>Редакторы блоков в порядке документа (для тестов и переходов).</summary>
     public IReadOnlyList<BlockEditor> Editors => _order;
 

@@ -209,6 +209,37 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task AuthorContextMenu_HasInsertSubmenu_InsertingAtCaret()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.Length > 10);
+        var editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(3);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(p, vm.Current!.Author.CurrentNode);
+
+        var menu = editor.BuildContextMenu(3);
+        var insert = menu.Items.OfType<MenuItem>().Single(i => i.Header as string == "Вставить элемент");
+        var sub = insert.ItemsSource!.OfType<MenuItem>().ToList();
+        Assert.Contains(sub, i => i.Header as string == "Сноска");
+        var inline = sub.Single(i => i.Header as string == "В строку текста").ItemsSource!.OfType<MenuItem>().ToList();
+        var after = sub.Single(i => i.Header as string == "Блок после текущего").ItemsSource!.OfType<MenuItem>().ToList();
+        Assert.True(after.Any(i => (i.Header as string)!.EndsWith("<note>")), string.Join(" / ", after.Select(i => i.Header)));
+        Assert.DoesNotContain(after, i => (i.Header as string)!.EndsWith("<term>"));
+
+        var before = p.InnerText;
+        inline.Single(i => (i.Header as string)!.EndsWith("<term>")).RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        pane.AuthorEditor.FlushPendingEdits();
+        var term = Assert.Single(p.ElementChildren(), c => c.Name == "term");
+        Assert.Equal(3, p.Children.TakeWhile(c => !ReferenceEquals(c, term)).Sum(c => c.InnerText.Length));
+        Assert.NotEqual(before, p.InnerText);
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void TopMenuItems_FitTheirText()
     {
         // Полоса меню Fluent была фиксированной высоты — пункты сжимались, текст срезался снизу.

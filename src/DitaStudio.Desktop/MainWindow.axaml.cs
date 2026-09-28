@@ -38,7 +38,7 @@ public partial class MainWindow : Window
             files,
             new AvaloniaUiPlatform(),
             pdfPrinter,
-            (project, document) => new DocumentView(project, document, pdfPrinter)));
+            (project, document) => CreateDocumentView(project, document, pdfPrinter)));
 
         ViewModel.OpenDocument = path => ViewModel.Documents.OpenDocument(path);
         ViewModel.UpdateTabHeaders = ViewModel.Documents.RefreshAllTabTitles;

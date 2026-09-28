@@ -116,6 +116,9 @@ public sealed class BlockEditor : TextEditor
     /// <summary>Текст изменён пользователем (для отметки «не сохранено»).</summary>
     public event EventHandler? ContentChanged;
 
+    /// <summary>Меню по правой кнопке строится: подписчик добавляет свои пункты (например, «Вставить»).</summary>
+    public event Action<BlockEditor, List<Control>>? ContextMenuBuilding;
+
     public event EventHandler? Focused;
 
     public int PlainTextLength => Document.TextLength;
@@ -574,6 +577,14 @@ public sealed class BlockEditor : TextEditor
         items.Add(cut);
         items.Add(copy);
         items.Add(paste);
+
+        var extra = new List<Control>();
+        ContextMenuBuilding?.Invoke(this, extra);
+        if (extra.Count > 0)
+        {
+            items.Add(new Separator());
+            items.AddRange(extra);
+        }
 
         return new ContextMenu { ItemsSource = items };
     }
