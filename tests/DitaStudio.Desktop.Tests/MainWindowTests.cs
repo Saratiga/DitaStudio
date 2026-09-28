@@ -468,6 +468,42 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task PagePlacementMenu_PutsBlockOnSeparatePage()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.StartsWith("Проект"));
+        var editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+
+        MenuItem Placement() => editor.BuildContextMenu(0).Items.OfType<MenuItem>().Single(i => i.Header as string == "Оформление")
+            .ItemsSource!.OfType<MenuItem>().Single(i => i.Header as string == "Положение на листе (PDF, DOCX)");
+        var placement = Placement();
+        Assert.True(placement.IsEnabled);
+        Assert.True(placement.ItemsSource!.OfType<MenuItem>().Single(i => i.Header as string == "Обычное (в тексте)").IsChecked);
+        var bottomRight = placement.ItemsSource!.OfType<MenuItem>().Single(i => i.Header as string == "Внизу справа");
+        bottomRight.Command!.Execute(bottomRight.CommandParameter);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("place-bottom-right", p.GetAttribute("outputclass"));
+        Assert.Contains(pane.AuthorEditor.GetVisualDescendants().OfType<TextBlock>(), t => t.Tag as string == "placement-mark" && t.Text!.Contains("внизу справа"));
+
+        editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        placement = Placement();
+        Assert.True(placement.ItemsSource!.OfType<MenuItem>().Single(i => i.Header as string == "Внизу справа").IsChecked);
+        var normal = placement.ItemsSource!.OfType<MenuItem>().Single(i => i.Header as string == "Обычное (в тексте)");
+        normal.Command!.Execute(normal.CommandParameter);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(p.GetAttribute("outputclass"));
+        Assert.DoesNotContain(pane.AuthorEditor.GetVisualDescendants().OfType<TextBlock>(), t => t.Tag as string == "placement-mark");
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void TopMenuItems_FitTheirText()
     {
         // Полоса меню Fluent была фиксированной высоты — пункты сжимались, текст срезался снизу.

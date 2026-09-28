@@ -116,6 +116,29 @@ public partial class MainWindow
           .Append(new MenuItem { Header = "Без цвета", Command = ViewModel.Insert.SetTextColorCommand, CommandParameter = null })
           .ToList();
 
+        var placeable = PagePlacement.PlaceableFor(node);
+        var place = placeable is null ? null : PagePlacement.Of(placeable);
+        var positions = new List<Control>
+        {
+            new MenuItem
+            {
+                Header = "Обычное (в тексте)",
+                ToggleType = MenuItemToggleType.Radio,
+                IsChecked = place is null,
+                Command = ViewModel.Insert.SetPagePlacementCommand,
+                CommandParameter = null
+            },
+            new Separator()
+        };
+        positions.AddRange(PagePlacement.Positions.Select(p => (Control)new MenuItem
+        {
+            Header = p.Label,
+            ToggleType = MenuItemToggleType.Radio,
+            IsChecked = place == p.Token,
+            Command = ViewModel.Insert.SetPagePlacementCommand,
+            CommandParameter = p.Token
+        }));
+
         return new MenuItem
         {
             Header = "Оформление",
@@ -132,6 +155,12 @@ public partial class MainWindow
                     IsChecked = node is { Name: "p" } && HeadingNumbering.IsNumbered(node),
                     IsEnabled = node is { Name: "p" },
                     Command = ViewModel.Insert.ToggleNumberedParagraphCommand
+                },
+                new MenuItem
+                {
+                    Header = "Положение на листе (PDF, DOCX)",
+                    ItemsSource = positions,
+                    IsEnabled = placeable is not null
                 }
             }
         };

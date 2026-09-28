@@ -19,6 +19,11 @@ public sealed partial class AuthorView
     private Control? BuildNode(DitaNode node, int depth)
     {
         var view = BuildNodeCore(node, depth);
+        if (view is not null && PagePlacement.Of(node) is { } place)
+        {
+            view = WithPlacementMark(place, view);
+        }
+
         if (view is not null)
         {
             _views[node] = view;
@@ -26,6 +31,25 @@ public sealed partial class AuthorView
         }
 
         return view;
+    }
+
+    /// <summary>
+    /// Блок «на отдельном листе» (outputclass place-…): над ним — подпись с положением. В самом
+    /// «Авторе» блок остаётся в тексте: лист есть только у печатного издания (PDF, DOCX).
+    /// </summary>
+    private static Control WithPlacementMark(string place, Control view)
+    {
+        var mark = new TextBlock
+        {
+            Text = "▣ Отдельный лист · " + PagePlacement.LabelOf(place)?.ToLowerInvariant(),
+            FontSize = 11,
+            Margin = new Thickness(4, 4, 0, 0),
+            Tag = "placement-mark"
+        };
+        Themed(mark, TextBlock.ForegroundProperty, "Accent");
+        ToolTip.SetTip(mark, "В PDF и DOCX блок стоит на своей странице в выбранной области листа; на сайте — в тексте. " +
+                             "Изменить: контекстное меню → Оформление → Положение на листе.");
+        return new StackPanel { Children = { mark, view } };
     }
 
     private Control? BuildNodeCore(DitaNode node, int depth)

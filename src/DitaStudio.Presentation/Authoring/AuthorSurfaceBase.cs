@@ -237,10 +237,26 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
             return false;
         }
 
+        var node = CurrentNode;
+        if (prefix == PagePlacement.Prefix)
+        {
+            // Положение на листе — у всего блока: курсор в подписи рисунка или ячейке таблицы
+            // ставит на лист рисунок или таблицу целиком.
+            if (PagePlacement.PlaceableFor(node) is not { } block)
+            {
+                return false;
+            }
+
+            node = block;
+        }
+
         FlushPendingEdits();
         BeforeStructuralEdit("Оформление блока");
-        var node = CurrentNode;
-        if (prefix == TextFormatting.AlignPrefix && node.Name == "entry")
+        if (prefix == PagePlacement.Prefix)
+        {
+            PagePlacement.Set(node, token);
+        }
+        else if (prefix == TextFormatting.AlignPrefix && node.Name == "entry")
         {
             var value = TextFormatting.Alignments.FirstOrDefault(a => a.Token == token).Css;
             if (value is null)

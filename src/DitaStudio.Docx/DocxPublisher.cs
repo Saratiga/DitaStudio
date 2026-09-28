@@ -146,7 +146,9 @@ public sealed class DocxPublisher
                     unnumbered: TocRules.IsHiddenInMap(item.Node));
             }
 
-            body.Append(BuildSectionProperties(mainPart, WithLayoutPage(styles.Page, layout), layout, title, date, warnings));
+            var mainSection = BuildSectionProperties(mainPart, WithLayoutPage(styles.Page, layout), layout, title, date, warnings);
+            body.Append(mainSection);
+            FinishPlacedSections(body, mainSection);
 
             warnings.AddRange(renderOptions.Warnings);
             mainPart.Document.Save();
@@ -295,6 +297,106 @@ public sealed class DocxPublisher
         return new DocxPageSetup(width, height,
             Pt(layout.MarginTopMm, page.TopPt), Pt(layout.MarginRightMm, page.RightPt),
             Pt(layout.MarginBottomMm, page.BottomPt), Pt(layout.MarginLeftMm, page.LeftPt));
+    }
+
+    /// <summary>
+    /// Разделы блоков «на отдельном листе» (<see cref="PagePlacement"/>): метки, которые оставил
+    /// рендер, получают параметры страницы и колонтитулы основного раздела. Пустые разделы (блок в
+    /// начале документа, два таких блока подряд, блок в конце) не создаются — иначе пустой лист.
+    /// «Особый первый лист» (titlePg) остаётся только у первого раздела.
+    /// </summary>
+    internal static void FinishPlacedSections(W.Body body, W.SectionProperties mainSection)
+    {
+        static W.SectionProperties? Mark(OpenXmlElement? element) =>
+            (element as W.Paragraph)?.ParagraphProperties?.SectionProperties;
+
+        var marks = body.Elements<W.Paragraph>().Where(p => Mark(p) is not null).ToList();
+        if (marks.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var paragraph in marks)
+        {
+            var section = Mark(paragraph)!;
+            if (section.HasChildren)
+            {
+                continue;
+            }
+
+            // Начало блока: разрыв ставится в конец предыдущего абзаца, а не отдельной строкой.
+            var previous = paragraph.PreviousSibling();
+            if (previous is null || Mark(previous) is not null)
+            {
+                paragraph.Remove();
+            }
+            else if (previous is W.Paragraph before)
+            {
+                section.Remove();
+                (before.ParagraphProperties ??= new W.ParagraphProperties()).SectionProperties = section;
+                paragraph.Remove();
+            }
+        }
+
+        marks = body.Elements<W.Paragraph>().Where(p => Mark(p) is not null).ToList();
+        var lastMark = marks.LastOrDefault();
+        if (lastMark is not null && lastMark.NextSibling() is W.SectionProperties)
+        {
+            // Блок в самом конце: его выравнивание переходит к последнему (основному) разделу.
+            var vertical = Mark(lastMark)!.GetFirstChild<W.VerticalTextAlignmentOnPage>();
+            if (vertical is not null)
+            {
+                InsertVerticalAlignment(mainSection, (W.VerticalTextAlignmentOnPage)vertical.CloneNode(true));
+            }
+
+            if (lastMark.ChildElements.All(c => c is W.ParagraphProperties))
+            {
+                lastMark.Remove();
+            }
+            else
+            {
+                Mark(lastMark)!.Remove();
+            }
+
+            marks.RemoveAt(marks.Count - 1);
+        }
+
+        for (var i = 0; i < marks.Count; i++)
+        {
+            var mark = Mark(marks[i])!;
+            var filled = (W.SectionProperties)mainSection.CloneNode(true);
+            filled.RemoveAllChildren<W.VerticalTextAlignmentOnPage>();
+            if (i > 0)
+            {
+                filled.RemoveAllChildren<W.TitlePage>();
+            }
+
+            if (mark.GetFirstChild<W.VerticalTextAlignmentOnPage>() is { } vertical)
+            {
+                InsertVerticalAlignment(filled, (W.VerticalTextAlignmentOnPage)vertical.CloneNode(true));
+            }
+
+            marks[i].ParagraphProperties!.SectionProperties = filled;
+        }
+
+        if (marks.Count > 0)
+        {
+            mainSection.RemoveAllChildren<W.TitlePage>();
+        }
+    }
+
+    // В sectPr порядок строгий: vAlign — перед titlePg, после pgMar.
+    private static void InsertVerticalAlignment(W.SectionProperties section, W.VerticalTextAlignmentOnPage vertical)
+    {
+        section.RemoveAllChildren<W.VerticalTextAlignmentOnPage>();
+        if (section.GetFirstChild<W.TitlePage>() is { } titlePage)
+        {
+            section.InsertBefore(vertical, titlePage);
+        }
+        else
+        {
+            section.Append(vertical);
+        }
     }
 
     private W.SectionProperties BuildSectionProperties(MainDocumentPart mainPart, DocxPageSetup page,

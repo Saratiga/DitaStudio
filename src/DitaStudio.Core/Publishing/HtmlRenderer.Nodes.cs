@@ -36,6 +36,17 @@ public sealed partial class HtmlRenderer
             return string.Empty;
         }
 
+        // Блок на отдельном листе: обёртка раскладывается по листу только при печати (Assets.Css).
+        if (PagePlacement.Of(node) is { } place)
+        {
+            return $"<div class=\"page-place {place}\">\n{RenderElement(node, level)}</div>\n";
+        }
+
+        return RenderElement(node, level);
+    }
+
+    private string RenderElement(DitaNode node, int level)
+    {
         switch (BlockElementCategoryMap.Of(node.Name))
         {
             case BlockElementCategory.ContainerDiv:

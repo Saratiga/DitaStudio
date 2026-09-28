@@ -86,6 +86,7 @@ public sealed class CoreTests
     [Fact] public void TextColorTests() => Run(CoreChecks.TextColorTests);
     [Fact] public void TableResizeTests() => Run(CoreChecks.TableResizeTests);
     [Fact] public void NumberedParagraphTests() => Run(CoreChecks.NumberedParagraphTests);
+    [Fact] public void PagePlacementTests() => Run(CoreChecks.PagePlacementTests);
 
     private void Run(Action section)
     {

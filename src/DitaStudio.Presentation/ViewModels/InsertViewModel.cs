@@ -566,6 +566,30 @@ public partial class InsertViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Положение блока на отдельном листе PDF/DOCX: "place-bottom-right" и т. п. (<see cref="PagePlacement"/>),
+    /// null — обычное, в тексте.
+    /// </summary>
+    [RelayCommand]
+    private void SetPagePlacement(string? token)
+    {
+        var author = _main.Current?.Author;
+        if (author?.CurrentNode is null || PagePlacement.PlaceableFor(author.CurrentNode) is null)
+        {
+            _main.StatusText = "Поставьте курсор в абзац, рисунок, таблицу или заметку прямо в тексте топика (не в списке).";
+            return;
+        }
+
+        if (author.SetCurrentBlockFormat(PagePlacement.Prefix, token))
+        {
+            _main.Documents.RefreshAllTabTitles();
+            _main.RefreshAttributePanel?.Invoke();
+            _main.StatusText = PagePlacement.LabelOf(token) is { } label
+                ? $"Блок на отдельном листе PDF и DOCX: {label.ToLowerInvariant()}."
+                : "Блок снова идёт в тексте.";
+        }
+    }
+
     /// <summary>Нумерованный абзац (пункт): номер по заголовкам — 2.3.1 (outputclass numbered).</summary>
     [RelayCommand]
     private void ToggleNumberedParagraph()

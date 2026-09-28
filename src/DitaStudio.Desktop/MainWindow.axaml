@@ -110,6 +110,20 @@
                           ToolTip.Tip="Курсор в абзаце: при публикации он получит номер по заголовкам — во 2-й главе, 3-м разделе 2.3.1" />
                 <MenuItem Header="Заголовок без номера (не в оглавлении)" Command="{Binding Insert.ToggleUnnumberedTitleCommand}"
                           ToolTip.Tip="Курсор в заголовке: при публикации он не нумеруется и не попадает в оглавление (outputclass=&quot;nonumber&quot;)" />
+                <MenuItem Header="Положение на листе (PDF, DOCX)"
+                          ToolTip.Tip="Абзац, рисунок, таблица или заметка — на отдельной странице в выбранной области листа (outputclass=&quot;place-…&quot;)">
+                    <MenuItem Header="Обычное (в тексте)" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="{x:Null}" />
+                    <Separator />
+                    <MenuItem Header="Вверху слева" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-top-left" />
+                    <MenuItem Header="Вверху по центру" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-top-center" />
+                    <MenuItem Header="Вверху справа" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-top-right" />
+                    <MenuItem Header="Посередине слева" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-middle-left" />
+                    <MenuItem Header="По центру листа" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-middle-center" />
+                    <MenuItem Header="Посередине справа" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-middle-right" />
+                    <MenuItem Header="Внизу слева" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-bottom-left" />
+                    <MenuItem Header="Внизу по центру" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-bottom-center" />
+                    <MenuItem Header="Внизу справа" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-bottom-right" />
+                </MenuItem>
                 <MenuItem Header="Таблица: разрешить перенос с повтором шапки (печать)" Command="{Binding Insert.ToggleTablePageBreakAutoCommand}" />
                 <MenuItem Header="Отметить как изменённое (rev)" Command="{Binding Insert.ToggleRevChangedCommand}"
                           ToolTip.Tip="Полоса на полях при публикации — штатная DITA-пометка ревизии, не полноценная история правок" />

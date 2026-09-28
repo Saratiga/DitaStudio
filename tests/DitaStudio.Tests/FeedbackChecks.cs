@@ -791,4 +791,117 @@ internal static partial class CoreChecks
                 "DOCX без нумерации заголовков: свой простой список 1, 2");
         });
     }
+
+    internal static void PagePlacementTests()
+    {
+        Section("Положение блока на листе");
+
+        var topic = DitaDocument.Parse("""
+<concept id="c"><title>Т</title><conbody>
+  <p id="p1">Текст</p>
+  <section><p id="p2">В разделе</p></section>
+  <ul><li><p id="p3">В списке</p></li></ul>
+</conbody></concept>
+""");
+        DitaNode ById(string id) => topic.Root.Descendants().First(n => n.GetAttribute("id") == id);
+        Check(PagePlacement.CanPlace(ById("p1")) && PagePlacement.CanPlace(ById("p2")), "абзац в теле и в разделе можно поставить на лист");
+        Check(!PagePlacement.CanPlace(ById("p3")), "абзац в списке — нельзя (отдельного листа там нет)");
+        Check(PagePlacement.PlaceableFor(ById("p3")) is null && PagePlacement.PlaceableFor(ById("p2")) == ById("p2"),
+            "ближайший блок для листа: у абзаца в разделе — он сам, у абзаца в списке — нет");
+        ById("p1").SetAttribute("outputclass", "numbered");
+        Check(PagePlacement.Set(ById("p1"), "place-bottom-right") && ById("p1").GetAttribute("outputclass") == "numbered place-bottom-right",
+            "положение — класс place-… рядом с прочими классами");
+        Check(PagePlacement.Of(ById("p1")) == "place-bottom-right" && PagePlacement.Vertical("place-bottom-right") == "bottom" &&
+              PagePlacement.Horizontal("place-bottom-right") == "right", "положение читается: низ, право");
+        Check(PagePlacement.Set(ById("p1"), null) && ById("p1").GetAttribute("outputclass") == "numbered", "«Обычное» снимает только класс положения");
+        Check(!PagePlacement.Set(ById("p1"), "place-nowhere"), "неизвестное положение не ставится");
+        ById("p3").SetAttribute("outputclass", "place-top-left");
+        Check(PagePlacement.Of(ById("p3")) is null, "класс у абзаца в списке ничего не делает");
+
+        var files = new Dictionary<string, string>
+        {
+            ["a.dita"] = """
+<concept id="a"><title>Глава</title><conbody>
+  <p>До грифа</p>
+  <p outputclass="place-bottom-right">Для служебного пользования</p>
+  <p>После грифа</p>
+  <fig outputclass="place-middle-center"><title>Схема</title><p>Рисунок</p></fig>
+  <simpletable outputclass="place-top-left"><strow><stentry>Ячейка</stentry></strow></simpletable>
+</conbody></concept>
+""",
+            ["guide.ditamap"] = "<map><title>Книга</title><topicref href=\"a.dita\"/></map>"
+        };
+
+        WithProject(files, (root, project) =>
+        {
+            project.SetDocxLayout(new DocxLayout { NoHeaderOnFirstPage = true, HeaderText = "Шапка" });
+            var single = new HtmlPublisher(project).Publish(Path.Combine(root, "guide.ditamap"),
+                new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true });
+            var html = File.ReadAllText(single.EntryFile);
+            Check(html.Contains("<div class=\"page-place place-bottom-right\">\n<p class=\"place-bottom-right\">Для служебного пользования</p>") ||
+                  System.Text.RegularExpressions.Regex.IsMatch(html, "<div class=\"page-place place-bottom-right\">\\s*<p[^>]*>Для служебного пользования</p>\\s*</div>"),
+                "HTML/PDF: абзац в обёртке page-place");
+            Check(html.Contains("<div class=\"page-place place-middle-center\">") && html.Contains("<div class=\"page-place place-top-left\">"),
+                "HTML/PDF: рисунок и простая таблица тоже в обёртке");
+            Check(html.Contains(".page-place { break-before: page;") && html.Contains("height: 100vh"),
+                "CSS печати: отдельный лист высотой в область текста");
+            Check(html.Contains(".page-place.place-bottom-right { justify-content: flex-end; }") ||
+                  html.Contains(".page-place.place-bottom-left, .page-place.place-bottom-center, .page-place.place-bottom-right { justify-content: flex-end; }"),
+                "CSS печати: низ листа — flex-end");
+
+            var outFile = Path.Combine(root, "book.docx");
+            var result = new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            Check(result.Warnings.Count == 0, "DOCX без предупреждений: " + string.Join("; ", result.Warnings));
+            CheckValidDocx(outFile, "DOCX с блоками на отдельных листах");
+            using var package = WordprocessingDocument.Open(outFile, false);
+            var body = package.MainDocumentPart!.Document.Body!;
+            var sections = body.Descendants<W.SectionProperties>().ToList();
+            // Разделы: [начало..«До грифа»] [гриф, внизу] [«После грифа»] [рисунок, центр] [таблица, верх — основной раздел]
+            Check(sections.Count == 5, $"DOCX: 5 разделов (гриф, текст, рисунок — отдельно; таблица в конце — в основном), получено {sections.Count}");
+            string? VAlign(W.SectionProperties s) => s.GetFirstChild<W.VerticalTextAlignmentOnPage>()?.Val?.Value.ToString();
+            var stamp = body.Descendants<W.Paragraph>().First(p => p.InnerText == "Для служебного пользования");
+            Check(stamp.ParagraphProperties?.SectionProperties is { } own && VAlign(own) == W.VerticalJustificationValues.Bottom.ToString(),
+                "DOCX: раздел грифа кончается им самим и выровнен по низу листа");
+            Check(stamp.ParagraphProperties?.Justification?.Val?.Value == W.JustificationValues.Right, "DOCX: гриф — по правому краю");
+            var before = body.Descendants<W.Paragraph>().First(p => p.InnerText == "До грифа");
+            Check(before.ParagraphProperties?.SectionProperties is { } previous && VAlign(previous) is null,
+                "DOCX: разрыв раздела — в конце абзаца перед грифом, без лишней строки");
+            Check(sections.All(s => s.GetFirstChild<W.PageSize>() is not null && s.GetFirstChild<W.PageMargin>() is not null &&
+                                    s.Elements<W.HeaderReference>().Any()),
+                "DOCX: у каждого раздела размер листа, поля и колонтитулы основного");
+            Check(sections.Count(s => s.GetFirstChild<W.TitlePage>() is not null) == 1 && before.ParagraphProperties!.SectionProperties!.GetFirstChild<W.TitlePage>() is not null,
+                "DOCX: «первый лист без колонтитула» — только у первого раздела");
+            var figure = body.Descendants<W.Paragraph>().Single(p => p.InnerText == "Рисунок");
+            var caption = body.Descendants<W.Paragraph>().Single(p => p.InnerText.EndsWith("Схема", StringComparison.Ordinal));
+            Check(caption.ParagraphProperties?.SectionProperties is { } figSection && VAlign(figSection) == W.VerticalJustificationValues.Center.ToString() &&
+                  figure.ParagraphProperties?.Justification?.Val?.Value == W.JustificationValues.Center &&
+                  caption.ParagraphProperties.Justification?.Val?.Value == W.JustificationValues.Center,
+                "DOCX: рисунок с подписью — по центру листа");
+            var main = body.Elements<W.SectionProperties>().Single();
+            Check(VAlign(main) == W.VerticalJustificationValues.Top.ToString(), "DOCX: таблица в конце — выравнивание основного раздела, без пустого листа");
+            var table = body.Descendants<W.Table>().Last();
+            Check(table.GetFirstChild<W.TableProperties>()?.TableJustification?.Val?.Value == W.TableRowAlignmentValues.Left, "DOCX: таблица слева");
+        });
+
+        // Блок в самом начале и два подряд — без пустых разделов.
+        files["a.dita"] = """
+<concept id="a"><title>Глава</title><conbody>
+  <p outputclass="place-top-center">Первый</p>
+  <p outputclass="place-bottom-center">Второй</p>
+  <p>Текст</p>
+</conbody></concept>
+""";
+        WithProject(files, (root, project) =>
+        {
+            var outFile = Path.Combine(root, "book.docx");
+            new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            CheckValidDocx(outFile, "DOCX с блоками на листах подряд");
+            using var package = WordprocessingDocument.Open(outFile, false);
+            var body = package.MainDocumentPart!.Document.Body!;
+            var paragraphs = body.Elements<W.Paragraph>().Select(p => (p.InnerText, Section: p.ParagraphProperties?.SectionProperties is not null)).ToList();
+            Check(paragraphs.Count(p => p.Section) == 3, "DOCX: разделы — заголовок, «Первый», «Второй» (без пустых): " +
+                string.Join(" | ", paragraphs.Select(p => p.InnerText + (p.Section ? "§" : ""))));
+            Check(paragraphs.All(p => !p.Section || p.InnerText.Length > 0), "DOCX: пустых абзацев-меток не осталось: " + string.Join(" | ", paragraphs.Select(p => p.InnerText + (p.Section ? "§" : ""))));
+        });
+    }
 }
