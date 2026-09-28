@@ -4,6 +4,7 @@ using Avalonia.Input;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 using DitaStudio.Desktop.Views;
 using DitaStudio.Presentation.Services;
@@ -22,6 +23,18 @@ public partial class MainWindow
             if (ViewModel.Current?.Author.CurrentNode is { } node && TableCommands.CellOf(node) is not null)
             {
                 items.AddRange(BuildTableMenuItems());
+                items.Add(new Separator());
+            }
+
+            if (ViewModel.Current?.Author.CurrentNode is { Name: "title" } title)
+            {
+                items.Add(new MenuItem
+                {
+                    Header = "Заголовок без номера (не в оглавлении)",
+                    ToggleType = MenuItemToggleType.CheckBox,
+                    IsChecked = TocRules.IsUnnumbered(title),
+                    Command = ViewModel.Insert.ToggleUnnumberedTitleCommand
+                });
                 items.Add(new Separator());
             }
 

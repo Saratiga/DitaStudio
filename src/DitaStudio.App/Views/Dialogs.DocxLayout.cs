@@ -146,6 +146,7 @@ public static partial class Dialogs
                 Language = language.Text.Trim(),
                 AutoHyphenation = hyphenation.IsChecked == true,
                 // Параметры страницы правятся в Avalonia-версии — здесь сохраняются как были.
+                TocTitle = current.TocTitle,
                 PaperSize = current.PaperSize,
                 Landscape = current.Landscape,
                 MarginTopMm = current.MarginTopMm,

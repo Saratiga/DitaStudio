@@ -140,7 +140,8 @@ public sealed class DocxPublisher
                 renderOptions.RelatedTopics = tree.RelatedLinks.TryGetValue(Path.GetFullPath(item.TargetPath!), out var related)
                     ? related
                     : null;
-                renderer.RenderTopic(expanded, topicNode, body, Math.Clamp(item.Level, 1, 6), bookmarkName);
+                renderer.RenderTopic(expanded, topicNode, body, Math.Clamp(item.Level, 1, 6), bookmarkName,
+                    unnumbered: TocRules.IsHiddenInMap(item.Node));
             }
 
             body.Append(BuildSectionProperties(mainPart, WithLayoutPage(styles.Page, layout), layout, title, date));
@@ -165,6 +166,9 @@ public sealed class DocxPublisher
     }
 
     // ============================================================ титул и оглавление
+
+    /// <summary>Уровень структуры «основной текст» — абзац не попадает в оглавление Word.</summary>
+    private const int BodyTextOutlineLevel = 9;
 
     /// <summary>Строка оглавления: уровень, текст, закладка топика.</summary>
     private sealed record TocEntry(int Level, string Text, string Bookmark);
@@ -201,7 +205,7 @@ public sealed class DocxPublisher
                 body.Append(PageBreakParagraph());
             }
 
-            body.Append(StyledParagraph(DocxStyleCatalog.TocHeading, labels.Contents));
+            body.Append(StyledParagraph(DocxStyleCatalog.TocHeading, layout.TocTitle.Length > 0 ? layout.TocTitle : labels.Contents));
             foreach (var paragraph in BuildTocParagraphs(layout.TocDepth, tocEntries))
             {
                 body.Append(paragraph);
@@ -598,9 +602,18 @@ public sealed class DocxPublisher
                 }
             }
 
-            var primary = isHeading || def.Id is DocxStyleCatalog.Normal or DocxStyleCatalog.Title or DocxStyleCatalog.Subtitle;
+            // Заголовок «без номера»: как обычный, но без нумерации и без уровня структуры —
+            // поэтому и поле TOC в Word его не соберёт.
+            var plainHeading = def.Id.StartsWith(DocxStyleCatalog.HeadingPlainPrefix, StringComparison.Ordinal);
+            if (plainHeading && layout.NumberHeadings)
+            {
+                numbering = new W.NumberingProperties(new W.NumberingId { Val = 0 });
+            }
+
+            var primary = isHeading || plainHeading || def.Id is DocxStyleCatalog.Normal or DocxStyleCatalog.Title or DocxStyleCatalog.Subtitle;
             styles.Append(DocxStyleWriter.Create(def.Id, def.Name, def.Kind, def.BasedOn, props,
-                primary, next: isHeading ? DocxStyleCatalog.Normal : null, numbering, def.OutlineLevel));
+                primary, next: isHeading || plainHeading ? DocxStyleCatalog.Normal : null, numbering,
+                plainHeading ? BodyTextOutlineLevel : def.OutlineLevel));
         }
 
         stylesPart.Styles = styles;

@@ -106,6 +106,8 @@
                 </MenuItem>
                 <Separator />
                 <MenuItem Header="Разрыв страницы перед заголовком (печать)" Command="{Binding Insert.TogglePageBreakBeforeTitleCommand}" />
+                <MenuItem Header="Заголовок без номера (не в оглавлении)" Command="{Binding Insert.ToggleUnnumberedTitleCommand}"
+                          ToolTip.Tip="Курсор в заголовке: при публикации он не нумеруется и не попадает в оглавление (outputclass=&quot;nonumber&quot;)" />
                 <MenuItem Header="Таблица: разрешить перенос с повтором шапки (печать)" Command="{Binding Insert.ToggleTablePageBreakAutoCommand}" />
                 <MenuItem Header="Отметить как изменённое (rev)" Command="{Binding Insert.ToggleRevChangedCommand}"
                           ToolTip.Tip="Полоса на полях при публикации — штатная DITA-пометка ревизии, не полноценная история правок" />

@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Authoring;
@@ -359,9 +360,33 @@ public sealed partial class AuthorView
         };
         editor.Margin = new Thickness(editor.Margin.Left, 0, editor.Margin.Right, 0);
 
-        container.Child = TaggedRow(node, editor);
+        container.Child = TaggedRow(node, WithTitleBadge(node, editor));
         AttachSelection(container, node);
         return container;
+    }
+
+    /// <summary>У заголовка «без номера» справа — пометка, чтобы было видно без атрибутов.</summary>
+    private static Control WithTitleBadge(DitaNode node, BlockEditor editor)
+    {
+        if (node.Name != "title" || !TocRules.IsUnnumbered(node))
+        {
+            return editor;
+        }
+
+        var badge = new TextBlock
+        {
+            Text = "без номера · не в оглавлении",
+            FontSize = 11,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(10, 0, 0, 0)
+        };
+        Themed(badge, TextBlock.ForegroundProperty, "EditorTag");
+        ToolTip.SetTip(badge, "При публикации заголовок не нумеруется и не попадает в оглавление (outputclass=\"nonumber\").");
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        Grid.SetColumn(badge, 1);
+        grid.Children.Add(editor);
+        grid.Children.Add(badge);
+        return grid;
     }
 
     /// <summary>Расстояние от верха блока до первой строки текста — чтобы номер или маркер

@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Plugins;
@@ -500,6 +501,25 @@ public partial class InsertViewModel : ObservableObject
         _main.StatusText = enabled == true
             ? "Разрыв страницы перед заголовком включён."
             : "Разрыв страницы перед заголовком выключен.";
+    }
+
+    /// <summary>Заголовок «без номера»: не нумеруется и не попадает в оглавление (outputclass nonumber).</summary>
+    [RelayCommand]
+    private void ToggleUnnumberedTitle()
+    {
+        var node = _main.Current?.Author.CurrentNode;
+        if (node is null || node.Name != "title")
+        {
+            _main.StatusText = "Поставьте курсор в заголовок топика или раздела.";
+            return;
+        }
+
+        var enabled = _main.Current!.Author.ToggleCurrentOutputClass(TocRules.NoNumberClass);
+        _main.Documents.RefreshAllTabTitles();
+        _main.RefreshAttributePanel?.Invoke();
+        _main.StatusText = enabled == true
+            ? "Заголовок без номера: при публикации не нумеруется и не попадает в оглавление."
+            : "Заголовок снова нумеруется и попадает в оглавление.";
     }
 
     [RelayCommand]

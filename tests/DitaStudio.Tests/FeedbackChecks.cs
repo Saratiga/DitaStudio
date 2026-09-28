@@ -337,4 +337,54 @@ internal static partial class CoreChecks
             Check(styles.Contains("TOC1") && styles.Contains("TOC2"), "стили строк оглавления определены");
         });
     }
+
+    /// <summary>П. 21: заголовок без номера не нумеруется и не попадает в оглавление; своё название оглавления.</summary>
+    internal static void UnnumberedTitleTests()
+    {
+        Section("Заголовок без номера");
+
+        WithProject(new Dictionary<string, string>
+        {
+            ["intro.dita"] = "<concept id=\"intro\"><title outputclass=\"nonumber\">Введение</title><conbody><p>Текст</p></conbody></concept>",
+            ["main.dita"] = "<concept id=\"main\"><title>Основная глава</title><conbody><section><title outputclass=\"nonumber\">Справочно</title><p>x</p></section></conbody></concept>",
+            ["annex.dita"] = "<concept id=\"annex\"><title>Приложение</title><conbody><p>Текст</p></conbody></concept>",
+            ["guide.ditamap"] = """
+<map><title>Книга</title><topicref href="intro.dita"/><topicref href="main.dita"/><topicref href="annex.dita" toc="no"/></map>
+"""
+        }, (root, project) =>
+        {
+            project.SetDocxLayout(new DocxLayout { NumberHeadings = true, TocTitle = "Оглавление" });
+            var outFile = Path.Combine(root, "book.docx");
+            new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            CheckValidDocx(outFile, "DOCX с заголовками без номера");
+
+            using (var package = WordprocessingDocument.Open(outFile, false))
+            {
+                var body = package.MainDocumentPart!.Document.Body!;
+                string? StyleOf(string text) => body.Elements<W.Paragraph>().FirstOrDefault(p => !IsTocRow(p) && p.InnerText == text)
+                    ?.ParagraphProperties?.ParagraphStyleId?.Val?.Value;
+                Check(StyleOf("Введение") == "HeadingPlain1", $"title с nonumber — стиль без номера: {StyleOf("Введение")}");
+                Check(StyleOf("Основная глава") == "Heading1", "обычный заголовок — Heading1");
+                Check(StyleOf("Справочно") == "HeadingPlain2", $"заголовок раздела с nonumber: {StyleOf("Справочно")}");
+                Check(StyleOf("Приложение") == "HeadingPlain1", $"строка карты с toc=\"no\" — тоже без номера: {StyleOf("Приложение")}");
+
+                var plain = package.MainDocumentPart.StyleDefinitionsPart!.Styles!.Elements<W.Style>().Single(st => st.StyleId == "HeadingPlain1");
+                Check(plain.BasedOn?.Val?.Value == "Heading1", "стиль без номера основан на Heading1 (тот же вид)");
+                Check(plain.StyleParagraphProperties?.NumberingProperties?.NumberingId?.Val?.Value == 0, "нумерация в стиле снята (numId 0)");
+                Check(plain.StyleParagraphProperties?.OutlineLevel?.Val?.Value == 9, "уровень структуры — основной текст: Word не соберёт его в оглавление");
+
+                var rows = body.Elements<W.Paragraph>().Where(IsTocRow).Select(r => string.Concat(r.Descendants<W.Hyperlink>().Select(h => h.InnerText))).ToList();
+                Check(string.Join(" | ", rows) == "Основная глава", "в готовом оглавлении только нумеруемый топик: " + string.Join(" | ", rows));
+                Check(body.Elements<W.Paragraph>().Any(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value == "TOCHeading" && p.InnerText == "Оглавление"),
+                    "своё название оглавления");
+            }
+
+            var single = new HtmlPublisher(project).Publish(Path.Combine(root, "guide.ditamap"),
+                new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true });
+            var html = File.ReadAllText(single.EntryFile);
+            var toc = html[html.IndexOf("toc-inline", StringComparison.Ordinal)..html.IndexOf("</nav>", StringComparison.Ordinal)];
+            Check(toc.Contains("<h2>Оглавление</h2>") && toc.Contains("Основная глава") && !toc.Contains("Введение") && !toc.Contains("Приложение"),
+                "HTML: оглавление со своим названием, без заголовков без номера и toc=\"no\"");
+        });
+    }
 }

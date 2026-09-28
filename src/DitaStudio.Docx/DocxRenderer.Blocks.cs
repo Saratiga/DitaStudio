@@ -233,7 +233,7 @@ public sealed partial class DocxRenderer
         var explicitTitle = node.FirstElement("title");
         if (explicitTitle is not null)
         {
-            yield return HeadingParagraph(RenderInlineRuns(explicitTitle), Math.Min(level + 1, 6));
+            yield return HeadingParagraph(RenderInlineRuns(explicitTitle), Math.Min(level + 1, 6), TocRules.IsUnnumbered(explicitTitle));
         }
         else if (label is not null)
         {

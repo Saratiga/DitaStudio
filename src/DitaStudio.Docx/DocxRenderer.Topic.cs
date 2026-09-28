@@ -16,7 +16,9 @@ namespace DitaStudio.Docx;
 public sealed partial class DocxRenderer
 {
     /// <summary>Отрисовывает один топик и добавляет его содержимое в конец body.</summary>
-    public void RenderTopic(DitaDocument document, DitaNode topic, W.Body body, int headingLevel, string? bookmarkName)
+    /// <param name="unnumbered">Заголовок без номера и вне оглавления (строка карты с toc="no").</param>
+    public void RenderTopic(DitaDocument document, DitaNode topic, W.Body body, int headingLevel, string? bookmarkName,
+        bool unnumbered = false)
     {
         _document = document;
         using var topicScope = BlockScope(topic);
@@ -50,7 +52,7 @@ public sealed partial class DocxRenderer
                     W.Paragraph heading;
                     using (BlockScope(child))
                     {
-                        heading = HeadingParagraph(RenderInlineRuns(child), headingLevel);
+                        heading = HeadingParagraph(RenderInlineRuns(child), headingLevel, unnumbered || TocRules.IsUnnumbered(child));
                     }
 
                     if (bookmarkName is not null)

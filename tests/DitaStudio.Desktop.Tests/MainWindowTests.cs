@@ -294,6 +294,29 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task TitleContextMenu_TogglesUnnumbered_WithBadge()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var title = pane.Document.Root.FirstElement("title")!;
+        pane.AuthorEditor.EditorFor(title)!.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+
+        var item = pane.AuthorEditor.EditorFor(title)!.BuildContextMenu(0).Items.OfType<MenuItem>()
+            .Single(i => i.Header as string == "Заголовок без номера (не в оглавлении)");
+        Assert.False(item.IsChecked);
+        item.Command!.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("nonumber", title.GetAttribute("outputclass"));
+        Assert.Contains(pane.AuthorEditor.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "без номера · не в оглавлении");
+        Assert.True(pane.AuthorEditor.EditorFor(title)!.BuildContextMenu(0).Items.OfType<MenuItem>()
+            .Single(i => i.Header as string == "Заголовок без номера (не в оглавлении)").IsChecked);
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void TopMenuItems_FitTheirText()
     {
         // Полоса меню Fluent была фиксированной высоты — пункты сжимались, текст срезался снизу.

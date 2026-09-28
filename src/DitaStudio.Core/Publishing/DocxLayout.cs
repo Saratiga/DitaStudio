@@ -76,6 +76,9 @@ public sealed class DocxLayout
     /// <summary>Автоматическая расстановка переносов.</summary>
     public bool AutoHyphenation { get; set; }
 
+    /// <summary>Заголовок оглавления (DOCX, единый HTML и PDF); пусто — «Содержание» (по языку публикации).</summary>
+    public string TocTitle { get; set; } = string.Empty;
+
     // ---- страница: общая для DOCX и PDF, перекрывает @page пользовательского CSS
 
     /// <summary>Размер бумаги (A4, A3, A5, B5, Letter, Legal); пусто — как в CSS проекта (по умолчанию A4).</summary>
@@ -178,6 +181,7 @@ public sealed class DocxLayout
         MarginLeftMm = Margin(MarginLeftMm);
         MarginRightMm = Margin(MarginRightMm);
         Subtitle ??= string.Empty;
+        TocTitle = TocTitle?.Trim() ?? string.Empty;
         Author ??= string.Empty;
         HeaderText ??= string.Empty;
         FooterText ??= string.Empty;

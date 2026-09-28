@@ -322,7 +322,16 @@ public sealed partial class AvaloniaDialogService
         panel.Children.Add(toc);
         var tocDepth = Depth(current.TocDepth, "Уровней в оглавлении");
         panel.Children.Add(Row("Уровней заголовков в оглавлении:", tocDepth));
-        Bind(toc, tocDepth);
+        var tocTitle = Named(new ComboBox
+        {
+            IsEditable = true,
+            ItemsSource = new[] { "Содержание", "Оглавление" },
+            Text = current.TocTitle.Length > 0 ? current.TocTitle : "Содержание",
+            Width = 200,
+            Padding = new Thickness(4, 3, 4, 3)
+        }, "Заголовок оглавления");
+        panel.Children.Add(Row("Заголовок оглавления (и в PDF):", tocTitle));
+        Bind(toc, tocDepth, tocTitle);
 
         // ---- заголовки
         panel.Children.Add(Header("Заголовки и подписи"));
@@ -398,6 +407,7 @@ public sealed partial class AvaloniaDialogService
                 TitlePageDate = titleDate.IsChecked == true,
                 TableOfContents = toc.IsChecked == true,
                 TocDepth = tocDepth.SelectedItem as int? ?? current.TocDepth,
+                TocTitle = (tocTitle.Text ?? string.Empty).Trim() is { Length: > 0 } name && name != "Содержание" ? name : string.Empty,
                 NumberHeadings = numberHeadings.IsChecked == true,
                 NumberingDepth = numberingDepth.SelectedItem as int? ?? current.NumberingDepth,
                 PageBreakBeforeTopLevel = pageBreak.IsChecked == true,

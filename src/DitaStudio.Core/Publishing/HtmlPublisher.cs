@@ -228,7 +228,8 @@ public sealed class HtmlPublisher
         var body = new StringBuilder();
 
         body.Append("<h1 class=\"book-title\">").Append(HtmlRenderer.Escape(tree.Root.Title)).Append("</h1>\n");
-        body.Append("<nav class=\"toc-inline\">\n<h2>").Append(HtmlRenderer.Escape(labels.Contents)).Append("</h2>\n<ul>\n");
+        var tocTitle = _project.DocxLayout.TocTitle.Length > 0 ? _project.DocxLayout.TocTitle : labels.Contents;
+        body.Append("<nav class=\"toc-inline\">\n<h2>").Append(HtmlRenderer.Escape(tocTitle)).Append("</h2>\n<ul>\n");
         foreach (var item in topics.Where(i => TocRules.Includes(_project, i)))
         {
             var full = Path.GetFullPath(item.TargetPath!);

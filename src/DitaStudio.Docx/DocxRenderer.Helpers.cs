@@ -32,8 +32,8 @@ public sealed partial class DocxRenderer
         return paragraph;
     }
 
-    private W.Paragraph HeadingParagraph(List<OpenXmlElement> runs, int level) =>
-        Para(DocxStyleCatalog.Heading(level), runs);
+    private W.Paragraph HeadingParagraph(List<OpenXmlElement> runs, int level, bool unnumbered = false) =>
+        Para(unnumbered ? DocxStyleCatalog.HeadingPlain(level) : DocxStyleCatalog.Heading(level), runs);
 
     private static W.ParagraphProperties EnsureParagraphProperties(W.Paragraph paragraph) =>
         paragraph.ParagraphProperties ??= new W.ParagraphProperties();
