@@ -246,6 +246,33 @@ public sealed class BlockEditor : TextEditor
         CommitFormatting();
     }
 
+    /// <summary>
+    /// Вставляет у курсора фразовый элемент с текстом (сноска, термин): выделение оборачивается,
+    /// иначе внутрь ставится выделенная заготовка — набор сразу её заменяет.
+    /// </summary>
+    public void InsertInlineElement(DitaNode element, string placeholder)
+    {
+        if (!TextArea.Selection.IsEmpty && WrapSelection(element.Name))
+        {
+            return;
+        }
+
+        var offset = CaretOffset;
+        _content.InsertElementText(offset, element, placeholder);
+        _syncing = true;
+        try
+        {
+            Document.Insert(offset, placeholder);
+        }
+        finally
+        {
+            _syncing = false;
+        }
+
+        Select(offset, placeholder.Length);
+        CommitFormatting();
+    }
+
     private void CommitFormatting()
     {
         _misspellings = null;

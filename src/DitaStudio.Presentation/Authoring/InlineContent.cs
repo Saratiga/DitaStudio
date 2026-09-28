@@ -390,13 +390,38 @@ public sealed class InlineContent
         }
     }
 
+    /// <summary>Вставляет в позицию новый фразовый элемент с текстом (сноска, термин).</summary>
+    public void InsertElementText(int offset, DitaNode element, string text)
+    {
+        offset = Math.Clamp(offset, 0, _text.Length);
+        var chain = new InlineChain(ContextAt(offset).Append(element).ToArray(), null);
+        _text.Insert(offset, text.Replace(ChipChar, ' '));
+        _chains.InsertRange(offset, Enumerable.Repeat(chain, text.Length));
+    }
+
     /// <summary>Вставляет узел плашкой (ссылка, картинка, сноска) в позицию.</summary>
     public void InsertChip(int offset, DitaNode node)
     {
         offset = Math.Clamp(offset, 0, _text.Length);
-        var nodes = offset > 0 ? _chains[offset - 1].Nodes : Array.Empty<DitaNode>();
         _text.Insert(offset, ChipChar);
-        _chains.Insert(offset, new InlineChain(nodes, node));
+        _chains.Insert(offset, new InlineChain(ContextAt(offset).ToArray(), node));
+    }
+
+    /// <summary>
+    /// Фразовые элементы, внутрь которых встаёт новый элемент в позиции: общие предки соседних
+    /// символов — у конца полужирного новый элемент встаёт рядом с ним, а не внутрь.
+    /// </summary>
+    private IEnumerable<DitaNode> ContextAt(int offset)
+    {
+        var left = offset > 0 ? _chains[offset - 1].Nodes : Array.Empty<DitaNode>();
+        var right = offset < _chains.Count ? _chains[offset].Nodes : Array.Empty<DitaNode>();
+        var common = 0;
+        while (common < left.Count && common < right.Count && ReferenceEquals(left[common], right[common]))
+        {
+            common++;
+        }
+
+        return left.Take(common);
     }
 
     /// <summary>

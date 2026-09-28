@@ -42,6 +42,13 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
 
     public abstract bool InsertInlineNode(DitaNode node);
 
+    /// <summary>
+    /// Вставляет у курсора фразовый элемент с текстом: выделение оборачивается, иначе внутрь
+    /// ставится выделенная заготовка <paramref name="placeholder"/>. false — оболочка так не умеет
+    /// (тогда элемент вставляется блоком после текущего).
+    /// </summary>
+    public virtual bool InsertInlineElement(DitaNode element, string placeholder) => false;
+
     /// <summary>Первый элемент со смешанным содержимым внутри узла — куда ставить курсор после правки.</summary>
     protected static DitaNode FirstEditable(DitaNode node)
     {
@@ -69,6 +76,12 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
             return false;
         }
 
+        // Фразовый элемент (сноска, термин, картинка) — в строку у курсора, а не блоком после абзаца.
+        if (TryInsertInline(CurrentNode, name))
+        {
+            return true;
+        }
+
         FlushPendingEdits();
         BeforeStructuralEdit($"Вставка <{name}>");
 
@@ -93,6 +106,30 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         Changed(FirstEditable(created), created.Parent);
         return true;
     }
+
+    private bool TryInsertInline(DitaNode current, string name)
+    {
+        var catalog = DitaCatalog.Default;
+        if (catalog.Get(name) is not { Display: DisplayKind.Inline or DisplayKind.Empty } def ||
+            catalog.Get(current.Name) is not { IsMixed: true } ||
+            !catalog.CanInsert(current, name, current.ElementChildren().Count()))
+        {
+            return false;
+        }
+
+        var element = catalog.CreateElement(name);
+        return def.IsMixed && element.Children.Count == 0
+            ? InsertInlineElement(element, PlaceholderFor(def))
+            : InsertInlineNode(element);
+    }
+
+    /// <summary>Заготовка текста нового фразового элемента — выделена, набор её заменяет.</summary>
+    public static string PlaceholderFor(ElementDef def) => def.Name switch
+    {
+        "fn" => "Текст сноски",
+        _ when def.Description.Length is > 0 and <= 40 => def.Description,
+        _ => "текст"
+    };
 
     public bool DeleteCurrent()
     {

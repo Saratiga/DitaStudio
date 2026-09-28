@@ -28,12 +28,12 @@
           <row>
             <entry colname="c1">Фразовые элементы с текстом</entry>
             <entry colname="c2"><codeph>b</codeph>, <codeph>i</codeph>, <codeph>u</codeph>,
-              <codeph>codeph</codeph>, <codeph>uicontrol</codeph></entry>
+              <codeph>codeph</codeph>, <codeph>uicontrol</codeph>, <codeph>fn</codeph> с текстом</entry>
             <entry colname="c3">Редактируются прямо внутри абзаца как оформленный текст.</entry>
           </row>
           <row>
             <entry colname="c1">Инлайн-элементы без своего текста</entry>
-            <entry colname="c2"><codeph>image</codeph>, <codeph>xref</codeph>, <codeph>fn</codeph>,
+            <entry colname="c2"><codeph>image</codeph>, <codeph>xref</codeph> без текста, пустая <codeph>fn</codeph>,
               <codeph>indexterm</codeph>, фразы с <parmname>conref</parmname>/
               <parmname>conkeyref</parmname></entry>
             <entry colname="c3">Показываются нередактируемой «плашкой» с меткой элемента; изменить

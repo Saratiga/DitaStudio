@@ -449,6 +449,18 @@ public sealed partial class AuthorView : UserControl
             return true;
         }
 
+        public override bool InsertInlineElement(DitaNode element, string placeholder)
+        {
+            if (CurrentNode is null || _view.ActiveEditorFor(CurrentNode) is not { } editor)
+            {
+                return false;
+            }
+
+            _view.BeforeStructuralEdit?.Invoke(_view, $"Вставка <{element.Name}>");
+            editor.InsertInlineElement(element, placeholder);
+            return true;
+        }
+
         public override bool InsertInlineNode(DitaNode node)
         {
             if (CurrentNode is null || _view.ActiveEditorFor(CurrentNode) is not { } editor)

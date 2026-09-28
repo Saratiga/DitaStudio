@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Desktop.Authoring;
 using Xunit;
@@ -276,6 +277,44 @@ public sealed class AuthorViewTests
         Assert.True(author.Surface.InsertInlineNode(xref));
         Assert.Equal("<p>Второй<xref href=\"other.dita\"/> абзац.</p>", XmlSerializer.ToXml(second));
         Assert.Contains(InlineChar, author.EditorFor(second)!.Text);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void InsertElement_InlineGoesToCaret_BlockGoesAfter()
+    {
+        // Замечание: сноска и картинка из палитры вставлялись блоком после абзаца, а не у курсора.
+        var (window, author, document, undo) = Show();
+        var second = Paragraphs(document)[1];
+        var editor = Focus(window, author, second, "Второй".Length);
+
+        Assert.True(author.Surface.InsertElement("fn"));
+        Assert.Equal("<p>Второй<fn>Текст сноски</fn> абзац.</p>", XmlSerializer.ToXml(second));
+        Assert.Equal("Текст сноски", editor.SelectedText);
+        Assert.Contains("Вставка <fn>", undo);
+
+        // Набор заменяет выделенную заготовку, оставаясь в сноске.
+        window.KeyTextInput("Пояснение");
+        Dispatcher.UIThread.RunJobs();
+        author.FlushPendingEdits();
+        Assert.Equal("<p>Второй<fn>Пояснение</fn> абзац.</p>", XmlSerializer.ToXml(second));
+
+        // Выделенный текст оборачивается целиком.
+        var first = Paragraphs(document)[0];
+        editor = Focus(window, author, first, 0);
+        editor.Select(0, "Первый".Length);
+        Assert.True(author.Surface.InsertElement("term"));
+        Assert.Equal("<p><term>Первый</term> <b>жирный</b> абзац.</p>", XmlSerializer.ToXml(first));
+
+        // Картинка из палитры — плашкой у курсора, у конца полужирного — рядом с ним.
+        Focus(window, author, first, "Первый жирный".Length);
+        Assert.True(author.Surface.InsertElement("image"));
+        Assert.Equal("<p><term>Первый</term> <b>жирный</b><image/> абзац.</p>", XmlSerializer.ToXml(first));
+
+        // Блочный элемент — по-прежнему после текущего абзаца.
+        Focus(window, author, first, 2);
+        Assert.True(author.Surface.InsertElement("note"));
+        Assert.Equal("note", EditCommands.NextElement(first)!.Name);
         window.Close();
     }
 
