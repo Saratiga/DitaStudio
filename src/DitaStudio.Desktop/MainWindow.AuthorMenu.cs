@@ -1,6 +1,7 @@
 using System.Windows.Input;
 using Avalonia.Controls;
 using Avalonia.Input;
+using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
@@ -16,8 +17,57 @@ public partial class MainWindow
     private DocumentView CreateDocumentView(DitaProject project, DitaDocument document, IPdfPrinter pdfPrinter)
     {
         var view = new DocumentView(project, document, pdfPrinter);
-        view.AuthorEditor.ContextMenuBuilding += (_, items) => items.Add(BuildInsertMenu());
+        view.AuthorEditor.ContextMenuBuilding += (_, items) =>
+        {
+            if (ViewModel.Current?.Author.CurrentNode is { } node && TableCommands.CellOf(node) is not null)
+            {
+                items.AddRange(BuildTableMenuItems());
+                items.Add(new Separator());
+            }
+
+            items.Add(BuildInsertMenu());
+        };
         return view;
+    }
+
+    /// <summary>Пункты ячейки таблицы: строки, столбцы, объединение, атрибуты.</summary>
+    internal List<Control> BuildTableMenuItems()
+    {
+        var insert = ViewModel.Insert;
+        MenuItem Table(string header, TableOperation operation) =>
+            new() { Header = header, Command = insert.EditTableCommand, CommandParameter = operation };
+
+        var cellAttributes = new MenuItem { Header = "Атрибуты ячейки…" };
+        cellAttributes.Click += (_, _) => RightTabs.SelectedIndex = 0;
+        var tableProperties = new MenuItem { Header = "Свойства таблицы…" };
+        tableProperties.Click += (_, _) =>
+        {
+            if (ViewModel.Current is { } pane && pane.Author.CurrentNode is { } node &&
+                TableCommands.CellOf(node) is { } cell && TableCommands.TableOf(cell) is { } table)
+            {
+                pane.FocusNode(table);
+                RightTabs.SelectedIndex = 0;
+            }
+        };
+
+        return new List<Control>
+        {
+            cellAttributes,
+            new Separator(),
+            Table("Вставить строку выше", TableOperation.InsertRowAbove),
+            Table("Вставить строку ниже", TableOperation.InsertRowBelow),
+            Table("Удалить строку", TableOperation.DeleteRow),
+            new Separator(),
+            Table("Вставить столбец слева", TableOperation.InsertColumnLeft),
+            Table("Вставить столбец справа", TableOperation.InsertColumnRight),
+            Table("Удалить столбец", TableOperation.DeleteColumn),
+            new Separator(),
+            new MenuItem { Header = "Объединить с ячейкой справа", Command = insert.MergeCellRightCommand, InputGesture = new KeyGesture(Key.Right, KeyModifiers.Control | KeyModifiers.Alt) },
+            new MenuItem { Header = "Объединить с ячейкой снизу", Command = insert.MergeCellDownCommand, InputGesture = new KeyGesture(Key.Down, KeyModifiers.Control | KeyModifiers.Alt) },
+            Table("Разделить ячейку", TableOperation.SplitCell),
+            new Separator(),
+            tableProperties
+        };
     }
 
     /// <summary>

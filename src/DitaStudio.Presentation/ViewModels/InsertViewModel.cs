@@ -424,6 +424,30 @@ public partial class InsertViewModel : ObservableObject
         _main.StatusText = $"Элемент вынесен в conref (id «{dialogResult.ElementId}»).";
     }
 
+    /// <summary>Строки и столбцы таблицы под курсором (меню ячейки, панель инструментов).</summary>
+    [RelayCommand]
+    private void EditTable(TableOperation operation)
+    {
+        if (_main.Current?.Author.EditCurrentTable(operation) == true)
+        {
+            _main.Documents.RefreshAllTabTitles();
+            _main.RefreshAttributePanel?.Invoke();
+            _main.RefreshOutline?.Invoke();
+            _main.StatusText = TableCommands.Describe(operation) + " — выполнено.";
+        }
+        else
+        {
+            _main.StatusText = operation switch
+            {
+                TableOperation.DeleteRow => "Строку удалить нельзя: в таблице должна остаться хотя бы одна строка.",
+                TableOperation.DeleteColumn => "Столбец удалить нельзя: он последний или число столбцов задано типом таблицы.",
+                TableOperation.SplitCell => "Ячейка не объединена — делить нечего.",
+                TableOperation.InsertColumnLeft or TableOperation.InsertColumnRight => "В этой таблице число столбцов задано её типом.",
+                _ => "Поставьте курсор в ячейку таблицы."
+            };
+        }
+    }
+
     [RelayCommand]
     private void MergeCellRight()
     {

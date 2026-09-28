@@ -1,3 +1,4 @@
+using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
@@ -137,5 +138,109 @@ internal static partial class CoreChecks
             Check(project.FindReferencesTo(Path.Combine(root, "topics", "a.dita")).Count == 1,
                 "ссылки из убранного файла больше не находятся");
         });
+    }
+
+    /// <summary>П. 8а: вставка и удаление строк и столбцов, разделение ячеек.</summary>
+    internal static void TableEditingTests()
+    {
+        Section("Строки и столбцы таблиц");
+        var validator = new DitaValidator { CheckStyleRules = false };
+
+        DitaDocument Doc(string body) => DitaDocument.Parse($"<concept id=\"c\"><title>T</title><conbody>{body}</conbody></concept>");
+        DitaNode Cell(DitaDocument doc, string text) =>
+            doc.Root.Descendants().First(n => n.Kind == NodeKind.Element && n.Name is "entry" or "stentry" or "propvalue" && n.InnerText == text);
+        List<List<string>> Grid(DitaDocument doc) => doc.Root.Descendants()
+            .Where(n => n.Name is "row" or "strow" or "sthead")
+            .Select(r => r.ElementChildren().Select(e =>
+                e.InnerText + (e.GetAttribute("namest") is { } ns ? $"[{ns}-{e.GetAttribute("nameend")}]" : string.Empty) +
+                (e.GetAttribute("morerows") is { } mr ? $"v{mr}" : string.Empty)).ToList())
+            .ToList();
+        string Show(DitaDocument doc) => string.Join(" | ", Grid(doc).Select(r => string.Join(",", r)));
+        void Valid(DitaDocument doc, string what)
+        {
+            var issues = validator.Validate(doc);
+            Check(issues.Count == 0, $"{what}: таблица валидна" + (issues.Count == 0 ? string.Empty : ": " + issues[0].Message));
+        }
+
+        const string cals = """
+<table><tgroup cols="2"><colspec colname="c1" colnum="1" colwidth="1*"/><colspec colname="c2" colnum="2" colwidth="2*"/>
+<thead><row><entry>H1</entry><entry>H2</entry></row></thead>
+<tbody>
+<row><entry morerows="1">A</entry><entry>B</entry></row>
+<row><entry>C</entry></row>
+<row><entry namest="c1" nameend="c2">D</entry></row>
+</tbody></tgroup></table>
+""";
+
+        var doc = Doc(cals);
+        var focus = TableCommands.Apply(Cell(doc, "B"), TableOperation.InsertRowBelow);
+        Check(Show(doc) == "H1,H2 | Av2,B |  | C | D[c1-c2]", "строка ниже B: A растягивается ещё на строку, в новой — одна ячейка: " + Show(doc));
+        Check(focus?.GetAttribute("colname") == "c2", "новая ячейка привязана ко второму столбцу");
+        Valid(doc, "вставка строки через объединение");
+
+        doc = Doc(cals);
+        TableCommands.Apply(Cell(doc, "A"), TableOperation.InsertRowAbove);
+        Check(Show(doc) == "H1,H2 | , | Av1,B | C | D[c1-c2]", "строка выше A — полная: " + Show(doc));
+
+        doc = Doc(cals);
+        TableCommands.Apply(Cell(doc, "B"), TableOperation.DeleteRow);
+        Check(Show(doc) == "H1,H2 | A,C | D[c1-c2]", "удаление строки A/B: A переезжает в следующую строку: " + Show(doc));
+        Check(Cell(doc, "A").GetAttribute("colname") == "c1", "переехавшая ячейка привязана к своему столбцу");
+        Valid(doc, "удаление строки с объединением");
+
+        doc = Doc(cals);
+        TableCommands.Apply(Cell(doc, "C"), TableOperation.DeleteRow);
+        Check(Show(doc) == "H1,H2 | A,B | D[c1-c2]", "удаление строки, в которую растянута A: A короче: " + Show(doc));
+
+        doc = Doc(cals);
+        TableCommands.Apply(Cell(doc, "A"), TableOperation.InsertColumnRight);
+        var tgroup = doc.Root.Descendants().First(n => n.Name == "tgroup");
+        Check(tgroup.GetAttribute("cols") == "3", "cols = 3");
+        Check(string.Join(",", tgroup.ElementChildren().Where(e => e.Name == "colspec").Select(e => e.GetAttribute("colname") + "#" + e.GetAttribute("colnum"))) == "c1#1,c3#2,c2#3",
+            "новый colspec между первым и вторым, colnum перенумерованы");
+        Check(Show(doc) == "H1,,H2 | Av1,,B | ,C | D[c1-c2]", "новый столбец справа от A; объединение D расширилось само: " + Show(doc));
+        Valid(doc, "вставка столбца");
+
+        doc = Doc(cals);
+        TableCommands.Apply(Cell(doc, "H1"), TableOperation.DeleteColumn);
+        Check(Show(doc) == "H2 | B | C | D", "удаление первого столбца: объединение D стало обычной ячейкой: " + Show(doc));
+        Check(Cell(doc, "D").GetAttribute("colname") == "c2" && doc.Root.Descendants().First(n => n.Name == "tgroup").GetAttribute("cols") == "1",
+            "D привязана к оставшемуся столбцу, cols = 1");
+        Valid(doc, "удаление столбца");
+        Check(TableCommands.Apply(Cell(doc, "H2"), TableOperation.DeleteColumn) is null, "последний столбец не удаляется");
+
+        doc = Doc(cals);
+        TableCommands.Apply(Cell(doc, "D"), TableOperation.SplitCell);
+        Check(Show(doc) == "H1,H2 | Av1,B | C | D,", "разделение D по горизонтали: " + Show(doc));
+        TableCommands.Apply(Cell(doc, "A"), TableOperation.SplitCell);
+        Check(Show(doc) == "H1,H2 | A,B | ,C | D,", "разделение A по вертикали — пустая ячейка в следующей строке: " + Show(doc));
+        Valid(doc, "разделение ячеек");
+        Check(TableCommands.Apply(Cell(doc, "B"), TableOperation.SplitCell) is null, "необъединённую ячейку делить нечего");
+
+        doc = Doc("<table><tgroup cols=\"1\"><tbody><row><entry>X</entry></row></tbody></tgroup></table>");
+        Check(TableCommands.Apply(Cell(doc, "X"), TableOperation.DeleteRow) is null, "единственная строка тела не удаляется");
+
+        // simpletable и специализации
+        doc = Doc("<simpletable relcolwidth=\"1* 2*\" keycol=\"2\"><sthead><stentry>H1</stentry><stentry>H2</stentry></sthead><strow><stentry>a</stentry><stentry>b</stentry></strow></simpletable>");
+        TableCommands.Apply(Cell(doc, "a"), TableOperation.InsertColumnLeft);
+        var simple = doc.Root.Descendants().First(n => n.Name == "simpletable");
+        Check(Show(doc) == ",H1,H2 | ,a,b", "simpletable: столбец слева во всех строках: " + Show(doc));
+        Check(simple.GetAttribute("relcolwidth") == "1* 1* 2*" && simple.GetAttribute("keycol") == "3", "relcolwidth и keycol сдвинуты");
+        TableCommands.Apply(Cell(doc, "H1"), TableOperation.InsertRowAbove);
+        Check(Grid(doc).Count == 2, "над шапкой строку не вставить");
+        TableCommands.Apply(Cell(doc, "H1"), TableOperation.InsertRowBelow);
+        Check(Show(doc) == ",H1,H2 | ,, | ,a,b", "строка под шапкой — первая строка данных: " + Show(doc));
+        TableCommands.Apply(Cell(doc, "b"), TableOperation.DeleteColumn);
+        Check(Show(doc) == ",H1 | , | ,a" && simple.GetAttribute("relcolwidth") == "1* 1*" && !simple.HasAttribute("keycol"),
+            "удаление ключевого столбца: " + Show(doc));
+        Valid(doc, "simpletable");
+
+        doc = DitaDocument.Parse("<reference id=\"r\"><title>T</title><refbody><properties><property><proptype>t</proptype><propvalue>v</propvalue><propdesc>d</propdesc></property></properties></refbody></reference>");
+        TableCommands.Apply(Cell(doc, "v"), TableOperation.InsertRowBelow);
+        var props = doc.Root.Descendants().Where(n => n.Name == "property").ToList();
+        Check(props.Count == 2 && string.Join(",", props[1].ElementChildren().Select(c => c.Name)) == "proptype,propvalue,propdesc",
+            "properties: новая строка с теми же ячейками");
+        Check(TableCommands.Apply(Cell(doc, "v"), TableOperation.InsertColumnRight) is null, "properties: столбцы заданы моделью");
+        Valid(doc, "properties");
     }
 }

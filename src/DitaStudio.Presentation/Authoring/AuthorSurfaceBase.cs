@@ -167,6 +167,26 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
 
     public bool MergeCurrentCellDown() => MergeCell(EditCommands.MergeTableCellDown, "Объединение ячеек по вертикали");
 
+    public bool EditCurrentTable(TableOperation operation)
+    {
+        if (Document is null || CurrentNode is null || TableCommands.CellOf(CurrentNode) is not { } cell ||
+            TableCommands.TableOf(cell) is not { Parent: { } holder } table)
+        {
+            return false;
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit(TableCommands.Describe(operation));
+        if (TableCommands.Apply(cell, operation) is not { } focus)
+        {
+            return false;
+        }
+
+        CurrentNode = focus;
+        Changed(FirstEditable(focus), holder, table);
+        return true;
+    }
+
     private bool MergeCell(Func<DitaNode, DitaNode?> merge, string description)
     {
         if (Document is null || CurrentNode is null)

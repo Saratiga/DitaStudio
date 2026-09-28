@@ -23,6 +23,18 @@
           ячейку.</stepresult>
       </step>
       <step>
+        <cmd>Строки и столбцы: щёлкните правой кнопкой мыши в ячейке и выберите
+          <uicontrol>Вставить строку выше</uicontrol>, <uicontrol>Вставить строку
+          ниже</uicontrol>, <uicontrol>Удалить строку</uicontrol>, <uicontrol>Вставить столбец
+          слева</uicontrol>, <uicontrol>Вставить столбец справа</uicontrol>, <uicontrol>Удалить
+          столбец</uicontrol> или <uicontrol>Разделить ячейку</uicontrol>. Те же команды — в
+          меню <menucascade><uicontrol>Структура</uicontrol><uicontrol>Таблица</uicontrol></menucascade>.</cmd>
+        <info>Объединённые ячейки учитываются: новая строка посреди растянутой вниз ячейки
+          удлиняет её, а при удалении строки растянутая ячейка переезжает в следующую вместе с
+          текстом. У таблиц свойств (<codeph>properties</codeph>) и таблиц выбора
+          (<codeph>choicetable</codeph>) добавляются и удаляются только строки.</info>
+      </step>
+      <step>
         <cmd>Изображение: диалог вставки изображения открывает выбор файла и подставляет
           относительный путь <parmname>href</parmname>; заготовку атрибута
           <parmname>alt</parmname> нужно дополнить осмысленным описанием вручную.</cmd>

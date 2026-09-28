@@ -240,6 +240,35 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task TableCellMenu_InsertsRowsAndColumns()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "reference", "settings.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var table = pane.Document.Root.DescendantsAndSelf().First(n => n.Name is "table" or "simpletable" or "properties");
+        var cell = table.DescendantsAndSelf().First(n => n.Name is "entry" or "stentry" or "propvalue" && n.InnerText.Length > 0);
+        var editor = pane.AuthorEditor.EditorFor(cell)!;
+        editor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+
+        var menu = editor.BuildContextMenu(0).Items.OfType<MenuItem>().ToList();
+        var below = menu.Single(i => i.Header as string == "Вставить строку ниже");
+        Assert.Contains(menu, i => i.Header as string == "Удалить столбец");
+        Assert.Contains(menu, i => i.Header as string == "Вставить элемент");
+
+        int Rows() => table.DescendantsAndSelf().Count(n => n.Name is "row" or "strow" or "property");
+        var rowsBefore = Rows();
+        var editorsBefore = pane.AuthorEditor.Editors.Count;
+        below.Command!.Execute(below.CommandParameter);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(rowsBefore + 1, Rows());
+        Assert.True(pane.AuthorEditor.Editors.Count > editorsBefore, "новая строка появилась в «Авторе»");
+        Assert.True(pane.Document.IsDirty);
+        Assert.Contains("выполнено", vm.StatusText);
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void TopMenuItems_FitTheirText()
     {
         // Полоса меню Fluent была фиксированной высоты — пункты сжимались, текст срезался снизу.

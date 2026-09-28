@@ -417,7 +417,7 @@ public static class EditCommands
     }
 
     /// <summary>Список имён колонок tgroup по порядку; создаёт colspec с именами c1..cN, если их не было.</summary>
-    private static List<string> EnsureColumnNames(DitaNode tgroup)
+    internal static List<string> EnsureColumnNames(DitaNode tgroup)
     {
         var colspecs = tgroup.ElementChildren().Where(e => e.Name == "colspec").ToList();
         if (colspecs.Count == 0)
