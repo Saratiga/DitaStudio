@@ -536,6 +536,15 @@ public partial class InsertViewModel : ObservableObject
         ApplyTextFormat(TextFormatting.SizePrefix, token, token is null ? "Размер шрифта снят." : $"Размер шрифта {points} пт.");
     }
 
+    /// <summary>Цвет выделения или дальнейшего набора: color-red… или null — снять.</summary>
+    [RelayCommand]
+    private void SetTextColor(string? token)
+    {
+        var color = TextFormatting.Colors.FirstOrDefault(c => c.Token == token);
+        ApplyTextFormat(TextFormatting.ColorPrefix, color.Token,
+            color.Token is null ? "Цвет текста снят." : $"Цвет текста: {color.Label.ToLowerInvariant()}.");
+    }
+
     private void ApplyTextFormat(string prefix, string? token, string done)
     {
         var author = _main.Current?.Author;

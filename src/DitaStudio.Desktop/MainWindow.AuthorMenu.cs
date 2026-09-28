@@ -106,15 +106,65 @@ public partial class MainWindow
             CommandParameter = size
         }).ToList();
 
+        var colors = TextFormatting.Colors.Select(c => (Control)new MenuItem
+        {
+            Header = c.Label,
+            Icon = Swatch(c.Hex),
+            Command = ViewModel.Insert.SetTextColorCommand,
+            CommandParameter = c.Token
+        }).Append(new Separator())
+          .Append(new MenuItem { Header = "Без цвета", Command = ViewModel.Insert.SetTextColorCommand, CommandParameter = null })
+          .ToList();
+
         return new MenuItem
         {
             Header = "Оформление",
             ItemsSource = new List<Control>
             {
                 new MenuItem { Header = "Выравнивание", ItemsSource = align },
-                new MenuItem { Header = "Размер шрифта", ItemsSource = sizes }
+                new MenuItem { Header = "Размер шрифта", ItemsSource = sizes },
+                new MenuItem { Header = "Цвет текста", ItemsSource = colors }
             }
         };
+    }
+
+    private static Border Swatch(string hex) => new()
+    {
+        Width = 14,
+        Height = 14,
+        CornerRadius = new Avalonia.CornerRadius(2),
+        Background = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse(hex))
+    };
+
+    /// <summary>Палитра кнопки «Цвет текста» на панели: образцы цветов и «Без цвета».</summary>
+    private void BuildColorPalette()
+    {
+        var panel = new WrapPanel { Width = 150, Margin = new Avalonia.Thickness(4) };
+        foreach (var (token, label, hex) in TextFormatting.Colors)
+        {
+            var swatch = new Button
+            {
+                Content = Swatch(hex),
+                Padding = new Avalonia.Thickness(4),
+                Margin = new Avalonia.Thickness(2),
+                Command = ViewModel.Insert.SetTextColorCommand,
+                CommandParameter = token
+            };
+            ToolTip.SetTip(swatch, label);
+            swatch.Click += (_, _) => ColorButton.Flyout?.Hide();
+            panel.Children.Add(swatch);
+        }
+
+        var none = new Button
+        {
+            Content = "Без цвета",
+            Margin = new Avalonia.Thickness(2, 6, 2, 2),
+            Command = ViewModel.Insert.SetTextColorCommand,
+            CommandParameter = null
+        };
+        none.Click += (_, _) => ColorButton.Flyout?.Hide();
+        panel.Children.Add(none);
+        ColorButton.Flyout = new Flyout { Content = panel };
     }
 
     /// <summary>Список размеров на панели: применить и сбросить выбор (можно выбрать тот же снова).</summary>

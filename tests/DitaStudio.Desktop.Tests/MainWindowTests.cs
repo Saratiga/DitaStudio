@@ -385,6 +385,60 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task ColorPalette_ColorsSelectionAndWholeBlock()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.StartsWith("Проект"));
+        var editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+
+        var colorButton = window.GetLogicalDescendants().OfType<Button>().Single(b => b.Name == "ColorButton");
+        var palette = ((Flyout)colorButton.Flyout!).Content as WrapPanel;
+        var red = palette!.Children.OfType<Button>().Single(b => ToolTip.GetTip(b) as string == "Красный");
+        Assert.Contains(palette.Children.OfType<Button>(), b => b.Content as string == "Без цвета");
+
+        editor.Select(0, "Проект".Length);
+        red.Command!.Execute(red.CommandParameter);
+        Dispatcher.UIThread.RunJobs();
+        pane.AuthorEditor.FlushPendingEdits();
+        Assert.StartsWith("<p><ph outputclass=\"color-red\">Проект</ph>", DitaStudio.Core.Model.XmlSerializer.ToXml(p));
+        editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        editor.Select("Проект состоит".Length + 1, "из".Length);
+        vm.Insert.SetFontSizeCommand.Execute("20");
+        Dispatcher.UIThread.RunJobs();
+        pane.AuthorEditor.FlushPendingEdits();
+        Assert.Contains("<ph outputclass=\"size-20\">из</ph>", DitaStudio.Core.Model.XmlSerializer.ToXml(p));
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Dispatcher.UIThread.RunJobs();
+        Save(window, "author-color-size");
+        editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        editor.Select("Проект состоит".Length + 1, "из".Length);
+        vm.Insert.SetFontSizeCommand.Execute("Обычный");
+        Dispatcher.UIThread.RunJobs();
+
+        editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        editor.Select(0, editor.Document.TextLength);
+        vm.Insert.SetTextColorCommand.Execute("color-blue");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("color-blue", p.GetAttribute("outputclass"));
+        Assert.DoesNotContain(p.ElementChildren(), c => c.Name == "ph");
+        Assert.Equal(Avalonia.Media.Color.Parse("#1F5FBF"), ((Avalonia.Media.SolidColorBrush)pane.AuthorEditor.EditorFor(p)!.Foreground!).Color);
+
+        var menu = pane.AuthorEditor.EditorFor(p)!.BuildContextMenu(0).Items.OfType<MenuItem>().Single(i => i.Header as string == "Оформление");
+        Assert.Contains(menu.ItemsSource!.OfType<MenuItem>(), i => i.Header as string == "Цвет текста");
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void TopMenuItems_FitTheirText()
     {
         // Полоса меню Fluent была фиксированной высоты — пункты сжимались, текст срезался снизу.

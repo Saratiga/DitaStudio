@@ -387,7 +387,8 @@ public sealed partial class AuthorView
 
         if (TextFormatting.ColorOf(node) is { } hex)
         {
-            editor.Foreground = new SolidColorBrush(Color.Parse(hex));
+            // Цвет текста редактора привязан к ресурсу темы — своя привязка его вытесняет.
+            editor.Bind(ForegroundProperty, new Avalonia.Data.Binding { Source = new SolidColorBrush(Color.Parse(hex)) });
         }
     }
 

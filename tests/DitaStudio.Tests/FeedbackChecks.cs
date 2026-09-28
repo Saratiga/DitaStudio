@@ -626,4 +626,40 @@ internal static partial class CoreChecks
             Check(html.Contains("class=\"size-10\"") && html.Contains(".size-10 { font-size: 10pt; }"), "HTML: класс фразы и его CSS");
         });
     }
+
+    /// <summary>П. 20: цвет текста — классы color-….</summary>
+    internal static void TextColorTests()
+    {
+        Section("Цвет текста");
+        Check(TextFormatting.ColorOf(DitaDocument.Parse("<ph outputclass=\"color-green\">x</ph>").Root) == "#00873C", "цвет читается из класса");
+
+        WithProject(new Dictionary<string, string>
+        {
+            ["a.dita"] = """
+<concept id="a"><title>T</title><conbody>
+<p>Обычный <ph outputclass="color-red">красный</ph> текст</p>
+<p outputclass="color-blue">Синий абзац</p>
+</conbody></concept>
+""",
+            ["guide.ditamap"] = "<map><title>Книга</title><topicref href=\"a.dita\"/></map>"
+        }, (root, project) =>
+        {
+            var outFile = Path.Combine(root, "book.docx");
+            new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            CheckValidDocx(outFile, "DOCX с цветом текста");
+            using (var package = WordprocessingDocument.Open(outFile, false))
+            {
+                var body = package.MainDocumentPart!.Document.Body!;
+                string? Color(string text) => DocxRunValue(package, body.Descendants<W.Run>().First(r => r.InnerText.Contains(text)),
+                    (direct, style) => direct?.Color?.Val?.Value ?? style?.Color?.Val?.Value);
+                Check(Color("красный")?.ToUpperInvariant() == "C00000", $"DOCX: фраза color-red: {Color("красный")}");
+                Check(Color("Синий")?.ToUpperInvariant() == "1F5FBF", $"DOCX: абзац color-blue: {Color("Синий")}");
+                Check(Color("Обычный")?.ToUpperInvariant() != "C00000", "DOCX: остальной текст не красный");
+            }
+
+            var single = new HtmlPublisher(project).Publish(Path.Combine(root, "guide.ditamap"),
+                new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true });
+            Check(File.ReadAllText(single.EntryFile).Contains(".color-red { color: #C00000; }"), "HTML: CSS цвета");
+        });
+    }
 }

@@ -68,6 +68,7 @@ public partial class MainWindow : Window
         MapTreeView.AddHandler(DragDrop.DragOverEvent, OnMapDragOver);
         MapTreeView.AddHandler(DragDrop.DropEvent, OnMapDrop);
         MapTreeView.AddHandler(Button.ClickEvent, OnMapPublishClick);
+        BuildColorPalette();
     }
 
     public MainViewModel ViewModel { get; }
