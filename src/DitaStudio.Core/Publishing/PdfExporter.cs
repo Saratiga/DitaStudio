@@ -13,7 +13,16 @@ public static class PdfExporter
         @"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
         @"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
         @"C:\Program Files\Google\Chrome\Application\chrome.exe",
-        @"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+        @"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+        "/Applications/Chromium.app/Contents/MacOS/Chromium"
+    };
+
+    // В Linux браузер ставится пакетом в PATH под одним из этих имён.
+    private static readonly string[] CandidateCommands =
+    {
+        "google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge", "microsoft-edge-stable"
     };
 
     public static string? FindBrowser()
@@ -23,6 +32,24 @@ public static class PdfExporter
             if (File.Exists(path))
             {
                 return path;
+            }
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
+        var dirs = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
+        foreach (var command in CandidateCommands)
+        {
+            foreach (var dir in dirs)
+            {
+                var path = Path.Combine(dir, command);
+                if (File.Exists(path))
+                {
+                    return path;
+                }
             }
         }
 
@@ -39,7 +66,7 @@ public static class PdfExporter
         var browser = FindBrowser();
         if (browser is null)
         {
-            return "Не найден браузер на движке Chromium (Microsoft Edge или Google Chrome). " +
+            return "Не найден браузер на движке Chromium (Microsoft Edge, Google Chrome или Chromium). " +
                    "Откройте собранный HTML и напечатайте его в PDF вручную.";
         }
 
@@ -73,6 +100,12 @@ public static class PdfExporter
             "--print-to-pdf-no-header",
             $"--print-to-pdf=\"{pdfPath}\"",
             $"\"{new Uri(Path.GetFullPath(htmlPath)).AbsoluteUri}\"");
+
+        // Chrome в Linux отказывается запускаться от root без --no-sandbox (контейнеры, CI).
+        if (OperatingSystem.IsLinux() && Environment.UserName == "root")
+        {
+            arguments = "--no-sandbox " + arguments;
+        }
 
         try
         {

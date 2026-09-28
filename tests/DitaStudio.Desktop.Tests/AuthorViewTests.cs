@@ -50,6 +50,24 @@ public sealed class AuthorViewTests
         return editor;
     }
 
+    /// <summary>Нажатие клавиши с физической клавишей QWERTY — как настоящая клавиатура.</summary>
+    private static void Press(Window window, Key key, RawInputModifiers modifiers)
+    {
+        var physical = key switch
+        {
+            Key.Enter => PhysicalKey.Enter,
+            Key.Back => PhysicalKey.Backspace,
+            Key.Delete => PhysicalKey.Delete,
+            Key.Tab => PhysicalKey.Tab,
+            Key.Up => PhysicalKey.ArrowUp,
+            Key.Down => PhysicalKey.ArrowDown,
+            Key.Space => PhysicalKey.Space,
+            Key.B => PhysicalKey.B,
+            _ => PhysicalKey.None
+        };
+        window.KeyPress(key, modifiers, physical, null);
+    }
+
     private static BlockEditor? FocusedEditor(AuthorView author) =>
         author.Editors.FirstOrDefault(e => e.TextArea.IsKeyboardFocusWithin);
 
@@ -75,7 +93,7 @@ public sealed class AuthorViewTests
         var (window, author, document, undo) = Show();
         Focus(window, author, Paragraphs(document)[0], "Первый жир".Length);
 
-        window.KeyPress(Key.Enter, RawInputModifiers.None);
+        Press(window, Key.Enter, RawInputModifiers.None);
         Dispatcher.UIThread.RunJobs();
 
         var paragraphs = Paragraphs(document);
@@ -94,7 +112,7 @@ public sealed class AuthorViewTests
         var (window, author, document, _) = Show();
         Focus(window, author, Paragraphs(document)[1], 0);
 
-        window.KeyPress(Key.Back, RawInputModifiers.None);
+        Press(window, Key.Back, RawInputModifiers.None);
         Dispatcher.UIThread.RunJobs();
         var merged = Assert.Single(Paragraphs(document));
         Assert.Equal("Первый жирный абзац.Второй абзац.", merged.InnerText);
@@ -105,7 +123,7 @@ public sealed class AuthorViewTests
         (window, author, document, _) = Show();
         var first = Paragraphs(document)[0];
         Focus(window, author, first, "Первый жирный абзац.".Length);
-        window.KeyPress(Key.Delete, RawInputModifiers.None);
+        Press(window, Key.Delete, RawInputModifiers.None);
         Dispatcher.UIThread.RunJobs();
         Assert.Same(first, Assert.Single(Paragraphs(document)));
         Assert.Equal("<p>Первый <b>жирный</b> абзац.Второй абзац.</p>", XmlSerializer.ToXml(first));
@@ -120,13 +138,13 @@ public sealed class AuthorViewTests
         var editor = Focus(window, author, second, 0);
 
         editor.Select(0, "Второй".Length);
-        window.KeyPress(Key.B, RawInputModifiers.Control);
+        Press(window, Key.B, RawInputModifiers.Control);
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("<p><b>Второй</b> абзац.</p>", XmlSerializer.ToXml(second));
         Assert.Contains("Оформление <b>", undo);
 
         editor.Select(0, editor.Document.TextLength);
-        window.KeyPress(Key.Space, RawInputModifiers.Control | RawInputModifiers.Shift);
+        Press(window, Key.Space, RawInputModifiers.Control | RawInputModifiers.Shift);
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("<p>Второй абзац.</p>", XmlSerializer.ToXml(second));
         window.Close();
@@ -140,7 +158,7 @@ public sealed class AuthorViewTests
         var second = ul.ElementChildren().Last();
         Focus(window, author, second, 0);
 
-        window.KeyPress(Key.Tab, RawInputModifiers.None);
+        Press(window, Key.Tab, RawInputModifiers.None);
         Dispatcher.UIThread.RunJobs();
         Assert.Single(ul.ElementChildren());
         Assert.Equal("ul", second.Parent!.Name);
@@ -149,7 +167,7 @@ public sealed class AuthorViewTests
         Assert.NotNull(author.EditorFor(second));
         Assert.Same(author.EditorFor(second), FocusedEditor(author));
 
-        window.KeyPress(Key.Tab, RawInputModifiers.Shift);
+        Press(window, Key.Tab, RawInputModifiers.Shift);
         Dispatcher.UIThread.RunJobs();
         Assert.Equal(2, ul.ElementChildren().Count());
         Assert.Equal(new[] { "Увеличение уровня", "Уменьшение уровня" }, undo);
@@ -186,7 +204,7 @@ public sealed class AuthorViewTests
         // Enter в первом участке уносит хвост и вложенный список в новый пункт.
         itemEditors[0].FocusEditor(3);
         Dispatcher.UIThread.RunJobs();
-        window.KeyPress(Key.Enter, RawInputModifiers.None);
+        Press(window, Key.Enter, RawInputModifiers.None);
         Dispatcher.UIThread.RunJobs();
         var items = conbody.FirstElement("ul")!.ElementChildren().ToList();
         Assert.Equal(2, items.Count);
@@ -207,7 +225,7 @@ public sealed class AuthorViewTests
         var second = author.EditorFor(paragraphs[1]);
         Focus(window, author, paragraphs[0], 3);
 
-        window.KeyPress(Key.Enter, RawInputModifiers.None);
+        Press(window, Key.Enter, RawInputModifiers.None);
         Dispatcher.UIThread.RunJobs();
         Assert.Same(title, author.EditorFor(document.Root.FirstElement("title")!));
         Assert.Same(second, author.EditorFor(paragraphs[1]));
@@ -235,11 +253,11 @@ public sealed class AuthorViewTests
         var paragraphs = Paragraphs(document);
         var first = Focus(window, author, paragraphs[0], 3);
 
-        window.KeyPress(Key.Down, RawInputModifiers.None);
+        Press(window, Key.Down, RawInputModifiers.None);
         Dispatcher.UIThread.RunJobs();
         Assert.Same(author.EditorFor(paragraphs[1]), FocusedEditor(author));
 
-        window.KeyPress(Key.Up, RawInputModifiers.None);
+        Press(window, Key.Up, RawInputModifiers.None);
         Dispatcher.UIThread.RunJobs();
         Assert.Same(first, FocusedEditor(author));
         Assert.Equal(first.Document.TextLength, first.CaretOffset);

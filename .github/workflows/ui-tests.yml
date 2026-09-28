@@ -6,7 +6,7 @@ name: UI tests
 
 on:
   push:
-    branches: ['master', 'claude/cool-bardeen-es6ndy'] # ВРЕМЕННО: проверка этапа 2 миграции
+    branches: ['master']
   workflow_dispatch:
 
 concurrency:

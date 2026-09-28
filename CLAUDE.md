@@ -1,15 +1,19 @@
 # DITA Studio — контекст проекта
 
 Настольный редактор технической документации на DITA 1.3. Аналог Oxygen XML Author.
-WPF, .NET 8, Windows. Интерфейс и комментарии — на русском.
+.NET 8. Основная версия — кроссплатформенная на Avalonia UI (`src/DitaStudio.Desktop`:
+Windows, Linux, macOS), прежняя WPF-версия (`src/DitaStudio.App`, Windows) сохраняется как
+легаси и не удаляется. Интерфейс и комментарии — на русском.
 
 ## Команды
 
 ```powershell
 dotnet build DitaStudio.sln -c Debug          # сборка
 dotnet test tests\DitaStudio.Tests          # ~860 проверок ядра (xUnit, 50 разделов)
-dotnet run --project src\DitaStudio.App       # запуск редактора
-dotnet test tests\DitaStudio.UiTests          # автоматизированное подмножество TESTPLAN.md (реальный DitaStudio.exe)
+dotnet run --project src/DitaStudio.Desktop    # запуск редактора (Avalonia, любая ОС)
+dotnet test tests/DitaStudio.Desktop.Tests     # интерфейс Avalonia (headless, работает и на Linux)
+dotnet run --project src\DitaStudio.App       # легаси-версия WPF
+dotnet test tests\DitaStudio.UiTests          # UI-тесты WPF (реальный DitaStudio.exe, Windows)
 ```
 
 Тестовый проект — xUnit, но проверки пишутся «мягким» `Check(условие, описание)` внутри
@@ -22,22 +26,28 @@ dotnet test tests\DitaStudio.UiTests          # автоматизированн
 Новую логику сопровождать проверкой там же; прогон должен оставаться зелёным.
 
 CI — `.github/workflows/`:
-- `ci.yml` — каждый пуш: сборка `DitaStudio.sln`, тесты ядра с покрытием (coverlet,
+- `ci.yml` — каждый пуш: на Windows сборка `DitaStudio.sln`, тесты ядра с покрытием (coverlet,
   `tests/DitaStudio.Tests/coverage.runsettings`, отчёт ReportGenerator в Summary и артефакте);
-- `ui-tests.yml` — UI-тесты на рабочем столе Windows-раннера: пуш в `master` и вручную;
-- `release.yml` — тег `vX.Y.Z` (должен совпадать с `<Version>` в `DitaStudio.App.csproj`):
-  тесты, `dotnet publish` self-contained win-x64, черновик релиза с архивом
-  `DitaStudio-vX.Y.Z-win-x64.zip`. Ручной запуск — пробная сборка без релиза.
+  на Linux — `DitaStudio.Desktop.Tests` headless и `CefPreviewTests` под `xvfb-run`;
+- `ui-tests.yml` — UI-тесты WPF на рабочем столе Windows-раннера: пуш в `master` и вручную;
+- `release.yml` — тег `vX.Y.Z` (должен совпадать с `<Version>` в `DitaStudio.Desktop.csproj`
+  и `DitaStudio.App.csproj` — держать равными): тесты, `dotnet publish` Avalonia-версии
+  self-contained на раннере каждой ОС (win-x64, linux-x64, osx-x64 — нативный Chromium
+  копируется только при публикации на своей ОС, кросс-сборка его теряет), легаси WPF
+  (`DitaStudio-Legacy-WPF-vX.Y.Z-win-x64.zip`), черновик релиза со всеми архивами. Ручной
+  запуск — пробная сборка без релиза (архивы — артефакты прогона).
 На Linux три проверки `FileSafetyTests` падают ожидаемо (регистр в путях, root игнорирует
 «только для чтения»), а svn-тест требует UTF-8-локаль — целевая платформа Windows.
 
 Демо-проект для ручной проверки: **Файл → Открыть папку проекта** → `samples\GuideSample`.
 
-## Перенос на Avalonia (идёт)
+## Avalonia-версия
 
 Кроссплатформенная версия — `src/DitaStudio.Desktop` (Avalonia 11.3, не 12: из-за
-CefGlue), растёт параллельно с WPF `src/DitaStudio.App`; план, решения и статус этапов —
-`docs/AVALONIA_MIGRATION.md`. Дизайн переносится один в один: палитра
+CefGlue); логика окна — общие ViewModel'и `src/DitaStudio.Presentation`, их же использует
+WPF `src/DitaStudio.App`. План, решения и история переноса — `docs/AVALONIA_MIGRATION.md`
+(все этапы завершены). Новые функции делать в Avalonia-версии и общем коде; паритет меню
+и подсказок с WPF проверяет `ParityTests` (WPF ⊆ Avalonia). Дизайн переносится один в один: палитра
 `Themes/Palette.axaml` = цвета `Themes/Light|Dark.xaml`, стили `Themes/Controls.axaml`
 повторяют WPF-шаблоны. В своих шаблонах части **не называть `PART_…`** — к ним цепляются
 стили темы Fluent. Проверка — `tests/DitaStudio.Desktop.Tests` (Avalonia.Headless, снимки
@@ -101,7 +111,7 @@ UI-тесты для проверок (например, строка стату
 ## Устройство
 
 ```
-src/DitaStudio.Core/     ядро, не знает про WPF — переиспользуемо в консоли и CI
+src/DitaStudio.Core/     ядро, не знает про интерфейс — переиспользуемо в консоли и CI
   Model/                 DOM (DitaNode, DitaDocument), разбор и запись XML
   IO/                    AtomicFile, FileStamp, RecoveryStore — защита от потери данных
   Schema/                каталог DITA 1.3, контент-модели, конечный автомат допустимости
@@ -110,20 +120,23 @@ src/DitaStudio.Core/     ядро, не знает про WPF — переисп
   Publishing/            HTML-генератор, подписи, стили, печать в PDF
   Editing/               структурные операции и история отмены
   Templates/             заготовки новых документов
-src/DitaStudio.App/      WPF
+src/DitaStudio.Presentation/ общие ViewModel'и и сервисы обеих оболочек, модель блока «Автора»,
+                         орфография, автодополнение, плагины команд «Автора»
+src/DitaStudio.Desktop/  основная версия на Avalonia (Authoring, Preview, Views, Services, Themes)
+src/DitaStudio.App/      легаси WPF
   Authoring/             режим «Автор» (AuthorView, InlineEditor), редактор XML на AvalonEdit
   Views/                 вкладка документа, диалоги
-src/DitaStudio.Desktop/  кроссплатформенная версия на Avalonia (переносится, см. выше)
 tests/DitaStudio.Tests/  проверки ядра (xUnit)
-tests/DitaStudio.Desktop.Tests/ headless-тесты Avalonia-версии
-tests/DitaStudio.UiTests/ автоматизированные UI-тесты (xUnit + FlaUI, см. ниже)
+tests/DitaStudio.Desktop.Tests/ headless-тесты Avalonia-версии (+ паритет с WPF, + CefPreviewTests)
+tests/DitaStudio.UiTests/ автоматизированные UI-тесты WPF (xUnit + FlaUI, см. ниже)
 tools/UiHarness/         CLI для ручной UI-проверки (тот же FlaUI-драйвер)
 tools/DitaStudio.UiAutomation/ общая FlaUI-библиотека для двух пунктов выше
 samples/GuideSample/     учебный DITA-проект
 ```
 
-Зависимости: **AvalonEdit** (редактор исходного XML) и **Microsoft.Web.WebView2**
-(предпросмотр). Ядро сейчас без NuGet-зависимостей, но это больше не жёсткое правило —
+Зависимости Avalonia-версии: **Avalonia 11.3**, **AvaloniaEdit** (исходный XML и редактор
+блока «Автора»), **CefGlue.Avalonia** (встроенный Chromium: предпросмотр, PDF),
+**WeCantSpell.Hunspell** (орфография); WPF — **AvalonEdit** и **Microsoft.Web.WebView2**. Ядро сейчас без NuGet-зависимостей, но это больше не жёсткое правило —
 решение снято при добавлении поддержки внешних DTD (см. ниже): если для следующей
 задачи понадобится библиотека, добавлять её не запрещено.
 
@@ -176,9 +189,9 @@ samples/GuideSample/     учебный DITA-проект
 - **PowerShell 5.1 читает UTF-8 без BOM как CP1251**, длинное тире превращается в
   «умную» кавычку и ломает разбор скрипта. `.ps1` в репозитории — только ASCII.
 
-## Режим «Автор»: как он устроен
+## Режим «Автор» в легаси WPF: как он устроен
 
-Блочные элементы рисуются отдельными `InlineEditor` (наследник `RichTextBox` на один
+(Avalonia-версия — см. «Avalonia-версия» выше.) Блочные элементы рисуются отдельными `InlineEditor` (наследник `RichTextBox` на один
 абзац). Фразовые элементы хранятся как оформленные прогоны с `Tag = цепочка узлов
 DITA`, при записи цепочки восстанавливают исходную вложенность. Структурные операции
 (Enter, Backspace, Tab) идут через `EditCommands` и проверяются по контент-модели —
@@ -239,14 +252,14 @@ DOCX-приближённо (тот же HTML со скином `Assets.WordPrev
 из папки грузится в свой `AssemblyLoadContext`; сам контракт (интерфейс) резолвится
 через возврат `null` из `Load`, откатываясь на уже загруженную в хосте сборку —
 иначе `typeof(T).IsAssignableFrom(type)` не сработает через границу сборки. Автор
-плагина ссылается на `DitaStudio.Core.dll`/`DitaStudio.dll` с `Private=false`
+плагина ссылается на `DitaStudio.Core.dll`/`DitaStudio.Presentation.dll` с `Private=false`
 (не копировать в свой вывод) — см. `tests/TestPlugin` как пример.
 
 Три контракта: `IValidationRulePlugin` (Core/Validation, доп. правила стиля —
 `DitaProject.ValidateAll(plugins)`), `IPublishFormatPlugin` (Core/Publishing, свой
-формат вывода), `IAuthorCommandPlugin` (App/Plugins, команда режима «Автор» —
-работает с `DocumentPane` напрямую, поэтому определён в App, а не в Core).
-Загружаются один раз при старте (`App.xaml.cs` → `PluginRegistry.Load`) из
+формат вывода), `IAuthorCommandPlugin` (Presentation/Plugins, команда режима «Автор» —
+получает `IDocumentView`, поэтому один плагин работает в обеих оболочках).
+Загружаются один раз при старте (`App.axaml.cs`/`App.xaml.cs` → `PluginRegistry.Load`) из
 `plugins/` рядом с exe. UI — один и тот же пункт меню на любое число плагинов
 конкретного вида, выбор через `Dialogs.PickOne`. Падение плагина (при загрузке или
 выполнении) не роняет приложение — превращается в предупреждение/сообщение.
@@ -255,9 +268,10 @@ DOCX-приближённо (тот же HTML со скином `Assets.WordPrev
 
 - Живая правка текста внутри самой плашки в режиме «Автор» (например, alt-текст
   картинки) — только через исходный код, не прямо в плашке.
-- PDF собирается печатью HTML через Edge/Chrome; своего движка нет.
-- WebView2 требует Evergreen Runtime; запасного пути на случай его отсутствия нет.
-- Грамматика не проверяется — только орфография (`SpellCheck.IsEnabled`).
+- PDF собирается печатью HTML (встроенный Chromium, Edge/Chrome, в WPF — WebView2); своего движка нет.
+- Легаси WPF: WebView2 требует Evergreen Runtime, запасного пути нет.
+- macOS-сборка только x64 (CefGlue не выпускает Chromium под arm64), не подписана.
+- Грамматика не проверяется — только орфография (Hunspell в Avalonia, `SpellCheck` в WPF).
 - XLIFF-экспорт — по одному документу, без пакетного экспорта всей карты/проекта.
 - Git/SVN — только просмотр diff, коммит/пуш из редактора нет.
 - Совместное редактирование и серверная часть отсутствуют — однопользовательский десктоп.

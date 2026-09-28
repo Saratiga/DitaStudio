@@ -28,6 +28,26 @@ internal static partial class CoreChecks
         var browser = PdfExporter.FindBrowser();
         Check(PdfExporter.IsAvailable == (browser is not null), "IsAvailable согласован с FindBrowser()");
 
+        if (!OperatingSystem.IsWindows() && browser is null)
+        {
+            // Linux: браузер из пакета ищется по PATH (google-chrome, chromium…).
+            var fakeDir = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(fakeDir);
+            var fake = Path.Combine(fakeDir, "chromium");
+            File.WriteAllText(fake, "#!/bin/sh\n");
+            var oldPath = Environment.GetEnvironmentVariable("PATH");
+            try
+            {
+                Environment.SetEnvironmentVariable("PATH", fakeDir + Path.PathSeparator + oldPath);
+                Check(PdfExporter.FindBrowser() == fake, "браузер находится по PATH (chromium)");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("PATH", oldPath);
+                Directory.Delete(fakeDir, true);
+            }
+        }
+
         if (browser is null)
         {
             Note("Edge/Chrome не найден по стандартным путям — остальные проверки раздела пропущены");
