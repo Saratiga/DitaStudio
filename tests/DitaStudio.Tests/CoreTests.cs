@@ -80,6 +80,7 @@ public sealed class CoreTests
     [Fact] public void TocTests() => Run(CoreChecks.TocTests);
     [Fact] public void UnnumberedTitleTests() => Run(CoreChecks.UnnumberedTitleTests);
     [Fact] public void ExcludeFromPublicationTests() => Run(CoreChecks.ExcludeFromPublicationTests);
+    [Fact] public void HeaderImageTests() => Run(CoreChecks.HeaderImageTests);
 
     private void Run(Action section)
     {

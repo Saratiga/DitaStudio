@@ -351,14 +351,20 @@ public sealed partial class AvaloniaDialogService
         var header = Named(Input(current.HeaderText), "Текст верхнего колонтитула");
         var headerAlign = Alignment(current.HeaderAlignment, "Выравнивание верхнего колонтитула");
         panel.Children.Add(WithAlignment(header, headerAlign));
+        var headerImage = ImagePicker(project, current.HeaderImage, current.HeaderImageAlignment, current.HeaderImageHeightMm, "верхнего");
+        panel.Children.Add(headerImage.Row);
         panel.Children.Add(Label("Нижний колонтитул"));
         var footer = Named(Input(current.FooterText), "Текст нижнего колонтитула");
         var footerAlign = Alignment(current.FooterAlignment, "Выравнивание нижнего колонтитула");
         panel.Children.Add(WithAlignment(footer, footerAlign));
+        var footerImage = ImagePicker(project, current.FooterImage, current.FooterImageAlignment, current.FooterImageHeightMm, "нижнего");
+        panel.Children.Add(footerImage.Row);
         panel.Children.Add(Muted(new TextBlock
         {
             Text = "Поля: {page} — номер страницы, {pages} — число страниц, {title} — название карты, " +
-                   "{date} — дата публикации. Например: «Стр. {page} из {pages}». Пусто — колонтитула нет.",
+                   "{date} — дата публикации. Например: «Стр. {page} из {pages}». Пусто — колонтитула нет. " +
+                   "Картинка (например, логотип; PNG, JPEG, GIF, BMP) ставится слева, по центру или справа, " +
+                   "высота — в миллиметрах; она появится и в колонтитулах PDF.",
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 6, 0, 0)
         }));
@@ -417,6 +423,12 @@ public sealed partial class AvaloniaDialogService
                 FooterText = footer.Text ?? string.Empty,
                 FooterAlignment = (DocxHeaderAlignment)Math.Max(0, footerAlign.SelectedIndex),
                 NoHeaderOnFirstPage = noFirst.IsChecked == true,
+                HeaderImage = headerImage.Path(),
+                HeaderImageAlignment = headerImage.Alignment(),
+                HeaderImageHeightMm = headerImage.HeightMm() ?? current.HeaderImageHeightMm,
+                FooterImage = footerImage.Path(),
+                FooterImageAlignment = footerImage.Alignment(),
+                FooterImageHeightMm = footerImage.HeightMm() ?? current.FooterImageHeightMm,
                 MirrorMargins = mirror.IsChecked == true,
                 GutterMm = gutterMm,
                 Language = (language.Text ?? string.Empty).Trim(),
@@ -467,6 +479,48 @@ public sealed partial class AvaloniaDialogService
             Margin = new Thickness(8, 0, 0, 0),
             Padding = new Thickness(4, 3, 4, 3)
         }, name);
+
+        // Картинка колонтитула: путь от папки проекта, «Обзор…», «Убрать», место и высота.
+        (Control Row, Func<string> Path, Func<DocxHeaderAlignment> Alignment, Func<double?> HeightMm) ImagePicker(
+            DitaProject owner, string value, DocxHeaderAlignment alignment, double heightMm, string which)
+        {
+            var path = Named(new TextBox { Text = value, Watermark = "без картинки", Padding = new Thickness(4, 3, 4, 3) },
+                $"Картинка {which} колонтитула");
+            var browse = new Button { Content = "Обзор…", Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
+            browse.Click += async (_, _) =>
+            {
+                var file = await _files.OpenFileAsync("Картинка колонтитула",
+                    new[] { new FileFilter("Изображения", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp") }, owner.RootPath);
+                if (file is not null)
+                {
+                    path.Text = System.IO.Path.GetRelativePath(owner.RootPath, file).Replace('\\', '/');
+                }
+            };
+            var clear = new Button { Content = "Убрать", Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(4, 0, 0, 0) };
+            clear.Click += (_, _) => path.Text = string.Empty;
+            var place = Alignment(alignment, $"Место картинки {which} колонтитула");
+            var height = Named(new TextBox
+            {
+                Text = heightMm.ToString("0.#", CultureInfo.CurrentCulture),
+                Width = 50,
+                Padding = new Thickness(4, 3, 4, 3),
+                Margin = new Thickness(8, 0, 0, 0)
+            }, $"Высота картинки {which} колонтитула, мм");
+
+            var tail = new StackPanel { Orientation = Orientation.Horizontal, Children = { browse, clear, place, height, Muted(new TextBlock { Text = "мм", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 0) }) } };
+            var dock = new DockPanel { Margin = new Thickness(0, 6, 0, 0) };
+            var caption = new TextBlock { Text = "Картинка:", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
+            DockPanel.SetDock(caption, Dock.Left);
+            DockPanel.SetDock(tail, Dock.Right);
+            dock.Children.Add(caption);
+            dock.Children.Add(tail);
+            dock.Children.Add(path);
+
+            return (dock,
+                () => (path.Text ?? string.Empty).Trim(),
+                () => (DocxHeaderAlignment)Math.Max(0, place.SelectedIndex),
+                () => double.TryParse((height.Text ?? string.Empty).Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var mm) ? mm : null);
+        }
 
         static DockPanel WithAlignment(TextBox text, ComboBox alignment)
         {

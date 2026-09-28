@@ -440,4 +440,58 @@ internal static partial class CoreChecks
             Check(!html.Contains("Черновик") && html.Contains("Общий абзац"), "единый HTML (и PDF): исключённых нет, conref работает");
         });
     }
+
+    /// <summary>П. 7: картинка (логотип) в колонтитулах DOCX; для PDF — data-URI.</summary>
+    internal static void HeaderImageTests()
+    {
+        Section("Картинка в колонтитуле");
+        const string png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+        WithProject(new Dictionary<string, string>
+        {
+            ["a.dita"] = "<concept id=\"a\"><title>A</title><conbody><p>Текст</p></conbody></concept>",
+            ["guide.ditamap"] = "<map><title>Книга</title><topicref href=\"a.dita\"/></map>"
+        }, (root, project) =>
+        {
+            Directory.CreateDirectory(Path.Combine(root, "images"));
+            File.WriteAllBytes(Path.Combine(root, "images", "logo.png"), Convert.FromBase64String(png));
+            Check(DocxLayout.ResolveImage(root, "images/logo.png") is not null && DocxLayout.ResolveImage(root, "images/none.png") is null,
+                "путь картинки разрешается от папки проекта, отсутствующая — null");
+            Check(DocxLayout.ImageDataUri(DocxLayout.ResolveImage(root, "images/logo.png")!).StartsWith("data:image/png;base64,iVBOR", StringComparison.Ordinal),
+                "data-URI для шаблона колонтитула PDF");
+
+            project.SetDocxLayout(new DocxLayout
+            {
+                TitlePage = false,
+                NoHeaderOnFirstPage = false,
+                HeaderText = "Руководство",
+                HeaderAlignment = DocxHeaderAlignment.Right,
+                HeaderImage = "images/logo.png",
+                HeaderImageAlignment = DocxHeaderAlignment.Left,
+                HeaderImageHeightMm = 12,
+                FooterImage = "images/missing.png"
+            });
+            var outFile = Path.Combine(root, "book.docx");
+            var result = new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            CheckValidDocx(outFile, "DOCX с логотипом в колонтитуле");
+            Check(result.Warnings.Any(w => w.Contains("missing.png")), "отсутствующая картинка нижнего колонтитула — предупреждение");
+
+            using var package = WordprocessingDocument.Open(outFile, false);
+            var header = package.MainDocumentPart!.HeaderParts.Single();
+            var paragraph = header.Header!.Elements<W.Paragraph>().Single();
+            var drawing = paragraph.Descendants<W.Drawing>().SingleOrDefault();
+            Check(drawing is not null && header.ImageParts.Count() == 1, "картинка встроена в сам колонтитул");
+            var blip = paragraph.Descendants<DocumentFormat.OpenXml.Drawing.Blip>().Single().Embed!.Value!;
+            Check(header.GetPartById(blip) is ImagePart, "ссылка картинки ведёт на часть колонтитула");
+            var extent = paragraph.Descendants<DocumentFormat.OpenXml.Drawing.Wordprocessing.Extent>().Single();
+            Check(extent.Cy!.Value == 12 * 36000 && extent.Cx!.Value == 12 * 36000, $"высота 12 мм, ширина по пропорциям: {extent.Cx.Value}×{extent.Cy.Value}");
+            Check(paragraph.ParagraphProperties?.Tabs?.Elements<W.TabStop>().Count() == 2, "позиции табуляции по центру и справа");
+            var children = paragraph.ChildElements.Where(e => e is not W.ParagraphProperties).ToList();
+            var drawingIndex = children.FindIndex(e => e.Descendants<W.Drawing>().Any());
+            var textIndex = children.FindIndex(e => e.InnerText == "Руководство");
+            var tabs = children.Count(e => e.Descendants<W.TabChar>().Any());
+            Check(drawingIndex == 0 && textIndex > drawingIndex && tabs == 2, "логотип слева, текст справа после двух табуляций");
+            Check(package.MainDocumentPart.FooterParts.All(f => !f.Footer!.Descendants<W.Drawing>().Any()), "без найденной картинки подвала рисунка нет");
+        });
+    }
 }

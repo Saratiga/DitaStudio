@@ -377,48 +377,9 @@ public sealed partial class DocxRenderer
             yield break;
         }
 
-        var imagePart = extension switch
-        {
-            ".png" => _mainPart.AddImagePart(ImagePartType.Png),
-            ".jpg" or ".jpeg" => _mainPart.AddImagePart(ImagePartType.Jpeg),
-            ".gif" => _mainPart.AddImagePart(ImagePartType.Gif),
-            ".bmp" => _mainPart.AddImagePart(ImagePartType.Bmp),
-            _ => _mainPart.AddImagePart(ImagePartType.Tiff)
-        };
-        using (var stream = File.OpenRead(absolute))
-        {
-            imagePart.FeedData(stream);
-        }
-
-        var relId = _mainPart.GetIdOfPart(imagePart);
+        var relId = DocxPictures.AddImage(_mainPart, absolute)!;
         var (widthEmu, heightEmu) = ImageSize.ReadEmuSize(absolute, node.GetAttribute("width"), node.GetAttribute("height"));
         var imageId = _nextImageId++;
-
-        // wp:inline обязан лежать внутри w:drawing — без этой обёртки OpenXml SDK молча не
-        // записывает элемент в document.xml при сохранении (сам image part при этом создаётся и
-        // остаётся в пакете «осиротевшим»): найдено этим же тестом (AdvancedRenderingTests),
-        // раньше ни одно изображение в DOCX-экспорте фактически не появлялось.
-        yield return new W.Run(new W.Drawing(new Drawing.Wordprocessing.Inline(
-            new Drawing.Wordprocessing.Extent { Cx = widthEmu, Cy = heightEmu },
-            new Drawing.Wordprocessing.EffectExtent { LeftEdge = 0, TopEdge = 0, RightEdge = 0, BottomEdge = 0 },
-            new Drawing.Wordprocessing.DocProperties { Id = (uint)imageId, Name = "image" + imageId, Description = alt },
-            new Drawing.Graphic(
-                new Drawing.GraphicData(
-                    new Pic.Picture(
-                        new Pic.NonVisualPictureProperties(
-                            new Pic.NonVisualDrawingProperties { Id = (uint)imageId, Name = Path.GetFileName(absolute) },
-                            new Pic.NonVisualPictureDrawingProperties()),
-                        new Pic.BlipFill(
-                            new Drawing.Blip { Embed = relId },
-                            new Drawing.Stretch(new Drawing.FillRectangle())),
-                        new Pic.ShapeProperties(
-                            new Drawing.Transform2D(
-                                new Drawing.Offset { X = 0, Y = 0 },
-                                new Drawing.Extents { Cx = widthEmu, Cy = heightEmu }),
-                            new Drawing.PresetGeometry(new Drawing.AdjustValueList()) { Preset = Drawing.ShapeTypeValues.Rectangle }))
-                ) { Uri = "http://schemas.openxmlformats.org/drawingml/2006/picture" }))
-        {
-            DistanceFromTop = 0, DistanceFromBottom = 0, DistanceFromLeft = 0, DistanceFromRight = 0
-        }));
+        yield return DocxPictures.Inline(relId, widthEmu, heightEmu, (uint)imageId, Path.GetFileName(absolute), alt);
     }
 }

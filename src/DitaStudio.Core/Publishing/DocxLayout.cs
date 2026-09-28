@@ -61,6 +61,49 @@ public sealed class DocxLayout
 
     public DocxHeaderAlignment FooterAlignment { get; set; } = DocxHeaderAlignment.Center;
 
+    /// <summary>Картинка верхнего колонтитула (логотип) — путь от папки проекта; пусто — нет. Действует и в PDF.</summary>
+    public string HeaderImage { get; set; } = string.Empty;
+
+    public DocxHeaderAlignment HeaderImageAlignment { get; set; } = DocxHeaderAlignment.Left;
+
+    /// <summary>Высота картинки верхнего колонтитула, мм (ширина — по пропорциям).</summary>
+    public double HeaderImageHeightMm { get; set; } = 10;
+
+    /// <summary>Картинка нижнего колонтитула — путь от папки проекта; пусто — нет.</summary>
+    public string FooterImage { get; set; } = string.Empty;
+
+    public DocxHeaderAlignment FooterImageAlignment { get; set; } = DocxHeaderAlignment.Left;
+
+    public double FooterImageHeightMm { get; set; } = 10;
+
+    /// <summary>Форматы картинок колонтитулов (их понимают и Word, и Chromium).</summary>
+    public static readonly IReadOnlyList<string> ImageExtensions = new[] { ".png", ".jpg", ".jpeg", ".gif", ".bmp" };
+
+    /// <summary>Полный путь картинки колонтитула или null — не задана, нет файла или формат не тот.</summary>
+    public static string? ResolveImage(string projectRoot, string relative)
+    {
+        if (string.IsNullOrWhiteSpace(relative))
+        {
+            return null;
+        }
+
+        var full = System.IO.Path.GetFullPath(System.IO.Path.Combine(projectRoot, relative));
+        return File.Exists(full) && ImageExtensions.Contains(System.IO.Path.GetExtension(full).ToLowerInvariant()) ? full : null;
+    }
+
+    /// <summary>Картинка как data-URI — для шаблонов колонтитулов PDF (внешние файлы Chromium туда не грузит).</summary>
+    public static string ImageDataUri(string fullPath)
+    {
+        var mime = System.IO.Path.GetExtension(fullPath).ToLowerInvariant() switch
+        {
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".bmp" => "image/bmp",
+            _ => "image/jpeg"
+        };
+        return $"data:{mime};base64,{Convert.ToBase64String(File.ReadAllBytes(fullPath))}";
+    }
+
     /// <summary>Не показывать колонтитулы на первой странице (обычно — на титульной).</summary>
     public bool NoHeaderOnFirstPage { get; set; } = true;
 
@@ -184,6 +227,10 @@ public sealed class DocxLayout
         TocTitle = TocTitle?.Trim() ?? string.Empty;
         Author ??= string.Empty;
         HeaderText ??= string.Empty;
+        HeaderImage = HeaderImage?.Trim() ?? string.Empty;
+        FooterImage = FooterImage?.Trim() ?? string.Empty;
+        HeaderImageHeightMm = double.IsFinite(HeaderImageHeightMm) ? Math.Clamp(HeaderImageHeightMm, 3, 60) : 10;
+        FooterImageHeightMm = double.IsFinite(FooterImageHeightMm) ? Math.Clamp(FooterImageHeightMm, 3, 60) : 10;
         FooterText ??= string.Empty;
         Language = string.IsNullOrWhiteSpace(Language) ? "ru-RU" : Language.Trim();
 

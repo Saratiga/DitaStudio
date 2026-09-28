@@ -147,6 +147,12 @@ public static partial class Dialogs
                 AutoHyphenation = hyphenation.IsChecked == true,
                 // Параметры страницы правятся в Avalonia-версии — здесь сохраняются как были.
                 TocTitle = current.TocTitle,
+                HeaderImage = current.HeaderImage,
+                HeaderImageAlignment = current.HeaderImageAlignment,
+                HeaderImageHeightMm = current.HeaderImageHeightMm,
+                FooterImage = current.FooterImage,
+                FooterImageAlignment = current.FooterImageAlignment,
+                FooterImageHeightMm = current.FooterImageHeightMm,
                 PaperSize = current.PaperSize,
                 Landscape = current.Landscape,
                 MarginTopMm = current.MarginTopMm,

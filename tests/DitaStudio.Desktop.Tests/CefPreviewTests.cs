@@ -43,6 +43,29 @@ public sealed class CefPreviewTests
         Assert.True(pages >= 2, $"ожидалось несколько страниц, получено {pages}");
     }
 
+    [AvaloniaFact]
+    public async Task PrintToPdf_WithLogoInHeader()
+    {
+        if (!Enabled)
+        {
+            return;
+        }
+
+        var dir = Path.Combine(Path.GetTempPath(), "DitaStudioCefTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var html = Path.Combine(dir, "page.html");
+        var pdf = Path.Combine(dir, "page.pdf");
+        await File.WriteAllTextAsync(html, "<html><body><h1>Логотип в шапке</h1><p>Текст без картинок.</p></body></html>");
+        const string logo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+        var error = await new CefPdfPrinter().ExportAsync(html, pdf,
+            new DitaStudio.Presentation.Services.PdfPageDecoration(true, "Шапка", "Подвал", logo, Core.Publishing.DocxHeaderAlignment.Left, 10));
+
+        Assert.Null(error);
+        var text = System.Text.Encoding.Latin1.GetString(await File.ReadAllBytesAsync(pdf));
+        Assert.Matches(@"/Subtype\s*/Image", text);
+    }
+
     [AvaloniaTheory]
     [InlineData(PreviewFormat.Html)]
     [InlineData(PreviewFormat.Pdf)]

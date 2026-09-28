@@ -542,8 +542,7 @@ public partial class PublishViewModel : ObservableObject
 
         if (showHeaderFooter || !browserAvailable)
         {
-            var error = await _main.Services.PdfPrinter.ExportAsync(htmlPath, pdfPath, showHeaderFooter,
-                project.PdfHeaderText, project.PdfFooterText);
+            var error = await _main.Services.PdfPrinter.ExportAsync(htmlPath, pdfPath, PdfPageDecoration.For(project));
             if (error is null || !browserAvailable)
             {
                 return error;
