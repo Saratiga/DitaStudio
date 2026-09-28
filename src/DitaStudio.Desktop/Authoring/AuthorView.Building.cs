@@ -466,6 +466,7 @@ public sealed partial class AuthorView
         var editor = new BlockEditor(content);
         editor.ContentChanged += (_, _) => Modified();
         editor.ContextMenuBuilding += (sender, items) => ContextMenuBuilding?.Invoke(sender, items);
+        editor.Written += (_, _) => RefreshFootnotes();
         editor.Focused += (_, _) =>
         {
             _activeEditor = editor;

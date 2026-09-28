@@ -253,7 +253,8 @@ public sealed class InlineContent
                 AppendText(child.Value, path.Count == 0 ? InlineChain.Empty : new InlineChain(path.ToArray(), null));
                 break;
 
-            case NodeKind.Element when IsInline(child) && child.Children.Count > 0:
+            // Сноска — всегда плашка с номером: её текст правится в области «Сноски» внизу топика.
+            case NodeKind.Element when IsInline(child) && child.Children.Count > 0 && child.Name != "fn":
                 // В непустой фразовый элемент спускаемся на любую глубину — каждый лист (текст,
                 // картинка, чужая плашка) получает своё представление (как в WPF InlineEditor).
                 path.Add(child);
@@ -566,10 +567,13 @@ public sealed class InlineContent
             return;
         }
 
+        // Прежние дети — по ссылкам и до сборки: плашки переносятся в новые узлы сами (не копии),
+        // и индексы детей при этом сдвигаются.
+        var old = Node.Children.Skip(range.Start).Take(range.End - range.Start).ToList();
         var nodes = BuildNodes(0, _text.Length);
-        for (var i = range.End - 1; i >= range.Start; i--)
+        foreach (var child in old.Where(c => ReferenceEquals(c.Parent, Node)))
         {
-            Node.Remove(Node.Children[i]);
+            Node.Remove(child);
         }
 
         for (var i = 0; i < nodes.Count; i++)
@@ -593,13 +597,13 @@ public sealed class InlineContent
         }
 
         offset = Math.Clamp(offset, 0, _text.Length);
+        var old = Node.Children.Skip(range.Start).ToList();
+        var following = Node.Children.Skip(range.End).ToList();
         var head = BuildNodes(0, offset);
         var tail = BuildNodes(offset, _text.Length);
-        var following = Node.Children.Skip(range.End).ToList();
-
-        for (var i = Node.Children.Count - 1; i >= range.Start; i--)
+        foreach (var child in old.Where(c => ReferenceEquals(c.Parent, Node)))
         {
-            Node.Remove(Node.Children[i]);
+            Node.Remove(child);
         }
 
         head.ForEach(Node.Add);
@@ -660,6 +664,7 @@ public sealed class InlineContent
         end = Math.Clamp(end, start, _text.Length);
         var text = new StringBuilder();
         IReadOnlyList<DitaNode>? textChain = null;
+        var usedChips = new HashSet<DitaNode>(ReferenceEqualityComparer.Instance);
 
         void FlushText()
         {
@@ -680,7 +685,9 @@ public sealed class InlineContent
             {
                 FlushText();
                 Descend(chain.Nodes);
-                Append(chip.CloneDeep());
+                // Плашка переносится сама, не копией: на неё могут ссылаться другие редакторы
+                // (текст сноски в области «Сноски»). Повтор той же плашки — копией.
+                Append(usedChips.Add(chip) ? chip : chip.CloneDeep());
                 continue;
             }
 
@@ -752,7 +759,7 @@ public sealed class InlineContent
             }
 
             case "fn":
-                return "ˣ сноска";
+                return $"сноска {FootnoteNumber(node)}";
 
             case "indexterm":
             {
@@ -775,6 +782,31 @@ public sealed class InlineContent
 
         var text = node.InnerText.Trim();
         return text.Length > 0 ? $"<{node.Name}> {Shorten(text)}" : $"<{node.Name}/>";
+    }
+
+    /// <summary>Номер сноски по порядку в документе (как в области «Сноски»).</summary>
+    public static int FootnoteNumber(DitaNode fn)
+    {
+        var root = fn;
+        while (root.Parent is not null)
+        {
+            root = root.Parent;
+        }
+
+        var index = 0;
+        foreach (var node in root.DescendantsAndSelf())
+        {
+            if (node.Kind == NodeKind.Element && node.Name == "fn")
+            {
+                index++;
+                if (ReferenceEquals(node, fn))
+                {
+                    return index;
+                }
+            }
+        }
+
+        return 1;
     }
 
     private static string Shorten(string value) => value.Length <= 24 ? value : value[..24] + "…";

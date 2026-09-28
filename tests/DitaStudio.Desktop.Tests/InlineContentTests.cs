@@ -57,12 +57,20 @@ public sealed class InlineContentTests
         content.WriteBack();
         Assert.Equal("<p>QВерсия на ЖКИ<fn>Вывод на ЖКИ по умолчанию.</fn> см. рисунок 93.</p>", Xml(p));
 
+        // Сноска в строке — плашка: замена куска вокруг неё сноску не теряет.
         p = Block(source);
         content = InlineContent.FromNode(p);
-        var start = content.Text.IndexOf("ЖКИВывод", StringComparison.Ordinal);
-        content.Replace(start, 12, content.Text.Substring(start, 12).Replace("Вывод", "Показ"));
+        var start = content.Text.IndexOf("ЖКИ", StringComparison.Ordinal);
+        content.Replace(start, 6, content.Text.Substring(start, 6).Replace(" с", " С"));
         content.WriteBack();
-        Assert.Equal("<p>Версия на ЖКИ<fn>Показ на ЖКИ по умолчанию.</fn> см. рисунок 93.</p>", Xml(p));
+        Assert.Equal("<p>Версия на ЖКИ<fn>Вывод на ЖКИ по умолчанию.</fn> См. рисунок 93.</p>", Xml(p));
+
+        // Замена поверх границы фразового элемента сохраняет его.
+        p = Block("<p>a <b>bold</b> z</p>");
+        content = InlineContent.FromNode(p);
+        content.Replace(0, content.Text.Length, "a bold z!");
+        content.WriteBack();
+        Assert.Equal("<p>a <b>bold</b> z!</p>", Xml(p));
 
         // Исправление слова целиком внутри полужирного остаётся полужирным.
         p = Block("<p>a <b>helo</b> z</p>");

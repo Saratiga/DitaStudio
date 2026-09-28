@@ -291,10 +291,12 @@ public sealed class AuthorViewTests
 
         Assert.True(author.Surface.InsertElement("fn"));
         Assert.Equal("<p>Второй<fn>Текст сноски</fn> абзац.</p>", XmlSerializer.ToXml(second));
-        Assert.Equal("Текст сноски", editor.SelectedText);
         Assert.Contains("Вставка <fn>", undo);
 
-        // Набор заменяет выделенную заготовку, оставаясь в сноске.
+        // Курсор — в текст сноски в области «Сноски», заготовка выделена, набор её заменяет.
+        Dispatcher.UIThread.RunJobs();
+        var fn = second.FirstElement("fn")!;
+        Assert.Equal("Текст сноски", author.EditorFor(fn)!.SelectedText);
         window.KeyTextInput("Пояснение");
         Dispatcher.UIThread.RunJobs();
         author.FlushPendingEdits();
@@ -473,6 +475,76 @@ public sealed class AuthorViewTests
         }
 
         window.Close();
+    }
+
+    [AvaloniaTheory]
+    [InlineData("light")]
+    [InlineData("dark")]
+    public void Footnotes_AreChipsInText_EditedInFootnotesArea(string theme)
+    {
+        // Замечание: сноски в «Авторе» — не частью сплошного текста, а внизу.
+        Application.Current!.RequestedThemeVariant = theme == "dark" ? ThemeVariant.Dark : ThemeVariant.Light;
+        try
+        {
+            var (window, author, document, _) = Show(
+                "<concept id=\"c\"><title>Сноски</title><conbody>" +
+                "<p>Версия ВПО на ЖКИ<fn>Вывод на ЖКИ по умолчанию.</fn> см. рисунок 93.</p>" +
+                "<p>Второй<fn>Вторая сноска.</fn> абзац.</p></conbody></concept>");
+            var first = Paragraphs(document)[0];
+            var fn1 = first.FirstElement("fn")!;
+            var fn2 = Paragraphs(document)[1].FirstElement("fn")!;
+
+            // В тексте — плашка с номером, текста сноски в строке нет.
+            var text = author.EditorFor(first)!.Text;
+            Assert.DoesNotContain("Вывод", text);
+            Assert.Contains(InlineChar, text);
+            Assert.Equal("сноска 2", InlineContent.DescribeChip(fn2));
+
+            // Внизу — область «Сноски» с редакторами текста сносок.
+            Assert.Contains(author.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "Сноски");
+            var note = author.EditorFor(fn1)!;
+            Assert.Equal("Вывод на ЖКИ по умолчанию.", note.Text);
+            note.FocusEditor(note.Text.Length);
+            Dispatcher.UIThread.RunJobs();
+            window.KeyTextInput(" Уточнение.");
+            Press(window, Key.Enter, RawInputModifiers.None); // Enter в сноске ничего не делает
+            Dispatcher.UIThread.RunJobs();
+            Assert.Null(author.Suggestions);
+            author.FlushPendingEdits();
+            Assert.Equal("<p>Версия ВПО на ЖКИ<fn>Вывод на ЖКИ по умолчанию. Уточнение.</fn> см. рисунок 93.</p>", XmlSerializer.ToXml(first));
+
+            // Правка абзаца со сноской не отвязывает её от области «Сноски».
+            var editor = Focus(window, author, first, 0);
+            window.KeyTextInput("Тут: ");
+            author.FlushPendingEdits();
+            Assert.Same(fn1, first.FirstElement("fn"));
+            note = author.EditorFor(fn1)!;
+            note.FocusEditor(0);
+            Dispatcher.UIThread.RunJobs();
+            window.KeyTextInput("!");
+            author.FlushPendingEdits();
+            Assert.Equal("!Вывод на ЖКИ по умолчанию. Уточнение.", fn1.InnerText);
+
+            var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+            Directory.CreateDirectory(dir);
+            window.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"author-footnotes-{theme}.png"));
+
+            // Удалили плашку из абзаца — сноска уходит и из области.
+            editor = Focus(window, author, first, 0);
+            var chip = editor.Text.IndexOf(InlineChar);
+            editor.Document.Remove(chip, 1);
+            author.FlushPendingEdits();
+            Dispatcher.UIThread.RunJobs();
+            Assert.Null(first.FirstElement("fn"));
+            Assert.Null(author.EditorFor(fn1));
+            Assert.NotNull(author.EditorFor(fn2));
+            Assert.Equal("сноска 1", InlineContent.DescribeChip(fn2));
+            window.Close();
+        }
+        finally
+        {
+            Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
+        }
     }
 
     private const char InlineChar = Presentation.Authoring.InlineContent.ChipChar;

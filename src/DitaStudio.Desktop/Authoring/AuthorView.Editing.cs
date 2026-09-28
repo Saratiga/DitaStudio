@@ -52,6 +52,11 @@ public sealed partial class AuthorView
 
     private bool HandleSplit(BlockEditor editor, int caretOffset)
     {
+        if (editor.Node.Name == "fn")
+        {
+            return true; // текст сноски — один абзац: Enter в нём ничего не делает
+        }
+
         if (EnterSuggestionsEnabled && caretOffset >= editor.Content.Length && editor.Content.IsLastSegment)
         {
             ShowSuggestions(editor);
@@ -178,6 +183,11 @@ public sealed partial class AuthorView
 
     private bool HandleMerge(DitaNode node)
     {
+        if (node.Name == "fn")
+        {
+            return false; // Backspace в начале текста сноски не сливает её с соседями
+        }
+
         if (EditCommands.PreviousElement(node) is not { } previous)
         {
             return false;

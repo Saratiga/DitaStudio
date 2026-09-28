@@ -149,7 +149,11 @@ public sealed class BlockEditor : TextEditor
 
         _dirty = false;
         _content.WriteBack();
+        Written?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>Содержимое записано в модель (например, по уходу фокуса).</summary>
+    public event EventHandler? Written;
 
     /// <summary>Перечитывает содержимое из модели (после отмены или правки исходного кода).</summary>
     public void Reload()
