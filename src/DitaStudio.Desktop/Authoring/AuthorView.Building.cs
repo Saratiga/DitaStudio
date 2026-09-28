@@ -158,9 +158,32 @@ public sealed partial class AuthorView
         return BuildContainer(node, depth, header, background);
     }
 
+    /// <summary>
+    /// Блок-обёртка без собственного вида (div, bodydiv, section, sectiondiv, fig и их
+    /// специализации — по @class): его границы в «Авторе» показываются полосой слева и подписью.
+    /// </summary>
+    private static bool IsFramedWrapper(DitaNode node) =>
+        DitaCatalog.Default.Get(node.Name)?.ClassAttr.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Any(token => token is "topic/div" or "topic/bodydiv" or "topic/section" or "topic/sectiondiv" or
+                "topic/fig" or "topic/figgroup" or "topic/abstract") == true;
+
     private Control BuildContainer(DitaNode node, int depth, string? headerText, string? backgroundKey)
     {
         var stack = new StackPanel();
+        var framed = headerText is null && backgroundKey is null && IsFramedWrapper(node);
+        if (framed)
+        {
+            var outputclass = node.GetAttribute("outputclass");
+            var label = new TextBlock
+            {
+                Text = string.IsNullOrWhiteSpace(outputclass) ? node.Name : $"{node.Name} · {outputclass}",
+                FontSize = 10.5,
+                Margin = new Thickness(0, 0, 0, 2)
+            };
+            Themed(label, TextBlock.FontFamilyProperty, "MonoFont");
+            Themed(label, TextBlock.ForegroundProperty, "EditorTag");
+            stack.Children.Add(label);
+        }
 
         if (headerText is not null)
         {
@@ -263,6 +286,14 @@ public sealed partial class AuthorView
         {
             border.BorderThickness = new Thickness(0);
             border.Margin = new Thickness(0, 12, 0, 8);
+        }
+
+        if (framed)
+        {
+            border.BorderThickness = new Thickness(2, 0, 0, 0);
+            border.Padding = new Thickness(10, 2, 0, 2);
+            border.CornerRadius = new CornerRadius(0);
+            Themed(border, Border.BorderBrushProperty, "EditorChipBorder");
         }
 
         AttachSelection(border, node);

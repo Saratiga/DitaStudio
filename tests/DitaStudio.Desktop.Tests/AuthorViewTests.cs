@@ -318,6 +318,44 @@ public sealed class AuthorViewTests
         window.Close();
     }
 
+    [AvaloniaTheory]
+    [InlineData("light")]
+    [InlineData("dark")]
+    public void Wrappers_HaveFrameAndLabel_ParagraphsDoNot(string theme)
+    {
+        // Замечание: в «Авторе» не видно, где начинается и кончается div, section, fn.
+        Application.Current!.RequestedThemeVariant = theme == "dark" ? ThemeVariant.Dark : ThemeVariant.Light;
+        try
+        {
+            var (window, author, document, _) = Show(
+                "<concept id=\"c\"><title>Обёртки</title><conbody>" +
+                "<p>Абзац со сноской<fn>Текст сноски.</fn> и продолжением.</p>" +
+                "<div outputclass=\"warning-box\"><p>Внутри div.</p><ul><li>пункт</li></ul></div>" +
+                "<section><title>Раздел</title><sectiondiv><p>Внутри sectiondiv.</p></sectiondiv></section>" +
+                "</conbody></concept>");
+
+            Border Frame(string name) => (Border)author.ViewFor(document.Root.DescendantsAndSelf().First(n => n.Name == name))!;
+            string? Label(Border border) => ((StackPanel)border.Child!).Children.OfType<TextBlock>().FirstOrDefault()?.Text;
+
+            Assert.Equal(2, Frame("div").BorderThickness.Left);
+            Assert.Equal("div · warning-box", Label(Frame("div")));
+            Assert.Equal("section", Label(Frame("section")));
+            Assert.Equal("sectiondiv", Label(Frame("sectiondiv")));
+            Assert.Null(Label(Frame("ul")));
+            Assert.Equal(0, Frame("ul").BorderThickness.Left);
+
+            var frame = window.CaptureRenderedFrame();
+            var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+            Directory.CreateDirectory(dir);
+            frame!.Save(Path.Combine(dir, $"author-wrappers-{theme}.png"));
+            window.Close();
+        }
+        finally
+        {
+            Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
+        }
+    }
+
     private const char InlineChar = Presentation.Authoring.InlineContent.ChipChar;
 
     [AvaloniaTheory]

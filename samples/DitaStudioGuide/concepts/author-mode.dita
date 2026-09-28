@@ -8,7 +8,11 @@
     <p>Каждый блочный элемент (абзац, шаг, примечание, ячейка таблицы) — это собственная область
       редактирования. Фразовые элементы, у которых есть прямой текст (<codeph>b</codeph>,
       <codeph>i</codeph>, <codeph>codeph</codeph>, <codeph>uicontrol</codeph> и подобные),
-      показываются как оформленный текст прямо внутри абзаца.</p>
+      показываются как оформленный текст прямо внутри абзаца; текст сноски
+      (<codeph>fn</codeph>) выделен фоном. Блоки-обёртки — <codeph>div</codeph>,
+      <codeph>bodydiv</codeph>, <codeph>section</codeph>, <codeph>sectiondiv</codeph>,
+      <codeph>fig</codeph> — обведены полосой слева с подписью, чтобы было видно, где они
+      начинаются и кончаются.</p>
 
     <p>Клавиши <uicontrol>Enter</uicontrol>, <uicontrol>Backspace</uicontrol> и
       <uicontrol>Tab</uicontrol> не просто редактируют текст — они выполняют структурные операции

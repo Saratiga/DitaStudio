@@ -85,6 +85,12 @@ public static class InlineStyles
                 run.SetForegroundBrush(brush("Accent"));
                 run.SetTextDecorations(TextDecorations.Underline);
                 break;
+            case "fn":
+                // Текст сноски выделен фоном плашки — видно, где сноска начинается и кончается.
+                run.SetBackgroundBrush(brush("EditorChipBackground"));
+                run.SetForegroundBrush(brush("EditorChipText"));
+                run.SetFontRenderingEmSize(run.FontRenderingEmSize * 0.9);
+                break;
         }
     }
 }

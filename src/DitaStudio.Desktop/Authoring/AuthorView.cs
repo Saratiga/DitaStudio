@@ -91,6 +91,9 @@ public sealed partial class AuthorView : UserControl
     public BlockEditor? EditorFor(DitaNode node) => _editors.TryGetValue(node, out var editor) ? editor : null;
 
     /// <summary>Редактор, в котором последним был курсор, если он относится к узлу, иначе — первый редактор узла.</summary>
+    /// <summary>Отрисованный блок узла (рамка, строка текста) или null.</summary>
+    public Control? ViewFor(DitaNode node) => _views.TryGetValue(node, out var view) ? view : null;
+
     public BlockEditor? ActiveEditorFor(DitaNode node) =>
         _activeEditor is { } active && ReferenceEquals(active.Node, node) && _order.Contains(active) ? active : EditorFor(node);
 
