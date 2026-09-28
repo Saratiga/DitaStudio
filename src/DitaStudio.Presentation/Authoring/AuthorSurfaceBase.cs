@@ -1,5 +1,6 @@
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Services;
 
@@ -216,6 +217,44 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         var enabled = EditCommands.ToggleOutputClassToken(CurrentNode, className);
         Changed(FirstEditable(CurrentNode), CurrentNode.Parent, CurrentNode);
         return enabled;
+    }
+
+    /// <summary>
+    /// Оформление текущего блока (абзац, заголовок, ячейка): ставит класс группы
+    /// <paramref name="prefix"/> вместо прежнего или снимает (null). Выравнивание ячейки CALS —
+    /// стандартным @align.
+    /// </summary>
+    public bool SetCurrentBlockFormat(string prefix, string? token)
+    {
+        if (Document is null || CurrentNode is null)
+        {
+            return false;
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit("Оформление блока");
+        var node = CurrentNode;
+        if (prefix == TextFormatting.AlignPrefix && node.Name == "entry")
+        {
+            var value = TextFormatting.Alignments.FirstOrDefault(a => a.Token == token).Css;
+            if (value is null)
+            {
+                node.RemoveAttribute("align");
+            }
+            else
+            {
+                node.SetAttribute("align", value);
+            }
+
+            TextFormatting.SetToken(node, prefix, null);
+        }
+        else
+        {
+            TextFormatting.SetToken(node, prefix, token);
+        }
+
+        Changed(FirstEditable(node), node.Parent, node);
+        return true;
     }
 
     public bool? ToggleCurrentRev()

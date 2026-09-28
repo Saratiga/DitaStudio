@@ -359,10 +359,27 @@ public sealed partial class AuthorView
             BorderBrush = Brushes.Transparent
         };
         editor.Margin = new Thickness(editor.Margin.Left, 0, editor.Margin.Right, 0);
+        ApplyBlockFormat(editor, node);
 
         container.Child = TaggedRow(node, WithTitleBadge(node, editor));
         AttachSelection(container, node);
         return container;
+    }
+
+    /// <summary>
+    /// Оформление блока из «Автора» (классы align-…, у ячейки — @align): редактор смещается
+    /// целиком — AvaloniaEdit не выравнивает строки внутри себя, поэтому короткий текст (заголовок,
+    /// подпись, ячейка) стоит как в публикации, а у длинного абзаца видна только сторона.
+    /// </summary>
+    internal static void ApplyBlockFormat(BlockEditor editor, DitaNode node)
+    {
+        editor.HorizontalAlignment = TextFormatting.AlignmentOf(node) switch
+        {
+            "center" => HorizontalAlignment.Center,
+            "right" => HorizontalAlignment.Right,
+            _ => HorizontalAlignment.Stretch
+        };
+        editor.MinWidth = editor.HorizontalAlignment == HorizontalAlignment.Stretch ? 0 : 40;
     }
 
     /// <summary>У заголовка «без номера» справа — пометка, чтобы было видно без атрибутов.</summary>

@@ -180,6 +180,19 @@
                     <Path Classes="icon" Data="M2,3.5 H2.2 M7,3.5 H15 M2,8 H2.2 M7,8 H15 M2,12.5 H2.2 M7,12.5 H15" StrokeThickness="2.4" />
                 </Button>
                 <Rectangle Classes="separator" />
+                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-left" ToolTip.Tip="По левому краю">
+                    <Path Classes="icon" Data="M1,3 H15 M1,6.5 H10 M1,10 H15 M1,13.5 H10" />
+                </Button>
+                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-center" ToolTip.Tip="По центру">
+                    <Path Classes="icon" Data="M1,3 H15 M3.5,6.5 H12.5 M1,10 H15 M3.5,13.5 H12.5" />
+                </Button>
+                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-right" ToolTip.Tip="По правому краю">
+                    <Path Classes="icon" Data="M1,3 H15 M6,6.5 H15 M1,10 H15 M6,13.5 H15" />
+                </Button>
+                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-justify" ToolTip.Tip="По ширине">
+                    <Path Classes="icon" Data="M1,3 H15 M1,6.5 H15 M1,10 H15 M1,13.5 H15" />
+                </Button>
+                <Rectangle Classes="separator" />
                 <Button Classes="tool" Command="{Binding Insert.InsertTableCommand}" ToolTip.Tip="Таблица…">
                     <Path Classes="icon" Data="M1,2 H15 V14 H1 Z M1,6 H15 M1,10 H15 M6,2 V14 M11,2 V14" />
                 </Button>

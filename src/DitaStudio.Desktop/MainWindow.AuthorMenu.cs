@@ -38,6 +38,7 @@ public partial class MainWindow
                 items.Add(new Separator());
             }
 
+            items.Add(BuildFormatMenu());
             items.Add(BuildInsertMenu());
         };
         return view;
@@ -80,6 +81,27 @@ public partial class MainWindow
             Table("Разделить ячейку", TableOperation.SplitCell),
             new Separator(),
             tableProperties
+        };
+    }
+
+    /// <summary>Оформление текущего блока или выделения: выравнивание (размер и цвет — там же).</summary>
+    internal MenuItem BuildFormatMenu()
+    {
+        var node = ViewModel.Current?.Author.CurrentNode;
+        var current = node is null ? null : TextFormatting.AlignmentOf(node) ?? "left";
+        var align = TextFormatting.Alignments.Select(a => (Control)new MenuItem
+        {
+            Header = a.Label,
+            Command = ViewModel.Insert.SetAlignmentCommand,
+            CommandParameter = a.Token,
+            ToggleType = MenuItemToggleType.Radio,
+            IsChecked = current == a.Css
+        }).ToList();
+
+        return new MenuItem
+        {
+            Header = "Оформление",
+            ItemsSource = new List<Control> { new MenuItem { Header = "Выравнивание", ItemsSource = align } }
         };
     }
 

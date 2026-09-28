@@ -65,7 +65,8 @@ public sealed class DocxPublisher
                 warnings.Add(cssWarning);
             }
 
-            styles = DocxStyleSheet.FromCss(css);
+            // Классы оформления из «Автора» — раньше CSS проекта, чтобы тот мог их переопределить.
+            styles = DocxStyleSheet.FromCss(TextFormatting.Css + "\n" + css);
         }
 
         warnings.AddRange(styles.Warnings);

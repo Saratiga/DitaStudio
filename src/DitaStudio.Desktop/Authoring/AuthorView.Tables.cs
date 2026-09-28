@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Presentation.Authoring;
 
 namespace DitaStudio.Desktop.Authoring;
@@ -147,6 +148,7 @@ public sealed partial class AuthorView
 
         var editor = CreateEditor(InlineContent.FromNode(cellNode));
         editor.FontWeight = isHeader ? FontWeight.SemiBold : FontWeight.Normal;
+        ApplyBlockFormat(editor, cellNode);
         border.Child = editor;
         AttachSelection(border, cellNode);
         return border;

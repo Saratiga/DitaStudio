@@ -98,6 +98,9 @@ public interface IAuthorSurface
 
     bool MergeCurrentCellDown();
 
+    /// <summary>Оформление текущего блока — класс группы вместо прежнего (null — снять).</summary>
+    bool SetCurrentBlockFormat(string prefix, string? token) => false;
+
     /// <summary>Строки и столбцы таблицы под курсором; false — здесь невозможно (или оболочка не умеет).</summary>
     bool EditCurrentTable(TableOperation operation) => false;
 

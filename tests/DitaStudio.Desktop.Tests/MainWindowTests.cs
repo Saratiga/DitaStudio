@@ -346,6 +346,45 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task AlignmentButtons_SetClassOrCellAlign()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "reference", "settings.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var toolbar = window.GetLogicalDescendants().OfType<WrapPanel>().Single(p => p.Name == "MainToolbar");
+        Button Tool(string tip) => toolbar.Children.OfType<Button>().Single(b => ToolTip.GetTip(b) as string == tip);
+
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name is "p" or "shortdesc" && n.InnerText.Length > 0);
+        pane.AuthorEditor.EditorFor(p)!.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        Tool("По центру").Command!.Execute(Tool("По центру").CommandParameter);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains("align-center", p.GetAttribute("outputclass"));
+        var editor = pane.AuthorEditor.EditorFor(p)!;
+        Assert.Equal(Avalonia.Layout.HorizontalAlignment.Center, editor.HorizontalAlignment);
+
+        editor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        var format = editor.BuildContextMenu(0).Items.OfType<MenuItem>().Single(i => i.Header as string == "Оформление");
+        var align = format.ItemsSource!.OfType<MenuItem>().Single(i => i.Header as string == "Выравнивание").ItemsSource!.OfType<MenuItem>().ToList();
+        Assert.True(align.Single(i => i.Header as string == "По центру").IsChecked);
+
+        Tool("По левому краю").Command!.Execute(Tool("По левому краю").CommandParameter);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(p.GetAttribute("outputclass"));
+
+        var entry = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "entry" && n.InnerText.Length > 0);
+        pane.AuthorEditor.EditorFor(entry)!.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(entry, vm.Current!.Author.CurrentNode);
+        Tool("По правому краю").Command!.Execute(Tool("По правому краю").CommandParameter);
+        Assert.Equal("right", entry.GetAttribute("align"));
+        Assert.Equal(Avalonia.Layout.HorizontalAlignment.Right, pane.AuthorEditor.EditorFor(entry)!.HorizontalAlignment);
+        Save(window, "author-alignment");
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void TopMenuItems_FitTheirText()
     {
         // Полоса меню Fluent была фиксированной высоты — пункты сжимались, текст срезался снизу.

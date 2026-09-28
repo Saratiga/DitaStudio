@@ -494,4 +494,73 @@ internal static partial class CoreChecks
             Check(package.MainDocumentPart.FooterParts.All(f => !f.Footer!.Descendants<W.Drawing>().Any()), "без найденной картинки подвала рисунка нет");
         });
     }
+
+    /// <summary>Абзацы DOCX с текстом, содержащим <paramref name="text"/>.</summary>
+    private static W.Paragraph DocxParagraph(W.Body body, string text) =>
+        body.Descendants<W.Paragraph>().First(p => !IsTocRow(p) && p.InnerText.Contains(text));
+
+    /// <summary>Итоговое выравнивание абзаца DOCX: прямое или из стиля (с цепочкой basedOn).</summary>
+    private static string? DocxJustification(WordprocessingDocument package, W.Paragraph paragraph)
+    {
+        if (paragraph.ParagraphProperties?.Justification?.Val?.ToString() is { } direct)
+        {
+            return direct;
+        }
+
+        var styles = package.MainDocumentPart!.StyleDefinitionsPart!.Styles!.Elements<W.Style>().ToDictionary(st => st.StyleId!.Value!);
+        for (var id = paragraph.ParagraphProperties?.ParagraphStyleId?.Val?.Value; id is not null && styles.TryGetValue(id, out var style); id = style.BasedOn?.Val?.Value)
+        {
+            if (style.StyleParagraphProperties?.Justification?.Val?.ToString() is { } value)
+            {
+                return value;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>П. 15: выравнивание абзацев, заголовков и ячеек — классы align-… и @align ячеек.</summary>
+    internal static void TextAlignmentTests()
+    {
+        Section("Выравнивание текста");
+
+        var p = DitaDocument.Parse("<p outputclass=\"keep align-left\">x</p>").Root;
+        Check(TextFormatting.SetToken(p, TextFormatting.AlignPrefix, "align-center") && p.GetAttribute("outputclass") == "keep align-center",
+            "класс группы заменяется, чужие классы остаются: " + p.GetAttribute("outputclass"));
+        Check(TextFormatting.AlignmentOf(p) == "center", "выравнивание читается из класса");
+        TextFormatting.SetToken(p, TextFormatting.AlignPrefix, null);
+        Check(p.GetAttribute("outputclass") == "keep", "null снимает класс группы");
+        Check(TextFormatting.Css.Contains(".align-center { text-align: center; }") && TextFormatting.Css.Contains(".size-10 { font-size: 10pt; }"),
+            "встроенный CSS классов оформления");
+
+        WithProject(new Dictionary<string, string>
+        {
+            ["a.dita"] = """
+<concept id="a"><title outputclass="align-center">Заголовок по центру</title><conbody>
+<p outputclass="align-right">Абзац справа</p><p>Абзац обычный</p>
+<table><tgroup cols="1"><tbody><row><entry align="center">Ячейка по центру</entry></row></tbody></tgroup></table>
+</conbody></concept>
+""",
+            ["guide.ditamap"] = "<map><title>Книга</title><topicref href=\"a.dita\"/></map>"
+        }, (root, project) =>
+        {
+            var outFile = Path.Combine(root, "book.docx");
+            var result = new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            CheckValidDocx(outFile, "DOCX с выравниванием");
+            Check(result.Warnings.Count == 0, "встроенный CSS оформления не даёт предупреждений: " + string.Join("; ", result.Warnings));
+            using (var package = WordprocessingDocument.Open(outFile, false))
+            {
+                var body = package.MainDocumentPart!.Document.Body!;
+                Check(DocxJustification(package, DocxParagraph(body, "Абзац справа")) == "right", "DOCX: абзац справа — " + DocxJustification(package, DocxParagraph(body, "Абзац справа")));
+                Check(DocxJustification(package, DocxParagraph(body, "Заголовок по центру")) == "center", "DOCX: заголовок по центру");
+                Check(DocxJustification(package, DocxParagraph(body, "Абзац обычный")) is null or "left" or "both", "DOCX: обычный абзац не выровнен по центру/справа");
+                Check(DocxJustification(package, DocxParagraph(body, "Ячейка по центру")) == "center", "DOCX: ячейка по @align");
+            }
+
+            var single = new HtmlPublisher(project).Publish(Path.Combine(root, "guide.ditamap"),
+                new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true });
+            var html = File.ReadAllText(single.EntryFile);
+            Check(html.Contains("class=\"align-right\"") && html.Contains(".align-right { text-align: right; }"), "HTML: класс и его CSS");
+        });
+    }
 }

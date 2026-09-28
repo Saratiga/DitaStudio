@@ -503,6 +503,26 @@ public partial class InsertViewModel : ObservableObject
             : "Разрыв страницы перед заголовком выключен.";
     }
 
+    /// <summary>Выравнивание текущего блока: align-left (по умолчанию — класс снимается), -center, -right, -justify.</summary>
+    [RelayCommand]
+    private void SetAlignment(string? token)
+    {
+        var author = _main.Current?.Author;
+        if (author?.CurrentNode is null)
+        {
+            _main.StatusText = "Поставьте курсор в абзац, заголовок или ячейку.";
+            return;
+        }
+
+        var value = token is null or "align-left" ? null : token;
+        if (author.SetCurrentBlockFormat(TextFormatting.AlignPrefix, value))
+        {
+            _main.Documents.RefreshAllTabTitles();
+            _main.RefreshAttributePanel?.Invoke();
+            _main.StatusText = "Выравнивание: " + TextFormatting.Alignments.First(a => a.Token == (value ?? "align-left")).Label.ToLowerInvariant() + ".";
+        }
+    }
+
     /// <summary>Заголовок «без номера»: не нумеруется и не попадает в оглавление (outputclass nonumber).</summary>
     [RelayCommand]
     private void ToggleUnnumberedTitle()
