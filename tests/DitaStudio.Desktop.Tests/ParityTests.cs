@@ -1,5 +1,6 @@
 using System.Xml.Linq;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.Interactivity;
@@ -111,6 +112,35 @@ public sealed class ParityTests : IDisposable
 
         ClickButton(about, "OK", "ОК", "Закрыть");
         Assert.Empty(window.OwnedWindows);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task PageSetupDialog_SavesPaperOrientationAndMargins()
+    {
+        var window = await OpenViaRecentProjectsAsync();
+        ClickMenu(window, "Публикация", "Параметры страницы…");
+        var dialog = Assert.Single(window.OwnedWindows);
+        Assert.Contains("Размер бумаги", AllText(dialog));
+
+        dialog.GetLogicalDescendants().OfType<ComboBox>().Single().SelectedItem = "A5";
+        dialog.GetLogicalDescendants().OfType<RadioButton>().Single(r => r.Content as string == "Альбомная").IsChecked = true;
+        dialog.GetLogicalDescendants().OfType<TextBox>().Single(t => Avalonia.Automation.AutomationProperties.GetName(t) == "Поле сверху, мм").Text = "12,5";
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains("A5, альбомная: 210 × 148 мм", AllText(dialog));
+
+        var frame = dialog.CaptureRenderedFrame();
+        var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+        Directory.CreateDirectory(dir);
+        frame!.Save(Path.Combine(dir, "dialog-page-setup.png"));
+
+        ClickButton(dialog, "ОК");
+        Dispatcher.UIThread.RunJobs();
+        var layout = window.ViewModel.Project!.DocxLayout;
+        Assert.Equal("A5", layout.PaperSize);
+        Assert.True(layout.Landscape);
+        Assert.Equal(12.5, layout.MarginTopMm);
+        Assert.Null(layout.MarginLeftMm);
         window.Close();
     }
 

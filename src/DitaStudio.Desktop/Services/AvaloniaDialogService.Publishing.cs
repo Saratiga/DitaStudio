@@ -295,9 +295,10 @@ public sealed partial class AvaloniaDialogService
 
         panel.Children.Add(Muted(new TextBlock
         {
-            Text = "Внешний вид текста — шрифты, цвета, отступы, рамки, таблицы, а также размер и поля " +
-                   "страницы (@page) — задаётся пользовательским CSS проекта («Публикация → Пользовательский CSS…») " +
-                   "и одинаково действует на HTML, PDF и DOCX. Здесь — то, чего CSS не умеет: устройство документа Word.",
+            Text = "Внешний вид текста — шрифты, цвета, отступы, рамки, таблицы — задаётся пользовательским CSS " +
+                   "проекта («Публикация → Пользовательский CSS…») и одинаково действует на HTML, PDF и DOCX. Размер " +
+                   "бумаги, ориентация и поля — «Публикация → Параметры страницы…». Здесь — то, чего CSS не умеет: " +
+                   "устройство документа Word.",
             TextWrapping = TextWrapping.Wrap
         }));
 
@@ -409,7 +410,13 @@ public sealed partial class AvaloniaDialogService
                 MirrorMargins = mirror.IsChecked == true,
                 GutterMm = gutterMm,
                 Language = (language.Text ?? string.Empty).Trim(),
-                AutoHyphenation = hyphenation.IsChecked == true
+                AutoHyphenation = hyphenation.IsChecked == true,
+                PaperSize = current.PaperSize,
+                Landscape = current.Landscape,
+                MarginTopMm = current.MarginTopMm,
+                MarginBottomMm = current.MarginBottomMm,
+                MarginLeftMm = current.MarginLeftMm,
+                MarginRightMm = current.MarginRightMm
             };
             result.Normalize();
         }));

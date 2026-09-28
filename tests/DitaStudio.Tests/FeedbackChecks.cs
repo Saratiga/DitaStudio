@@ -243,4 +243,52 @@ internal static partial class CoreChecks
         Check(TableCommands.Apply(Cell(doc, "v"), TableOperation.InsertColumnRight) is null, "properties: столбцы заданы моделью");
         Valid(doc, "properties");
     }
+
+    /// <summary>П. 2: размер бумаги, ориентация и поля — в DOCX и в @page для PDF.</summary>
+    internal static void PageSetupTests()
+    {
+        Section("Параметры страницы");
+
+        var layout = new DocxLayout { PaperSize = "a5", Landscape = true, MarginTopMm = 10, MarginLeftMm = 250, MarginRightMm = double.NaN };
+        layout.Normalize();
+        Check(layout.PaperSize == "A5", $"размер бумаги приводится к имени из списка: {layout.PaperSize}");
+        Check(layout.MarginLeftMm == 100 && layout.MarginRightMm is null, "поля ограничены 0–100 мм, NaN — «по CSS»");
+        var restored = DocxLayout.FromJson(layout.ToJson());
+        Check(restored.PaperSize == "A5" && restored.Landscape && restored.MarginTopMm == 10 && restored.MarginBottomMm is null,
+            "параметры страницы переживают сохранение в JSON");
+        Check(new DocxLayout { PaperSize = "Tabloid" }.Clone().PaperSize == string.Empty, "неизвестный размер — «как в CSS»");
+        Check(new DocxLayout().PageCss() == string.Empty, "без параметров страницы @page не добавляется");
+        Check(layout.PageCss().Contains("@page { size: A5 landscape; margin-top: 10mm; margin-left: 100mm; }"),
+            "правило @page: " + layout.PageCss());
+        Check(new DocxLayout { Landscape = true }.PageCss().Contains("size: landscape;"), "только ориентация — size: landscape");
+
+        WithProject(new Dictionary<string, string>
+        {
+            ["a.dita"] = "<concept id=\"a\"><title>A</title><conbody><p>Текст</p></conbody></concept>",
+            ["guide.ditamap"] = "<map><title>Книга</title><topicref href=\"a.dita\"/></map>"
+        }, (root, project) =>
+        {
+            project.SetDocxLayout(new DocxLayout { PaperSize = "A5", Landscape = true, MarginTopMm = 10, MarginBottomMm = 15 });
+            var outFile = Path.Combine(root, "book.docx");
+            new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            CheckValidDocx(outFile, "DOCX с параметрами страницы");
+            using (var package = WordprocessingDocument.Open(outFile, false))
+            {
+                var section = package.MainDocumentPart!.Document.Body!.Elements<W.SectionProperties>().Last();
+                var size = section.GetFirstChild<W.PageSize>()!;
+                var margin = section.GetFirstChild<W.PageMargin>()!;
+                Check(Math.Abs((int)size.Width!.Value - 11906) <= 2 && Math.Abs((int)size.Height!.Value - 8391) <= 2,
+                    $"DOCX: A5 альбомная — 210 × 148 мм: {size.Width.Value} × {size.Height.Value}");
+                Check(size.Orient?.Value == W.PageOrientationValues.Landscape, "DOCX: ориентация альбомная");
+                Check(Math.Abs(margin.Top!.Value - 567) <= 1 && Math.Abs(margin.Bottom!.Value - 850) <= 1,
+                    $"DOCX: поля 10 и 15 мм: {margin.Top.Value}, {margin.Bottom.Value}");
+                Check(Math.Abs((int)margin.Left!.Value - 1134) <= 1, $"DOCX: незаданное поле — по умолчанию 20 мм: {margin.Left.Value}");
+            }
+
+            var single = new HtmlPublisher(project).Publish(Path.Combine(root, "guide.ditamap"),
+                new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true });
+            Check(File.ReadAllText(single.EntryFile).Contains("@page { size: A5 landscape; margin-top: 10mm; margin-bottom: 15mm; }"),
+                "HTML для печати в PDF: правило @page из параметров страницы");
+        });
+    }
 }

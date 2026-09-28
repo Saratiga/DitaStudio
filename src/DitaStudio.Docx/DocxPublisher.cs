@@ -139,7 +139,7 @@ public sealed class DocxPublisher
                 renderer.RenderTopic(expanded, topicNode, body, Math.Clamp(item.Level, 1, 6), bookmarkName);
             }
 
-            body.Append(BuildSectionProperties(mainPart, styles.Page, layout, title, date));
+            body.Append(BuildSectionProperties(mainPart, WithLayoutPage(styles.Page, layout), layout, title, date));
 
             warnings.AddRange(renderOptions.Warnings);
             mainPart.Document.Save();
@@ -225,6 +225,26 @@ public sealed class DocxPublisher
     }
 
     // ================================================================ колонтитулы
+
+    /// <summary>Размер бумаги, ориентация и поля из параметров страницы проекта — поверх @page CSS.</summary>
+    private static DocxPageSetup WithLayoutPage(DocxPageSetup page, DocxLayout layout)
+    {
+        var (width, height) = (page.WidthPt, page.HeightPt);
+        if (DocxLayout.PaperSizesMm.TryGetValue(layout.PaperSize, out var paper))
+        {
+            (width, height) = (paper.Width * DocxPageSetup.MmToPt, paper.Height * DocxPageSetup.MmToPt);
+        }
+
+        if (layout.Landscape && width < height)
+        {
+            (width, height) = (height, width);
+        }
+
+        static double Pt(double? mm, double fallback) => mm is { } value ? value * DocxPageSetup.MmToPt : fallback;
+        return new DocxPageSetup(width, height,
+            Pt(layout.MarginTopMm, page.TopPt), Pt(layout.MarginRightMm, page.RightPt),
+            Pt(layout.MarginBottomMm, page.BottomPt), Pt(layout.MarginLeftMm, page.LeftPt));
+    }
 
     private static W.SectionProperties BuildSectionProperties(MainDocumentPart mainPart, DocxPageSetup page,
         DocxLayout layout, string title, string date)

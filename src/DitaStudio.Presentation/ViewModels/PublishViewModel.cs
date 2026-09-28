@@ -300,6 +300,33 @@ public partial class PublishViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task PageSetup()
+    {
+        var project = _main.Project;
+        if (project is null)
+        {
+            await _main.Dialogs.MessageAsync("Параметры страницы", "Сначала откройте папку проекта.");
+            return;
+        }
+
+        var result = await _main.Dialogs.PageSetupAsync(project);
+        if (result is null)
+        {
+            return;
+        }
+
+        try
+        {
+            project.SetDocxLayout(result);
+            _main.StatusText = "Параметры страницы сохранены — применятся при следующем экспорте в DOCX и PDF.";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            await _main.Dialogs.MessageAsync("Параметры страницы", $"Не удалось сохранить настройки: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
     private async Task CustomCss()
     {
         var project = _main.Project;

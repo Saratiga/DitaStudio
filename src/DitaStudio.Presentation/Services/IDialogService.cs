@@ -63,6 +63,9 @@ public interface IDialogService
 
     Task<DocxLayout?> DocxLayoutSettingsAsync(DitaProject project);
 
+    /// <summary>Размер бумаги, ориентация и поля (DOCX и PDF); без своей реализации — общий диалог оформления.</summary>
+    Task<DocxLayout?> PageSetupAsync(DitaProject project) => DocxLayoutSettingsAsync(project);
+
     /// <summary>Окно построчного сравнения двух файлов со слиянием.</summary>
     Task ShowDiffAsync(string leftPath, string rightPath);
 }

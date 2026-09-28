@@ -35,6 +35,10 @@
         выравнивание, отступы, межстрочный интервал, рамки и разрывы страниц. Размер и поля
         страницы задаёт правило <codeph>@page</codeph>, правила только для Word — блок
         <codeph>@media docx</codeph>, который браузер пропускает.</p>
+      <p>Размер бумаги, ориентацию и поля проще задать без CSS: <menucascade>
+        <uicontrol>Публикация</uicontrol><uicontrol>Параметры страницы…</uicontrol></menucascade>.
+        Схема листа в диалоге сразу показывает результат; заданное там действует на DOCX и PDF и
+        главнее правила <codeph>@page</codeph>, пустые поля берутся из CSS.</p>
       <codeblock>@page { size: A4; margin: 20mm 15mm 20mm 25mm; }
 @media docx {
   body { font-family: Georgia; font-size: 12pt; }
