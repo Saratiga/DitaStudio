@@ -1,3 +1,4 @@
+using System.Globalization;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
@@ -59,14 +60,9 @@ public sealed partial class DocxRenderer
 
         var table = new W.Table();
         table.Append(TableProperties());
-
-        var grid = new W.TableGrid();
-        for (var i = 0; i < numCols; i++)
-        {
-            grid.Append(new W.GridColumn());
-        }
-
-        table.Append(grid);
+        var outerFractions = _columnFractions; // вложенная таблица в ячейке не должна сбить внешнюю
+        _columnFractions = TableLayout.CalsFractions(tgroup) is { } fractions && fractions.Length == numCols ? fractions : null;
+        table.Append(Grid(numCols));
 
         var pending = new List<(int Start, int End, int Remaining)>();
 
@@ -88,6 +84,7 @@ public sealed partial class DocxRenderer
             }
         }
 
+        _columnFractions = outerFractions;
         return table;
     }
 
@@ -138,25 +135,21 @@ public sealed partial class DocxRenderer
         placements.Sort((a, b) => a.Col.CompareTo(b.Col));
 
         var tr = new W.TableRow();
-        if (isHeader)
+        if (RowProperties(row, isHeader, cantSplit: !isHeader && !allowRowSplit) is { } rowProperties)
         {
-            tr.Append(new W.TableRowProperties(new W.TableHeader()));
-        }
-        else if (!allowRowSplit)
-        {
-            tr.Append(new W.TableRowProperties(new W.CantSplit()));
+            tr.Append(rowProperties);
         }
 
         foreach (var placement in placements)
         {
             if (placement.Entry is null)
             {
-                tr.Append(ContinuationCell(placement.Span));
+                tr.Append(ContinuationCell(placement.Col, placement.Span));
             }
             else
             {
                 var isSpanStart = newSpans.Any(sp => ReferenceEquals(sp.Entry, placement.Entry));
-                tr.Append(RealCell(placement.Entry, placement.Span, isSpanStart, isHeader));
+                tr.Append(RealCell(placement.Entry, placement.Col, placement.Span, isSpanStart, isHeader));
             }
         }
 
@@ -194,9 +187,14 @@ public sealed partial class DocxRenderer
         return col;
     }
 
-    private W.TableCell RealCell(DitaNode entry, int span, bool isSpanStart, bool isHeader)
+    private W.TableCell RealCell(DitaNode entry, int col, int span, bool isSpanStart, bool isHeader)
     {
         var props = new W.TableCellProperties();
+        if (CellWidth(col, span) is { } width)
+        {
+            props.Append(width);
+        }
+
         if (span > 1)
         {
             props.Append(new W.GridSpan { Val = span });
@@ -249,10 +247,15 @@ public sealed partial class DocxRenderer
         return new W.TableCell(props, paragraph);
     }
 
-    private static W.TableCell ContinuationCell(int span)
+    private W.TableCell ContinuationCell(int col, int span)
     {
-        // Порядок в tcPr задан схемой: gridSpan раньше vMerge.
+        // Порядок в tcPr задан схемой: tcW, gridSpan, vMerge.
         var props = new W.TableCellProperties();
+        if (CellWidth(col, span) is { } width)
+        {
+            props.Append(width);
+        }
+
         if (span > 1)
         {
             props.Append(new W.GridSpan { Val = span });
@@ -283,14 +286,9 @@ public sealed partial class DocxRenderer
 
         var table = new W.Table();
         table.Append(TableProperties());
-
-        var grid = new W.TableGrid();
-        for (var i = 0; i < numCols; i++)
-        {
-            grid.Append(new W.GridColumn());
-        }
-
-        table.Append(grid);
+        var outerFractions = _columnFractions;
+        _columnFractions = TableLayout.SimpleFractions(node, numCols) is { } fractions && fractions.Length == numCols ? fractions : null;
+        table.Append(Grid(numCols));
 
         var head = node.ElementChildren().FirstOrDefault(e => e.Name is "sthead" or "prophead" or "chhead");
         List<string>? headLabels = node.Name switch
@@ -302,10 +300,11 @@ public sealed partial class DocxRenderer
 
         if (head is not null)
         {
-            var tr = new W.TableRow(new W.TableRowProperties(new W.TableHeader()));
+            var tr = new W.TableRow(RowProperties(head, isHeader: true, cantSplit: false)!);
+            var column = 0;
             foreach (var cell in head.ElementChildren().Where(c => headNames.Contains(c.Name)))
             {
-                tr.Append(Cell(RenderInlineRuns(cell), isHeader: true));
+                tr.Append(Cell(RenderInlineRuns(cell), isHeader: true, column++));
             }
 
             table.Append(tr);
@@ -313,9 +312,10 @@ public sealed partial class DocxRenderer
         else if (headLabels is not null)
         {
             var tr = new W.TableRow(new W.TableRowProperties(new W.TableHeader()));
+            var column = 0;
             foreach (var label in headLabels)
             {
-                tr.Append(Cell(new OpenXmlElement[] { new W.Run(new W.RunProperties(new W.Bold()), new W.Text(label)) }, isHeader: true));
+                tr.Append(Cell(new OpenXmlElement[] { new W.Run(new W.RunProperties(new W.Bold()), new W.Text(label)) }, isHeader: true, column++));
             }
 
             table.Append(tr);
@@ -324,14 +324,73 @@ public sealed partial class DocxRenderer
         foreach (var row in rows)
         {
             var tr = new W.TableRow();
+            if (RowProperties(row, isHeader: false, cantSplit: false) is { } rowProperties)
+            {
+                tr.Append(rowProperties);
+            }
+
+            var column = 0;
             foreach (var cell in row.ElementChildren().Where(c => rowNames.Contains(c.Name)))
             {
-                tr.Append(Cell(RenderInlineRuns(cell), isHeader: false));
+                tr.Append(Cell(RenderInlineRuns(cell), isHeader: false, column++));
             }
 
             table.Append(tr);
         }
 
+        _columnFractions = outerFractions;
         return table;
+    }
+
+    // Доли ширины столбцов текущей таблицы (из colwidth / relcolwidth) — null, если не заданы.
+    private double[]? _columnFractions;
+
+    /// <summary>Сетка таблицы: при заданных долях — ширины столбцов от типовой ширины текста A4.</summary>
+    private W.TableGrid Grid(int columns)
+    {
+        const double textWidthTwips = 9638; // 170 мм — таблица всё равно растягивается на 100 %
+        var grid = new W.TableGrid();
+        for (var i = 0; i < columns; i++)
+        {
+            grid.Append(_columnFractions is { } fractions
+                ? new W.GridColumn { Width = ((int)Math.Round(fractions[i] * textWidthTwips)).ToString(CultureInfo.InvariantCulture) }
+                : new W.GridColumn());
+        }
+
+        return grid;
+    }
+
+    /// <summary>Ширина ячейки — доля ширины таблицы (в пятидесятых долях процента, как требует OOXML).</summary>
+    private W.TableCellWidth? CellWidth(int col, int span)
+    {
+        if (_columnFractions is not { } fractions || col < 0 || col >= fractions.Length)
+        {
+            return null;
+        }
+
+        var share = fractions.Skip(col).Take(Math.Max(1, span)).Sum();
+        return new W.TableCellWidth { Type = W.TableWidthUnitValues.Pct, Width = ((int)Math.Round(share * 5000)).ToString(CultureInfo.InvariantCulture) };
+    }
+
+    /// <summary>Свойства строки в порядке схемы: cantSplit, trHeight (row-height-Nmm), tblHeader.</summary>
+    private static W.TableRowProperties? RowProperties(DitaNode? row, bool isHeader, bool cantSplit)
+    {
+        var children = new List<OpenXmlElement>();
+        if (cantSplit)
+        {
+            children.Add(new W.CantSplit());
+        }
+
+        if (row is not null && TableLayout.RowHeightMm(row) is { } mm)
+        {
+            children.Add(new W.TableRowHeight { Val = (uint)Math.Round(mm * 1440 / 25.4), HeightType = W.HeightRuleValues.AtLeast });
+        }
+
+        if (isHeader)
+        {
+            children.Add(new W.TableHeader());
+        }
+
+        return children.Count == 0 ? null : new W.TableRowProperties(children);
     }
 }

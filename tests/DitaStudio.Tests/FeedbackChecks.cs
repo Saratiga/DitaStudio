@@ -662,4 +662,58 @@ internal static partial class CoreChecks
             Check(File.ReadAllText(single.EntryFile).Contains(".color-red { color: #C00000; }"), "HTML: CSS цвета");
         });
     }
+
+    /// <summary>П. 8б: ширина столбцов (доли) и высота строк (row-height-Nmm) в публикации.</summary>
+    internal static void TableResizeTests()
+    {
+        Section("Ширина столбцов и высота строк");
+
+        var fractions = TableLayout.Fractions(new[] { "1*", "3*" })!;
+        Check(Math.Abs(fractions[0] - 0.25) < 1e-9 && Math.Abs(fractions[1] - 0.75) < 1e-9, "доли 1*:3*");
+        Check(TableLayout.Fractions(new[] { "20mm", "60mm" }) is { } abs && Math.Abs(abs[0] - 0.25) < 1e-6, "абсолютные — пропорционально");
+        Check(TableLayout.Fractions(new[] { null, "" }) is null, "без ширин — null");
+        var tgroup = DitaDocument.Parse("<tgroup cols=\"2\"><tbody><row><entry>a</entry><entry>b</entry></row></tbody></tgroup>").Root;
+        TableLayout.SetCalsWidths(tgroup, new[] { 150.0, 50.0 });
+        Check(string.Join(",", tgroup.ElementChildren().Where(e => e.Name == "colspec").Select(c => c.GetAttribute("colwidth"))) == "75*,25*",
+            "запись долей создаёт colspec и пишет «N*»");
+        var row = tgroup.Descendants().First(n => n.Name == "row");
+        TableLayout.SetRowHeight(row, 12.4);
+        Check(row.GetAttribute("outputclass") == "row-height-12mm" && TableLayout.RowHeightMm(row) == 12, "высота строки — класс row-height-12mm");
+
+        WithProject(new Dictionary<string, string>
+        {
+            ["a.dita"] = """
+<concept id="a"><title>T</title><conbody>
+<table><tgroup cols="2"><colspec colname="c1" colwidth="1*"/><colspec colname="c2" colwidth="3*"/><tbody>
+<row outputclass="row-height-15mm"><entry>Узкий</entry><entry>Широкий</entry></row>
+<row><entry namest="c1" nameend="c2">Объединённая</entry></row>
+</tbody></tgroup></table>
+<simpletable relcolwidth="2* 1*"><strow><stentry>Левый</stentry><stentry>Правый</stentry></strow></simpletable>
+</conbody></concept>
+""",
+            ["guide.ditamap"] = "<map><title>Книга</title><topicref href=\"a.dita\"/></map>"
+        }, (root, project) =>
+        {
+            var outFile = Path.Combine(root, "book.docx");
+            new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            CheckValidDocx(outFile, "DOCX с шириной столбцов и высотой строк");
+            using (var package = WordprocessingDocument.Open(outFile, false))
+            {
+                var body = package.MainDocumentPart!.Document.Body!;
+                string? Width(string text) => body.Descendants<W.TableCell>().First(c => c.InnerText == text).TableCellProperties?.TableCellWidth?.Width?.Value;
+                Check(Width("Узкий") == "1250" && Width("Широкий") == "3750", $"DOCX: ячейки 25 % и 75 %: {Width("Узкий")}, {Width("Широкий")}");
+                Check(Width("Объединённая") == "5000", "DOCX: объединённая ячейка — вся ширина");
+                Check(Width("Левый") == "3333" && Width("Правый") == "1667", $"DOCX: simpletable 2:1: {Width("Левый")}, {Width("Правый")}");
+                var height = body.Descendants<W.TableRow>().First(r => r.InnerText.Contains("Узкий")).TableRowProperties?.GetFirstChild<W.TableRowHeight>();
+                Check(height?.Val?.Value == 850 && height.HeightType?.Value == W.HeightRuleValues.AtLeast, "DOCX: строка не ниже 15 мм");
+            }
+
+            var single = new HtmlPublisher(project).Publish(Path.Combine(root, "guide.ditamap"),
+                new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true });
+            var html = File.ReadAllText(single.EntryFile);
+            Check(html.Contains("<col style=\"width:25%\" />") && html.Contains("<col style=\"width:75%\" />"), "HTML: столбцы CALS в процентах");
+            Check(html.Contains("<col style=\"width:66.67%\" />"), "HTML: столбцы simpletable в процентах");
+            Check(html.Contains("<tr style=\"height:15mm\">"), "HTML: высота строки");
+        });
+    }
 }

@@ -604,6 +604,53 @@ public sealed class AuthorViewTests
         window.Close();
     }
 
+    [AvaloniaFact]
+    public void TableBorders_DragResizesColumnsAndRows()
+    {
+        // Замечание: растягивать столбцы и строки мышью, без правки XML.
+        var (window, author, document, undo) = Show(
+            "<concept id=\"c\"><title>Таблица</title><conbody><table><tgroup cols=\"2\">" +
+            "<colspec colname=\"c1\"/><colspec colname=\"c2\"/><tbody>" +
+            "<row><entry>Параметр</entry><entry>Значение</entry></row>" +
+            "<row><entry>a</entry><entry>b</entry></row></tbody></tgroup></table></conbody></concept>");
+        var handles = author.GetVisualDescendants().OfType<Border>().Where(b => b.Tag is "column-handle" or "row-handle").ToList();
+        var column = handles.Single(h => h.Tag is "column-handle");
+        var grid = (Grid)column.Parent!;
+        var before = grid.ColumnDefinitions.Select(d => d.ActualWidth).ToArray();
+        Assert.Equal(before[0], before[1], 1);
+
+        window.CaptureRenderedFrame(); // проверка попадания идёт по отрисованному кадру
+        var at = column.TranslatePoint(new Point(3, 10), window)!.Value;
+        window.MouseDown(at, MouseButton.Left, RawInputModifiers.None);
+        window.MouseMove(at + new Vector(100, 0), RawInputModifiers.LeftMouseButton);
+        window.MouseUp(at + new Vector(100, 0), MouseButton.Left, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+
+        var colspecs = document.Root.Descendants().Where(n => n.Name == "colspec").ToList();
+        var widths = colspecs.Select(c => double.Parse(c.GetAttribute("colwidth")!.TrimEnd('*'), System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+        Assert.True(widths[0] > widths[1], $"первый столбец шире: {string.Join(", ", widths)}");
+        Assert.Equal(100, widths.Sum(), 1);
+        Assert.Contains("Ширина столбцов", undo);
+        Assert.True(document.IsDirty);
+
+        // Нижняя граница первой строки — ниже; высота пишется классом.
+        window.CaptureRenderedFrame();
+        var rowHandle = author.GetVisualDescendants().OfType<Border>().First(b => b.Tag is "row-handle");
+        var rowAt = rowHandle.TranslatePoint(new Point(40, 3), window)!.Value;
+        window.MouseDown(rowAt, MouseButton.Left, RawInputModifiers.None);
+        window.MouseMove(rowAt + new Vector(0, 40), RawInputModifiers.LeftMouseButton);
+        window.MouseUp(rowAt + new Vector(0, 40), MouseButton.Left, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        var firstRow = document.Root.Descendants().First(n => n.Name == "row");
+        Assert.Matches(@"^row-height-\d+mm$", firstRow.GetAttribute("outputclass"));
+        Assert.Contains("Высота строки", undo);
+
+        // Двойной щелчок по нижней границе — высота снова по содержимому.
+        rowHandle.RaiseEvent(new Avalonia.Input.TappedEventArgs(InputElement.DoubleTappedEvent, null!));
+        Assert.Null(firstRow.GetAttribute("outputclass"));
+        window.Close();
+    }
+
     private const char InlineChar = Presentation.Authoring.InlineContent.ChipChar;
 
     [AvaloniaTheory]

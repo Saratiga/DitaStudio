@@ -84,6 +84,7 @@ public sealed class CoreTests
     [Fact] public void TextAlignmentTests() => Run(CoreChecks.TextAlignmentTests);
     [Fact] public void TextSizeTests() => Run(CoreChecks.TextSizeTests);
     [Fact] public void TextColorTests() => Run(CoreChecks.TextColorTests);
+    [Fact] public void TableResizeTests() => Run(CoreChecks.TableResizeTests);
 
     private void Run(Action section)
     {
