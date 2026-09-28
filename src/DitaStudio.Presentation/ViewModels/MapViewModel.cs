@@ -509,6 +509,41 @@ public partial class MapViewModel : ObservableObject
         _main.StatusText = $"Файл {file.RelativePath} удалён.";
     }
 
+    /// <summary>
+    /// Флажок у строки карты: снят — топик (и вся ветка) не публикуется ни в один формат
+    /// (processing-role="resource-only", ключи и conref из него работают); установлен — снова
+    /// публикуется (атрибут снимается, а если ветка выше исключена — "normal").
+    /// </summary>
+    [RelayCommand]
+    private void TogglePublished(MapTreeNode? node)
+    {
+        if (node is not { CanExclude: true } || OpenMapPane() is not { } pane)
+        {
+            return;
+        }
+
+        var publish = !node.IsPublished;
+        var element = node.Item.Node;
+        pane.PushUndo(publish ? "Включение топика в публикацию" : "Исключение топика из публикации");
+        if (publish)
+        {
+            element.RemoveAttribute("processing-role");
+            if (node.Item.IsResourceOnly)
+            {
+                element.SetAttribute("processing-role", "normal"); // исключена ветка выше
+            }
+        }
+        else
+        {
+            element.SetAttribute("processing-role", "resource-only");
+        }
+
+        AfterMapEdit(pane);
+        _main.StatusText = publish
+            ? $"«{node.Title}» снова публикуется."
+            : $"«{node.Title}» не публикуется (ни в HTML, ни в PDF, ни в DOCX); ссылки и ключи из него работают.";
+    }
+
     [RelayCommand]
     private void ExpandAll() => SetExpanded(true);
 

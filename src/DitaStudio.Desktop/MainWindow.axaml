@@ -321,12 +321,25 @@
                                 <Style Selector="TextBlock.broken">
                                     <Setter Property="Foreground" Value="{DynamicResource Danger}" />
                                 </Style>
+                                <Style Selector="CheckBox.publish">
+                                    <Setter Property="MinWidth" Value="0" />
+                                    <Setter Property="MinHeight" Value="0" />
+                                    <Setter Property="Padding" Value="0" />
+                                </Style>
+                                <Style Selector="TextBlock.excluded">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextDisabled}" />
+                                    <Setter Property="TextDecorations" Value="Strikethrough" />
+                                </Style>
                             </TreeView.Styles>
                             <TreeView.ItemTemplate>
                                 <TreeDataTemplate DataType="vm:MapTreeNode" ItemsSource="{Binding Children}">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Icon}" Margin="0,0,6,0" />
-                                        <TextBlock Text="{Binding Title}" Classes.broken="{Binding IsBroken}" />
+                                        <LayoutTransformControl LayoutTransform="scale(0.8)" IsVisible="{Binding CanExclude}" VerticalAlignment="Center" Margin="0,0,4,0">
+                                            <CheckBox Classes="publish" IsChecked="{Binding IsPublished, Mode=OneWay}"
+                                                      ToolTip.Tip="Публиковать: снимите флажок, чтобы топик не попадал в HTML, PDF и DOCX" />
+                                        </LayoutTransformControl>
+                                        <TextBlock Text="{Binding Icon}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Title}" Classes.broken="{Binding IsBroken}" Classes.excluded="{Binding IsExcluded}" VerticalAlignment="Center" />
                                         <TextBlock Text="{Binding ElementName}" FontFamily="{DynamicResource MonoFont}" FontSize="10"
                                                    Foreground="{DynamicResource TagBrush}" VerticalAlignment="Center" />
                                     </StackPanel>

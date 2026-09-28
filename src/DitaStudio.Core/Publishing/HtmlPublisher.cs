@@ -433,13 +433,18 @@ public sealed class HtmlPublisher
         return sb.ToString();
     }
 
+    private static bool HasPublished(MapItem item) =>
+        item.Children.Any(c => !c.IsResourceOnly && c.TargetPath is not null || HasPublished(c));
+
     private static void AppendTocItem(
         StringBuilder sb,
         MapItem item,
         IReadOnlyDictionary<string, string> fileNames,
         MapItem? current)
     {
-        if (item.IsResourceOnly && item.Children.Count == 0)
+        // Только ресурс (в том числе исключённая флажком ветка) без публикуемых потомков — в
+        // навигации нечего показывать.
+        if (item.IsResourceOnly && !HasPublished(item))
         {
             return;
         }

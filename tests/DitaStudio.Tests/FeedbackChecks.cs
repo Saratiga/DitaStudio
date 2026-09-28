@@ -387,4 +387,57 @@ internal static partial class CoreChecks
                 "HTML: оглавление со своим названием, без заголовков без номера и toc=\"no\"");
         });
     }
+
+    /// <summary>П. 22: флажок «публиковать» у строки карты — processing-role с наследованием.</summary>
+    internal static void ExcludeFromPublicationTests()
+    {
+        Section("Исключение топиков из публикации");
+
+        WithProject(new Dictionary<string, string>
+        {
+            ["a.dita"] = "<concept id=\"a\"><title>Глава А</title><conbody><p>Текст А</p></conbody></concept>",
+            ["draft.dita"] = "<concept id=\"draft\"><title>Черновик</title><conbody><p id=\"shared\">Общий абзац</p></conbody></concept>",
+            ["sub.dita"] = "<concept id=\"sub\"><title>Подраздел черновика</title><conbody><p>Текст П</p></conbody></concept>",
+            ["back.dita"] = "<concept id=\"back\"><title>Возвращённый</title><conbody><p>Текст В</p></conbody></concept>",
+            ["b.dita"] = "<concept id=\"b\"><title>Глава Б</title><conbody><p conref=\"draft.dita#draft/shared\"/></conbody></concept>",
+            ["guide.ditamap"] = """
+<map><title>Книга</title>
+  <topicref href="a.dita"/>
+  <topicref href="draft.dita" processing-role="resource-only">
+    <topicref href="sub.dita"/>
+    <topicref href="back.dita" processing-role="normal"/>
+  </topicref>
+  <topicref href="b.dita"/>
+</map>
+"""
+        }, (root, project) =>
+        {
+            var tree = MapTree.Build(project, Path.Combine(root, "guide.ditamap"));
+            var order = string.Join(",", tree.PublicationOrder.Select(i => Path.GetFileNameWithoutExtension(i.TargetPath)));
+            Check(order == "a,back,b", "исключение наследуется ветке, потомок может вернуть normal: " + order);
+            Check(tree.Items.Single(i => i.Href == "sub.dita").IsExcluded, "подраздел исключённой ветки помечен исключённым");
+
+            var outFile = Path.Combine(root, "book.docx");
+            new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            using (var package = WordprocessingDocument.Open(outFile, false))
+            {
+                var text = package.MainDocumentPart!.Document.Body!.InnerText;
+                Check(!text.Contains("Черновик") && !text.Contains("Текст П") && text.Contains("Возвращённый"), "DOCX: исключённых топиков нет");
+                Check(text.Contains("Общий абзац"), "DOCX: conref из исключённого топика по-прежнему работает");
+            }
+
+            var site = new HtmlPublisher(project).Publish(Path.Combine(root, "guide.ditamap"),
+                new PublishOptions { OutputDirectory = Path.Combine(root, "site") });
+            var index = File.ReadAllText(site.EntryFile);
+            Check(!site.Files.Any(f => f.Contains("draft", StringComparison.OrdinalIgnoreCase) || f.Contains("sub", StringComparison.OrdinalIgnoreCase)),
+                "сайт: страниц исключённых топиков нет: " + string.Join(", ", site.Files.Select(Path.GetFileName)));
+            Check(!index.Contains(">Черновик</a>") && !index.Contains("Подраздел черновика"),
+                "сайт: исключённые топики не в навигации (у ветки с возвращённым потомком — только подпись без ссылки)");
+
+            var single = new HtmlPublisher(project).Publish(Path.Combine(root, "guide.ditamap"),
+                new PublishOptions { OutputDirectory = Path.Combine(root, "single"), SingleFile = true });
+            var html = File.ReadAllText(single.EntryFile);
+            Check(!html.Contains("Черновик") && html.Contains("Общий абзац"), "единый HTML (и PDF): исключённых нет, conref работает");
+        });
+    }
 }

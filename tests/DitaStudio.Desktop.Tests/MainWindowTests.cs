@@ -317,6 +317,35 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task MapCheckbox_ExcludesTopicFromPublication()
+    {
+        var (window, vm) = await OpenAsync();
+        static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
+        MapTreeNode Row() => vm.Map.Tree.SelectMany(All).First(n => n.Item.TargetPath?.EndsWith("settings.dita") == true);
+        Assert.True(Row().IsPublished);
+        Assert.False(vm.Map.Tree[0].CanExclude);
+
+        window.GetLogicalDescendants().OfType<TabControl>().Single(t => t.Name == "LeftTabs").SelectedIndex = 1;
+        Dispatcher.UIThread.RunJobs();
+        var boxes = window.GetVisualDescendants().OfType<CheckBox>().Where(c => c.DataContext is MapTreeNode).ToList();
+        var box = boxes.Single(c => ReferenceEquals(c.DataContext, Row()));
+        box.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        var mapDoc = vm.Documents.Tabs.Single(t => t.FullPath.EndsWith("guide.ditamap")).Pane.Document;
+        var topicref = mapDoc.Root.DescendantsAndSelf().First(n => n.GetAttribute("href") == "reference/settings.dita");
+        Assert.Equal("resource-only", topicref.GetAttribute("processing-role"));
+        Assert.False(Row().IsPublished);
+        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), t => t.Classes.Contains("excluded") && t.Text == Row().Title);
+        Save(window, "map-excluded-topic");
+
+        vm.Map.TogglePublishedCommand.Execute(Row());
+        Assert.Null(topicref.GetAttribute("processing-role"));
+        Assert.True(Row().IsPublished);
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void TopMenuItems_FitTheirText()
     {
         // Полоса меню Fluent была фиксированной высоты — пункты сжимались, текст срезался снизу.
