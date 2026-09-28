@@ -315,6 +315,32 @@ public sealed class InlineContent
         offset = Math.Clamp(offset, 0, _text.Length);
         removedLength = Math.Clamp(removedLength, 0, _text.Length - offset);
 
+        // Редактор может заменить кусок шире настоящей правки (выделение поверх границы
+        // элемента, вставка, автозамена). Совпадающие начало и конец остаются со своим
+        // оформлением — иначе весь кусок получил бы одну цепочку и, например, <fn> внутри
+        // него исчезла бы, а её текст слился с абзацем.
+        if (removedLength > 0 && inserted.Length > 0)
+        {
+            var max = Math.Min(removedLength, inserted.Length);
+            var prefix = 0;
+            while (prefix < max && _text[offset + prefix] == inserted[prefix])
+            {
+                prefix++;
+            }
+
+            var suffix = 0;
+            while (suffix < max - prefix && _text[offset + removedLength - 1 - suffix] == inserted[inserted.Length - 1 - suffix])
+            {
+                suffix++;
+            }
+
+            if (prefix + suffix > 0)
+            {
+                Replace(offset + prefix, removedLength - prefix - suffix, inserted.Substring(prefix, inserted.Length - prefix - suffix));
+                return;
+            }
+        }
+
         // Замена выделения (исправление слова, набор поверх) сохраняет его оформление.
         var replacedChain = removedLength > 0 ? _chains[offset].TextChain : null;
         if (removedLength > 0)

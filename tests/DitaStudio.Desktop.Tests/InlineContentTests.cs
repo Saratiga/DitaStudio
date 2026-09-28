@@ -45,6 +45,41 @@ public sealed class InlineContentTests
     }
 
     [Fact]
+    public void WideReplace_KeepsFootnoteAndFormattingOfUnchangedText()
+    {
+        // Замечание: правка предложения в «Авторе» теряла <fn> — редактор заменял кусок строки
+        // целиком, и весь он получал оформление первого символа.
+        const string source = "<p>Версия на ЖКИ<fn>Вывод на ЖКИ по умолчанию.</fn> см. рисунок 93.</p>";
+
+        var p = Block(source);
+        var content = InlineContent.FromNode(p);
+        content.Replace(0, content.Text.Length, "Q" + content.Text);
+        content.WriteBack();
+        Assert.Equal("<p>QВерсия на ЖКИ<fn>Вывод на ЖКИ по умолчанию.</fn> см. рисунок 93.</p>", Xml(p));
+
+        p = Block(source);
+        content = InlineContent.FromNode(p);
+        var start = content.Text.IndexOf("ЖКИВывод", StringComparison.Ordinal);
+        content.Replace(start, 12, content.Text.Substring(start, 12).Replace("Вывод", "Показ"));
+        content.WriteBack();
+        Assert.Equal("<p>Версия на ЖКИ<fn>Показ на ЖКИ по умолчанию.</fn> см. рисунок 93.</p>", Xml(p));
+
+        // Исправление слова целиком внутри полужирного остаётся полужирным.
+        p = Block("<p>a <b>helo</b> z</p>");
+        content = InlineContent.FromNode(p);
+        content.Replace(2, 4, "hello");
+        content.WriteBack();
+        Assert.Equal("<p>a <b>hello</b> z</p>", Xml(p));
+
+        // Замена на совсем другой текст — как раньше, с оформлением заменённого.
+        p = Block("<p>a <b>bold</b> z</p>");
+        content = InlineContent.FromNode(p);
+        content.Replace(2, 4, "жирн");
+        content.WriteBack();
+        Assert.Equal("<p>a <b>жирн</b> z</p>", Xml(p));
+    }
+
+    [Fact]
     public void Wrap_PutsNewElementUnderCommonAncestors()
     {
         var p = Block("<p>xx <b>yy</b> zz</p>");
