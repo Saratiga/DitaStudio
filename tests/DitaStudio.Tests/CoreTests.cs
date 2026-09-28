@@ -77,6 +77,7 @@ public sealed class CoreTests
     [Fact] public void FileReferencesTests() => Run(CoreChecks.FileReferencesTests);
     [Fact] public void TableEditingTests() => Run(CoreChecks.TableEditingTests);
     [Fact] public void PageSetupTests() => Run(CoreChecks.PageSetupTests);
+    [Fact] public void TocTests() => Run(CoreChecks.TocTests);
 
     private void Run(Action section)
     {

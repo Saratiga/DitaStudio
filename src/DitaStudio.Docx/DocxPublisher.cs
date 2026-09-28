@@ -88,6 +88,10 @@ public sealed class DocxPublisher
         var topics = tree.PublicationOrder.ToList();
         var bookmarks = AssignBookmarks(topics);
         var title = tree.Root.Title;
+        var tocEntries = topics
+            .Where(i => i.TargetPath is not null && Math.Clamp(i.Level, 1, 6) <= layout.TocDepth && TocRules.Includes(_project, i))
+            .Select(i => new TocEntry(Math.Clamp(i.Level, 1, 6), i.Title, bookmarks[BookmarkKey(i.TargetPath!, i.TargetTopicId)]))
+            .ToList();
 
         // Документ собирается во временный файл рядом и подменяет прежний, только когда готов
         // целиком: сбой посреди сборки не оставит вместо прошлого DOCX обрезанный.
@@ -104,7 +108,7 @@ public sealed class DocxPublisher
             AddSettings(wordDocument, layout);
             SetDocumentProperties(wordDocument, title, layout);
 
-            WriteFrontMatter(body, title, date, labels, layout);
+            WriteFrontMatter(body, title, date, labels, layout, tocEntries);
 
             var renderOptions = new DocxRenderOptions
             {
@@ -162,7 +166,11 @@ public sealed class DocxPublisher
 
     // ============================================================ титул и оглавление
 
-    private static void WriteFrontMatter(W.Body body, string title, string date, Labels labels, DocxLayout layout)
+    /// <summary>Строка оглавления: уровень, текст, закладка топика.</summary>
+    private sealed record TocEntry(int Level, string Text, string Bookmark);
+
+    private static void WriteFrontMatter(W.Body body, string title, string date, Labels labels, DocxLayout layout,
+        IReadOnlyList<TocEntry> tocEntries)
     {
         var any = false;
         if (layout.TitlePage)
@@ -194,7 +202,10 @@ public sealed class DocxPublisher
             }
 
             body.Append(StyledParagraph(DocxStyleCatalog.TocHeading, labels.Contents));
-            body.Append(BuildTocParagraph(layout.TocDepth));
+            foreach (var paragraph in BuildTocParagraphs(layout.TocDepth, tocEntries))
+            {
+                body.Append(paragraph);
+            }
             any = true;
         }
 
@@ -213,15 +224,49 @@ public sealed class DocxPublisher
     private static W.Paragraph PageBreakParagraph() =>
         new(new W.Run(new W.Break { Type = W.BreakValues.Page }));
 
-    private static W.Paragraph BuildTocParagraph(int depth)
+    /// <summary>
+    /// Поле TOC, заранее заполненное строками-ссылками на топики: оглавление видно сразу — в
+    /// LibreOffice, просмотрщиках, в Word до обновления полей; Word при открытии пересобирает его
+    /// с номерами страниц (поле помечено устаревшим, в настройках — обновление при открытии).
+    /// </summary>
+    private static IEnumerable<W.Paragraph> BuildTocParagraphs(int depth, IReadOnlyList<TocEntry> entries)
     {
-        var field = new W.SimpleField(
-            new W.Run(new W.Text("Обновите оглавление: F9 или правой кнопкой → «Обновить поле»")))
+        var instruction = $" TOC \\o \"1-{Math.Clamp(depth, 1, 6)}\" \\h \\z \\u ";
+        if (entries.Count == 0)
         {
-            Instruction = $"TOC \\o \"1-{Math.Clamp(depth, 1, 6)}\" \\h \\z \\u"
-        };
+            yield return new W.Paragraph(new W.SimpleField(
+                new W.Run(new W.Text("Обновите оглавление: F9 или правой кнопкой → «Обновить поле»")))
+            {
+                Instruction = instruction.Trim()
+            });
+            yield break;
+        }
 
-        return new W.Paragraph(field);
+        for (var i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            var paragraph = new W.Paragraph(new W.ParagraphProperties(new W.ParagraphStyleId { Val = DocxStyleCatalog.Toc(entry.Level) }));
+            if (i == 0)
+            {
+                paragraph.Append(
+                    new W.Run(new W.FieldChar { FieldCharType = W.FieldCharValues.Begin, Dirty = true }),
+                    new W.Run(new W.FieldCode(instruction) { Space = SpaceProcessingModeValues.Preserve }),
+                    new W.Run(new W.FieldChar { FieldCharType = W.FieldCharValues.Separate }));
+            }
+
+            paragraph.Append(new W.Hyperlink(new W.Run(new W.Text(entry.Text) { Space = SpaceProcessingModeValues.Preserve }))
+            {
+                Anchor = entry.Bookmark,
+                History = true
+            });
+
+            if (i == entries.Count - 1)
+            {
+                paragraph.Append(new W.Run(new W.FieldChar { FieldCharType = W.FieldCharValues.End }));
+            }
+
+            yield return paragraph;
+        }
     }
 
     // ================================================================ колонтитулы

@@ -101,7 +101,7 @@ internal static partial class CoreChecks
             Check(realFootnotes == 1, $"настоящая сноска Word создана: {realFootnotes}");
             Check(body.Descendants<FootnoteReference>().Count() == 1, "ссылка на сноску вставлена в текст");
 
-            var hyperlinks = body.Descendants<Hyperlink>().ToList();
+            var hyperlinks = body.Descendants<Hyperlink>().Where(h => !IsTocRow(h.Ancestors<Paragraph>().First())).ToList();
             Check(hyperlinks.Count == 1 && hyperlinks[0].Anchor is not null,
                 "перекрёстная ссылка стала внутренней гиперссылкой на закладку");
 
@@ -117,8 +117,7 @@ internal static partial class CoreChecks
                   bodyRow2Cells[0].TableCellProperties?.GetFirstChild<VerticalMerge>()?.Val?.Value == MergedCellValues.Continue,
                 "вторая строка таблицы получила ячейку-продолжение объединения");
 
-            var tocField = body.Descendants<SimpleField>().FirstOrDefault(f => f.Instruction?.Value?.Contains("TOC") == true);
-            Check(tocField is not null, "поле оглавления (TOC) добавлено");
+            Check(TocInstruction(body) is not null, "поле оглавления (TOC) добавлено");
 
             var headings = body.Elements<Paragraph>()
                 .Count(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value?.StartsWith("Heading") == true);
@@ -221,7 +220,7 @@ internal static partial class CoreChecks
             Check(text.Contains("Вложенный топик") && text.Contains("Внутри."), "вложенный топик внутри conbody отрисован рекурсивным RenderTopic");
             Check(text.Contains("Второй"), "related-links как ПРЯМОЙ ребёнок топика (не внутри conbody) отрисован");
 
-            var titleHeading = body.Elements<Paragraph>().First(p => p.InnerText.Contains("Заголовок с разрывом"));
+            var titleHeading = body.Elements<Paragraph>().First(p => !IsTocRow(p) && p.InnerText.Contains("Заголовок с разрывом"));
             Check(titleHeading.ParagraphProperties?.GetFirstChild<PageBreakBefore>() is not null,
                 "outputclass=\"page-break-before\" на title даёт PageBreakBefore в DOCX");
 

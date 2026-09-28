@@ -291,4 +291,50 @@ internal static partial class CoreChecks
                 "HTML для печати в PDF: правило @page из параметров страницы");
         });
     }
+
+    /// <summary>П. 14: оглавление DOCX — сразу со строками-ссылками, а не с текстом-заглушкой.</summary>
+    internal static void TocTests()
+    {
+        Section("Оглавление DOCX");
+
+        WithProject(new Dictionary<string, string>
+        {
+            ["a.dita"] = "<concept id=\"a\"><title>Глава А</title><conbody><p>Текст</p></conbody></concept>",
+            ["a1.dita"] = "<concept id=\"a1\"><title>Раздел А.1</title><conbody><p>Текст</p></conbody></concept>",
+            ["a11.dita"] = "<concept id=\"a11\"><title>Пункт А.1.1</title><conbody><p>Текст</p></conbody></concept>",
+            ["t.dita"] = "<reference id=\"t\"><title/><refbody><p>Только таблица</p></refbody></reference>",
+            ["b.dita"] = "<concept id=\"b\"><title>Глава Б</title><conbody><p>Текст</p></conbody></concept>",
+            ["guide.ditamap"] = """
+<map><title>Книга</title>
+  <topicref href="a.dita"><topicref href="a1.dita"><topicref href="a11.dita"/></topicref><topicref href="t.dita"/></topicref>
+  <topicref href="b.dita"/>
+</map>
+"""
+        }, (root, project) =>
+        {
+            project.SetDocxLayout(new DocxLayout { TocDepth = 2 });
+            var outFile = Path.Combine(root, "book.docx");
+            new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            CheckValidDocx(outFile, "DOCX с готовым оглавлением");
+
+            using var package = WordprocessingDocument.Open(outFile, false);
+            var body = package.MainDocumentPart!.Document.Body!;
+            var rows = body.Elements<W.Paragraph>().Where(IsTocRow).ToList();
+            var shown = string.Join(" | ", rows.Select(r => r.ParagraphProperties!.ParagraphStyleId!.Val!.Value + ":" +
+                                                         string.Concat(r.Descendants<W.Hyperlink>().Select(h => h.InnerText))));
+            Check(shown == "TOC1:Глава А | TOC2:Раздел А.1 | TOC1:Глава Б",
+                "строки оглавления — по уровням, глубина 2, без топика без заголовка: " + shown);
+            var bookmarks = body.Descendants<W.BookmarkStart>().Select(b => b.Name?.Value).ToHashSet();
+            Check(rows.All(r => r.Descendants<W.Hyperlink>().SingleOrDefault()?.Anchor?.Value is { } anchor && bookmarks.Contains(anchor)),
+                "каждая строка — ссылка на закладку топика");
+            var chars = body.Descendants<W.FieldChar>().Where(f => f.Ancestors<W.Paragraph>().First() is var p && rows.Contains(p)).ToList();
+            Check(chars.Select(c => c.FieldCharType!.Value).SequenceEqual(new[] { W.FieldCharValues.Begin, W.FieldCharValues.Separate, W.FieldCharValues.End }) &&
+                  chars[0].Dirty?.Value == true,
+                "поле TOC обрамляет строки (начало, разделитель, конец) и помечено к обновлению");
+            Check(body.Descendants<W.FieldCode>().Any(f => f.Text.Contains("TOC \\o \"1-2\"")), "команда поля — глубина 2");
+            Check(!body.Descendants<W.Text>().Any(t => t.Text.Contains("Обновите оглавление")), "текста-заглушки нет");
+            var styles = package.MainDocumentPart.StyleDefinitionsPart!.Styles!.Elements<W.Style>().Select(st => st.StyleId?.Value).ToHashSet();
+            Check(styles.Contains("TOC1") && styles.Contains("TOC2"), "стили строк оглавления определены");
+        });
+    }
 }

@@ -229,7 +229,7 @@ public sealed class HtmlPublisher
 
         body.Append("<h1 class=\"book-title\">").Append(HtmlRenderer.Escape(tree.Root.Title)).Append("</h1>\n");
         body.Append("<nav class=\"toc-inline\">\n<h2>").Append(HtmlRenderer.Escape(labels.Contents)).Append("</h2>\n<ul>\n");
-        foreach (var item in topics.Where(HasTitle))
+        foreach (var item in topics.Where(i => TocRules.Includes(_project, i)))
         {
             var full = Path.GetFullPath(item.TargetPath!);
             var anchor = AnchorFor(full, item.TargetTopicId ?? RootIdOf(full));
@@ -360,15 +360,6 @@ public sealed class HtmlPublisher
 
     // ------------------------------------------------------------- служебное
 
-    /// <summary>Топик без заголовка (пустой title) в оглавление издания не попадает — как в DOCX.</summary>
-    private bool HasTitle(MapItem item)
-    {
-        var doc = item.TargetPath is null ? null : _project.TryGetDocument(item.TargetPath);
-        var topic = doc is null ? null
-            : item.TargetTopicId is null ? doc.Root
-            : RefResolver.FindById(doc.Root, item.TargetTopicId) ?? doc.Root;
-        return topic?.FirstElement("title") is not { } title || !DitaValidator.IsEmptyTitle(title);
-    }
 
     private static Dictionary<string, string> AssignFileNames(IEnumerable<MapItem> topics)
     {
