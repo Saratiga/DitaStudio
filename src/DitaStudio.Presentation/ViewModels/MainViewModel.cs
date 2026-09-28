@@ -1,8 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using DitaStudio.App.Views;
 using DitaStudio.Core.Project;
+using DitaStudio.Presentation.Services;
 
-namespace DitaStudio.App.ViewModels;
+namespace DitaStudio.Presentation.ViewModels;
 
 // Корневая VM окна. Дочерние VM (Help и далее) добавляются по мере миграции
 // соответствующих областей — см.
@@ -14,7 +14,7 @@ public partial class MainViewModel : ObservableObject
 
     // Производное от Documents.SelectedTab — сама вкладка теперь источник
     // истины (шаг 5 спеки), не отдельное наблюдаемое поле.
-    public DocumentPane? Current => Documents.SelectedTab?.Pane;
+    public IDocumentView? Current => Documents.SelectedTab?.Pane;
 
     // Открытый проект. Источник истины теперь ProjectViewModel.LoadProject.
     [ObservableProperty]
@@ -23,23 +23,30 @@ public partial class MainViewModel : ObservableObject
     // Условия сборки — используются ProjectViewModel (начальные значения при
     // открытии проекта) и ещё не мигрированным MainWindow.Publish.cs.
     [ObservableProperty]
-    private Dialogs.ConditionsResult? conditions;
+    private ConditionsResult? conditions;
 
     // Заголовок окна. По умолчанию — как раньше в XAML, дальше ProjectViewModel
     // подставляет имя открытого проекта.
     [ObservableProperty]
     private string windowTitle = "DITA Studio";
 
-    // Тот же экземпляр словаря, что MainWindow.xaml.cs держит в _panes — не
-    // копия. DocumentsViewModel пишет в него напрямую (Add/Remove), поэтому
-    // тип — мутируемый Dictionary, а не IReadOnlyDictionary.
-    public Dictionary<string, DocumentPane> Panes { get; }
+    // Открытые вкладки по полному пути. DocumentsViewModel пишет в словарь
+    // напрямую (Add/Remove), окно оболочки — при переносе файла.
+    public Dictionary<string, IDocumentView> Panes { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    // Сервисы оболочки (WPF или Avalonia): диалоги, выбор файлов, UI-поток,
+    // печать в PDF, создание вкладки документа.
+    public UiServices Services { get; }
+
+    public IDialogService Dialogs => Services.Dialogs;
+
+    public IFilePicker Files => Services.Files;
 
     // Временные мосты к ещё не мигрированной области SidePanels и к
     // императивному построению дерева карты/проекта (MainWindow.Map.cs/
     // Project.cs) — сознательно не мигрированы, см. комментарии на месте.
     public Action? UpdateTabHeaders { get; set; }
-    public Func<string, DocumentPane?>? OpenDocument { get; set; }
+    public Func<string, IDocumentView?>? OpenDocument { get; set; }
     public Action? RefreshEditorContext { get; set; }
     public Action? RefreshProjectTree { get; set; }
     public Action? RefreshMapSelector { get; set; }
@@ -79,9 +86,9 @@ public partial class MainViewModel : ObservableObject
     public AutoRecovery Recovery { get; }
     public ExternalChangeWatcher ExternalChanges { get; }
 
-    public MainViewModel(Dictionary<string, DocumentPane> panes)
+    public MainViewModel(UiServices services)
     {
-        Panes = panes;
+        Services = services;
         Documents = new DocumentsViewModel(this);
         Help = new HelpViewModel(this);
         Search = new SearchViewModel(this);

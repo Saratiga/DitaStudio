@@ -1,10 +1,9 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using DitaStudio.App.Views;
 using DitaStudio.Core.Project;
 
-namespace DitaStudio.App.ViewModels;
+namespace DitaStudio.Presentation.ViewModels;
 
 // Поиск по проекту (текст/regex/имена элементов) и замена всех вхождений.
 public partial class SearchViewModel : ObservableObject
@@ -58,7 +57,7 @@ public partial class SearchViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ReplaceAll()
+    private async Task ReplaceAll()
     {
         var project = _main.Project;
         if (project is null)
@@ -68,7 +67,7 @@ public partial class SearchViewModel : ObservableObject
 
         if (SearchElements)
         {
-            Dialogs.Message("Замена", "Замена работает только для текстового поиска, не для поиска по именам элементов.");
+            await _main.Dialogs.MessageAsync("Замена", "Замена работает только для текстового поиска, не для поиска по именам элементов.");
             return;
         }
 
@@ -82,7 +81,7 @@ public partial class SearchViewModel : ObservableObject
             pane.CommitPendingEdits();
         }
 
-        var confirmed = Dialogs.Confirm("Замена",
+        var confirmed = await _main.Dialogs.ConfirmAsync("Замена",
             $"Заменить все вхождения «{SearchText}» на «{ReplaceText}» по всему проекту?\n" +
             "Изменённые документы будут помечены как несохранённые.");
         if (!confirmed)
@@ -113,7 +112,6 @@ public partial class SearchViewModel : ObservableObject
         }
 
         var pane = _main.OpenDocument?.Invoke(hit.File.FullPath);
-        var editor = pane?.Author.EditorFor(hit.Node);
-        editor?.Focus();
+        pane?.FocusNode(hit.Node);
     }
 }

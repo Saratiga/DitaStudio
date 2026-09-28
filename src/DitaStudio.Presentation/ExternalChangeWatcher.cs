@@ -1,11 +1,9 @@
-using System.Windows;
-using System.Windows.Threading;
-using DitaStudio.App.ViewModels;
-using DitaStudio.App.Views;
 using DitaStudio.Core.IO;
 using DitaStudio.Core.Project;
+using DitaStudio.Presentation.Services;
+using DitaStudio.Presentation.ViewModels;
 
-namespace DitaStudio.App;
+namespace DitaStudio.Presentation;
 
 /// <summary>
 /// Замечает, что файлы открытых документов поменяла другая программа (git pull, соседний
@@ -22,7 +20,7 @@ public sealed class ExternalChangeWatcher : IDisposable
     private static readonly string[] WatchedExtensions = { ".dita", ".ditamap", ".xml", ".ditaval" };
 
     private readonly MainViewModel _main;
-    private readonly DispatcherTimer _debounce;
+    private readonly IUiTimer _debounce;
     private FileSystemWatcher? _watcher;
     private bool _checking;
 
@@ -31,12 +29,13 @@ public sealed class ExternalChangeWatcher : IDisposable
         _main = main;
 
         // Одна запись файла порождает серию событий — проверяем один раз, когда серия утихла.
-        _debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
-        _debounce.Tick += (_, _) =>
-        {
-            _debounce.Stop();
-            CheckNow();
-        };
+        _debounce = main.Services.Platform.CreateTimer(TimeSpan.FromMilliseconds(400), OnDebounceTick);
+    }
+
+    private void OnDebounceTick()
+    {
+        _debounce.Stop();
+        _ = CheckNowAsync();
     }
 
     public void Attach(DitaProject project)
@@ -92,14 +91,14 @@ public sealed class ExternalChangeWatcher : IDisposable
         WatchedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase);
 
     // События FileSystemWatcher приходят из пула потоков.
-    private void Schedule() => Application.Current?.Dispatcher.BeginInvoke(() =>
+    private void Schedule() => _main.Services.Platform.Post(() =>
     {
         _debounce.Stop();
         _debounce.Start();
     });
 
     /// <summary>Сверяет открытые документы с диском и реагирует на изменения.</summary>
-    public void CheckNow()
+    public async Task CheckNowAsync()
     {
         var project = _main.Project;
         if (_checking || project is null)
@@ -116,7 +115,7 @@ public sealed class ExternalChangeWatcher : IDisposable
             {
                 if (pane.Document.HasChangedOnDisk())
                 {
-                    changed |= HandleChangedPane(pane);
+                    changed |= await HandleChangedPaneAsync(pane);
                 }
             }
 
@@ -146,7 +145,7 @@ public sealed class ExternalChangeWatcher : IDisposable
         }
     }
 
-    private bool HandleChangedPane(DocumentPane pane)
+    private async Task<bool> HandleChangedPaneAsync(IDocumentView pane)
     {
         var path = pane.FilePath!;
         var name = Path.GetFileName(path);
@@ -163,15 +162,15 @@ public sealed class ExternalChangeWatcher : IDisposable
             return TryReload(pane, name, $"Файл {name} изменён другой программой — перечитан с диска.");
         }
 
-        var answer = MessageBox.Show(
+        var answer = await _main.Dialogs.AskAsync(
+            "Файл изменён извне",
             $"Файл «{name}» изменён другой программой, а во вкладке есть несохранённые правки.\n\n" +
             "Да — загрузить версию с диска (ваши правки можно вернуть через «Правка → Отменить структурное изменение», Ctrl+Alt+Z).\n" +
             "Нет — оставить свою версию (при сохранении она заменит файл на диске).",
-            "Файл изменён извне",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
+            AskButtons.YesNo,
+            AskIcon.Warning);
 
-        if (answer == MessageBoxResult.Yes)
+        if (answer == AskResult.Yes)
         {
             if (TryReload(pane, name, $"Файл {name} перечитан с диска."))
             {
@@ -189,7 +188,7 @@ public sealed class ExternalChangeWatcher : IDisposable
         return false;
     }
 
-    private bool TryReload(DocumentPane pane, string name, string status)
+    private bool TryReload(IDocumentView pane, string name, string status)
     {
         try
         {

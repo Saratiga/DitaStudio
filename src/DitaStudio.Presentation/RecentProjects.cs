@@ -1,8 +1,8 @@
 using DitaStudio.Core.IO;
 
-namespace DitaStudio.App;
+namespace DitaStudio.Presentation;
 
-/// <summary>Список недавно открытых папок проектов, сохраняется между запусками (по образцу ThemeManager).</summary>
+/// <summary>Список недавно открытых папок проектов, сохраняется между запусками.</summary>
 public static class RecentProjects
 {
     private const int MaxEntries = 8;

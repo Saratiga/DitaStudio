@@ -1,14 +1,13 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using DitaStudio.App.Authoring;
-using DitaStudio.App.Plugins;
-using DitaStudio.App.Views;
 using DitaStudio.Core.Diff;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Validation;
+using DitaStudio.Presentation.Plugins;
+using DitaStudio.Presentation.Services;
 
-namespace DitaStudio.App.ViewModels;
+namespace DitaStudio.Presentation.ViewModels;
 
 // Проверка проекта/документа, список найденных замечаний, сравнение файлов.
 public partial class ValidationViewModel : ObservableObject
@@ -46,7 +45,7 @@ public partial class ValidationViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ValidateDocument()
+    private async Task ValidateDocument()
     {
         var pane = _main.Current;
         var project = _main.Project;
@@ -58,12 +57,12 @@ public partial class ValidationViewModel : ObservableObject
         var error = pane.CommitPendingEdits();
         if (error is not null)
         {
-            Dialogs.Message("Проверка", $"Документ не разбирается как XML:\n\n{error}");
+            await _main.Dialogs.MessageAsync("Проверка", $"Документ не разбирается как XML:\n\n{error}");
             return;
         }
 
         var issues = new List<ValidationIssue>();
-        issues.AddRange(new DitaValidator().Validate(pane.Document));
+        issues.AddRange(new DitaValidator(project.Catalog).Validate(pane.Document));
         issues.AddRange(RefResolver.ValidateReferences(project, pane.Document));
 
         foreach (var plugin in PluginRegistry.ValidationRules)
@@ -83,23 +82,23 @@ public partial class ValidationViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void CompareFiles()
+    private async Task CompareFiles()
     {
-        var filter = "Файлы DITA (*.dita;*.ditamap;*.xml)|*.dita;*.ditamap;*.xml|Все файлы (*.*)|*.*";
-        var left = new Microsoft.Win32.OpenFileDialog { Title = "Сравнить — первый файл", Filter = filter };
-        if (left.ShowDialog() != true)
+        var filters = new[] { new FileFilter("Файлы DITA", "*.dita", "*.ditamap", "*.xml"), FileFilter.All };
+        var left = await _main.Files.OpenFileAsync("Сравнить — первый файл", filters);
+        if (left is null)
         {
             return;
         }
 
-        var right = new Microsoft.Win32.OpenFileDialog { Title = "Сравнить — второй файл", Filter = filter };
-        if (right.ShowDialog() != true)
+        var right = await _main.Files.OpenFileAsync("Сравнить — второй файл", filters, Path.GetDirectoryName(left));
+        if (right is null)
         {
             return;
         }
 
         // Сравнение читает файлы с диска — несохранённые правки в открытых вкладках не видны.
-        DiffWindow.Show(left.FileName, right.FileName);
+        await _main.Dialogs.ShowDiffAsync(left, right);
     }
 
     /// <summary>Сравнивает открытый документ с версией из последнего коммита git — через `git show`,
@@ -126,7 +125,7 @@ public partial class ValidationViewModel : ObservableObject
         var path = _main.Current?.FilePath;
         if (path is null)
         {
-            Dialogs.Message(title, "Откройте документ.");
+            await _main.Dialogs.MessageAsync(title, "Откройте документ.");
             return;
         }
 
@@ -135,7 +134,7 @@ public partial class ValidationViewModel : ObservableObject
         if (content is null)
         {
             _main.StatusText = string.Empty;
-            Dialogs.Message(title, notFoundMessage);
+            await _main.Dialogs.MessageAsync(title, notFoundMessage);
             return;
         }
 
@@ -148,12 +147,12 @@ public partial class ValidationViewModel : ObservableObject
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             _main.StatusText = string.Empty;
-            Dialogs.Message(title, $"Не удалось записать временный файл: {ex.Message}");
+            await _main.Dialogs.MessageAsync(title, $"Не удалось записать временный файл: {ex.Message}");
             return;
         }
 
         _main.StatusText = string.Empty;
-        DiffWindow.Show(tempPath, path);
+        await _main.Dialogs.ShowDiffAsync(tempPath, path);
     }
 
     private void ShowIssues(IReadOnlyList<ValidationIssue> issues)
@@ -178,20 +177,13 @@ public partial class ValidationViewModel : ObservableObject
         if (issue.FilePath is not null && File.Exists(issue.FilePath))
         {
             var pane = _main.OpenDocument?.Invoke(issue.FilePath);
-            if (pane is not null && issue.Node is not null)
+            if (pane is not null && issue.Node is not null && !pane.FocusNode(issue.Node))
             {
-                var editor = pane.Author.EditorFor(issue.Node);
-                if (editor is not null)
+                // Узла нет среди блоков «Автора» (атрибут, служебный элемент) — показываем исходник.
+                pane.Mode = EditorMode.Source;
+                if (issue.Line > 0)
                 {
-                    editor.Focus();
-                }
-                else
-                {
-                    pane.Mode = EditorMode.Source;
-                    if (issue.Line > 0)
-                    {
-                        pane.Source.GoToLine(issue.Line);
-                    }
+                    pane.GoToSourceLine(issue.Line);
                 }
             }
         }

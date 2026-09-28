@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Markup;
 using System.Windows.Threading;
-using DitaStudio.App.Plugins;
+using DitaStudio.Presentation.Plugins;
 
 namespace DitaStudio.App;
 

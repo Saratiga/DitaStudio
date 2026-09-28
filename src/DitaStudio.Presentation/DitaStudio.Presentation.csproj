@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Общая логика интерфейса для обеих оболочек редактора — WPF (src/DitaStudio.App) и
+       Avalonia (src/DitaStudio.Desktop): ViewModel'и, защита от потери данных, плагины.
+       Про конкретный UI-фреймворк не знает: диалоги, выбор файлов, вкладки документов и
+       UI-поток — через интерфейсы из Services/, их реализует каждая оболочка. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>DitaStudio.Presentation</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DitaStudio.Core\DitaStudio.Core.csproj" />
+    <ProjectReference Include="..\DitaStudio.Docx\DitaStudio.Docx.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,12 +1,10 @@
 using System.Text;
-using System.Windows;
-using System.Windows.Threading;
-using DitaStudio.App.ViewModels;
-using DitaStudio.App.Views;
 using DitaStudio.Core.IO;
 using DitaStudio.Core.Project;
+using DitaStudio.Presentation.Services;
+using DitaStudio.Presentation.ViewModels;
 
-namespace DitaStudio.App;
+namespace DitaStudio.Presentation;
 
 /// <summary>
 /// Копии несохранённых документов на случай сбоя. Раз в <see cref="Interval"/> текст каждой
@@ -19,7 +17,7 @@ public sealed class AutoRecovery
     public static readonly TimeSpan Interval = TimeSpan.FromSeconds(30);
 
     private readonly MainViewModel _main;
-    private readonly DispatcherTimer _timer;
+    private readonly IUiTimer _timer;
 
     // Последняя записанная копия по пути (текст + отпечаток оригинала) — чтобы не
     // переписывать её без изменений.
@@ -30,8 +28,7 @@ public sealed class AutoRecovery
     public AutoRecovery(MainViewModel main)
     {
         _main = main;
-        _timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = Interval };
-        _timer.Tick += (_, _) => SnapshotAll();
+        _timer = main.Services.Platform.CreateTimer(Interval, SnapshotAll);
     }
 
     public void Attach(DitaProject project)
@@ -130,7 +127,7 @@ public sealed class AutoRecovery
 
     /// <summary>Если с прошлого сеанса остались копии — предлагает восстановить их.
     /// Вызывать сразу после открытия проекта.</summary>
-    public void OfferRestore()
+    public async Task OfferRestoreAsync()
     {
         if (_store is null)
         {
@@ -171,16 +168,16 @@ public sealed class AutoRecovery
         text.AppendLine("Нет — удалить копии.");
         text.Append("Отмена — решить позже (копии останутся до следующего открытия проекта).");
 
-        var answer = MessageBox.Show(text.ToString(), "Восстановление после сбоя",
-            MessageBoxButton.YesNoCancel, MessageBoxImage.Warning);
+        var answer = await _main.Dialogs.AskAsync("Восстановление после сбоя", text.ToString(),
+            AskButtons.YesNoCancel, AskIcon.Warning);
 
-        if (answer == MessageBoxResult.No)
+        if (answer == AskResult.No)
         {
             ForgetAll();
             return;
         }
 
-        if (answer != MessageBoxResult.Yes)
+        if (answer != AskResult.Yes)
         {
             return;
         }
@@ -189,7 +186,7 @@ public sealed class AutoRecovery
         var skipped = new List<string>();
         foreach (var entry in entries)
         {
-            DocumentPane? pane = File.Exists(entry.OriginalPath) ? _main.Documents.OpenDocument(entry.OriginalPath) : null;
+            IDocumentView? pane = File.Exists(entry.OriginalPath) ? _main.Documents.OpenDocument(entry.OriginalPath) : null;
             if (pane is null)
             {
                 skipped.Add(Path.GetFileName(entry.OriginalPath));
@@ -206,7 +203,7 @@ public sealed class AutoRecovery
 
         if (skipped.Count > 0)
         {
-            Dialogs.Message("Восстановление после сбоя",
+            await _main.Dialogs.MessageAsync("Восстановление после сбоя",
                 "Не удалось открыть (файла нет или он не разбирается): " + string.Join(", ", skipped) +
                 $".\n\nКопии оставлены в папке:\n{_store.Directory}");
         }

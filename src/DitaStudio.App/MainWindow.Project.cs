@@ -5,6 +5,7 @@ using System.Windows.Media;
 using DitaStudio.App.Views;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
+using DitaStudio.Presentation.Services;
 
 namespace DitaStudio.App;
 
@@ -17,7 +18,7 @@ public partial class MainWindow
     // ViewModels/ProjectViewModel.cs. Эти два — тонкие пасс-through, нужны
     // не мигрированным местам (RefreshRecentProjectsMenu, Documents.NewDocument),
     // которые зовут их как соседний метод MainWindow.
-    private void LoadProject(string path) => ViewModel.ProjectPanel.LoadProject(path);
+    private Task LoadProjectAsync(string path) => ViewModel.ProjectPanel.LoadProjectAsync(path);
 
     private void BuildKeysList() => ViewModel.ProjectPanel.RefreshKeysList();
 

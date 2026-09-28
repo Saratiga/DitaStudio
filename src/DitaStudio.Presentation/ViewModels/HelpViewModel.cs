@@ -1,9 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using DitaStudio.App.Views;
 using DitaStudio.Core.Schema;
 
-namespace DitaStudio.App.ViewModels;
+namespace DitaStudio.Presentation.ViewModels;
 
 public partial class HelpViewModel : ObservableObject
 {
@@ -15,7 +14,7 @@ public partial class HelpViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ShowElementHelp()
+    private async Task ShowElementHelp()
     {
         var node = _main.Current?.Author.CurrentNode;
         if (node is null)
@@ -27,14 +26,14 @@ public partial class HelpViewModel : ObservableObject
         var def = DitaCatalog.Default.Get(node.Name);
         if (def is null)
         {
-            Dialogs.Message("Справка", $"Элемент <{node.Name}> отсутствует в словаре DITA 1.3.");
+            await _main.Dialogs.MessageAsync("Справка", $"Элемент <{node.Name}> отсутствует в словаре DITA 1.3.");
             return;
         }
 
         var allowed = def.Automaton.AllowedNames;
         var attributes = def.Attributes.Keys.OrderBy(a => a, StringComparer.Ordinal);
 
-        Dialogs.Message($"<{def.Name}>",
+        await _main.Dialogs.MessageAsync($"<{def.Name}>",
             $"{def.Description}\n\n" +
             $"Модуль: {def.Domain}\n" +
             $"@class: {def.ClassAttr}\n\n" +
@@ -45,5 +44,5 @@ public partial class HelpViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void About() => Dialogs.About();
+    private Task About() => _main.Dialogs.AboutAsync();
 }

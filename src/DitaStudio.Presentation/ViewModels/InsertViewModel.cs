@@ -1,16 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using DitaStudio.App.Authoring;
-using DitaStudio.App.Plugins;
-using DitaStudio.App.Views;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
 using DitaStudio.Core.Templates;
-using Microsoft.Win32;
+using DitaStudio.Presentation.Plugins;
+using DitaStudio.Presentation.Services;
 
-namespace DitaStudio.App.ViewModels;
+namespace DitaStudio.Presentation.ViewModels;
 
 // Вставка элементов (абзац, список, таблица, изображение, ссылка, сноска),
 // инлайн-форматирование, перестановка/удаление элемента, объединение ячеек
@@ -72,7 +70,7 @@ public partial class InsertViewModel : ObservableObject
     private void InsertFootnote() => InsertElement("fn");
 
     [RelayCommand]
-    private void InsertTable()
+    private async Task InsertTable()
     {
         var pane = _main.Current;
         var node = pane?.Author.CurrentNode;
@@ -81,7 +79,7 @@ public partial class InsertViewModel : ObservableObject
             return;
         }
 
-        var options = Dialogs.InsertTable();
+        var options = await _main.Dialogs.InsertTableAsync();
         if (options is null)
         {
             return;
@@ -105,7 +103,7 @@ public partial class InsertViewModel : ObservableObject
         _main.RefreshOutline?.Invoke();
     }
 
-    private static DitaNode BuildTableNode(Dialogs.TableResult options)
+    private static DitaNode BuildTableNode(TableResult options)
     {
         var table = DitaNode.Element("table");
         if (!string.IsNullOrWhiteSpace(options.Title))
@@ -162,7 +160,7 @@ public partial class InsertViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void InsertImage()
+    private async Task InsertImage()
     {
         var pane = _main.Current;
         if (pane is null || pane.FilePath is null)
@@ -170,25 +168,21 @@ public partial class InsertViewModel : ObservableObject
             return;
         }
 
-        var dialog = new OpenFileDialog
-        {
-            Title = "Выберите изображение",
-            Filter = "Изображения|*.png;*.jpg;*.jpeg;*.gif;*.svg;*.bmp|Все файлы|*.*",
-            InitialDirectory = Path.GetDirectoryName(pane.FilePath)
-        };
-
-        if (dialog.ShowDialog() != true)
+        var file = await _main.Files.OpenFileAsync("Выберите изображение",
+            new[] { new FileFilter("Изображения", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.svg", "*.bmp"), FileFilter.All },
+            Path.GetDirectoryName(pane.FilePath));
+        if (file is null)
         {
             return;
         }
 
-        var href = RefResolver.MakeRelative(pane.FilePath, dialog.FileName);
+        var href = RefResolver.MakeRelative(pane.FilePath, file);
         var image = DitaNode.Element("image");
         image.SetAttribute("href", href);
         image.SetAttribute("placement", "break");
 
         var alt = DitaNode.Element("alt");
-        alt.SetText(Path.GetFileNameWithoutExtension(dialog.FileName));
+        alt.SetText(Path.GetFileNameWithoutExtension(file));
         image.Add(alt);
 
         if (!pane.Author.InsertInlineNode(image))
@@ -201,7 +195,7 @@ public partial class InsertViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void InsertXref()
+    private async Task InsertXref()
     {
         var pane = _main.Current;
         var project = _main.Project;
@@ -210,7 +204,7 @@ public partial class InsertViewModel : ObservableObject
             return;
         }
 
-        var result = Dialogs.InsertXref(project, pane.FilePath);
+        var result = await _main.Dialogs.InsertXrefAsync(project, pane.FilePath);
         if (result is null)
         {
             return;
@@ -284,7 +278,7 @@ public partial class InsertViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void DeleteElement()
+    private async Task DeleteElement()
     {
         var node = _main.Current?.Author.CurrentNode;
         if (node is null)
@@ -292,7 +286,7 @@ public partial class InsertViewModel : ObservableObject
             return;
         }
 
-        if (!Dialogs.Confirm("Удаление", $"Удалить элемент <{node.Name}> вместе с содержимым?"))
+        if (!await _main.Dialogs.ConfirmAsync("Удаление", $"Удалить элемент <{node.Name}> вместе с содержимым?"))
         {
             return;
         }
@@ -305,7 +299,7 @@ public partial class InsertViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void RenameId()
+    private async Task RenameId()
     {
         var pane = _main.Current;
         var node = pane?.Author.CurrentNode;
@@ -323,7 +317,7 @@ public partial class InsertViewModel : ObservableObject
             return;
         }
 
-        var newId = Dialogs.RenameId(oldId!);
+        var newId = await _main.Dialogs.RenameIdAsync(oldId!);
         if (string.IsNullOrWhiteSpace(newId) || newId == oldId)
         {
             return;
@@ -340,7 +334,7 @@ public partial class InsertViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ExtractToConref()
+    private async Task ExtractToConref()
     {
         var pane = _main.Current;
         var node = pane?.Author.CurrentNode;
@@ -357,7 +351,7 @@ public partial class InsertViewModel : ObservableObject
             suggestedId = DocumentTemplates.SuggestId(node.InnerText, node.Name);
         }
 
-        var dialogResult = Dialogs.ExtractToConref(project, suggestedId!);
+        var dialogResult = await _main.Dialogs.ExtractToConrefAsync(project, suggestedId!);
         if (dialogResult is null)
         {
             return;
@@ -377,13 +371,13 @@ public partial class InsertViewModel : ObservableObject
         }
         catch (IOException ex)
         {
-            Dialogs.Message("Вынесение в conref", ex.Message);
+            await _main.Dialogs.MessageAsync("Вынесение в conref", ex.Message);
             return;
         }
 
         if (result.UpdatedReferences == 0)
         {
-            Dialogs.Message("Вынесение в conref", "Не удалось перенести элемент — проверьте цель.");
+            await _main.Dialogs.MessageAsync("Вынесение в conref", "Не удалось перенести элемент — проверьте цель.");
             return;
         }
 
@@ -548,16 +542,16 @@ public partial class InsertViewModel : ObservableObject
     /// <summary>Выполняет выбранную команду плагина (см. IAuthorCommandPlugin) на открытом
     /// документе — пункт меню один и тот же для любого числа подключённых плагинов.</summary>
     [RelayCommand]
-    private void RunAuthorCommandPlugin()
+    private async Task RunAuthorCommandPlugin()
     {
         var pane = _main.Current;
         if (pane is null)
         {
-            Dialogs.Message("Команда плагина", "Откройте документ.");
+            await _main.Dialogs.MessageAsync("Команда плагина", "Откройте документ.");
             return;
         }
 
-        var command = Dialogs.PickOne("Команда плагина", "Выберите команду:", PluginRegistry.AuthorCommands, c => c.Name);
+        var command = await _main.Dialogs.PickOneAsync("Команда плагина", "Выберите команду:", PluginRegistry.AuthorCommands, c => c.Name);
         if (command is null)
         {
             return;
@@ -571,7 +565,7 @@ public partial class InsertViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Dialogs.Message("Команда плагина", $"Плагин «{command.Name}» упал: {ex.Message}");
+            await _main.Dialogs.MessageAsync("Команда плагина", $"Плагин «{command.Name}» упал: {ex.Message}");
             return;
         }
 

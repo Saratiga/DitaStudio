@@ -1,12 +1,11 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using DitaStudio.App.Views;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
-using Microsoft.Win32;
+using DitaStudio.Presentation.Services;
 
-namespace DitaStudio.App.ViewModels;
+namespace DitaStudio.Presentation.ViewModels;
 
 // Открытие/сканирование папки проекта и список ключей. Дерево файлов
 // (BuildProjectTree и связанное) — императивное построение WPF-дерева,
@@ -33,21 +32,21 @@ public partial class ProjectViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void OpenProject()
+    private async Task OpenProject()
     {
-        var dialog = new OpenFolderDialog { Title = "Выберите папку с проектом DITA" };
-        if (dialog.ShowDialog() != true)
+        var folder = await _main.Files.OpenFolderAsync("Выберите папку с проектом DITA");
+        if (folder is null)
         {
             return;
         }
 
-        LoadProject(dialog.FolderName);
+        await LoadProjectAsync(folder);
     }
 
-    public void LoadProject(string path)
+    public async Task LoadProjectAsync(string path)
     {
         // Смена проекта закрывает все вкладки — несохранённые правки не должны пропасть молча.
-        if (!_main.Documents.ConfirmClose())
+        if (!await _main.Documents.ConfirmCloseAsync())
         {
             return;
         }
@@ -58,7 +57,7 @@ public partial class ProjectViewModel : ObservableObject
         var project = new DitaProject(path);
         // Сбой записи настройки проекта (.ditastudio-*) — сразу сообщаем: иначе пользователь
         // считает, что условия/CSS/DTD сохранены, а после перезапуска их не окажется.
-        project.SettingsWarning += message => Dialogs.Message("Настройки проекта", message);
+        project.SettingsWarning += message => _ = _main.Dialogs.MessageAsync("Настройки проекта", message);
         _main.Project = project;
         _main.Panes.Clear();
 
@@ -73,12 +72,12 @@ public partial class ProjectViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Dialogs.Message("Проект", $"Не удалось прочитать папку: {ex.Message}");
+            await _main.Dialogs.MessageAsync("Проект", $"Не удалось прочитать папку: {ex.Message}");
             return;
         }
 
         _main.WindowTitle = $"DITA Studio — {project.Name}";
-        _main.Conditions = new Dialogs.ConditionsResult(
+        _main.Conditions = new ConditionsResult(
             project.ExcludedConditionValues.ToDictionary(kv => kv.Key, kv => new HashSet<string>(kv.Value)),
             project.ShowDraftComments);
         _main.RefreshProjectTree?.Invoke();
@@ -91,12 +90,12 @@ public partial class ProjectViewModel : ObservableObject
 
         if (project.SettingsWarnings.Count > 0)
         {
-            Dialogs.Message("Настройки проекта", string.Join("\n", project.SettingsWarnings));
+            await _main.Dialogs.MessageAsync("Настройки проекта", string.Join("\n", project.SettingsWarnings));
         }
 
         _main.Recovery.Attach(project);
         _main.ExternalChanges.Attach(project);
-        _main.Recovery.OfferRestore();
+        await _main.Recovery.OfferRestoreAsync();
     }
 
     /// <summary>Строит каталог проекта (встроенный + элементы внешнего DTD, если подключён) и делает
@@ -184,30 +183,30 @@ public partial class ProjectViewModel : ObservableObject
     /// его карты не публикуются вместе с текущим проектом, но keyref/conref на ключ, которого
     /// нет в своём проекте, теперь ищется и там. Связь сохраняется вместе с проектом.</summary>
     [RelayCommand]
-    private void AddReferencedProject()
+    private async Task AddReferencedProject()
     {
         var project = _main.Project;
         if (project is null)
         {
-            Dialogs.Message("Проект", "Сначала откройте папку проекта.");
+            await _main.Dialogs.MessageAsync("Проект", "Сначала откройте папку проекта.");
             return;
         }
 
-        var dialog = new OpenFolderDialog { Title = "Подключить проект как источник ключей" };
-        if (dialog.ShowDialog() != true)
+        var folder = await _main.Files.OpenFolderAsync("Подключить проект как источник ключей");
+        if (folder is null)
         {
             return;
         }
 
-        if (string.Equals(Path.GetFullPath(dialog.FolderName), Path.GetFullPath(project.RootPath), StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(Path.GetFullPath(folder), Path.GetFullPath(project.RootPath), StringComparison.OrdinalIgnoreCase))
         {
-            Dialogs.Message("Проект", "Нельзя подключить проект сам к себе.");
+            await _main.Dialogs.MessageAsync("Проект", "Нельзя подключить проект сам к себе.");
             return;
         }
 
-        project.AddReferencedProject(dialog.FolderName);
+        project.AddReferencedProject(folder);
         RefreshKeysList();
-        _main.StatusText = $"Подключён проект-источник ключей: {dialog.FolderName} " +
+        _main.StatusText = $"Подключён проект-источник ключей: {folder} " +
                             $"(всего подключено: {project.ReferencedProjectPaths.Count}).";
     }
 
@@ -234,22 +233,22 @@ public partial class ProjectViewModel : ObservableObject
     /// в контент-моделях, палитре вставки, валидации, публикации. Другие проекты их не видят.
     /// Связь сохраняется вместе с проектом и подхватывается заново при каждом открытии/пересканировании.</summary>
     [RelayCommand]
-    private void AttachExternalDtd()
+    private async Task AttachExternalDtd()
     {
         var project = _main.Project;
         if (project is null)
         {
-            Dialogs.Message("Внешний DTD", "Сначала откройте папку проекта.");
+            await _main.Dialogs.MessageAsync("Внешний DTD", "Сначала откройте папку проекта.");
             return;
         }
 
-        var dialog = new OpenFileDialog { Title = "Подключить внешний DTD", Filter = "Файлы DTD|*.dtd|Все файлы|*.*" };
-        if (dialog.ShowDialog() != true)
+        var file = await _main.Files.OpenFileAsync("Подключить внешний DTD", new[] { new FileFilter("Файлы DTD", "*.dtd"), FileFilter.All }, project.RootPath);
+        if (file is null)
         {
             return;
         }
 
-        var relativePath = Path.GetRelativePath(project.RootPath, dialog.FileName).Replace('\\', '/');
+        var relativePath = Path.GetRelativePath(project.RootPath, file).Replace('\\', '/');
         project.SetExternalDtdPath(relativePath);
 
         var (catalog, result) = project.LoadCatalog();
@@ -266,7 +265,7 @@ public partial class ProjectViewModel : ObservableObject
 
         if (result.Warnings.Count > 0)
         {
-            Dialogs.Message("Внешний DTD — предупреждения", string.Join("\n", result.Warnings));
+            await _main.Dialogs.MessageAsync("Внешний DTD — предупреждения", string.Join("\n", result.Warnings));
         }
     }
 

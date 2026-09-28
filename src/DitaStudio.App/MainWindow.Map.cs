@@ -7,6 +7,7 @@ using DitaStudio.App.Views;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
+using DitaStudio.Presentation.Services;
 
 namespace DitaStudio.App;
 
@@ -393,9 +394,9 @@ public partial class MainWindow
         UpdateStatus("Таблица соответствий обновлена.");
     }
 
-    private static List<List<Dialogs.RelTableCell>> ParseRelTable(DitaProject project, DitaNode? reltable, string mapPath)
+    private static List<List<RelTableCell>> ParseRelTable(DitaProject project, DitaNode? reltable, string mapPath)
     {
-        var rows = new List<List<Dialogs.RelTableCell>>();
+        var rows = new List<List<RelTableCell>>();
         if (reltable is null)
         {
             return rows;
@@ -403,12 +404,12 @@ public partial class MainWindow
 
         foreach (var relrow in reltable.ElementChildren().Where(n => n.Name == "relrow"))
         {
-            var row = new List<Dialogs.RelTableCell>();
+            var row = new List<RelTableCell>();
             foreach (var relcell in relrow.ElementChildren().Where(n => n.Name == "relcell"))
             {
                 var topicref = relcell.FirstElement("topicref");
                 var href = topicref?.GetAttribute("href");
-                var cell = new Dialogs.RelTableCell();
+                var cell = new RelTableCell();
 
                 if (!string.IsNullOrWhiteSpace(href))
                 {
@@ -430,7 +431,7 @@ public partial class MainWindow
         return rows;
     }
 
-    private static DitaNode BuildRelTableNode(List<List<Dialogs.RelTableCell>> rows, string mapPath)
+    private static DitaNode BuildRelTableNode(List<List<RelTableCell>> rows, string mapPath)
     {
         var reltable = DitaNode.Element("reltable");
         foreach (var row in rows)

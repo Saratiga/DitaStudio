@@ -1,11 +1,10 @@
 using System.Collections.ObjectModel;
-using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using DitaStudio.App.Views;
 using DitaStudio.Core.Model;
+using DitaStudio.Presentation.Services;
 
-namespace DitaStudio.App.ViewModels;
+namespace DitaStudio.Presentation.ViewModels;
 
 // Вкладки документов: открытие, сохранение, закрытие. NewDocument оставлен
 // в MainWindow.Documents.cs — завязан на дерево проекта (ещё не мигрировано).
@@ -25,7 +24,7 @@ public partial class DocumentsViewModel : ObservableObject
 
     partial void OnSelectedTabChanged(TabViewModel? value) => _main.RefreshEditorContext?.Invoke();
 
-    public DocumentPane? OpenDocument(string path)
+    public IDocumentView? OpenDocument(string path)
     {
         var project = _main.Project;
         if (project is null)
@@ -47,11 +46,11 @@ public partial class DocumentsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Dialogs.Message("Открытие файла", $"Не удалось разобрать {Path.GetFileName(full)}:\n\n{ex.Message}");
+            _ = _main.Dialogs.MessageAsync("Открытие файла", $"Не удалось разобрать {Path.GetFileName(full)}:\n\n{ex.Message}");
             return null;
         }
 
-        var pane = new DocumentPane(project, document);
+        var pane = _main.Services.CreateDocumentView(project, document);
         var tab = new TabViewModel(this, pane, full);
         pane.DirtyChanged += (_, _) => tab.RefreshTitle();
         pane.SelectionChanged += (_, _) => _main.RefreshEditorContext?.Invoke();
@@ -79,26 +78,22 @@ public partial class DocumentsViewModel : ObservableObject
         }
     }
 
-    public void CloseTab(TabViewModel tab)
+    public async Task CloseTabAsync(TabViewModel tab)
     {
         var pane = tab.Pane;
         pane.CommitPendingEdits();
         if (pane.IsDirty)
         {
-            var answer = MessageBox.Show(
-                $"Сохранить изменения в «{pane.Title}»?",
-                "DITA Studio",
-                MessageBoxButton.YesNoCancel,
-                MessageBoxImage.Question);
+            var answer = await _main.Dialogs.AskAsync("DITA Studio", $"Сохранить изменения в «{pane.Title}»?", AskButtons.YesNoCancel);
 
-            if (answer == MessageBoxResult.Cancel)
+            if (answer == AskResult.Cancel)
             {
                 return;
             }
 
-            if (answer == MessageBoxResult.Yes && !pane.Save(out var error))
+            if (answer == AskResult.Yes && !pane.Save(out var error))
             {
-                Dialogs.Message("Сохранение", error ?? "Не удалось сохранить файл.");
+                await _main.Dialogs.MessageAsync("Сохранение", error ?? "Не удалось сохранить файл.");
                 return;
             }
         }
@@ -110,16 +105,16 @@ public partial class DocumentsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void CloseCurrentTab()
+    private async Task CloseCurrentTab()
     {
         if (SelectedTab is { } tab)
         {
-            CloseTab(tab);
+            await CloseTabAsync(tab);
         }
     }
 
     [RelayCommand]
-    private void SaveCurrent()
+    private async Task SaveCurrent()
     {
         var tab = SelectedTab;
         var pane = tab?.Pane;
@@ -130,7 +125,7 @@ public partial class DocumentsViewModel : ObservableObject
 
         if (!pane.Save(out var error))
         {
-            Dialogs.Message("Сохранение", error ?? "Не удалось сохранить файл.");
+            await _main.Dialogs.MessageAsync("Сохранение", error ?? "Не удалось сохранить файл.");
             return;
         }
 
@@ -141,7 +136,7 @@ public partial class DocumentsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void SaveAll()
+    private async Task SaveAll()
     {
         var saved = 0;
         foreach (var tab in Tabs.ToList())
@@ -158,7 +153,7 @@ public partial class DocumentsViewModel : ObservableObject
             }
             else
             {
-                Dialogs.Message("Сохранение", error ?? "Не удалось сохранить файл.");
+                await _main.Dialogs.MessageAsync("Сохранение", error ?? "Не удалось сохранить файл.");
             }
         }
 
@@ -172,7 +167,7 @@ public partial class DocumentsViewModel : ObservableObject
     // true — можно закрывать: всё сохранено или пользователь отказался от
     // правок (тогда и копии для восстановления удаляются). Если сохранить
     // не удалось, возвращает false — иначе правки пропали бы молча.
-    public bool ConfirmClose()
+    public async Task<bool> ConfirmCloseAsync()
     {
         foreach (var tab in Tabs)
         {
@@ -185,20 +180,17 @@ public partial class DocumentsViewModel : ObservableObject
             return true;
         }
 
-        var answer = MessageBox.Show(
-            $"Не сохранено документов: {dirty}. Сохранить перед выходом?",
-            "DITA Studio",
-            MessageBoxButton.YesNoCancel,
-            MessageBoxImage.Question);
+        var answer = await _main.Dialogs.AskAsync("DITA Studio",
+            $"Не сохранено документов: {dirty}. Сохранить перед выходом?", AskButtons.YesNoCancel);
 
-        if (answer == MessageBoxResult.Cancel)
+        if (answer == AskResult.Cancel)
         {
             return false;
         }
 
-        if (answer == MessageBoxResult.Yes)
+        if (answer == AskResult.Yes)
         {
-            SaveAll();
+            await SaveAll();
             if (Tabs.Any(t => t.Pane.IsDirty))
             {
                 return false;

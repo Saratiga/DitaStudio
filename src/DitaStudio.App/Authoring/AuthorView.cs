@@ -8,6 +8,7 @@ using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
+using DitaStudio.Presentation.Services;
 
 namespace DitaStudio.App.Authoring;
 
@@ -15,7 +16,7 @@ namespace DitaStudio.App.Authoring;
 /// Режим «Автор»: документ показывается как оформленный текст, но каждая правка
 /// сразу попадает в дерево DITA. Структурные операции проверяются по контент-модели.
 /// </summary>
-public sealed partial class AuthorView : ScrollViewer
+public sealed partial class AuthorView : ScrollViewer, IAuthorSurface
 {
     private readonly StackPanel _panel = new() { Margin = new Thickness(24, 18, 24, 120) };
     private readonly Dictionary<DitaNode, InlineEditor> _editors = new();
@@ -85,6 +86,8 @@ public sealed partial class AuthorView : ScrollViewer
         Document = document;
         Rebuild();
     }
+
+    void IAuthorSurface.Rebuild() => Rebuild();
 
     public void Rebuild(DitaNode? focusNode = null, int caretOffset = 0)
     {

@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DitaStudio.Core.Project;
 
-namespace DitaStudio.App.ViewModels;
+namespace DitaStudio.Presentation.ViewModels;
 
 // Список карт проекта (выбор в комбобоксе вкладки «Карта»). Дерево карты
 // самой карты (BuildMapTree/BuildMapItem), drag-and-drop, структурные

@@ -2,10 +2,10 @@ using DitaStudio.Core.Plugins;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Validation;
 
-namespace DitaStudio.App.Plugins;
+namespace DitaStudio.Presentation.Plugins;
 
 /// <summary>Загружает плагины из папки plugins/ рядом с приложением один раз при старте (см.
-/// App.xaml.cs) и держит их в статических списках на весь сеанс редактора. Три отдельных прохода
+/// App.xaml.cs оболочки) и держит их в статических списках на весь сеанс редактора. Три отдельных прохода
 /// PluginLoader.Load — по одному на контракт; если один класс реализует сразу несколько
 /// контрактов, он будет создан по разу на каждый (простая, но не самая экономная схема —
 /// приемлемо для небольших плагинов).</summary>

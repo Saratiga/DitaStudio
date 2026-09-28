@@ -12,7 +12,7 @@ namespace DitaStudio.App;
 // метод MainWindow) и NewDocument — завязан на дерево проекта, не мигрирован.
 public partial class MainWindow
 {
-    private DocumentPane? OpenDocument(string path) => ViewModel.Documents.OpenDocument(path);
+    private DocumentPane? OpenDocument(string path) => ViewModel.Documents.OpenDocument(path) as DocumentPane;
 
     private void UpdateTabHeaders() => ViewModel.Documents.RefreshAllTabTitles();
 
@@ -20,7 +20,8 @@ public partial class MainWindow
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        if (!ViewModel.Documents.ConfirmClose())
+        // WPF-диалоги модальные и синхронные — задача к этому моменту уже завершена.
+        if (!ViewModel.Documents.ConfirmCloseAsync().GetAwaiter().GetResult())
         {
             e.Cancel = true;
             return;
@@ -36,7 +37,7 @@ public partial class MainWindow
     protected override void OnActivated(EventArgs e)
     {
         base.OnActivated(e);
-        ViewModel.ExternalChanges.CheckNow();
+        _ = ViewModel.ExternalChanges.CheckNowAsync();
     }
 
     /// <summary>Немедленная копия несохранённых правок — из обработчика непредвиденных ошибок.</summary>
