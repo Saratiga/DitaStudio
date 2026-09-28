@@ -566,6 +566,25 @@ public partial class InsertViewModel : ObservableObject
         }
     }
 
+    /// <summary>Нумерованный абзац (пункт): номер по заголовкам — 2.3.1 (outputclass numbered).</summary>
+    [RelayCommand]
+    private void ToggleNumberedParagraph()
+    {
+        var node = _main.Current?.Author.CurrentNode;
+        if (node is null || node.Name != "p")
+        {
+            _main.StatusText = "Поставьте курсор в абзац.";
+            return;
+        }
+
+        var enabled = _main.Current!.Author.ToggleCurrentOutputClass(HeadingNumbering.NumberedClass);
+        _main.Documents.RefreshAllTabTitles();
+        _main.RefreshAttributePanel?.Invoke();
+        _main.StatusText = enabled == true
+            ? "Абзац нумерованный: при публикации получит номер по заголовкам (например, 2.3.1)."
+            : "Абзац больше не нумеруется.";
+    }
+
     /// <summary>Заголовок «без номера»: не нумеруется и не попадает в оглавление (outputclass nonumber).</summary>
     [RelayCommand]
     private void ToggleUnnumberedTitle()

@@ -118,7 +118,8 @@ public sealed class DocxPublisher
                 Filter = node => PublishFilter.IsIncluded(node, options),
                 TopicBookmark = (path, id) => bookmarks.TryGetValue(BookmarkKey(path, id), out var name) ? name : null,
                 Styles = styles,
-                NumberFiguresAndTables = layout.NumberFiguresAndTables
+                NumberFiguresAndTables = layout.NumberFiguresAndTables,
+                HeadingNumId = layout.NumberHeadings ? HeadingNumId : null
             };
             var renderer = new DocxRenderer(_project, mainPart, numberingPart, renderOptions);
 
@@ -577,7 +578,9 @@ public sealed class DocxPublisher
         abstractNum.Append(new W.MultiLevelType { Val = W.MultiLevelValues.Multilevel });
         for (var i = 0; i < 9; i++)
         {
-            var numbered = i < depth;
+            // Все уровни десятичные: глубже настройки номера получают только нумерованные абзацы
+            // (стили заголовков к этим уровням не привязаны).
+            var numbered = true;
             var text = string.Join(".", Enumerable.Range(1, i + 1).Select(n => "%" + n));
             var level = new W.Level
             {
@@ -590,7 +593,7 @@ public sealed class DocxPublisher
                 PreviousParagraphProperties = new W.PreviousParagraphProperties(new W.Indentation { Left = "0", FirstLine = "0" })
             };
 
-            if (numbered && i < 6)
+            if (i < depth && i < 6)
             {
                 level.ParagraphStyleIdInLevel = new W.ParagraphStyleIdInLevel { Val = DocxStyleCatalog.Heading(i + 1) };
             }

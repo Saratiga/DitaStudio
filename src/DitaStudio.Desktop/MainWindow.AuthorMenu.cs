@@ -123,7 +123,16 @@ public partial class MainWindow
             {
                 new MenuItem { Header = "Выравнивание", ItemsSource = align },
                 new MenuItem { Header = "Размер шрифта", ItemsSource = sizes },
-                new MenuItem { Header = "Цвет текста", ItemsSource = colors }
+                new MenuItem { Header = "Цвет текста", ItemsSource = colors },
+                new Separator(),
+                new MenuItem
+                {
+                    Header = "Нумерованный абзац (2.3.1)",
+                    ToggleType = MenuItemToggleType.CheckBox,
+                    IsChecked = node is { Name: "p" } && HeadingNumbering.IsNumbered(node),
+                    IsEnabled = node is { Name: "p" },
+                    Command = ViewModel.Insert.ToggleNumberedParagraphCommand
+                }
             }
         };
     }

@@ -392,9 +392,24 @@ public sealed partial class AuthorView
         }
     }
 
-    /// <summary>У заголовка «без номера» справа — пометка, чтобы было видно без атрибутов.</summary>
+    /// <summary>
+    /// Пометки, видные без атрибутов: у заголовка «без номера» — справа, у нумерованного абзаца —
+    /// «№» слева (сам номер зависит от места в карте и считается при публикации).
+    /// </summary>
     private static Control WithTitleBadge(DitaNode node, BlockEditor editor)
     {
+        if (node.Name == "p" && HeadingNumbering.IsNumbered(node))
+        {
+            var mark = new TextBlock { Text = "№", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 1, 6, 0) };
+            Themed(mark, TextBlock.ForegroundProperty, "Accent");
+            ToolTip.SetTip(mark, "Нумерованный абзац: номер по заголовкам (например, 2.3.1) — при публикации");
+            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+            Grid.SetColumn(editor, 1);
+            row.Children.Add(mark);
+            row.Children.Add(editor);
+            return row;
+        }
+
         if (node.Name != "title" || !TocRules.IsUnnumbered(node))
         {
             return editor;

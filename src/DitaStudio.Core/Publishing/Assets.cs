@@ -42,6 +42,7 @@ h2 { font-size: 23px; }
 h3 { font-size: 19px; }
 h4 { font-size: 17px; }
 p { margin: .7em 0; }
+.heading-number, .para-number { margin-right: .35em; }
 a { color: var(--accent); }
 .shortdesc { font-size: 17px; color: var(--muted); margin-bottom: 1.2em; }
 .section { margin: 1.4em 0; }

@@ -439,6 +439,35 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task NumberedParagraphButton_TogglesClassAndMark()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.StartsWith("Проект"));
+        pane.AuthorEditor.EditorFor(p)!.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+
+        var toolbar = window.GetLogicalDescendants().OfType<WrapPanel>().Single(w => w.Name == "MainToolbar");
+        var button = toolbar.Children.OfType<Button>().Single(b => ToolTip.GetTip(b) as string == "Нумерованный абзац: номер по заголовкам (2.3.1)");
+        button.Command!.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("numbered", p.GetAttribute("outputclass"));
+        Assert.Contains(pane.AuthorEditor.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "№");
+
+        var editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        var format = editor.BuildContextMenu(0).Items.OfType<MenuItem>().Single(i => i.Header as string == "Оформление");
+        Assert.True(format.ItemsSource!.OfType<MenuItem>().Single(i => i.Header as string == "Нумерованный абзац (2.3.1)").IsChecked);
+
+        button.Command!.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(p.GetAttribute("outputclass"));
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void TopMenuItems_FitTheirText()
     {
         // Полоса меню Fluent была фиксированной высоты — пункты сжимались, текст срезался снизу.

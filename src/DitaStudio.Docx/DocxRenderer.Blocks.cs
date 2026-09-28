@@ -96,6 +96,14 @@ public sealed partial class DocxRenderer
 
         switch (node.Name)
         {
+            case "p" when HeadingNumbering.IsNumbered(node):
+            {
+                var paragraph = Para(DocxStyleCatalog.BodyText, RenderInlineRuns(node));
+                NumberParagraph(paragraph);
+                yield return WithOutputClass(paragraph, node);
+                yield break;
+            }
+
             case "p":
                 yield return WithOutputClass(Para(DocxStyleCatalog.BodyText, RenderInlineRuns(node)), node);
                 yield break;

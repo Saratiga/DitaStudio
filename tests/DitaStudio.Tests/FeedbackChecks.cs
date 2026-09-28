@@ -716,4 +716,79 @@ internal static partial class CoreChecks
             Check(html.Contains("<tr style=\"height:15mm\">"), "HTML: высота строки");
         });
     }
+
+    /// <summary>П. 19: нумерованные абзацы с номером по заголовкам (2.3.1).</summary>
+    internal static void NumberedParagraphTests()
+    {
+        Section("Нумерованные абзацы");
+
+        var counter = new HeadingNumbering(numberHeadings: true, depth: 3);
+        var sequence = new List<string?>
+        {
+            counter.Heading(1, false), counter.Heading(2, false), counter.Paragraph(), counter.Paragraph(),
+            counter.Heading(2, false), counter.Heading(1, false), counter.Heading(2, false), counter.Heading(2, false),
+            counter.Heading(2, false), counter.Paragraph(), counter.Heading(3, false), counter.Heading(2, true), counter.Paragraph()
+        };
+        Check(string.Join(" ", sequence.Select(n => n ?? "—")) == "1 1.1 1.1.1 1.1.2 1.2 2 2.1 2.2 2.3 2.3.1 2.3.2 — 2.3.2.1",
+            "счётчик: абзац — на уровень ниже заголовка, следующий подзаголовок продолжает счёт (ГОСТ 2.105): " +
+            string.Join(" ", sequence.Select(n => n ?? "—")));
+        var simple = new HeadingNumbering(numberHeadings: false, depth: 3);
+        Check(simple.Paragraph() == "1" && simple.Paragraph() == "2" && simple.Heading(1, false) is null && simple.Paragraph() == "1",
+            "без нумерации заголовков: 1, 2 — и заново после заголовка");
+
+        var files = new Dictionary<string, string>
+        {
+            ["a.dita"] = "<concept id=\"a\"><title>Глава 1</title><conbody><p>Текст</p></conbody></concept>",
+            ["b.dita"] = "<concept id=\"b\"><title>Глава 2</title><conbody><p>Текст</p></conbody></concept>",
+            ["b1.dita"] = "<concept id=\"b1\"><title>Раздел 2.1</title><conbody><p>x</p></conbody></concept>",
+            ["b2.dita"] = "<concept id=\"b2\"><title>Раздел 2.2</title><conbody><p>x</p></conbody></concept>",
+            ["b3.dita"] = "<concept id=\"b3\"><title>Раздел 2.3</title><conbody><p outputclass=\"numbered\">Первый пункт</p><p outputclass=\"numbered\">Второй пункт</p></conbody></concept>",
+            ["guide.ditamap"] = """
+<map><title>Книга</title>
+  <topicref href="a.dita"/>
+  <topicref href="b.dita"><topicref href="b1.dita"/><topicref href="b2.dita"/><topicref href="b3.dita"/></topicref>
+</map>
+"""
+        };
+
+        WithProject(files, (root, project) =>
+        {
+            project.SetDocxLayout(new DocxLayout { NumberHeadings = true, NumberingDepth = 3 });
+            var single = new HtmlPublisher(project).Publish(Path.Combine(root, "guide.ditamap"),
+                new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true });
+            var html = File.ReadAllText(single.EntryFile);
+            Check(html.Contains("<span class=\"para-number\">2.3.1</span> Первый пункт") && html.Contains("<span class=\"para-number\">2.3.2</span> Второй пункт"),
+                "HTML/PDF: абзацы 2.3.1 и 2.3.2");
+            Check(html.Contains("<span class=\"heading-number\">2.3</span> Раздел 2.3"), "HTML/PDF: заголовки тоже с номерами");
+
+            var site = new HtmlPublisher(project).Publish(Path.Combine(root, "guide.ditamap"),
+                new PublishOptions { OutputDirectory = Path.Combine(root, "site") });
+            var page = File.ReadAllText(site.Files.First(f => f.EndsWith("b3.html", StringComparison.OrdinalIgnoreCase)));
+            Check(page.Contains("<span class=\"para-number\">2.3.1</span>"), "сайт: номера те же, что в издании");
+
+            var outFile = Path.Combine(root, "book.docx");
+            new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            CheckValidDocx(outFile, "DOCX с нумерованными абзацами");
+            using var package = WordprocessingDocument.Open(outFile, false);
+            var body = package.MainDocumentPart!.Document.Body!;
+            var first = body.Descendants<W.Paragraph>().First(p => p.InnerText == "Первый пункт");
+            var numPr = first.ParagraphProperties?.NumberingProperties;
+            Check(numPr?.NumberingId?.Val?.Value == 9000 && numPr.NumberingLevelReference?.Val?.Value == 2,
+                $"DOCX: абзац в списке заголовков на 3-м уровне: numId {numPr?.NumberingId?.Val?.Value}, ilvl {numPr?.NumberingLevelReference?.Val?.Value}");
+            var level = package.MainDocumentPart.NumberingDefinitionsPart!.Numbering!.Elements<W.AbstractNum>()
+                .Single(a => a.AbstractNumberId?.Value == 1002).Elements<W.Level>().Single(l => l.LevelIndex?.Value == 2);
+            Check(level.LevelText?.Val?.Value == "%1.%2.%3", "DOCX: формат уровня — 2.3.1");
+        });
+
+        WithProject(files, (root, project) =>
+        {
+            var outFile = Path.Combine(root, "book.docx");
+            new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            CheckValidDocx(outFile, "DOCX с нумерованными абзацами без нумерации заголовков");
+            using var package = WordprocessingDocument.Open(outFile, false);
+            var numPr = package.MainDocumentPart!.Document.Body!.Descendants<W.Paragraph>().First(p => p.InnerText == "Второй пункт").ParagraphProperties?.NumberingProperties;
+            Check(numPr?.NumberingId?.Val?.Value is { } id && id != 9000 && numPr.NumberingLevelReference?.Val?.Value == 0,
+                "DOCX без нумерации заголовков: свой простой список 1, 2");
+        });
+    }
 }

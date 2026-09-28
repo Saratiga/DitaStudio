@@ -128,7 +128,8 @@ public sealed class HtmlPublisher
             ShowDraftComments = options.ShowDraftComments,
             ImageSource = ImageSource,
             Filter = node => PublishFilter.IsIncluded(node, options),
-            FlagRules = options.FlagConditions
+            FlagRules = options.FlagConditions,
+            Numbering = new HeadingNumbering(_project.DocxLayout.NumberHeadings, _project.DocxLayout.NumberingDepth)
         };
 
         if (options.SingleFile)
@@ -181,6 +182,8 @@ public sealed class HtmlPublisher
                 : RefResolver.FindById(expanded.Root, item.TargetTopicId) ?? expanded.Root;
 
             renderOptions.CurrentKeyScope = item.KeyScopeChain;
+            renderOptions.TopicLevel = Math.Clamp(item.Level, 1, 9);
+            renderOptions.TopicUnnumbered = TocRules.IsHiddenInMap(item.Node);
             renderOptions.RelatedTopics = tree.RelatedLinks.TryGetValue(Path.GetFullPath(path), out var related) ? related : null;
             var body = renderer.RenderTopic(expanded, topicNode);
             var pageToc = BuildToc(tree, fileNames, item);
@@ -259,6 +262,8 @@ public sealed class HtmlPublisher
             body.Append("<div class=\"topic-chunk").Append(level == 1 ? " chapter-heading" : string.Empty)
                 .Append("\" id=\"").Append(anchor).Append("\">\n");
             renderOptions.CurrentKeyScope = item.KeyScopeChain;
+            renderOptions.TopicLevel = Math.Clamp(item.Level, 1, 9);
+            renderOptions.TopicUnnumbered = TocRules.IsHiddenInMap(item.Node);
             renderOptions.RelatedTopics = tree.RelatedLinks.TryGetValue(Path.GetFullPath(item.TargetPath!), out var related)
                 ? related
                 : null;
@@ -288,6 +293,8 @@ public sealed class HtmlPublisher
         {
             Labels = labels,
             ShowDraftComments = true,
+            // Предпросмотр одного топика: номеров по изданию не знает — нумерованные абзацы 1, 2, 3.
+            Numbering = new HeadingNumbering(numberHeadings: false, depth: 1),
             ImageSource = absolute => new Uri(absolute).AbsoluteUri,
             TopicLink = (path, id) => id is null ? new Uri(path).AbsoluteUri : new Uri(path).AbsoluteUri + "#" + id,
             // В отличие от Publish() — предпросмотр показывает помеченное на удаление содержимое

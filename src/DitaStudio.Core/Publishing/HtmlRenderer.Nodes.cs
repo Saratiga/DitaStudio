@@ -71,6 +71,9 @@ public sealed partial class HtmlRenderer
         switch (node.Name)
         {
             // ------------------------------------------------------- блоки
+            case "p" when _options.Numbering is { } numbering && HeadingNumbering.IsNumbered(node):
+                return $"<p{Attrs(node)}><span class=\"para-number\">{numbering.Paragraph()}</span> {RenderInlineChildren(node)}</p>\n";
+
             case "p":
                 return $"<p{Attrs(node)}>{RenderInlineChildren(node)}</p>\n";
 

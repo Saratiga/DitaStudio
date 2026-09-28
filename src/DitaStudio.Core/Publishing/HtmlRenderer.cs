@@ -27,6 +27,15 @@ public sealed class RenderOptions
 
     public bool NumberFiguresAndTables { get; set; } = true;
 
+    /// <summary>Номера заголовков и нумерованных абзацев (один счётчик на издание); null — без номеров.</summary>
+    public HeadingNumbering? Numbering { get; set; }
+
+    /// <summary>Уровень текущего топика в карте — для номеров (страница сайта рисуется с h1).</summary>
+    public int? TopicLevel { get; set; }
+
+    /// <summary>Строка карты текущего топика — «без номера» (toc="no").</summary>
+    public bool TopicUnnumbered { get; set; }
+
     /// <summary>Цепочка имён областей ключей (keyscope) для топика, который сейчас рендерится —
     /// см. MapItem.KeyScopeChain. Публикатор обновляет её перед каждым RenderTopic.</summary>
     public IReadOnlyList<string>? CurrentKeyScope { get; set; }
@@ -83,6 +92,11 @@ public sealed partial class HtmlRenderer
     /// <summary>Отрисовывает один топик. headingLevel = 1 для отдельной страницы.</summary>
     public string RenderTopic(DitaDocument document, DitaNode topic, int headingLevel = 1)
     {
+        if (_nestedDepth == 0)
+        {
+            _levelOffset = (_options.TopicLevel ?? headingLevel) - headingLevel;
+        }
+
         _document = document;
         _footnotes = new List<DitaNode>();
 
@@ -122,6 +136,7 @@ public sealed partial class HtmlRenderer
                 case "glossterm":
                     sb.Append('<').Append(H(headingLevel)).Append(OptionalClassAttr(child))
                       .Append('>')
+                      .Append(HeadingNumber(headingLevel, _options.TopicUnnumbered || TocRules.IsUnnumbered(child)))
                       .Append(RenderInlineChildren(child))
                       .Append("</").Append(H(headingLevel)).Append(">\n");
                     break;
@@ -209,7 +224,12 @@ public sealed partial class HtmlRenderer
         var savedHref = _currentTopicHref;
         var savedRelated = _options.RelatedTopics;
         _options.RelatedTopics = null; // связи reltable относятся к topicref карты, а не к вложенным топикам файла
+        _nestedDepth++;
+        var savedUnnumbered = _options.TopicUnnumbered;
+        _options.TopicUnnumbered = false;
         var html = RenderTopic(document, topic, Math.Min(level, 6));
+        _options.TopicUnnumbered = savedUnnumbered;
+        _nestedDepth--;
         _footnotes = savedFootnotes;
         _currentTopicHref = savedHref;
         _options.RelatedTopics = savedRelated;
@@ -217,6 +237,16 @@ public sealed partial class HtmlRenderer
     }
 
     private static string H(int level) => "h" + Math.Clamp(level, 1, 6);
+
+    // Уровень заголовка в издании = уровень в разметке страницы + сдвиг (страница сайта — всегда h1).
+    private int _levelOffset;
+    private int _nestedDepth;
+
+    /// <summary>Номер заголовка «2.3 » в разметке (или пусто) — счётчик идёт по всем заголовкам издания.</summary>
+    private string HeadingNumber(int pageLevel, bool unnumbered) =>
+        _options.Numbering?.Heading(pageLevel + _levelOffset, unnumbered) is { } number
+            ? $"<span class=\"heading-number\">{number}</span> "
+            : string.Empty;
 
     private bool Include(DitaNode node) => _options.Filter?.Invoke(node) ?? true;
 }
