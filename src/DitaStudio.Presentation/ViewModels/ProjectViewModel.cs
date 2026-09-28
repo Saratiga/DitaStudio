@@ -464,6 +464,15 @@ public partial class ProjectViewModel : ObservableObject
         _main.RefreshProjectTree?.Invoke();
         _main.RefreshMapSelector?.Invoke();
         RefreshKeysList();
+
+        // Топик сразу попадает в карту, открытую на вкладке «Карта» (карта — нет: её место в
+        // иерархии выбирают вручную).
+        var isMap = DitaCatalog.Default.Get(document.Root.Name)?.IsMapType ?? false;
+        var added = !isMap && _main.Map.AddCreatedTopic(path);
         _main.OpenDocument?.Invoke(path);
+        if (added)
+        {
+            _main.StatusText = $"Создан {result.FileName} и добавлен в карту {_main.Map.SelectedMap!.RelativePath} (не забудьте сохранить карту).";
+        }
     }
 }

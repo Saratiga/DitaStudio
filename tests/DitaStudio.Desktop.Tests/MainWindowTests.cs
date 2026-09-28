@@ -125,6 +125,30 @@ public sealed class MainWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task CreatedTopic_GoesIntoMap_AfterSelectedNode()
+    {
+        var (window, vm) = await OpenAsync();
+        var map = Path.Combine(_project, "guide.ditamap");
+        Assert.Equal(map, vm.Map.SelectedMap!.FullPath);
+
+        static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
+        vm.Map.SelectedNode = vm.Map.Tree.SelectMany(All).First(n => n.Item.TargetPath?.EndsWith("settings.dita") == true);
+
+        var path = Path.Combine(_project, "tasks", "new-topic.dita");
+        var topic = DitaStudio.Core.Templates.DocumentTemplates.Create("task", "Новая задача");
+        topic.Save(path);
+        vm.Project!.AddFile(path);
+
+        Assert.True(vm.Map.AddCreatedTopic(path));
+        var mapPane = vm.Documents.Tabs.Single(t => t.FullPath == map).Pane;
+        var refs = mapPane.Document.Root.ElementChildren().Where(n => n.Name == "topicref").Select(n => n.GetAttribute("href")).ToList();
+        Assert.Equal(refs.IndexOf("reference/settings.dita") + 1, refs.IndexOf("tasks/new-topic.dita"));
+        Assert.True(mapPane.Document.IsDirty);
+        Assert.EndsWith("new-topic.dita", vm.Map.SelectedNode?.Item.TargetPath);
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void TopMenuItems_FitTheirText()
     {
         // Полоса меню Fluent была фиксированной высоты — пункты сжимались, текст срезался снизу.

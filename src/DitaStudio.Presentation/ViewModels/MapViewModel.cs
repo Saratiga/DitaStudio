@@ -152,6 +152,38 @@ public partial class MapViewModel : ObservableObject
         AfterMapEdit(pane);
     }
 
+    /// <summary>
+    /// Только что созданный топик — сразу в карту, выбранную на вкладке «Карта»: после выбранного
+    /// узла (без выбора — в конец карты); новый узел становится выбранным. false — карты нет.
+    /// </summary>
+    public bool AddCreatedTopic(string path)
+    {
+        if (_main.Project is null || SelectedMap is not { } map)
+        {
+            return false;
+        }
+
+        var pane = OpenMapPane();
+        if (pane is null)
+        {
+            return false;
+        }
+
+        pane.PushUndo("Добавление нового топика в карту");
+        var topicref = DitaNode.Element("topicref");
+        topicref.SetAttribute("href", RefResolver.MakeRelative(map.FullPath, path));
+        InsertAtSelection(pane, topicref);
+        AfterMapEdit(pane);
+
+        var full = Path.GetFullPath(path);
+        SelectedNode = Tree.SelectMany(Flatten).FirstOrDefault(n =>
+            n.Item.TargetPath is { } target && string.Equals(Path.GetFullPath(target), full, StringComparison.OrdinalIgnoreCase));
+        return true;
+    }
+
+    private static IEnumerable<MapTreeNode> Flatten(MapTreeNode node) =>
+        node.Children.SelectMany(Flatten).Prepend(node);
+
     [RelayCommand]
     private void AddTopichead()
     {
