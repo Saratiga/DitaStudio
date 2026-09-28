@@ -563,4 +563,67 @@ internal static partial class CoreChecks
             Check(html.Contains("class=\"align-right\"") && html.Contains(".align-right { text-align: right; }"), "HTML: класс и его CSS");
         });
     }
+
+    /// <summary>Итоговое значение свойства прогона DOCX: прямое, из стиля знака, из стиля абзаца (с basedOn).</summary>
+    private static string? DocxRunValue(WordprocessingDocument package, W.Run run, Func<W.RunProperties?, W.StyleRunProperties?, string?> read)
+    {
+        if (read(run.RunProperties, null) is { } direct)
+        {
+            return direct;
+        }
+
+        var styles = package.MainDocumentPart!.StyleDefinitionsPart!.Styles!.Elements<W.Style>().ToDictionary(st => st.StyleId!.Value!);
+        string? FromStyle(string? id)
+        {
+            for (; id is not null && styles.TryGetValue(id, out var style); id = style.BasedOn?.Val?.Value)
+            {
+                if (read(null, style.StyleRunProperties) is { } value)
+                {
+                    return value;
+                }
+            }
+
+            return null;
+        }
+
+        return FromStyle(run.RunProperties?.RunStyle?.Val?.Value)
+               ?? FromStyle(run.Ancestors<W.Paragraph>().First().ParagraphProperties?.ParagraphStyleId?.Val?.Value);
+    }
+
+    /// <summary>П. 16: размер шрифта фразы и абзаца — классы size-N.</summary>
+    internal static void TextSizeTests()
+    {
+        Section("Размер шрифта");
+
+        WithProject(new Dictionary<string, string>
+        {
+            ["a.dita"] = """
+<concept id="a"><title>T</title><conbody>
+<p>Обычный <ph outputclass="size-10">мелкий</ph> текст</p>
+<p outputclass="size-14">Крупный абзац</p>
+</conbody></concept>
+""",
+            ["guide.ditamap"] = "<map><title>Книга</title><topicref href=\"a.dita\"/></map>"
+        }, (root, project) =>
+        {
+            var outFile = Path.Combine(root, "book.docx");
+            var result = new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, outFile);
+            CheckValidDocx(outFile, "DOCX с размерами шрифта");
+            Check(result.Warnings.Count == 0, "без предупреждений: " + string.Join("; ", result.Warnings));
+            using (var package = WordprocessingDocument.Open(outFile, false))
+            {
+                var body = package.MainDocumentPart!.Document.Body!;
+                string? Size(string text) => DocxRunValue(package, body.Descendants<W.Run>().First(r => r.InnerText.Contains(text)),
+                    (direct, style) => direct?.FontSize?.Val?.Value ?? style?.FontSize?.Val?.Value);
+                Check(Size("мелкий") == "20", $"DOCX: фраза size-10 — 10 пт: {Size("мелкий")}");
+                Check(Size("Крупный") == "28", $"DOCX: абзац size-14 — 14 пт: {Size("Крупный")}");
+                Check(Size("Обычный") != "20", "DOCX: остальной текст абзаца не мельчает");
+            }
+
+            var single = new HtmlPublisher(project).Publish(Path.Combine(root, "guide.ditamap"),
+                new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true });
+            var html = File.ReadAllText(single.EntryFile);
+            Check(html.Contains("class=\"size-10\"") && html.Contains(".size-10 { font-size: 10pt; }"), "HTML: класс фразы и его CSS");
+        });
+    }
 }

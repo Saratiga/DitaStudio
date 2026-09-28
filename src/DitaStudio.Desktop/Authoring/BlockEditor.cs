@@ -11,6 +11,7 @@ using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Authoring;
 
@@ -273,6 +274,49 @@ public sealed class BlockEditor : TextEditor
         }
 
         Select(offset, placeholder.Length);
+        CommitFormatting();
+    }
+
+    /// <summary>
+    /// Класс оформления (размер, цвет) для выделения: уже оформленный ровно этим участком ph
+    /// получает новый класс, иначе выделение оборачивается в ph с классом. Без выделения у курсора
+    /// появляется выделенная заготовка с классом — дальше текст печатается уже так. null — снять
+    /// класс группы с выделения (или с фрагмента у курсора).
+    /// </summary>
+    public void ApplyInlineClass(string prefix, string? token)
+    {
+        var selection = TextArea.Selection;
+        if (token is null)
+        {
+            var (start, length) = selection.IsEmpty
+                ? (Math.Max(0, CaretOffset - 1), 1)
+                : (selection.SurroundingSegment.Offset, selection.SurroundingSegment.Length);
+            if (_content.ClearClass(start, length, prefix))
+            {
+                CommitFormatting();
+            }
+
+            return;
+        }
+
+        if (selection.IsEmpty)
+        {
+            var ph = DitaNode.Element("ph");
+            ph.SetAttribute("outputclass", token);
+            InsertInlineElement(ph, "текст");
+            return;
+        }
+
+        var segment = selection.SurroundingSegment;
+        if (_content.ExactWrapper(segment.Offset, segment.Length, "ph") is { } existing)
+        {
+            TextFormatting.SetToken(existing, prefix, token);
+        }
+        else if (_content.WrapNode(segment.Offset, segment.Length, "ph") is { } wrapper)
+        {
+            wrapper.SetAttribute("outputclass", token);
+        }
+
         CommitFormatting();
     }
 
@@ -632,12 +676,13 @@ public sealed class BlockEditor : TextEditor
                     continue;
                 }
 
-                var names = span.Chain.Nodes.Select(n => n.Name).ToArray();
+                var nodes = span.Chain.Nodes;
                 ChangeLinePart(start, end, element =>
                 {
-                    foreach (var name in names)
+                    foreach (var node in nodes)
                     {
-                        InlineStyles.Apply(element.TextRunProperties, name, _editor.ThemeBrush, mono);
+                        InlineStyles.Apply(element.TextRunProperties, node.Name, _editor.ThemeBrush, mono);
+                        InlineStyles.ApplyFormatting(element.TextRunProperties, node);
                     }
                 });
             }

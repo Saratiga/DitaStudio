@@ -44,6 +44,12 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
     public abstract bool InsertInlineNode(DitaNode node);
 
     /// <summary>
+    /// Размер или цвет выделенного текста: весь текст блока — классом на самом блоке, часть —
+    /// фразой ph с классом, без выделения — заготовкой у курсора. false — оболочка так не умеет.
+    /// </summary>
+    public virtual bool ApplyTextFormat(string prefix, string? token) => false;
+
+    /// <summary>
     /// Вставляет у курсора фразовый элемент с текстом: выделение оборачивается, иначе внутрь
     /// ставится выделенная заготовка <paramref name="placeholder"/>. false — оболочка так не умеет
     /// (тогда элемент вставляется блоком после текущего).

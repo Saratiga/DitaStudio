@@ -356,6 +356,53 @@ public sealed class AuthorViewTests
         }
     }
 
+    [AvaloniaFact]
+    public void FontSize_WrapsSelection_ReusesWrapper_WholeBlock_Caret_Reset()
+    {
+        // Замечание: «печатали 14 пт, дальше надо 10 пт» — без правки XML.
+        var (window, author, document, _) = Show();
+        var second = Paragraphs(document)[1];
+        var editor = Focus(window, author, second, 0);
+        const string size = Core.Publishing.TextFormatting.SizePrefix;
+
+        editor.Select(0, "Второй".Length);
+        Assert.True(author.Surface.ApplyTextFormat(size, "size-10"));
+        author.FlushPendingEdits();
+        Assert.Equal("<p><ph outputclass=\"size-10\">Второй</ph> абзац.</p>", XmlSerializer.ToXml(second));
+
+        // Тот же участок ещё раз — меняется класс, без вложенной обёртки.
+        editor = Focus(window, author, second, 0);
+        editor.Select(0, "Второй".Length);
+        author.Surface.ApplyTextFormat(size, "size-14");
+        author.FlushPendingEdits();
+        Assert.Equal("<p><ph outputclass=\"size-14\">Второй</ph> абзац.</p>", XmlSerializer.ToXml(second));
+
+        // Весь текст блока — класс на самом абзаце, лишняя фраза уходит.
+        editor = Focus(window, author, second, 0);
+        editor.Select(0, editor.Document.TextLength);
+        author.Surface.ApplyTextFormat(size, "size-12");
+        Dispatcher.UIThread.RunJobs();
+        author.FlushPendingEdits();
+        Assert.Equal("<p outputclass=\"size-12\">Второй абзац.</p>", XmlSerializer.ToXml(second));
+        Assert.Equal(16, author.EditorFor(second)!.FontSize);
+
+        // Без выделения — заготовка у курсора, набор идёт уже этим размером.
+        editor = Focus(window, author, second, "Второй абзац.".Length);
+        author.Surface.ApplyTextFormat(size, "size-8");
+        window.KeyTextInput(" Мелко");
+        Dispatcher.UIThread.RunJobs();
+        author.FlushPendingEdits();
+        Assert.Equal("<p outputclass=\"size-12\">Второй абзац.<ph outputclass=\"size-8\"> Мелко</ph></p>", XmlSerializer.ToXml(second));
+
+        // Сброс на выделении — фраза без других атрибутов разворачивается.
+        editor = Focus(window, author, second, 0);
+        editor.Select("Второй абзац.".Length, " Мелко".Length);
+        author.Surface.ApplyTextFormat(size, null);
+        author.FlushPendingEdits();
+        Assert.Equal("<p outputclass=\"size-12\">Второй абзац. Мелко</p>", XmlSerializer.ToXml(second));
+        window.Close();
+    }
+
     private const char InlineChar = Presentation.Authoring.InlineContent.ChipChar;
 
     [AvaloniaTheory]

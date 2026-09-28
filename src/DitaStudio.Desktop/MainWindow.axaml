@@ -180,6 +180,9 @@
                     <Path Classes="icon" Data="M2,3.5 H2.2 M7,3.5 H15 M2,8 H2.2 M7,8 H15 M2,12.5 H2.2 M7,12.5 H15" StrokeThickness="2.4" />
                 </Button>
                 <Rectangle Classes="separator" />
+                <ComboBox Name="FontSizeBox" ItemsSource="{Binding Insert.FontSizes}" PlaceholderText="Размер" Width="92"
+                          VerticalAlignment="Center" Margin="2,0" SelectionChanged="OnFontSizeSelected"
+                          ToolTip.Tip="Размер шрифта выделенного текста или того, что будет набрано дальше (пт)" />
                 <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-left" ToolTip.Tip="По левому краю">
                     <Path Classes="icon" Data="M1,3 H15 M1,6.5 H10 M1,10 H15 M1,13.5 H10" />
                 </Button>

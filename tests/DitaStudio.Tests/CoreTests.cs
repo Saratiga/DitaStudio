@@ -82,6 +82,7 @@ public sealed class CoreTests
     [Fact] public void ExcludeFromPublicationTests() => Run(CoreChecks.ExcludeFromPublicationTests);
     [Fact] public void HeaderImageTests() => Run(CoreChecks.HeaderImageTests);
     [Fact] public void TextAlignmentTests() => Run(CoreChecks.TextAlignmentTests);
+    [Fact] public void TextSizeTests() => Run(CoreChecks.TextSizeTests);
 
     private void Run(Action section)
     {

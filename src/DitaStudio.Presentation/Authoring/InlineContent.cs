@@ -1,5 +1,6 @@
 using System.Text;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 
 namespace DitaStudio.Presentation.Authoring;
@@ -429,11 +430,14 @@ public sealed class InlineContent
     /// участка предками, поэтому частично оформленный текст вкладывается в него целиком
     /// (<c>&lt;w&gt;x&lt;b&gt;y&lt;/b&gt;&lt;/w&gt;</c>, а не два отдельных <c>w</c>).
     /// </summary>
-    public bool Wrap(int start, int length, string elementName)
+    public bool Wrap(int start, int length, string elementName) => WrapNode(start, length, elementName) is not null;
+
+    /// <summary>Как <see cref="Wrap"/>, но возвращает новый элемент (чтобы задать ему атрибуты).</summary>
+    public DitaNode? WrapNode(int start, int length, string elementName)
     {
         if (length <= 0 || start < 0 || start + length > _text.Length)
         {
-            return false;
+            return null;
         }
 
         var common = _chains[start].Nodes.Count;
@@ -467,7 +471,79 @@ public sealed class InlineContent
             _chains[i] = updated;
         }
 
-        return true;
+        return wrapper;
+    }
+
+    /// <summary>
+    /// Фразовый элемент <paramref name="elementName"/>, который покрывает ровно участок (ни
+    /// символом больше, ни меньше), — самый глубокий; null — такого нет.
+    /// </summary>
+    public DitaNode? ExactWrapper(int start, int length, string elementName)
+    {
+        if (length <= 0 || start < 0 || start + length > _text.Length)
+        {
+            return null;
+        }
+
+        bool Has(int index, DitaNode node) =>
+            index >= 0 && index < _chains.Count && _chains[index].Nodes.Any(n => ReferenceEquals(n, node));
+
+        foreach (var node in _chains[start].Nodes.Where(n => n.Name == elementName).Reverse())
+        {
+            if (!Has(start - 1, node) && !Has(start + length, node) &&
+                Enumerable.Range(start, length).All(i => Has(i, node)))
+            {
+                return node;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Снимает класс группы <paramref name="prefix"/> с фразовых элементов участка; ph, у которого
+    /// после этого не осталось атрибутов, разворачивается (его текст остаётся на месте).
+    /// </summary>
+    public bool ClearClass(int start, int length, string prefix)
+    {
+        var nodes = new List<DitaNode>();
+        for (var i = Math.Max(start, 0); i < Math.Min(start + length, _chains.Count); i++)
+        {
+            foreach (var node in _chains[i].Nodes)
+            {
+                if (!nodes.Any(n => ReferenceEquals(n, node)) && TextFormatting.Token(node, prefix) is not null)
+                {
+                    nodes.Add(node);
+                }
+            }
+        }
+
+        foreach (var node in nodes)
+        {
+            TextFormatting.SetToken(node, prefix, null);
+            if (node.Name == "ph" && node.Attributes.Count == 0)
+            {
+                var mapped = new Dictionary<InlineChain, InlineChain>(ReferenceEqualityComparer.Instance);
+                for (var i = 0; i < _chains.Count; i++)
+                {
+                    var chain = _chains[i];
+                    if (!chain.Nodes.Any(n => ReferenceEquals(n, node)))
+                    {
+                        continue;
+                    }
+
+                    if (!mapped.TryGetValue(chain, out var updated))
+                    {
+                        updated = new InlineChain(chain.Nodes.Where(n => !ReferenceEquals(n, node)).ToArray(), chain.Chip);
+                        mapped[chain] = updated;
+                    }
+
+                    _chains[i] = updated;
+                }
+            }
+        }
+
+        return nodes.Count > 0;
     }
 
     /// <summary>Снимает фразовое оформление с участка; плашки остаются, но выходят из фразовых элементов.</summary>

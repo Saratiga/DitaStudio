@@ -98,6 +98,9 @@ public interface IAuthorSurface
 
     bool MergeCurrentCellDown();
 
+    /// <summary>Оформление выделенного текста (или текста, который будет набран у курсора).</summary>
+    bool ApplyTextFormat(string prefix, string? token) => false;
+
     /// <summary>Оформление текущего блока — класс группы вместо прежнего (null — снять).</summary>
     bool SetCurrentBlockFormat(string prefix, string? token) => false;
 

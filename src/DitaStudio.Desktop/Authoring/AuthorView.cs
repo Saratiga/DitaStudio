@@ -455,6 +455,36 @@ public sealed partial class AuthorView : UserControl
             return true;
         }
 
+        public override bool ApplyTextFormat(string prefix, string? token)
+        {
+            if (CurrentNode is null || _view.ActiveEditorFor(CurrentNode) is not { } editor)
+            {
+                return false;
+            }
+
+            var selection = editor.TextArea.Selection;
+            var wholeBlock = !selection.IsEmpty && selection.SurroundingSegment.Offset == 0 &&
+                             selection.SurroundingSegment.Length == editor.Document.TextLength;
+            if (wholeBlock)
+            {
+                // Весь текст блока — класс на самом абзаце, без лишней обёртки; фразы внутри с
+                // классом той же группы больше не нужны.
+                _view.BeforeStructuralEdit?.Invoke(_view, "Оформление текста");
+                editor.ApplyInlineClass(prefix, null);
+                return SetCurrentBlockFormat(prefix, token);
+            }
+
+            _view.BeforeStructuralEdit?.Invoke(_view, "Оформление текста");
+            if (token is null && selection.IsEmpty && TextFormatting.Token(CurrentNode, prefix) is not null)
+            {
+                return SetCurrentBlockFormat(prefix, null);
+            }
+
+            editor.ApplyInlineClass(prefix, token);
+            editor.TextArea.Focus();
+            return true;
+        }
+
         public override bool InsertInlineElement(DitaNode element, string placeholder)
         {
             if (CurrentNode is null || _view.ActiveEditorFor(CurrentNode) is not { } editor)

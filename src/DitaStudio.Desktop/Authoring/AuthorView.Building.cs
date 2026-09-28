@@ -380,6 +380,15 @@ public sealed partial class AuthorView
             _ => HorizontalAlignment.Stretch
         };
         editor.MinWidth = editor.HorizontalAlignment == HorizontalAlignment.Stretch ? 0 : 40;
+        if (TextFormatting.SizeOf(node) is { } points)
+        {
+            editor.FontSize = points * 4.0 / 3;
+        }
+
+        if (TextFormatting.ColorOf(node) is { } hex)
+        {
+            editor.Foreground = new SolidColorBrush(Color.Parse(hex));
+        }
     }
 
     /// <summary>У заголовка «без номера» справа — пометка, чтобы было видно без атрибутов.</summary>

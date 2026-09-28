@@ -523,6 +523,40 @@ public partial class InsertViewModel : ObservableObject
         }
     }
 
+    /// <summary>Размеры шрифта для списка на панели: «Обычный» и размеры в пт.</summary>
+    public IReadOnlyList<string> FontSizes { get; } = new[] { NormalSize }.Concat(TextFormatting.Sizes.Select(s => s.ToString())).ToList();
+
+    public const string NormalSize = "Обычный";
+
+    /// <summary>Размер шрифта выделения или дальнейшего набора: "10" (пт) или «Обычный»/null — снять.</summary>
+    [RelayCommand]
+    private void SetFontSize(string? size)
+    {
+        var token = int.TryParse(size, out var points) ? TextFormatting.SizeToken(points) : null;
+        ApplyTextFormat(TextFormatting.SizePrefix, token, token is null ? "Размер шрифта снят." : $"Размер шрифта {points} пт.");
+    }
+
+    private void ApplyTextFormat(string prefix, string? token, string done)
+    {
+        var author = _main.Current?.Author;
+        if (author?.CurrentNode is null)
+        {
+            _main.StatusText = "Поставьте курсор в текст или выделите его.";
+            return;
+        }
+
+        if (author.ApplyTextFormat(prefix, token))
+        {
+            _main.Documents.RefreshAllTabTitles();
+            _main.RefreshAttributePanel?.Invoke();
+            _main.StatusText = done;
+        }
+        else
+        {
+            _main.StatusText = "Здесь оформление текста недоступно.";
+        }
+    }
+
     /// <summary>Заголовок «без номера»: не нумеруется и не попадает в оглавление (outputclass nonumber).</summary>
     [RelayCommand]
     private void ToggleUnnumberedTitle()

@@ -8,6 +8,7 @@ using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 using DitaStudio.Desktop.Views;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Presentation.ViewModels;
 
 namespace DitaStudio.Desktop;
 
@@ -98,11 +99,32 @@ public partial class MainWindow
             IsChecked = current == a.Css
         }).ToList();
 
+        var sizes = ViewModel.Insert.FontSizes.Select(size => (Control)new MenuItem
+        {
+            Header = size == InsertViewModel.NormalSize ? size : size + " пт",
+            Command = ViewModel.Insert.SetFontSizeCommand,
+            CommandParameter = size
+        }).ToList();
+
         return new MenuItem
         {
             Header = "Оформление",
-            ItemsSource = new List<Control> { new MenuItem { Header = "Выравнивание", ItemsSource = align } }
+            ItemsSource = new List<Control>
+            {
+                new MenuItem { Header = "Выравнивание", ItemsSource = align },
+                new MenuItem { Header = "Размер шрифта", ItemsSource = sizes }
+            }
         };
+    }
+
+    /// <summary>Список размеров на панели: применить и сбросить выбор (можно выбрать тот же снова).</summary>
+    private void OnFontSizeSelected(object? sender, SelectionChangedEventArgs e)
+    {
+        if (sender is ComboBox { SelectedItem: string size } box)
+        {
+            ViewModel.Insert.SetFontSizeCommand.Execute(size);
+            box.SelectedItem = null;
+        }
     }
 
     /// <summary>
