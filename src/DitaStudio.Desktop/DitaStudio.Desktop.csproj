@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Кроссплатформенная версия редактора на Avalonia (Windows, Linux, macOS). Переносится
+       параллельно с WPF-приложением src/DitaStudio.App, пока не достигнет паритета. -->
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>DitaStudio.Desktop</RootNamespace>
+    <AssemblyName>DitaStudio.Desktop</AssemblyName>
+    <Version>0.3.0</Version>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <!-- Привязки по отражению: разметка привязана к общим ViewModel'ям (DitaStudio.Presentation). -->
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+    <!-- Словари Hunspell для проверки орфографии (ru_RU — BSD, en_US — SCOWL; лицензии в README_*.txt). -->
+    <None Include="Dictionaries\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.13" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.4.1" />
+    <PackageReference Include="CefGlue.Avalonia" Version="120.6099.215" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DitaStudio.Core\DitaStudio.Core.csproj" />
+    <ProjectReference Include="..\DitaStudio.Docx\DitaStudio.Docx.csproj" />
+    <ProjectReference Include="..\DitaStudio.Presentation\DitaStudio.Presentation.csproj" />
+  </ItemGroup>
+
+</Project>

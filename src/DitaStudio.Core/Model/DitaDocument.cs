@@ -91,6 +91,14 @@ public sealed class DitaDocument
 
     // ------------------------------------------------------------------ чтение
 
+    /// <summary>
+    /// Предел текста, который может дать раскрытие внутренних сущностей DOCTYPE. Без предела
+    /// (0 в <see cref="XmlReaderSettings.MaxCharactersFromEntities"/>) файл из десятка строк
+    /// с вложенными сущностями («billion laughs») раскрывается в гигабайты и вешает редактор
+    /// при открытии проекта. Настоящим документам DITA столько не нужно никогда.
+    /// </summary>
+    public const long MaxEntityCharacters = 10_000_000;
+
     public static DitaDocument Load(string path)
     {
         var stamp = FileStamp.Of(path);
@@ -143,7 +151,7 @@ public sealed class DitaDocument
             IgnoreWhitespace = false,
             IgnoreComments = false,
             IgnoreProcessingInstructions = false,
-            MaxCharactersFromEntities = 0
+            MaxCharactersFromEntities = MaxEntityCharacters
         };
 
         using var stringReader = new StringReader(xml);

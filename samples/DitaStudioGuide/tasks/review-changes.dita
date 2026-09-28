@@ -41,7 +41,7 @@
             <chdesc>Вставленный элемент убирается; удалённый восстанавливается.</chdesc>
           </chrow>
         </choicetable>
-        <info>Вместе с пометкой записываются имя пользователя Windows и дата (атрибуты
+        <info>Вместе с пометкой записываются имя пользователя в системе и дата (атрибуты
           <parmname>tcauthor</parmname> и <parmname>tcdate</parmname>).</info>
       </step>
       <step>

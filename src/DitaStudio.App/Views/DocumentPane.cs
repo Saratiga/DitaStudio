@@ -7,15 +7,9 @@ using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using Microsoft.Web.WebView2.Wpf;
+using DitaStudio.Presentation.Services;
 
 namespace DitaStudio.App.Views;
-
-public enum EditorMode
-{
-    Author,
-    Source,
-    Preview
-}
 
 /// <summary>Как показывать вкладку «Предпросмотр» — под какой из форматов публикации.</summary>
 public enum PreviewFormat
@@ -32,7 +26,7 @@ public enum PreviewFormat
 /// Вкладка одного документа: режимы «Автор», «Исходный код» и «Предпросмотр»
 /// с общей моделью и общей историей отмены.
 /// </summary>
-public sealed class DocumentPane : Grid
+public sealed class DocumentPane : Grid, IDocumentView
 {
     private readonly TabControl _tabs = new();
     private readonly TabItem _authorTab;
@@ -83,6 +77,8 @@ public sealed class DocumentPane : Grid
     public DitaDocument Document { get; }
 
     public AuthorView Author { get; }
+
+    IAuthorSurface IDocumentView.Author => Author;
 
     public XmlSourceEditor Source { get; }
 
@@ -284,7 +280,7 @@ public sealed class DocumentPane : Grid
 
         try
         {
-            var baseName = Document.FilePath is null ? "preview" : Path.GetFileNameWithoutExtension(Document.FilePath);
+            var baseName = PreviewFileBaseName(Document.FilePath);
             var dir = Path.Combine(Path.GetTempPath(), "DitaStudioPreview");
             Directory.CreateDirectory(dir);
             var htmlPath = Path.Combine(dir, baseName + ".html");
@@ -337,6 +333,21 @@ public sealed class DocumentPane : Grid
                 _browser.Source = uri;
             }
         }
+    }
+
+    /// <summary>Имя временного файла предпросмотра: имя документа + короткий хэш полного пути.
+    /// Одного имени мало — overview.dita из разных папок (или из двух запущенных редакторов)
+    /// писали бы в один и тот же overview.html/.pdf и затирали предпросмотр друг друга.</summary>
+    private static string PreviewFileBaseName(string? filePath)
+    {
+        if (filePath is null)
+        {
+            return "preview";
+        }
+
+        var hash = System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(Path.GetFullPath(filePath).ToUpperInvariant()));
+        return Path.GetFileNameWithoutExtension(filePath) + "-" + Convert.ToHexString(hash, 0, 4).ToLowerInvariant();
     }
 
     private async void OpenPreviewInBrowser()
@@ -473,6 +484,27 @@ public sealed class DocumentPane : Grid
         {
             ReloadViews();
         }
+    }
+
+    /// <summary>Показывает узел в «Авторе» и ставит в него курсор; false — у узла нет своего
+    /// редактора (атрибут, служебный элемент).</summary>
+    public bool FocusNode(DitaNode node)
+    {
+        var editor = Author.EditorFor(node);
+        if (editor is null)
+        {
+            return false;
+        }
+
+        Mode = EditorMode.Author;
+        editor.Focus();
+        return true;
+    }
+
+    public void GoToSourceLine(int line)
+    {
+        Mode = EditorMode.Source;
+        Source.GoToLine(line);
     }
 
     public void PushUndo(string description)

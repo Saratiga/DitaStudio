@@ -1,7 +1,7 @@
 <Window x:Class="DitaStudio.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="clr-namespace:DitaStudio.App.ViewModels"
+        xmlns:vm="clr-namespace:DitaStudio.Presentation.ViewModels;assembly=DitaStudio.Presentation"
         Title="{Binding WindowTitle}" Height="820" Width="1440"
         Icon="app.ico"
         WindowStartupLocation="CenterScreen">

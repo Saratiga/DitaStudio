@@ -1,0 +1,422 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DitaStudio.Presentation.ViewModels"
+        x:Class="DitaStudio.Desktop.MainWindow"
+        Title="{Binding WindowTitle, FallbackValue='DITA Studio'}"
+        Width="1440" Height="820"
+        Icon="/Assets/app.ico"
+        WindowStartupLocation="CenterScreen">
+
+    <!-- Та же разметка, что у WPF-версии (src/DitaStudio.App/MainWindow.xaml): меню, панель
+         инструментов, слева проект/карта/ключи, в центре вкладки документов и нижняя панель
+         (проверка, поиск, журнал сборки), справа атрибуты/вставка/структура. -->
+
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+S" Command="{Binding Documents.SaveCurrentCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding Documents.SaveAllCommand}" />
+        <KeyBinding Gesture="Ctrl+N" Command="{Binding ProjectPanel.NewDocumentCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+O" Command="{Binding ProjectPanel.OpenProjectCommand}" />
+        <KeyBinding Gesture="Ctrl+W" Command="{Binding Documents.CloseCurrentTabCommand}" />
+        <KeyBinding Gesture="F5" Command="{Binding Publish.PublishSiteCommand}" />
+        <KeyBinding Gesture="F7" Command="{Binding Validation.ValidateProjectCommand}" />
+        <KeyBinding Gesture="F1" Command="{Binding Help.ShowElementHelpCommand}" />
+        <KeyBinding Gesture="Ctrl+Alt+Z" Command="{Binding Insert.UndoCommand}" />
+        <KeyBinding Gesture="Ctrl+Alt+Y" Command="{Binding Insert.RedoCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+Up" Command="{Binding Insert.MoveUpCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+Down" Command="{Binding Insert.MoveDownCommand}" />
+        <KeyBinding Gesture="Ctrl+Alt+Right" Command="{Binding Insert.MergeCellRightCommand}" />
+        <KeyBinding Gesture="Ctrl+Alt+Down" Command="{Binding Insert.MergeCellDownCommand}" />
+        <KeyBinding Gesture="Ctrl+B" Command="{Binding Insert.FormatBoldCommand}" />
+        <KeyBinding Gesture="Ctrl+I" Command="{Binding Insert.FormatItalicCommand}" />
+    </Window.KeyBindings>
+
+    <DockPanel>
+
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_Файл">
+                <MenuItem Header="Открыть папку проекта…" Command="{Binding ProjectPanel.OpenProjectCommand}" InputGesture="Ctrl+Shift+O" />
+                <MenuItem Header="Недавние проекты" Name="RecentProjectsMenu" />
+                <MenuItem Header="Подключить проект-источник ключей…" Command="{Binding ProjectPanel.AddReferencedProjectCommand}" />
+                <MenuItem Header="Отключить все проекты-источники" Command="{Binding ProjectPanel.ClearReferencedProjectsCommand}" />
+                <MenuItem Header="Подключить внешний DTD (кастомная специализация)…" Command="{Binding ProjectPanel.AttachExternalDtdCommand}" />
+                <MenuItem Header="Отключить внешний DTD" Command="{Binding ProjectPanel.DetachExternalDtdCommand}" />
+                <MenuItem Header="Создать документ…" Command="{Binding ProjectPanel.NewDocumentCommand}" InputGesture="Ctrl+N" />
+                <Separator />
+                <MenuItem Header="Сохранить" Command="{Binding Documents.SaveCurrentCommand}" InputGesture="Ctrl+S" />
+                <MenuItem Header="Сохранить всё" Command="{Binding Documents.SaveAllCommand}" InputGesture="Ctrl+Shift+S" />
+                <MenuItem Header="Закрыть вкладку" Command="{Binding Documents.CloseCurrentTabCommand}" InputGesture="Ctrl+W" />
+                <Separator />
+                <MenuItem Header="Выход" Click="OnExit" />
+            </MenuItem>
+
+            <MenuItem Header="_Правка">
+                <MenuItem Header="Отменить структурное изменение" Command="{Binding Insert.UndoCommand}" InputGesture="Ctrl+Alt+Z" />
+                <MenuItem Header="Повторить" Command="{Binding Insert.RedoCommand}" InputGesture="Ctrl+Alt+Y" />
+                <Separator />
+                <MenuItem Header="Найти в проекте…" Click="OnFocusSearch" InputGesture="Ctrl+Shift+F" />
+                <MenuItem Header="Проверить проект" Command="{Binding Validation.ValidateProjectCommand}" InputGesture="F7" />
+                <MenuItem Header="Проверить документ" Command="{Binding Validation.ValidateDocumentCommand}" />
+                <Separator />
+                <MenuItem Header="Сравнить файлы…" Command="{Binding Validation.CompareFilesCommand}" />
+                <MenuItem Header="Сравнить с последним коммитом (git)" Command="{Binding Validation.CompareWithGitHeadCommand}" />
+                <MenuItem Header="Сравнить с версией BASE (svn)" Command="{Binding Validation.CompareWithSvnBaseCommand}" />
+            </MenuItem>
+
+            <MenuItem Header="_Вставка">
+                <MenuItem Header="Элемент…" Click="OnFocusPalette" InputGesture="Ctrl+E" />
+                <Separator />
+                <MenuItem Header="Абзац" Command="{Binding Insert.InsertParagraphCommand}" />
+                <MenuItem Header="Маркированный список" Command="{Binding Insert.InsertUlCommand}" />
+                <MenuItem Header="Нумерованный список" Command="{Binding Insert.InsertOlCommand}" />
+                <MenuItem Header="Примечание" Command="{Binding Insert.InsertNoteCommand}" />
+                <MenuItem Header="Блок кода" Command="{Binding Insert.InsertCodeblockCommand}" />
+                <MenuItem Header="Сноска" Command="{Binding Insert.InsertFootnoteCommand}" />
+                <MenuItem Header="Таблица…" Command="{Binding Insert.InsertTableCommand}" />
+                <MenuItem Header="Изображение…" Command="{Binding Insert.InsertImageCommand}" />
+                <MenuItem Header="Перекрёстная ссылка…" Command="{Binding Insert.InsertXrefCommand}" />
+                <Separator />
+                <MenuItem Header="Полужирный" Command="{Binding Insert.FormatBoldCommand}" InputGesture="Ctrl+B" />
+                <MenuItem Header="Курсив" Command="{Binding Insert.FormatItalicCommand}" InputGesture="Ctrl+I" />
+                <MenuItem Header="Код в строке" Command="{Binding Insert.FormatCodeCommand}" />
+                <MenuItem Header="Элемент интерфейса" Command="{Binding Insert.FormatUicontrolCommand}" />
+            </MenuItem>
+
+            <MenuItem Header="_Структура">
+                <MenuItem Header="Переместить вверх" Command="{Binding Insert.MoveUpCommand}" InputGesture="Ctrl+Shift+Up" />
+                <MenuItem Header="Переместить вниз" Command="{Binding Insert.MoveDownCommand}" InputGesture="Ctrl+Shift+Down" />
+                <MenuItem Header="Удалить элемент" Command="{Binding Insert.DeleteElementCommand}" />
+                <MenuItem Header="Переименовать id…" Command="{Binding Insert.RenameIdCommand}"
+                          ToolTip.Tip="Обновляет ссылки (href, conref) на этот id по всему проекту" />
+                <MenuItem Header="Вынести в conref…" Command="{Binding Insert.ExtractToConrefCommand}"
+                          ToolTip.Tip="Переносит элемент в другой топик, оставляя на месте ссылку conref" />
+                <Separator />
+                <MenuItem Header="Объединить ячейку со следующей" Command="{Binding Insert.MergeCellRightCommand}" InputGesture="Ctrl+Alt+Right" />
+                <MenuItem Header="Объединить ячейку со строкой ниже" Command="{Binding Insert.MergeCellDownCommand}" InputGesture="Ctrl+Alt+Down" />
+                <Separator />
+                <MenuItem Header="Разрыв страницы перед заголовком (печать)" Command="{Binding Insert.TogglePageBreakBeforeTitleCommand}" />
+                <MenuItem Header="Таблица: разрешить перенос с повтором шапки (печать)" Command="{Binding Insert.ToggleTablePageBreakAutoCommand}" />
+                <MenuItem Header="Отметить как изменённое (rev)" Command="{Binding Insert.ToggleRevChangedCommand}"
+                          ToolTip.Tip="Полоса на полях при публикации — штатная DITA-пометка ревизии, не полноценная история правок" />
+                <Separator />
+                <MenuItem Header="Track changes: пометить как вставленное" Command="{Binding Insert.MarkTrackedInsertedCommand}" />
+                <MenuItem Header="Track changes: пометить как удалённое" Command="{Binding Insert.MarkTrackedDeletedCommand}" />
+                <MenuItem Header="Track changes: принять правку" Command="{Binding Insert.AcceptTrackedChangeCommand}" />
+                <MenuItem Header="Track changes: отклонить правку" Command="{Binding Insert.RejectTrackedChangeCommand}" />
+                <Separator />
+                <MenuItem Header="Показывать имена элементов" ToggleType="CheckBox" IsChecked="{Binding Insert.ShowElementTags, Mode=TwoWay}" />
+                <Separator />
+                <MenuItem Header="Команда плагина…" Command="{Binding Insert.RunAuthorCommandPluginCommand}" />
+            </MenuItem>
+
+            <MenuItem Header="_Публикация">
+                <MenuItem Header="Собрать сайт HTML…" Command="{Binding Publish.PublishSiteCommand}" InputGesture="F5" />
+                <MenuItem Header="Собрать один HTML…" Command="{Binding Publish.PublishSingleCommand}" />
+                <MenuItem Header="Экспорт в PDF…" Command="{Binding Publish.PublishPdfCommand}" />
+                <MenuItem Header="Экспорт в DOCX…" Command="{Binding Publish.ExportDocxCommand}" />
+                <MenuItem Header="Оформление DOCX…" Command="{Binding Publish.DocxLayoutCommand}" />
+                <MenuItem Header="Публикация плагином…" Command="{Binding Publish.PublishWithPluginCommand}" />
+                <Separator />
+                <MenuItem Header="Условия сборки…" Command="{Binding Publish.PublishConditionsCommand}" />
+                <MenuItem Header="Подключить .ditaval…" Command="{Binding Publish.ImportDitavalCommand}" />
+                <MenuItem Header="Редактировать .ditaval…" Command="{Binding Publish.EditDitavalCommand}" />
+                <MenuItem Header="Пользовательский CSS…" Command="{Binding Publish.CustomCssCommand}" />
+                <MenuItem Header="Колонтитулы PDF…" Command="{Binding Publish.PdfHeaderFooterCommand}" />
+                <Separator />
+                <MenuItem Header="Экспорт в XLIFF (для перевода)…" Command="{Binding Publish.ExportXliffCommand}" />
+                <MenuItem Header="Импортировать перевод из XLIFF…" Command="{Binding Publish.ImportXliffCommand}" />
+            </MenuItem>
+
+            <MenuItem Header="_Справка">
+                <MenuItem Header="Об элементе под курсором" Command="{Binding Help.ShowElementHelpCommand}" InputGesture="F1" />
+                <MenuItem Name="ThemeMenuItem" Header="Тёмная тема" ToggleType="CheckBox" Click="OnToggleTheme" />
+                <Separator />
+                <MenuItem Header="О программе" Command="{Binding Help.AboutCommand}" />
+            </MenuItem>
+        </Menu>
+
+        <Border DockPanel.Dock="Top" Classes="toolbar">
+            <StackPanel Orientation="Horizontal">
+                <Button Classes="tool" Content="📂" Command="{Binding ProjectPanel.OpenProjectCommand}" ToolTip.Tip="Открыть папку проекта (Ctrl+Shift+O)" />
+                <Button Classes="tool" Content="➕" Command="{Binding ProjectPanel.NewDocumentCommand}" ToolTip.Tip="Создать документ (Ctrl+N)" />
+                <Button Classes="tool" Content="💾" Command="{Binding Documents.SaveCurrentCommand}" ToolTip.Tip="Сохранить (Ctrl+S)" />
+                <Rectangle Classes="separator" />
+                <Button Classes="tool" Content="↩" Command="{Binding Insert.UndoCommand}" ToolTip.Tip="Отменить структурное изменение (Ctrl+Alt+Z)" />
+                <Button Classes="tool" Content="↪" Command="{Binding Insert.RedoCommand}" ToolTip.Tip="Повторить (Ctrl+Alt+Y)" />
+                <Rectangle Classes="separator" />
+                <Button Classes="tool" Content="Ж" FontWeight="Bold" Command="{Binding Insert.FormatBoldCommand}" ToolTip.Tip="Полужирный (Ctrl+B)" />
+                <Button Classes="tool" Content="К" FontStyle="Italic" Command="{Binding Insert.FormatItalicCommand}" ToolTip.Tip="Курсив (Ctrl+I)" />
+                <Button Classes="tool" Content="&lt;/&gt;" FontFamily="{DynamicResource MonoFont}" FontSize="12" Command="{Binding Insert.FormatCodeCommand}" ToolTip.Tip="Код в строке" />
+                <Rectangle Classes="separator" />
+                <Button Classes="tool" Content="↑" Command="{Binding Insert.MoveUpCommand}" ToolTip.Tip="Переместить элемент вверх (Ctrl+Shift+Up)" />
+                <Button Classes="tool" Content="↓" Command="{Binding Insert.MoveDownCommand}" ToolTip.Tip="Переместить элемент вниз (Ctrl+Shift+Down)" />
+                <Button Classes="tool" Content="🗑" Command="{Binding Insert.DeleteElementCommand}" ToolTip.Tip="Удалить элемент" />
+                <Rectangle Classes="separator" />
+                <Button Classes="tool" Content="⇔" Command="{Binding Insert.MergeCellRightCommand}" ToolTip.Tip="Объединить ячейку таблицы со следующей (Ctrl+Alt+→)" />
+                <Button Classes="tool" Content="⇕" Command="{Binding Insert.MergeCellDownCommand}" ToolTip.Tip="Объединить ячейку таблицы со строкой ниже (Ctrl+Alt+↓)" />
+                <Rectangle Classes="separator" />
+                <Button Classes="tool" Content="✔" Command="{Binding Validation.ValidateProjectCommand}" ToolTip.Tip="Проверить проект (F7)" />
+                <Button Classes="tool" Content="▶" Command="{Binding Publish.PublishSiteCommand}" ToolTip.Tip="Собрать сайт HTML (F5)" />
+            </StackPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom" Classes="statusbar">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding ContextText}" />
+                <TextBlock Text="{Binding StatusText}" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="300,4,*,4,320">
+
+            <TabControl Grid.Column="0" Name="LeftTabs">
+                <TabItem Header="Проект">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4">
+                            <Button Content="Обновить" Padding="8,3" Command="{Binding ProjectPanel.RescanProjectCommand}" />
+                            <Button Content="Создать…" Padding="8,3" Margin="4,0,0,0" Command="{Binding ProjectPanel.NewDocumentCommand}" />
+                        </StackPanel>
+                        <TreeView Name="ProjectTree"
+                                  ItemsSource="{Binding ProjectPanel.Tree}"
+                                  SelectedItem="{Binding ProjectPanel.SelectedTreeNode}"
+                                  DoubleTapped="OnProjectTreeDoubleTapped">
+                            <TreeView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Переименовать / переместить файл…" Command="{Binding ProjectPanel.MoveSelectedFileCommand}" />
+                                </ContextMenu>
+                            </TreeView.ContextMenu>
+                            <TreeView.Styles>
+                                <Style Selector="TreeViewItem">
+                                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                </Style>
+                            </TreeView.Styles>
+                            <TreeView.ItemTemplate>
+                                <TreeDataTemplate DataType="vm:ProjectTreeNode" ItemsSource="{Binding Children}">
+                                    <StackPanel Orientation="Horizontal" ToolTip.Tip="{Binding ToolTip}">
+                                        <TextBlock Text="{Binding Icon}" Margin="0,0,6,0" IsVisible="{Binding File, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                        <TextBlock Text="{Binding Name}" />
+                                        <TextBlock Text="{Binding Title}" FontSize="11" Foreground="{DynamicResource TagBrush}"
+                                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="150" />
+                                    </StackPanel>
+                                </TreeDataTemplate>
+                            </TreeView.ItemTemplate>
+                        </TreeView>
+                    </DockPanel>
+                </TabItem>
+
+                <TabItem Header="Карта">
+                    <DockPanel>
+                        <ComboBox Name="MapSelector" DockPanel.Dock="Top" Margin="4" HorizontalAlignment="Stretch"
+                                  ItemsSource="{Binding Map.Maps}" SelectedItem="{Binding Map.SelectedMap}"
+                                  DisplayMemberBinding="{Binding RelativePath}" />
+                        <WrapPanel DockPanel.Dock="Top" Margin="4,0,4,4">
+                            <Button Content="+ Топик" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.AddTopicrefCommand}" ToolTip.Tip="Добавить ссылку на топик" />
+                            <Button Content="+ Раздел" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.AddTopicheadCommand}" />
+                            <Button Content="↑" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.MoveUpCommand}" />
+                            <Button Content="↓" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.MoveDownCommand}" />
+                            <Button Content="→" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.IndentCommand}" ToolTip.Tip="Сделать вложенным" />
+                            <Button Content="←" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.OutdentCommand}" />
+                            <Button Content="✕" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.DeleteCommand}" />
+                            <Button Content="Таблица соответствий…" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.EditRelTableCommand}" />
+                        </WrapPanel>
+                        <TreeView Name="MapTreeView" DragDrop.AllowDrop="True"
+                                  ItemsSource="{Binding Map.Tree}"
+                                  SelectedItem="{Binding Map.SelectedNode}"
+                                  DoubleTapped="OnMapTreeDoubleTapped">
+                            <TreeView.Styles>
+                                <Style Selector="TreeViewItem">
+                                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                                </Style>
+                                <Style Selector="TextBlock.broken">
+                                    <Setter Property="Foreground" Value="{DynamicResource Danger}" />
+                                </Style>
+                            </TreeView.Styles>
+                            <TreeView.ItemTemplate>
+                                <TreeDataTemplate DataType="vm:MapTreeNode" ItemsSource="{Binding Children}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Icon}" Margin="0,0,6,0" />
+                                        <TextBlock Text="{Binding Title}" Classes.broken="{Binding IsBroken}" />
+                                        <TextBlock Text="{Binding ElementName}" FontFamily="{DynamicResource MonoFont}" FontSize="10"
+                                                   Foreground="{DynamicResource TagBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </TreeDataTemplate>
+                            </TreeView.ItemTemplate>
+                        </TreeView>
+                    </DockPanel>
+                </TabItem>
+
+                <TabItem Header="Ключи">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Bottom" Margin="8,4,8,8" Classes="hint"
+                                   Text="{Binding ProjectPanel.ScopedKeysHintText}"
+                                   IsVisible="{Binding ProjectPanel.ScopedKeysHintVisible, FallbackValue=False}" />
+                        <DataGrid Name="KeysGrid" ItemsSource="{Binding ProjectPanel.Keys}" SelectedItem="{Binding ProjectPanel.SelectedKey}" DoubleTapped="OnKeyDoubleTapped">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Ключ" Width="110" Binding="{Binding Key}" />
+                                <DataGridTextColumn Header="Цель" Width="160" Binding="{Binding Href}" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </DockPanel>
+                </TabItem>
+            </TabControl>
+
+            <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
+
+            <Grid Grid.Column="2" RowDefinitions="*,4,200">
+
+                <TabControl Grid.Row="0" Name="DocumentTabs"
+                            ItemsSource="{Binding Documents.Tabs}"
+                            SelectedItem="{Binding Documents.SelectedTab}">
+                    <TabControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+                                <Button Classes="tabclose" Content="✕" Command="{Binding CloseCommand}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </TabControl.ItemTemplate>
+                    <TabControl.ContentTemplate>
+                        <DataTemplate>
+                            <ContentControl Content="{Binding Pane}" />
+                        </DataTemplate>
+                    </TabControl.ContentTemplate>
+                </TabControl>
+
+                <GridSplitter Grid.Row="1" ResizeDirection="Rows" />
+
+                <TabControl Grid.Row="2" Name="BottomTabs" SelectedIndex="{Binding BottomTabIndex}">
+                    <TabItem Header="Проверка">
+                        <DataGrid Name="IssuesGrid" ItemsSource="{Binding Validation.Issues}" SelectedItem="{Binding Validation.SelectedIssue}" DoubleTapped="OnIssueDoubleTapped">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Уровень" Width="110" Binding="{Binding SeverityText}" />
+                                <DataGridTextColumn Header="Сообщение" Width="620" Binding="{Binding Message}" />
+                                <DataGridTextColumn Header="Место" Width="220" Binding="{Binding Location}" />
+                                <DataGridTextColumn Header="Файл" Width="260" Binding="{Binding FilePath}" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </TabItem>
+
+                    <TabItem Header="Поиск">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Top" Margin="4">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox Name="SearchBox" Width="320" Padding="4,3" Text="{Binding Search.SearchText}">
+                                        <TextBox.KeyBindings>
+                                            <KeyBinding Gesture="Enter" Command="{Binding Search.RunCommand}" />
+                                        </TextBox.KeyBindings>
+                                    </TextBox>
+                                    <Button Content="Найти" Padding="10,3" Margin="4,0,0,0" Command="{Binding Search.RunCommand}" />
+                                    <CheckBox Content="искать имена элементов" Margin="10,0,0,0" VerticalAlignment="Center" IsChecked="{Binding Search.SearchElements}" />
+                                    <CheckBox Content="регулярное выражение" Margin="10,0,0,0" VerticalAlignment="Center" IsChecked="{Binding Search.SearchRegex}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                    <TextBox Width="320" Padding="4,3" ToolTip.Tip="Текст замены (для обычного текстового поиска)" Text="{Binding Search.ReplaceText}" />
+                                    <Button Content="Заменить всё" Padding="10,3" Margin="4,0,0,0" Command="{Binding Search.ReplaceAllCommand}" />
+                                </StackPanel>
+                            </StackPanel>
+                            <DataGrid Name="SearchGrid" ItemsSource="{Binding Search.Results}" SelectedItem="{Binding Search.SelectedResult}" DoubleTapped="OnSearchResultDoubleTapped">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Файл" Width="260" Binding="{Binding File.RelativePath}" />
+                                    <DataGridTextColumn Header="Фрагмент" Width="700" Binding="{Binding Context}" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+
+                    <TabItem Header="Журнал сборки">
+                        <TextBox Classes="log" Text="{Binding Publish.BuildLogText, Mode=OneWay}"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto" />
+                    </TabItem>
+                </TabControl>
+            </Grid>
+
+            <GridSplitter Grid.Column="3" ResizeDirection="Columns" />
+
+            <TabControl Grid.Column="4" Name="RightTabs">
+                <TabItem Header="Атрибуты">
+                    <DockPanel>
+                        <TextBlock Name="AttributeContext" DockPanel.Dock="Top" Margin="8,6,8,4"
+                                   Text="{Binding SidePanels.AttributeContext}" TextWrapping="Wrap"
+                                   FontFamily="{DynamicResource MonoFont}" FontSize="11"
+                                   Foreground="{DynamicResource TextMuted}" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Name="AttributePanel" Margin="8,0,8,12">
+                                <ItemsControl ItemsSource="{Binding SidePanels.Attributes}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="vm:AttributeRowViewModel">
+                                            <StackPanel Margin="0,8,0,0">
+                                                <DockPanel>
+                                                    <Button DockPanel.Dock="Right" Classes="tabclose" Margin="0" Content="✕"
+                                                            ToolTip.Tip="Удалить атрибут" Command="{Binding RemoveCommand}" />
+                                                    <TextBlock Text="{Binding Label}" FontFamily="{DynamicResource MonoFont}" FontSize="11.5"
+                                                               Foreground="{DynamicResource AttributeNameBrush}" />
+                                                </DockPanel>
+                                                <ComboBox IsVisible="{Binding IsEnumeration}" IsEditable="True" HorizontalAlignment="Stretch"
+                                                          ItemsSource="{Binding Values}" Text="{Binding Value}"
+                                                          SelectionChanged="OnAttributeComboSelected" LostFocus="OnAttributeEditorLostFocus" />
+                                                <TextBox IsVisible="{Binding !IsEnumeration}" Text="{Binding Value}"
+                                                         LostFocus="OnAttributeEditorLostFocus">
+                                                    <TextBox.KeyBindings>
+                                                        <KeyBinding Gesture="Enter" Command="{Binding ApplyCommand}" />
+                                                    </TextBox.KeyBindings>
+                                                </TextBox>
+                                                <TextBlock IsVisible="{Binding HasDescription}" Text="{Binding Description}" FontSize="10.5"
+                                                           TextWrapping="Wrap" Foreground="{DynamicResource TagBrush}" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <StackPanel IsVisible="{Binding !!SidePanels.MissingAttributes.Count}">
+                                    <TextBlock Text="Добавить атрибут" FontSize="11" Foreground="{DynamicResource TextMuted}" Margin="0,14,0,2" />
+                                    <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding SidePanels.MissingAttributes}"
+                                              SelectedItem="{Binding SidePanels.AttributeToAdd}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </DockPanel>
+                </TabItem>
+
+                <TabItem Header="Вставка">
+                    <DockPanel>
+                        <TextBox Name="PaletteFilter" DockPanel.Dock="Top" Margin="6" Padding="4,3"
+                                 Text="{Binding SidePanels.PaletteFilter}" />
+                        <TextBlock Name="PaletteHint" DockPanel.Dock="Top" Margin="8,0,8,6" Classes="hint"
+                                   Text="{Binding SidePanels.PaletteHint}" />
+                        <ListBox Name="PaletteList" BorderThickness="0"
+                                 ItemsSource="{Binding SidePanels.Palette}"
+                                 SelectedItem="{Binding SidePanels.SelectedPaletteEntry}"
+                                 DoubleTapped="OnPaletteDoubleTapped">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="vm:PaletteEntry">
+                                    <StackPanel Margin="0,2,0,2">
+                                        <TextBlock Text="{Binding Name}" FontFamily="{DynamicResource MonoFont}" FontWeight="SemiBold" FontSize="12" />
+                                        <TextBlock Text="{Binding Description}" FontSize="10.5" TextWrapping="Wrap" Foreground="{DynamicResource TagBrush}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </TabItem>
+
+                <TabItem Header="Структура">
+                    <TreeView Name="OutlineTree" ItemsSource="{Binding SidePanels.Outline}"
+                              SelectedItem="{Binding SidePanels.SelectedOutlineNode}">
+                        <TreeView.Styles>
+                            <Style Selector="TreeViewItem">
+                                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                            </Style>
+                        </TreeView.Styles>
+                        <TreeView.ItemTemplate>
+                            <TreeDataTemplate DataType="vm:OutlineNode" ItemsSource="{Binding Children}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Name}" FontFamily="{DynamicResource MonoFont}" FontSize="11" Foreground="{DynamicResource Accent}" />
+                                    <TextBlock Text="{Binding Text}" FontSize="11" Foreground="{DynamicResource TextMuted}" />
+                                </StackPanel>
+                            </TreeDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </DockPanel>
+</Window>

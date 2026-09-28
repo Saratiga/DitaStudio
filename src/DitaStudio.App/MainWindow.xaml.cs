@@ -1,9 +1,12 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using DitaStudio.App.ViewModels;
+using DitaStudio.Presentation.ViewModels;
 using DitaStudio.App.Views;
 using DitaStudio.Core.Project;
+using DitaStudio.App.Services;
+using DitaStudio.Presentation;
+using DitaStudio.Presentation.Services;
 
 namespace DitaStudio.App;
 
@@ -12,14 +15,15 @@ namespace DitaStudio.App;
 // Publish/Validation/Search/Help/Insert — на VM, см. ViewModels/.
 public partial class MainWindow : Window
 {
-    private readonly Dictionary<string, DocumentPane> _panes = new(StringComparer.OrdinalIgnoreCase);
+    // Открытые вкладки — тот же словарь, что у MainViewModel (вкладки WPF-оболочки — всегда DocumentPane).
+    private Dictionary<string, IDocumentView> _panes => ViewModel.Panes;
 
     // Не поля — тонкие проходы к MainViewModel, чтобы Map/Insert/Publish/
     // SidePanels (ещё не мигрированы) продолжали читать/писать их по имени,
     // как раньше.
     private DitaProject? _project => ViewModel.Project;
 
-    private Dialogs.ConditionsResult? _conditions
+    private ConditionsResult? _conditions
     {
         get => ViewModel.Conditions;
         set => ViewModel.Conditions = value;
@@ -33,7 +37,12 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
-        ViewModel = new MainViewModel(_panes)
+        ViewModel = new MainViewModel(new UiServices(
+            new WpfDialogService(),
+            new WpfFilePicker(),
+            new WpfUiPlatform(),
+            new WebView2PdfPrinter(),
+            (project, document) => new DocumentPane(project, document)))
         {
             OpenDocument = OpenDocument,
             UpdateTabHeaders = UpdateTabHeaders,
@@ -73,12 +82,12 @@ public partial class MainWindow : Window
         foreach (var path in recent)
         {
             var item = new MenuItem { Header = path };
-            item.Click += (_, _) => LoadProject(path);
+            item.Click += (_, _) => _ = LoadProjectAsync(path);
             RecentProjectsMenu.Items.Add(item);
         }
     }
 
-    private DocumentPane? Current => ViewModel.Current;
+    private DocumentPane? Current => ViewModel.Current as DocumentPane;
 
     private void RegisterShortcuts()
     {

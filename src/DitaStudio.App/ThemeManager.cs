@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
+using DitaStudio.Core.IO;
 
 namespace DitaStudio.App;
 
@@ -113,7 +114,7 @@ public static class ThemeManager
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
-            File.WriteAllText(SettingsPath, theme == Theme.Dark ? "dark" : "light");
+            AtomicFile.WriteAllText(SettingsPath, theme == Theme.Dark ? "dark" : "light", new System.Text.UTF8Encoding(false));
         }
         catch
         {

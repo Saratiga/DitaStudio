@@ -3,7 +3,9 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Templates;
+using DitaStudio.Presentation.Services;
 using Microsoft.Win32;
+using DitaStudio.Core.IO;
 
 namespace DitaStudio.App.Views;
 
@@ -65,8 +67,6 @@ public static partial class Dialogs
     };
 
     // ------------------------------------------------------------ новый файл
-
-    public sealed record NewDocumentResult(DocumentTemplate Template, string Title, string FileName, string Folder);
 
     public static NewDocumentResult? NewDocument(string projectRoot, IEnumerable<string> folders, string? preselectedFolder)
     {
@@ -153,8 +153,6 @@ public static partial class Dialogs
 
     // --------------------------------------------------------------- таблица
 
-    public sealed record TableResult(int Rows, int Columns, bool Header, string Title);
-
     public static TableResult? InsertTable()
     {
         var panel = new StackPanel { Margin = new Thickness(16) };
@@ -184,8 +182,6 @@ public static partial class Dialogs
     }
 
     // ---------------------------------------------------------------- ссылка
-
-    public sealed record XrefResult(ProjectFile File, string? TopicId, string Text);
 
     public static XrefResult? InsertXref(DitaProject project, string? currentFile)
     {
@@ -243,16 +239,6 @@ public static partial class Dialogs
     }
 
     // ------------------------------------------------ таблица соответствий
-
-    /// <summary>Одна ячейка таблицы соответствий (reltable) — не более одного topicref на
-    /// ячейку; DITA допускает несколько, но для редактора этого достаточно (частый случай на
-    /// практике). Пустая ячейка (File == null) — допустимо, relcell может быть пустой.</summary>
-    public sealed class RelTableCell
-    {
-        public ProjectFile? File { get; set; }
-
-        public string? TopicId { get; set; }
-    }
 
     public static List<List<RelTableCell>>? EditRelTable(DitaProject project, List<List<RelTableCell>> initialRows)
     {
@@ -478,15 +464,6 @@ public static partial class Dialogs
         return window.ShowDialog() == true ? result : null;
     }
 
-    public sealed class ExtractToConrefResult
-    {
-        public ProjectFile? TargetFile { get; set; }
-
-        public string? NewFileName { get; set; }
-
-        public string ElementId { get; set; } = string.Empty;
-    }
-
     public static ExtractToConrefResult? ExtractToConref(DitaProject project, string suggestedId)
     {
         var root = new DockPanel { Margin = new Thickness(16) };
@@ -592,8 +569,6 @@ public static partial class Dialogs
     }
 
     // ------------------------------------------------------------- условия
-
-    public sealed record ConditionsResult(Dictionary<string, HashSet<string>> Exclude, bool ShowDraftComments);
 
     private static Dictionary<string, HashSet<string>> CollectConditionValues(DitaProject project, IReadOnlyList<string> attributes)
     {
@@ -802,8 +777,6 @@ public static partial class Dialogs
 
     // ------------------------------------------------------- колонтитулы PDF
 
-    public sealed record PdfHeaderFooterResult(bool Show, string HeaderText, string FooterText);
-
     public static PdfHeaderFooterResult? PdfHeaderFooter(DitaProject project)
     {
         var panel = new StackPanel { Margin = new Thickness(20) };
@@ -904,7 +877,7 @@ public static partial class Dialogs
 
             try
             {
-                File.WriteAllText(dialog.FileName, DefaultCustomCss);
+                AtomicFile.WriteAllText(dialog.FileName, DefaultCustomCss, new System.Text.UTF8Encoding(false));
             }
             catch (Exception ex)
             {

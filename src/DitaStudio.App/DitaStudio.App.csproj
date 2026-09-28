@@ -34,6 +34,7 @@
   <ItemGroup>
     <ProjectReference Include="..\DitaStudio.Core\DitaStudio.Core.csproj" />
     <ProjectReference Include="..\DitaStudio.Docx\DitaStudio.Docx.csproj" />
+    <ProjectReference Include="..\DitaStudio.Presentation\DitaStudio.Presentation.csproj" />
   </ItemGroup>
 
   <ItemGroup>

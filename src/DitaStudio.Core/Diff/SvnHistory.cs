@@ -11,15 +11,20 @@ public static class SvnHistory
     public static string? ReadRevision(string filePath, string revision = "BASE")
     {
         var dir = Path.GetDirectoryName(Path.GetFullPath(filePath));
-        return dir is null ? null : RunSvn(dir, "cat", "-r", revision, filePath);
+        return dir is null ? null : RunSvn(dir, "cat", "-r", revision, EscapePeg(filePath));
     }
 
     /// <summary>Под версионным контролем ли файл (для показа/скрытия пункта меню).</summary>
     public static bool IsInRepository(string filePath)
     {
         var dir = Path.GetDirectoryName(Path.GetFullPath(filePath));
-        return dir is not null && RunSvn(dir, "info", filePath) is not null;
+        return dir is not null && RunSvn(dir, "info", EscapePeg(filePath)) is not null;
     }
+
+    /// <summary>svn читает всё после последнего «@» в пути как peg-ревизию: для «logo@2x.dita»
+    /// он искал бы файл «logo» на ревизии «2x.dita». Завершающий «@» (пустая peg-ревизия,
+    /// то есть по умолчанию) — штатный способ из документации svn отменить такое толкование.</summary>
+    private static string EscapePeg(string path) => path + "@";
 
     private static string? RunSvn(string workingDirectory, params string[] arguments) =>
         VcsProcess.Run("svn", workingDirectory, arguments);

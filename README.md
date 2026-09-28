@@ -1,13 +1,16 @@
 # DITA Studio
 
 Настольный редактор технической документации на DITA 1.3 — аналог Oxygen XML Author,
-написанный на C# (WPF, .NET 8). Ядро (`DitaStudio.Core`) не имеет ни одной внешней
-зависимости; во внешних библиотеках нуждаются только интерфейс (AvalonEdit, WebView2,
-CommunityToolkit.Mvvm) и экспорт в Word (`DitaStudio.Docx` → DocumentFormat.OpenXml).
+написанный на C# (.NET 8). Основная версия — кроссплатформенная, на **Avalonia UI**
+(Windows, Linux, macOS; `src/DitaStudio.Desktop`); прежняя WPF-версия для Windows
+(`src/DitaStudio.App`) сохраняется как легаси. Обе оболочки используют одно ядро
+(`DitaStudio.Core`, без внешних зависимостей) и общие модели представления
+(`DitaStudio.Presentation`); экспорт в Word — `DitaStudio.Docx` → DocumentFormat.OpenXml.
 
-Готовая сборка для Windows x64 (не требует установленного .NET) — на странице
-[релизов](https://github.com/Saratiga/DitaStudio/releases). Для предпросмотра и печати в
-PDF нужен WebView2 Evergreen Runtime (на Windows 11 он обычно уже установлен).
+Готовые сборки (не требуют установленного .NET) — на странице
+[релизов](https://github.com/Saratiga/DitaStudio/releases): Windows x64, Linux x64,
+macOS (Intel, на Apple Silicon — через Rosetta) и легаси-сборка WPF. Предпросмотр и печать
+в PDF — встроенный Chromium, отдельно ничего ставить не нужно.
 
 ## Что умеет
 
@@ -26,7 +29,9 @@ PDF нужен WebView2 Evergreen Runtime (на Windows 11 он обычно у�
   сайта, где стоит ссылка на неё, а в DOCX — как настоящая сноска Word;
 - таблицы CALS, `simpletable`, `properties` и `choicetable` редактируются по ячейкам,
   включая объединение по горизонтали и вертикали (`Ctrl+Alt+→` / `Ctrl+Alt+↓`);
-- работает проверка орфографии (встроенная, `ru-RU`);
+- работает проверка орфографии по словарям Hunspell (русский и английский): ошибки
+  подчёркиваются волной, варианты исправления и «Пропустить все» — в контекстном меню;
+  код, пути и имена команд не проверяются;
 - слева от блоков видны имена элементов (можно выключить в меню «Структура»).
 
 **Режим «Исходный код»** — подсветка синтаксиса, автодополнение элементов и атрибутов
@@ -65,8 +70,9 @@ track changes через штатный `status="new"/"deleted"` с авторо
 **Публикация** — HTML-сайт с оглавлением и постраничной навигацией, единый HTML-файл
 с алфавитным предметным указателем (`indexterm`), **экспорт в DOCX** (нативная сборка в
 OOXML, а не конвертация HTML: настоящие сноски Word, поле оглавления, объединение ячеек
-таблиц, разрывы страниц), экспорт в PDF (печать через Edge/Chrome или WebView2 — WebView2
-также умеет печатать со своими колонтитулами), подключаемый пользовательский CSS.
+таблиц, разрывы страниц), экспорт в PDF (печать встроенным Chromium со своими колонтитулами
+и номерами страниц; запасной путь — установленный Edge/Chrome), подключаемый
+пользовательский CSS.
 
 **Оформление DOCX** — тот же пользовательский CSS, что и для сайта, превращается в именованные
 стили Word: шрифты, цвета, отступы, рамки, таблицы, размер и поля страницы (`@page`), правила
@@ -132,31 +138,68 @@ DTD: «Файл → Подключить внешний DTD…» разбира�
 
 Нужен **.NET SDK 8.0** (проверить: `dotnet --version`).
 
+Кроссплатформенная версия (Windows, Linux, macOS):
+
+```bash
+dotnet run --project src/DitaStudio.Desktop
+```
+
+Самодостаточная сборка без установленного .NET (так собираются архивы для релиза; собирать
+нужно на той ОС, для которой сборка, — нативный Chromium копируется только так):
+
+```bash
+dotnet publish src/DitaStudio.Desktop -c Release -r linux-x64 --self-contained true -o publish   # или win-x64, osx-x64
+```
+
+Сборка весит около 450 МБ (из них ~350 МБ — встроенный Chromium); пакеты NuGet при первой
+сборке занимают ~1,5 ГБ — в них Chromium сразу для трёх ОС.
+
+Легаси-версия WPF (только Windows):
+
 ```powershell
 dotnet build DitaStudio.sln -c Release
 dotnet run --project src\DitaStudio.App
-```
-
-Готовый исполняемый файл после сборки: `src\DitaStudio.App\bin\Release\net8.0-windows\DitaStudio.exe`.
-
-Самодостаточная сборка без установленного .NET (так собирается архив для релиза):
-
-```powershell
 dotnet publish src\DitaStudio.App -c Release -r win-x64 --self-contained true -o publish
 ```
 
 ## Тесты
 
 ```powershell
-dotnet run --project tests\DitaStudio.Tests   # 855 проверок ядра и DOCX-экспорта
-dotnet test tests\DitaStudio.UiTests          # UI-тесты на реальном DitaStudio.exe
+dotnet test tests\DitaStudio.Tests          # ~860 проверок ядра и DOCX-экспорта
+dotnet test tests\DitaStudio.Desktop.Tests  # интерфейс Avalonia (headless, в т.ч. на Linux)
+dotnet test tests\DitaStudio.UiTests          # UI-тесты легаси-версии WPF на реальном DitaStudio.exe
 ```
 
-Проверки ядра — обычная консольная программа без xunit: код возврата 0 означает, что всё
-прошло. Помимо примеров там есть property-based проверки (контент-модели, DTD, XLIFF,
+Тесты интерфейса Avalonia идут без экрана (Avalonia.Headless) и сохраняют снимки окон в
+`tests/DitaStudio.Desktop.Tests/bin/Debug/net8.0/screenshots`; среди них — проверки паритета
+с WPF (все пункты меню и подсказки кнопок, сценарии UI-тестов WPF). Встроенный Chromium
+проверяется отдельно, под X-сервером:
+`DITASTUDIO_CEF_TESTS=1 xvfb-run -a dotnet test tests/DitaStudio.Desktop.Tests --filter FullyQualifiedName~CefPreviewTests`.
+
+Проверки ядра — проект xUnit: каждый раздел проверок (каталог, валидация, DOCX и т. д.) —
+отдельный тест, и упавший тест перечисляет все непрошедшие проверки раздела, а не только
+первую. Помимо примеров там есть property-based проверки (контент-модели, DTD, XLIFF,
 `.ditaval`) со случайными входными данными на фиксированном зерне.
 
-UI-тесты (xUnit + FlaUI) запускают собранный `DitaStudio.exe` и управляют им через UI
+На каждый пуш GitHub Actions (`.github/workflows/ci.yml`) на Windows собирает всё решение и
+прогоняет проверки ядра с покрытием кода (сводка — на странице прогона, полный HTML-отчёт —
+в артефакте `test-results`), а на Linux — тесты интерфейса Avalonia и встроенного Chromium
+(снимки окон — в артефакте `desktop-screenshots`). Локально покрытие считается так:
+
+```powershell
+dotnet test tests\DitaStudio.Tests --settings tests\DitaStudio.Tests\coverage.runsettings
+```
+
+UI-тесты гоняет отдельный workflow `ui-tests.yml` — после пуша в `master` и вручную
+(Actions → UI tests → Run workflow); при падении к прогону прикладывается снимок экрана.
+
+Релиз: пуш тега `vX.Y.Z` (равного `<Version>` в `DitaStudio.Desktop.csproj` и
+`DitaStudio.App.csproj`) запускает `release.yml` — тесты, самодостаточные сборки на раннерах
+каждой ОС и черновик релиза с архивами `DitaStudio-vX.Y.Z-win-x64.zip`,
+`-linux-x64.tar.gz`, `-osx-x64.tar.gz` и `DitaStudio-Legacy-WPF-vX.Y.Z-win-x64.zip`; текст
+«Что нового» дописывается вручную перед публикацией. Ручной запуск — пробная сборка без релиза.
+
+UI-тесты WPF (xUnit + FlaUI) запускают собранный `DitaStudio.exe` и управляют им через UI
 Automation, поэтому решение нужно собрать заранее. Та же библиотека управления доступна
 из командной строки для ручной проверки: `dotnet run --project tools\UiHarness -- --help`.
 
@@ -218,13 +261,22 @@ src/DitaStudio.Core/            ядро, не зависит от интерф�
   Templates/                    заготовки новых документов
 src/DitaStudio.Docx/            нативный рендерер DITA → OOXML (DocumentFormat.OpenXml)
   Styling/                      разбор CSS и перевод его в стили Word
-src/DitaStudio.App/             интерфейс WPF (MVVM на CommunityToolkit.Mvvm)
-  Authoring/                    режим «Автор», редактор строки, редактор исходного кода
+src/DitaStudio.Presentation/    общая логика интерфейса обеих оболочек (MVVM на CommunityToolkit.Mvvm)
   ViewModels/                   модели представления главного окна по областям
-  Views/                        вкладка документа, диалоги, окно сравнения
+  Services/                     интерфейсы диалогов, выбора файлов, UI-потока, печати в PDF
+  Authoring/                    модель блока «Автора», структурные правки, орфография, автодополнение
   Plugins/                      контракт команд «Автора» и реестр плагинов
-tests/DitaStudio.Tests/         проверки ядра и DOCX-экспорта (консольная программа)
-tests/DitaStudio.UiTests/       UI-тесты (xUnit + FlaUI)
+src/DitaStudio.Desktop/         кроссплатформенный интерфейс на Avalonia UI
+  Authoring/                    режим «Автор»: редактор блока на AvaloniaEdit, плашки, таблицы
+  Preview/                      предпросмотр и печать в PDF во встроенном Chromium (CefGlue)
+  Views/                        вкладка документа, редактор исходного кода
+  Services/                     диалоги, выбор файлов, окно сравнения
+  Themes/                       светлая и тёмная палитры, стили элементов управления
+  Dictionaries/                 словари Hunspell (ru_RU, en_US)
+src/DitaStudio.App/             легаси-интерфейс WPF (Windows)
+tests/DitaStudio.Tests/         проверки ядра и DOCX-экспорта (xUnit)
+tests/DitaStudio.Desktop.Tests/ тесты интерфейса Avalonia (Avalonia.Headless, снимки окон)
+tests/DitaStudio.UiTests/       UI-тесты легаси-версии WPF (xUnit + FlaUI)
 tests/TestPlugin/               пример плагина
 tools/DitaStudio.UiAutomation/  общая библиотека UI-автоматизации (FlaUI/UIA3)
 tools/UiHarness/                CLI для ручной UI-проверки
@@ -233,20 +285,23 @@ samples/DitaStudioGuide/        руководство пользователя 
 docs/TESTPLAN.md                чек-лист функционального тестирования
 ```
 
-Ядро не знает про WPF, поэтому его можно переиспользовать в консольной сборке,
-веб-сервисе или CI-скрипте. `DitaStudio.Docx` тоже не зависит от WPF — только от ядра
-и `DocumentFormat.OpenXml`.
+Ядро не знает про интерфейс, поэтому его можно переиспользовать в консольной сборке,
+веб-сервисе или CI-скрипте. `DitaStudio.Docx` тоже не зависит от интерфейса — только от ядра
+и `DocumentFormat.OpenXml`. План и решения переноса на Avalonia —
+[docs/AVALONIA_MIGRATION.md](docs/AVALONIA_MIGRATION.md).
 
 ## Ограничения текущей версии
 
 - В режиме «Автор» содержимое плашек (например, alt-текст картинки, атрибуты ссылки)
   правится только в режиме исходного кода, не прямо в плашке.
-- PDF: печатается через WebView2 или через установленный Edge/Chrome в фоновом режиме;
-  своего движка вёрстки нет, свой текст колонтитулов работает только через WebView2.
-  Без WebView2 Evergreen Runtime предпросмотр и печать через WebView2 недоступны.
-- Внешний DTD вливается в общий каталог всего сеанса редактора: два открытых по очереди
-  проекта с конфликтующими специализациями перезапишут элементы друг друга (побеждает
-  последний загруженный).
+- PDF печатается встроенным Chromium (в легаси-версии — WebView2); своего движка вёрстки нет.
+  Если Chromium не запустился, предпросмотр открывается внешним браузером, а PDF печатается
+  установленным Edge/Chrome — уже без своих колонтитулов.
+- Сборка для macOS — только под Intel (встроенный Chromium CefGlue выпускается под x64), на
+  Apple Silicon работает через Rosetta; приложение не подписано. Сочетания клавиш на macOS —
+  с `Ctrl`, как на Windows и Linux, а не с `Cmd`.
+- Первое открытие большого топика (сотни абзацев) в режиме «Автор» занимает около секунды:
+  каждый блок — отдельный редактор. Правки после этого перестраивают только затронутые блоки.
 - Из `.ditaval` читаются правила `exclude` и `flag`; `include` и `passthrough` пропускаются.
 - Предпросмотр «DOCX (приближённо)» показывает HTML со стилем, похожим на Word: настройки
   «Оформление DOCX» (титул, нумерация заголовков, колонтитулы) и правила `@media docx` в нём
@@ -266,11 +321,14 @@ docs/TESTPLAN.md                чек-лист функционального �
 - В DOCX не встраиваются SVG-изображения (Word/OpenXML не умеет их напрямую) — вместо
   картинки подставляется текстовая плашка с именем файла; растровые форматы
   (PNG/JPEG/GIF/BMP/TIFF) экспортируются полностью.
-- Проверяется только орфография, грамматика — нет.
+- Проверяется только орфография (русский и английский), грамматика — нет.
 - Однопользовательский настольный редактор: совместного редактирования и серверной части нет.
 
 ## Лицензия
 
 [MIT](LICENSE). Сторонние библиотеки распространяются под собственными лицензиями:
-AvalonEdit, CommunityToolkit.Mvvm и DocumentFormat.OpenXml — MIT, Microsoft.Web.WebView2 —
-BSD-подобная лицензия Microsoft; для UI-тестов используется FlaUI (MIT).
+Avalonia, AvaloniaEdit, AvalonEdit, CefGlue, CommunityToolkit.Mvvm и DocumentFormat.OpenXml —
+MIT; Chromium Embedded Framework — BSD; WeCantSpell.Hunspell — MPL 1.1/GPL 2.0/LGPL 2.1;
+словари Hunspell — ru_RU (BSD, А. Лебедев) и en_US (SCOWL), тексты лицензий — в
+`src/DitaStudio.Desktop/Dictionaries`; Microsoft.Web.WebView2 (легаси-версия) — BSD-подобная
+лицензия Microsoft; для UI-тестов используется FlaUI (MIT).

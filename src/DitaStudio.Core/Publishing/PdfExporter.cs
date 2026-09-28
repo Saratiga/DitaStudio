@@ -13,7 +13,16 @@ public static class PdfExporter
         @"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
         @"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
         @"C:\Program Files\Google\Chrome\Application\chrome.exe",
-        @"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+        @"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+        "/Applications/Chromium.app/Contents/MacOS/Chromium"
+    };
+
+    // В Linux браузер ставится пакетом в PATH под одним из этих имён.
+    private static readonly string[] CandidateCommands =
+    {
+        "google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge", "microsoft-edge-stable"
     };
 
     public static string? FindBrowser()
@@ -23,6 +32,24 @@ public static class PdfExporter
             if (File.Exists(path))
             {
                 return path;
+            }
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
+        var dirs = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
+        foreach (var command in CandidateCommands)
+        {
+            foreach (var dir in dirs)
+            {
+                var path = Path.Combine(dir, command);
+                if (File.Exists(path))
+                {
+                    return path;
+                }
             }
         }
 
@@ -39,8 +66,24 @@ public static class PdfExporter
         var browser = FindBrowser();
         if (browser is null)
         {
-            return "Не найден браузер на движке Chromium (Microsoft Edge или Google Chrome). " +
+            return "Не найден браузер на движке Chromium (Microsoft Edge, Google Chrome или Chromium). " +
                    "Откройте собранный HTML и напечатайте его в PDF вручную.";
+        }
+
+        // Старый PDF от прошлой сборки убираем заранее: иначе, если браузер не сможет записать
+        // новый (файл открыт в просмотрщике, сбой печати), проверка File.Exists ниже примет
+        // устаревший файл за успешный результат.
+        try
+        {
+            if (File.Exists(pdfPath))
+            {
+                File.Delete(pdfPath);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return $"Не удалось заменить {Path.GetFileName(pdfPath)}: файл занят другой программой " +
+                   $"(закройте его в просмотрщике PDF). {ex.Message}";
         }
 
         var profileDir = Path.Combine(Path.GetTempPath(), "DitaStudioPrint");
@@ -58,6 +101,12 @@ public static class PdfExporter
             $"--print-to-pdf=\"{pdfPath}\"",
             $"\"{new Uri(Path.GetFullPath(htmlPath)).AbsoluteUri}\"");
 
+        // Chrome в Linux отказывается запускаться от root без --no-sandbox (контейнеры, CI).
+        if (OperatingSystem.IsLinux() && Environment.UserName == "root")
+        {
+            arguments = "--no-sandbox " + arguments;
+        }
+
         try
         {
             var info = new ProcessStartInfo(browser, arguments)
@@ -73,6 +122,11 @@ public static class PdfExporter
             {
                 return "Не удалось запустить браузер для печати.";
             }
+
+            // Chromium много пишет в stderr даже при успехе. Если не вычитывать потоки, буфер
+            // канала переполняется, браузер блокируется на записи и печать «зависает» до таймаута.
+            _ = process.StandardOutput.ReadToEndAsync();
+            var errorOutput = process.StandardError.ReadToEndAsync();
 
             if (!process.WaitForExit(timeoutSeconds * 1000))
             {
@@ -90,7 +144,9 @@ public static class PdfExporter
 
             if (!File.Exists(pdfPath))
             {
-                var error = process.StandardError.ReadToEnd();
+                // Дочерние процессы браузера могут держать канал открытым и после выхода
+                // основного — ждём текст ошибки недолго.
+                var error = errorOutput.Wait(5000) ? errorOutput.Result : string.Empty;
                 return string.IsNullOrWhiteSpace(error)
                     ? "Браузер завершился, но PDF не создан."
                     : $"Браузер сообщил об ошибке: {error.Trim()}";

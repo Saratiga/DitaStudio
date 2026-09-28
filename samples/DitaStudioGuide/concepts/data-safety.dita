@@ -14,9 +14,11 @@
 
     <section id="recovery">
       <title>Восстановление после сбоя</title>
-      <p>Каждые 30 секунд редактор копирует текст вкладок с несохранёнными правками в папку
-        <filepath>%LOCALAPPDATA%\DitaStudio\Recovery</filepath>. Файлы проекта при этом не
-        меняются. Копия удаляется, когда документ сохранён или вы отказались от правок при
+      <p>Каждые 30 секунд редактор копирует текст вкладок с несохранёнными правками в папку данных
+        программы: <filepath>%LOCALAPPDATA%\DitaStudio\Recovery</filepath> в Windows,
+        <filepath>~/.local/share/DitaStudio/Recovery</filepath> в Linux,
+        <filepath>~/Library/Application Support/DitaStudio/Recovery</filepath> в macOS. Файлы
+        проекта при этом не меняются. Копия удаляется, когда документ сохранён или вы отказались от правок при
         закрытии.</p>
       <p>Если редактор завершился аварийно, при следующем открытии того же проекта появится окно
         <wintitle>Восстановление после сбоя</wintitle> со списком документов:</p>

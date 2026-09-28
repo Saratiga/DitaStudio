@@ -210,10 +210,10 @@ public sealed class DitaValidator
         }
     }
 
-    private static void ValidateStyle(DitaDocument document, List<ValidationIssue> issues)
+    private void ValidateStyle(DitaDocument document, List<ValidationIssue> issues)
     {
         var root = document.Root;
-        var def = DitaCatalog.Default.Get(root.Name);
+        var def = _catalog.Get(root.Name);
         if (def is null)
         {
             return;
@@ -268,8 +268,11 @@ public sealed class DitaValidator
 
     private static void ValidateNodeStyle(DitaNode node, DitaDocument document, List<ValidationIssue> issues)
     {
+        // Элемент с conref/conkeyref не пуст: содержимое подставляется из другого топика.
         if (node.Name is "p" or "li" or "cmd" or "title" or "entry" or "stentry" &&
-            node.Children.Count == 0)
+            node.Children.Count == 0 &&
+            string.IsNullOrWhiteSpace(node.GetAttribute("conref")) &&
+            string.IsNullOrWhiteSpace(node.GetAttribute("conkeyref")))
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Warning,

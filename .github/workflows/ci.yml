@@ -1,0 +1,120 @@
+# Сборка всего решения и тесты ядра на каждый пуш.
+# Windows-раннер: приложение — WPF (net8.0-windows), а часть проверок ядра рассчитана на
+# файловую систему Windows (регистр в путях, атрибут «только для чтения»).
+# UI-тесты (tests/DitaStudio.UiTests) здесь не запускаются: им нужен живой рабочий стол
+# и запущенный DitaStudio.exe — прогоняются локально, см. CLAUDE.md.
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      AVALONIA_TELEMETRY_OPTOUT: 1
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Кэш NuGet
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Восстановление пакетов
+        run: dotnet restore DitaStudio.sln
+
+      - name: Сборка
+        run: dotnet build DitaStudio.sln -c Debug --no-restore
+
+      - name: Тесты ядра (с покрытием)
+        run: >
+          dotnet test tests/DitaStudio.Tests -c Debug --no-build
+          --settings tests/DitaStudio.Tests/coverage.runsettings
+          --logger "trx;LogFileName=core-tests.trx"
+          --logger "console;verbosity=normal"
+          --results-directory TestResults
+
+      # Сводка покрытия — на странице прогона (Summary), полный HTML-отчёт — артефактом.
+      - name: Отчёт о покрытии
+        if: always()
+        shell: pwsh
+        run: |
+          $reports = Get-ChildItem TestResults -Recurse -Filter coverage.cobertura.xml
+          if (-not $reports) { Write-Host "Нет данных о покрытии (тесты не дошли до конца)"; exit 0 }
+          dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.5.11
+          reportgenerator "-reports:$($reports.FullName -join ';')" -targetdir:TestResults/coverage-report "-reporttypes:Html;MarkdownSummaryGithub"
+          Get-Content TestResults/coverage-report/SummaryGithub.md | Add-Content $env:GITHUB_STEP_SUMMARY
+
+      - name: Результаты тестов
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: TestResults
+          if-no-files-found: ignore
+
+  # Кроссплатформенная версия на Avalonia (src/DitaStudio.Desktop) — собирается и проверяется
+  # на Linux: headless-тесты интерфейса и снимки главного окна в обеих темах (артефакт).
+  desktop-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      AVALONIA_TELEMETRY_OPTOUT: 1
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Кэш NuGet
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Сборка
+        run: dotnet build tests/DitaStudio.Desktop.Tests -c Debug
+
+      - name: Тесты интерфейса (headless)
+        run: >
+          dotnet test tests/DitaStudio.Desktop.Tests -c Debug --no-build
+          --logger "console;verbosity=normal"
+
+      # Встроенный Chromium (CefGlue) — предпросмотр и печать в PDF с колонтитулами; ему
+      # нужен X-сервер, поэтому отдельный прогон под xvfb-run.
+      - name: Предпросмотр и PDF во встроенном Chromium
+        env:
+          DITASTUDIO_CEF_TESTS: 1
+        run: >
+          xvfb-run -a dotnet test tests/DitaStudio.Desktop.Tests -c Debug --no-build
+          --filter FullyQualifiedName~CefPreviewTests --logger "console;verbosity=normal"
+
+      - name: Снимки окон
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-screenshots
+          path: tests/DitaStudio.Desktop.Tests/bin/Debug/net8.0/screenshots
+          if-no-files-found: ignore
+

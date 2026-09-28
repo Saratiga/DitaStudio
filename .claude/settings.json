@@ -1,0 +1,22 @@
+{
+  "extraKnownMarketplaces": {
+    "karpathy-skills": {
+      "source": { "source": "github", "repo": "forrestchang/andrej-karpathy-skills" }
+    },
+    "caveman": {
+      "source": { "source": "github", "repo": "JuliusBrussee/caveman" }
+    },
+    "superpowers-dev": {
+      "source": { "source": "github", "repo": "obra/superpowers" }
+    },
+    "beads-marketplace": {
+      "source": { "source": "github", "repo": "steveyegge/beads" }
+    }
+  },
+  "enabledPlugins": {
+    "andrej-karpathy-skills@karpathy-skills": true,
+    "caveman@caveman": true,
+    "superpowers@superpowers-dev": true,
+    "beads@beads-marketplace": true
+  }
+}

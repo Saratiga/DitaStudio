@@ -116,6 +116,24 @@ public sealed class DitaProject
     private const string ExternalDtdSettingsFile = ".ditastudio-external-dtd";
     private const string DocxLayoutSettingsFile = ".ditastudio-docx";
 
+    private readonly List<string> _settingsWarnings = new();
+
+    /// <summary>
+    /// Сбои чтения и записи служебных файлов проекта (.ditastudio-*): настройка тогда берётся по
+    /// умолчанию или не сохраняется на диск, но работа не прерывается. Раньше такие сбои
+    /// проглатывались молча — пользователь не знал, что, например, условия сборки не сохранились.
+    /// </summary>
+    public IReadOnlyList<string> SettingsWarnings => _settingsWarnings;
+
+    /// <summary>Срабатывает при каждом сбое из <see cref="SettingsWarnings"/> — чтобы сообщить сразу.</summary>
+    public event Action<string>? SettingsWarning;
+
+    private void ReportSettingsProblem(string message)
+    {
+        _settingsWarnings.Add(message);
+        SettingsWarning?.Invoke(message);
+    }
+
     public DitaProject(string rootPath) : this(rootPath, allowReferencedProjects: true)
     {
     }
@@ -179,9 +197,9 @@ public sealed class DitaProject
                 AtomicFile.WriteAllText(settingsPath, CustomCssPath, new UTF8Encoding(false));
             }
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // настройка не критична — молча продолжаем без сохранения на диск
+            ReportSettingsProblem($"Не удалось сохранить {CustomCssSettingsFile}: {ex.Message}. Настройка действует до закрытия проекта.");
         }
     }
 
@@ -198,9 +216,10 @@ public sealed class DitaProject
             var value = File.ReadAllText(settingsPath).Trim();
             CustomCssPath = value.Length == 0 ? null : value;
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             CustomCssPath = null;
+            ReportSettingsProblem($"Не удалось прочитать {CustomCssSettingsFile}: {ex.Message}. Используются значения по умолчанию.");
         }
     }
 
@@ -267,11 +286,11 @@ public sealed class DitaProject
                 }
             }
 
-            File.WriteAllLines(settingsPath, lines);
+            AtomicFile.WriteAllText(settingsPath, string.Join(Environment.NewLine, lines) + Environment.NewLine, new UTF8Encoding(false));
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // условия сборки не критичны — молча продолжаем без сохранения на диск
+            ReportSettingsProblem($"Не удалось сохранить {ConditionsSettingsFile}: {ex.Message}. Настройка действует до закрытия проекта.");
         }
     }
 
@@ -315,10 +334,11 @@ public sealed class DitaProject
 
             ExcludedConditionValues = exclude;
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             ExcludedConditionValues = new Dictionary<string, HashSet<string>>();
             ShowDraftComments = false;
+            ReportSettingsProblem($"Не удалось прочитать {ConditionsSettingsFile}: {ex.Message}. Используются значения по умолчанию.");
         }
     }
 
@@ -346,9 +366,9 @@ public sealed class DitaProject
                 AtomicFile.WriteAllText(settingsPath, DitavalPath, new UTF8Encoding(false));
             }
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // настройка не критична — молча продолжаем без сохранения на диск
+            ReportSettingsProblem($"Не удалось сохранить {DitavalSettingsFile}: {ex.Message}. Настройка действует до закрытия проекта.");
         }
     }
 
@@ -365,17 +385,23 @@ public sealed class DitaProject
             var value = File.ReadAllText(settingsPath).Trim();
             DitavalPath = value.Length == 0 ? null : value;
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             DitavalPath = null;
+            ReportSettingsProblem($"Не удалось прочитать {DitavalSettingsFile}: {ex.Message}. Используются значения по умолчанию.");
         }
     }
 
     /// <summary>Перечитывает связанный .ditaval с диска — правки файла подхватываются сами,
     /// вручную переимпортировать не нужно. Null, если файл не подключён, отсутствует или
     /// не читается.</summary>
-    public DitavalRules? ResolveLinkedDitaval()
+    public DitavalRules? ResolveLinkedDitaval() => ResolveLinkedDitaval(out _);
+
+    /// <param name="error">Почему подключённый файл не прочитан (нет файла, битый XML) — чтобы
+    /// сборка не прошла молча без условий, которые пользователь считает включёнными.</param>
+    public DitavalRules? ResolveLinkedDitaval(out string? error)
     {
+        error = null;
         if (DitavalPath is null)
         {
             return null;
@@ -384,6 +410,7 @@ public sealed class DitaProject
         var fullPath = System.IO.Path.Combine(RootPath, DitavalPath.Replace('/', System.IO.Path.DirectorySeparatorChar));
         if (!File.Exists(fullPath))
         {
+            error = $"Подключённый файл условий {DitavalPath} не найден — условия из него не применены.";
             return null;
         }
 
@@ -391,8 +418,9 @@ public sealed class DitaProject
         {
             return DitavalReader.Read(fullPath);
         }
-        catch
+        catch (Exception ex) when (ex is System.Xml.XmlException or IOException or UnauthorizedAccessException)
         {
+            error = $"Подключённый файл условий {DitavalPath} не прочитан: {ex.Message} — условия из него не применены.";
             return null;
         }
     }
@@ -407,6 +435,7 @@ public sealed class DitaProject
     public void SetExternalDtdPath(string? relativePath)
     {
         ExternalDtdPath = string.IsNullOrWhiteSpace(relativePath) ? null : relativePath.Replace('\\', '/');
+        _catalog = null; // каталог со старым DTD больше не действителен
         var settingsPath = System.IO.Path.Combine(RootPath, ExternalDtdSettingsFile);
         try
         {
@@ -422,9 +451,9 @@ public sealed class DitaProject
                 AtomicFile.WriteAllText(settingsPath, ExternalDtdPath, new UTF8Encoding(false));
             }
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // настройка не критична — молча продолжаем без сохранения на диск
+            ReportSettingsProblem($"Не удалось сохранить {ExternalDtdSettingsFile}: {ex.Message}. Настройка действует до закрытия проекта.");
         }
     }
 
@@ -441,16 +470,34 @@ public sealed class DitaProject
             var value = File.ReadAllText(settingsPath).Trim();
             ExternalDtdPath = value.Length == 0 ? null : value;
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             ExternalDtdPath = null;
+            ReportSettingsProblem($"Не удалось прочитать {ExternalDtdSettingsFile}: {ex.Message}. Используются значения по умолчанию.");
         }
     }
 
+    /// <summary>
+    /// Каталог элементов этого проекта: встроенный DITA 1.3 плюс элементы подключённого внешнего
+    /// DTD. Строится при первом обращении; после смены DTD — заново (<see cref="LoadCatalog"/>).
+    /// </summary>
+    public DitaCatalog Catalog => _catalog ?? LoadCatalog().Catalog;
+
+    private DitaCatalog? _catalog;
+
+    /// <summary>Перечитывает внешний DTD с диска и заново строит <see cref="Catalog"/>.
+    /// Dtd — результат разбора (предупреждения для пользователя) или null без DTD.</summary>
+    public (DitaCatalog Catalog, DtdLoadResult? Dtd) LoadCatalog()
+    {
+        var dtd = ResolveExternalDtd();
+        var catalog = dtd is null ? DitaCatalog.Builtin : DitaCatalog.Builtin.WithElements(dtd.Elements);
+        _catalog = catalog;
+        return (catalog, dtd);
+    }
+
     /// <summary>Разбирает связанный .dtd заново с диска (см. DtdCatalogLoader) — правки файлов
-    /// подхватываются сами. Null, если внешний DTD не подключён. Результат нужно самостоятельно
-    /// влить в каталог через DitaCatalog.Default.Merge(...) — сам метод глобальный каталог не
-    /// трогает.</summary>
+    /// подхватываются сами. Null, если внешний DTD не подключён. Каталог проекта из него
+    /// строит <see cref="LoadCatalog"/>.</summary>
     public DtdLoadResult? ResolveExternalDtd()
     {
         if (ExternalDtdPath is null)
@@ -510,11 +557,11 @@ public sealed class DitaProject
                 return;
             }
 
-            File.WriteAllLines(settingsPath, _referencedProjectPaths);
+            AtomicFile.WriteAllText(settingsPath, string.Join(Environment.NewLine, _referencedProjectPaths) + Environment.NewLine, new UTF8Encoding(false));
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // настройка не критична — молча продолжаем без сохранения на диск
+            ReportSettingsProblem($"Не удалось сохранить {ReferencedProjectsSettingsFile}: {ex.Message}. Настройка действует до закрытия проекта.");
         }
     }
 
@@ -530,9 +577,10 @@ public sealed class DitaProject
 
             _referencedProjectPaths.AddRange(File.ReadAllLines(settingsPath).Where(l => !string.IsNullOrWhiteSpace(l)));
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             _referencedProjectPaths.Clear();
+            ReportSettingsProblem($"Не удалось прочитать {ReferencedProjectsSettingsFile}: {ex.Message}. Используются значения по умолчанию.");
         }
     }
 
@@ -559,9 +607,10 @@ public sealed class DitaProject
                 referenced.Scan();
                 _referencedProjects.Add(referenced);
             }
-            catch
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 // недоступный проект-источник пропускаем — не мешаем работе с основным
+                ReportSettingsProblem($"Проект-источник ключей {path} недоступен: {ex.Message}");
             }
         }
     }
@@ -617,9 +666,9 @@ public sealed class DitaProject
                 footerText ?? string.Empty
             }) + Environment.NewLine, new UTF8Encoding(false));
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // настройка колонтитулов не критична — молча продолжаем без сохранения на диск
+            ReportSettingsProblem($"Не удалось сохранить {PdfHeaderFooterSettingsFile}: {ex.Message}. Настройка действует до закрытия проекта.");
         }
     }
 
@@ -638,11 +687,12 @@ public sealed class DitaProject
             PdfHeaderText = lines.Length > 1 ? lines[1] : string.Empty;
             PdfFooterText = lines.Length > 2 ? lines[2] : string.Empty;
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             PdfShowHeaderFooter = false;
             PdfHeaderText = null;
             PdfFooterText = null;
+            ReportSettingsProblem($"Не удалось прочитать {PdfHeaderFooterSettingsFile}: {ex.Message}. Используются значения по умолчанию.");
         }
     }
 
@@ -734,7 +784,8 @@ public sealed class DitaProject
             }
             catch
             {
-                // Файл с ошибкой разбора всё равно показываем в дереве проекта.
+                // Файл с ошибкой разбора всё равно показываем в дереве проекта. Ловим всё: один
+                // испорченный файл не должен мешать открыть проект, а саму ошибку покажет проверка.
             }
 
             _files.Add(new ProjectFile(path, relative, kind, title) { RootElement = rootName });
@@ -760,9 +811,9 @@ public sealed class DitaProject
                 subDirs = Directory.EnumerateDirectories(dir);
                 files = Directory.EnumerateFiles(dir);
             }
-            catch
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                continue;
+                continue; // недоступная папка (права, удалена во время обхода) — пропускаем
             }
 
             foreach (var sub in subDirs)
@@ -809,7 +860,7 @@ public sealed class DitaProject
         {
             return GetDocument(path);
         }
-        catch
+        catch // Try-семантика: вызывающий получает null и сам сообщает о недоступном файле
         {
             return null;
         }
@@ -1295,7 +1346,7 @@ public sealed class DitaProject
     /// падение одного плагина на одном файле не прерывает проверку остальных.</summary>
     public IReadOnlyList<ValidationIssue> ValidateAll(IReadOnlyList<IValidationRulePlugin>? plugins = null)
     {
-        var validator = new DitaValidator();
+        var validator = new DitaValidator(Catalog);
         var issues = new List<ValidationIssue>();
 
         foreach (var file in _files)

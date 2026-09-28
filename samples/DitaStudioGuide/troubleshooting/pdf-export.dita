@@ -12,20 +12,33 @@
 
     <troubleSolution>
       <cause>
-        <p>Экспорт в PDF устроен как печать собранного HTML в файл через установленный на
-          компьютере Microsoft Edge или Google Chrome — собственного движка PDF в редакторе нет.
-          Если ни один из этих браузеров не установлен, экспорт не может выполниться.</p>
+        <p>Собственного движка PDF в редакторе нет: собранный HTML печатается в файл браузером на
+          движке Chromium — встроенным в редактор или установленным Microsoft Edge, Google
+          Chrome, Chromium. Если встроенный браузер не запустился (см. «Вкладка „Предпросмотр“
+          пустая»), а установленного нет, печатать нечем.</p>
       </cause>
       <remedy>
-        <title>Установить или обновить браузер</title>
+        <title>Установить браузер или восстановить встроенный</title>
         <steps>
           <step>
-            <cmd>Установите Microsoft Edge или Google Chrome (обычно уже есть в Windows).</cmd>
+            <cmd>Установите Microsoft Edge, Google Chrome или Chromium.</cmd>
           </step>
           <step>
             <cmd>Повторите <menucascade><uicontrol>Публикация</uicontrol>
               <uicontrol>Экспорт в PDF</uicontrol></menucascade>.</cmd>
             <stepresult>Файл PDF появляется в выбранной папке вывода.</stepresult>
+          </step>
+        </steps>
+      </remedy>
+    </troubleSolution>
+    <troubleSolution>
+      <cause>
+        <p>Прежний PDF с тем же именем открыт в программе просмотра, и заменить его нельзя.</p>
+      </cause>
+      <remedy>
+        <steps>
+          <step>
+            <cmd>Закройте PDF в программе просмотра и повторите экспорт.</cmd>
           </step>
         </steps>
       </remedy>

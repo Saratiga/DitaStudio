@@ -1,0 +1,72 @@
+# Перенос на Avalonia UI
+
+**Статус: завершён.** Основная версия — Avalonia, WPF — легаси.
+
+Цель — кроссплатформенный редактор (Windows, Linux, macOS) с тем же функционалом и
+дизайном, что у WPF-версии. Перенос идёт **параллельно**: новое приложение
+`src/DitaStudio.Desktop` растёт рядом с `src/DitaStudio.App` (WPF). WPF-версия остаётся
+рабочей и после переноса не удаляется — живёт как легаси. Каждый этап — зелёный CI.
+
+## Принятые решения
+
+| Вопрос | Решение | Почему |
+|---|---|---|
+| Версия Avalonia | **11.3.x**, не 12 | CefGlue.Avalonia (последняя — 120.x) собран под Avalonia 11 и с 12 несовместим; AvaloniaEdit для 11.x есть (11.4.x). |
+| Предпросмотр и печать в PDF | **CefGlue.Avalonia** (Chromium) | Бесплатно, все три ОС, есть печать в PDF. Цена — около +100 МБ к сборке. |
+| Редактор исходного XML | **Avalonia.AvaloniaEdit** | Порт того же AvalonEdit, что в WPF-версии. |
+| Режим «Автор» | свой редактор блока вместо `RichTextBox` | В Avalonia нет редактируемого rich text; фразовые элементы — оформленные диапазоны. |
+| Орфография | **WeCantSpell.Hunspell** + словари LibreOffice (ru_RU — BSD, en_US — SCOWL) | В Avalonia нет встроенной проверки, как `SpellCheck.IsEnabled` в WPF. |
+| ViewModel'и | общий проект с асинхронными сервисами | Диалоги Avalonia асинхронные; WPF реализует те же интерфейсы, пока жив. |
+| UI-тесты | Avalonia.Headless (+ снимки окон) | Работают без экрана, в том числе на Linux-раннере CI. |
+
+## Этапы
+
+1. **Каркас** — проект, палитра светлой/тёмной темы (те же цвета, что `Themes/*.xaml`),
+   стили контролов, разметка главного окна, headless-тесты со снимками. ✅
+2. **Общие ViewModel'и** — `src/DitaStudio.Presentation`: `ViewModels/*`, `AutoRecovery`,
+   `ExternalChangeWatcher`, `RecentProjects`, плагины; интерфейсы `Services/` (диалоги,
+   выбор файлов, UI-поток, печать в PDF, вкладка документа). WPF реализует их и
+   продолжает работать (CI и UI-тесты WPF зелёные). ✅
+3. **Панели и диалоги** — логика окна вынесена в общие ViewModel'и (дерево проекта,
+   карта с перетаскиванием, атрибуты/палитра/структура — `SidePanelsViewModel`,
+   структурные операции «Автора» — `AuthorSurfaceBase`); все диалоги перенесены в
+   `AvaloniaDialogService` (включая «Оформление DOCX» и окно сравнения). Вкладка документа
+   пока промежуточная: «Автор» — дерево структуры (выбор элемента, команды, атрибуты,
+   палитра), текст — в «Исходном коде», предпросмотр — во внешнем браузере. ✅
+4. **Редактор XML** на AvaloniaEdit: подсветка (в тёмной теме — цвета тёмной палитры),
+   номера строк, поиск Ctrl+F, автодополнение по каталогу (общее — `XmlCompletion` в
+   Presentation), переход к строке из панели проверки. ✅
+5. **Режим «Автор»**: редактор блока `BlockEditor` на AvaloniaEdit — фразовые элементы
+   оформлением по `InlineContent`, плашки встроенными элементами; Enter/Backspace/Delete/
+   Tab/стрелки и Ctrl+B/I/U/Shift+U/\` как в WPF; таблицы CALS и simpletable, заметки,
+   картинки, метаданные; орфография через Hunspell (подчёркивание, варианты в контекстном
+   меню). Сверх WPF: разделение блока сохраняет фразовые элементы, смешанное содержимое
+   (пункт со вложенным списком) — отдельные участки вместо плашки, правки перестраивают
+   только затронутые блоки. ✅
+6. **Предпросмотр** (HTML, PDF, DOCX-приближённо) и печать в PDF с колонтитулами через CefGlue:
+   `Preview/PreviewPane` (встроенный Chromium, PDF — в его просмотрщике с настоящей
+   разбивкой на страницы), `Preview/CefPdfPrinter` (экспорт в PDF: шапка по центру, подвал
+   слева, «стр. N из M» справа). Chromium запускается лениво (`CefHost`) — при первом
+   предпросмотре или экспорте; если не запустился, предпросмотр открывается внешним
+   приложением, а экспорт уходит в печать установленным Edge/Chrome. ✅
+7. **Завершение**: тесты паритета (`ParityTests` — все пункты меню и подсказки кнопок WPF есть
+   в Avalonia, сценарии UI-тестов WPF проходят в Avalonia-окне), релизные сборки
+   win-x64/linux-x64/osx-x64 на раннерах своих ОС (`release.yml`), легаси-архив WPF,
+   поиск Edge/Chrome на Linux/macOS для печати без колонтитулов, документация (README,
+   USAGE, руководство `samples/DitaStudioGuide`, TESTPLAN). WPF-проект остаётся как легаси. ✅
+
+## Как проверять
+
+```bash
+dotnet run --project src/DitaStudio.Desktop                 # запуск (Linux/macOS/Windows)
+dotnet test tests/DitaStudio.Desktop.Tests                  # headless-тесты интерфейса
+# снимки окон: tests/DitaStudio.Desktop.Tests/bin/Debug/net8.0/screenshots/*.png
+DITASTUDIO_CEF_TESTS=1 xvfb-run -a dotnet test tests/DitaStudio.Desktop.Tests \
+  --filter FullyQualifiedName~CefPreviewTests                # настоящий Chromium (нужен X-сервер)
+```
+
+Сборка с Chromium весит ~700 МБ (нативный CEF под текущую ОС копируется в вывод, процесс
+браузера — в `CefGlueBrowserProcess/`). В headless-тестах Chromium отключён
+(`CefHost.Disabled`), вручную — `DITASTUDIO_NO_CEF=1`.
+
+`AVALONIA_TELEMETRY_OPTOUT=1` отключает телеметрию сборки Avalonia (в CI задано).

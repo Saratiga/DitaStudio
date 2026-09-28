@@ -1,0 +1,193 @@
+# Релиз: самодостаточные сборки кроссплатформенной версии (Avalonia) для Windows, Linux и
+# macOS и легаси-сборка WPF для Windows.
+#
+#   DitaStudio-vX.Y.Z-win-x64.zip          — Avalonia, Windows x64
+#   DitaStudio-vX.Y.Z-linux-x64.tar.gz     — Avalonia, Linux x64
+#   DitaStudio-vX.Y.Z-osx-x64.tar.gz       — Avalonia, macOS (Intel; на Apple Silicon — через Rosetta,
+#                                            встроенный Chromium CefGlue выпускается только под x64)
+#   DitaStudio-Legacy-WPF-vX.Y.Z-win-x64.zip — прежняя WPF-версия
+#
+# Пуш тега vX.Y.Z (совпадающего с <Version> в DitaStudio.Desktop.csproj и DitaStudio.App.csproj) —
+# тесты, сборки и ЧЕРНОВИК релиза со всеми архивами. Текст «Что нового» дописывается вручную,
+# публикация — кнопкой «Publish release» на GitHub. Если релиз с этим тегом уже есть, архивы
+# в нём заменяются.
+#
+# Ручной запуск (Actions → Release → Run workflow) — пробная сборка без релиза: архивы только
+# прикладываются к прогону как артефакты.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  AVALONIA_TELEMETRY_OPTOUT: 1
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Версия
+        id: version
+        shell: pwsh
+        run: |
+          function Get-Version($path) {
+            [xml]$project = Get-Content $path
+            $v = @($project.Project.PropertyGroup.Version | Where-Object { $_ })[0]
+            if (-not $v) { Write-Error "В $path не найден <Version>"; exit 1 }
+            return $v
+          }
+          $version = Get-Version src/DitaStudio.Desktop/DitaStudio.Desktop.csproj
+          $legacy = Get-Version src/DitaStudio.App/DitaStudio.App.csproj
+          if ($version -ne $legacy) {
+            Write-Error "Версии расходятся: DitaStudio.Desktop $version, DitaStudio.App $legacy"
+            exit 1
+          }
+          $tag = "v$version"
+          if ("${{ github.ref_type }}" -eq "tag" -and "${{ github.ref_name }}" -ne $tag) {
+            Write-Error "Тег ${{ github.ref_name }} не совпадает с <Version>$version</Version>"
+            exit 1
+          }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+      - name: Тесты интерфейса (headless)
+        run: dotnet test tests/DitaStudio.Desktop.Tests -c Release
+      - name: Предпросмотр и PDF во встроенном Chromium
+        env:
+          DITASTUDIO_CEF_TESTS: 1
+        run: >
+          xvfb-run -a dotnet test tests/DitaStudio.Desktop.Tests -c Release --no-build
+          --filter FullyQualifiedName~CefPreviewTests
+
+  desktop:
+    needs: [version, tests]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            archive: zip
+          - os: ubuntu-latest
+            rid: linux-x64
+            archive: tar.gz
+          - os: macos-latest
+            rid: osx-x64
+            archive: tar.gz
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    env:
+      ASSET: DitaStudio-${{ needs.version.outputs.tag }}-${{ matrix.rid }}.${{ matrix.archive }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+
+      # Нативный Chromium под ОС сборки (CefGlue) копируется только при публикации на этой ОС —
+      # поэтому каждая платформа собирается на своём раннере, а не кросс-компиляцией.
+      - name: Сборка
+        run: >
+          dotnet publish src/DitaStudio.Desktop -c Release -r ${{ matrix.rid }} --self-contained true
+          -p:DebugType=None -p:DebugSymbols=false -o publish
+
+      - name: Архив (zip)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: Compress-Archive -Path publish/* -DestinationPath $env:ASSET
+
+      - name: Архив (tar.gz)
+        if: matrix.archive == 'tar.gz'
+        run: tar -czf "$ASSET" -C publish .
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ASSET }}
+          path: ${{ env.ASSET }}
+          compression-level: 0
+
+  legacy-wpf:
+    needs: version
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      ASSET: DitaStudio-Legacy-WPF-${{ needs.version.outputs.tag }}-win-x64.zip
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Тесты ядра
+        run: dotnet test tests/DitaStudio.Tests -c Release
+
+      - name: Сборка
+        run: dotnet publish src/DitaStudio.App -c Release -r win-x64 --self-contained true -o publish
+
+      - name: Архив
+        shell: pwsh
+        run: Compress-Archive -Path publish/* -DestinationPath $env:ASSET
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.ASSET }}
+          path: ${{ env.ASSET }}
+          compression-level: 0
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: [version, desktop, legacy-wpf]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v7
+        with:
+          path: assets
+          merge-multiple: true
+
+      - name: Черновик релиза
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" assets/* --clobber
+            exit 0
+          fi
+          cat > notes.md <<EOF
+          ## Что нового
+
+          (дописать перед публикацией)
+
+          ## Установка
+
+          Сборки самодостаточные — установленный .NET не нужен. Распакуйте архив своей системы и запустите:
+
+          - **Windows x64** — \`DitaStudio-$TAG-win-x64.zip\`, файл \`DitaStudio.Desktop.exe\`.
+          - **Linux x64** — \`DitaStudio-$TAG-linux-x64.tar.gz\`, файл \`DitaStudio.Desktop\`. Встроенному Chromium нужны обычные библиотеки рабочего стола (libnss3, libatk, libgbm, libxkbcommon — в стандартной установке Ubuntu/Fedora они есть).
+          - **macOS** — \`DitaStudio-$TAG-osx-x64.tar.gz\`, файл \`DitaStudio.Desktop\`. Сборка под Intel, на Apple Silicon работает через Rosetta 2. Приложение не подписано: при первом запуске откройте его через контекстное меню → «Открыть».
+
+          Предпросмотр и печать в PDF — встроенный Chromium. Если он не запустится, предпросмотр откроется внешним браузером, а PDF напечатается установленным Edge/Chrome.
+
+          Прежняя WPF-версия для Windows — \`DitaStudio-Legacy-WPF-$TAG-win-x64.zip\` (\`DitaStudio.exe\`, нужен WebView2 Evergreen Runtime).
+          EOF
+          gh release create "$TAG" assets/* --draft --title "DITA Studio $TAG" --notes-file notes.md

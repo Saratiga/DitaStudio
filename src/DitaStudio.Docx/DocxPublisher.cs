@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using DitaStudio.Core.IO;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
@@ -88,61 +89,61 @@ public sealed class DocxPublisher
         var bookmarks = AssignBookmarks(topics);
         var title = tree.Root.Title;
 
-        if (File.Exists(outputFile))
+        // Документ собирается во временный файл рядом и подменяет прежний, только когда готов
+        // целиком: сбой посреди сборки не оставит вместо прошлого DOCX обрезанный.
+        AtomicFile.WriteVia(outputFile, temp =>
         {
-            File.Delete(outputFile);
-        }
+            using var wordDocument = WordprocessingDocument.Create(temp, WordprocessingDocumentType.Document);
 
-        using var wordDocument = WordprocessingDocument.Create(outputFile, WordprocessingDocumentType.Document);
+            var mainPart = wordDocument.AddMainDocumentPart();
+            var body = new W.Body();
+            mainPart.Document = new W.Document(body);
 
-        var mainPart = wordDocument.AddMainDocumentPart();
-        var body = new W.Body();
-        mainPart.Document = new W.Document(body);
+            AddStyles(mainPart, styles, layout);
+            var numberingPart = AddNumbering(mainPart, styles, layout);
+            AddSettings(wordDocument, layout);
+            SetDocumentProperties(wordDocument, title, layout);
 
-        AddStyles(mainPart, styles, layout);
-        var numberingPart = AddNumbering(mainPart, styles, layout);
-        AddSettings(wordDocument, layout);
-        SetDocumentProperties(wordDocument, title, layout);
+            WriteFrontMatter(body, title, date, labels, layout);
 
-        WriteFrontMatter(body, title, date, labels, layout);
-
-        var renderOptions = new DocxRenderOptions
-        {
-            Labels = labels,
-            ShowDraftComments = options.ShowDraftComments,
-            Filter = node => PublishFilter.IsIncluded(node, options),
-            TopicBookmark = (path, id) => bookmarks.TryGetValue(BookmarkKey(path, id), out var name) ? name : null,
-            Styles = styles,
-            NumberFiguresAndTables = layout.NumberFiguresAndTables
-        };
-        var renderer = new DocxRenderer(_project, mainPart, numberingPart, renderOptions);
-
-        foreach (var item in topics)
-        {
-            var doc = _project.TryGetDocument(item.TargetPath!);
-            if (doc is null)
+            var renderOptions = new DocxRenderOptions
             {
-                warnings.Add($"Не удалось прочитать {item.TargetPath}");
-                continue;
+                Labels = labels,
+                ShowDraftComments = options.ShowDraftComments,
+                Filter = node => PublishFilter.IsIncluded(node, options),
+                TopicBookmark = (path, id) => bookmarks.TryGetValue(BookmarkKey(path, id), out var name) ? name : null,
+                Styles = styles,
+                NumberFiguresAndTables = layout.NumberFiguresAndTables
+            };
+            var renderer = new DocxRenderer(_project, mainPart, numberingPart, renderOptions);
+
+            foreach (var item in topics)
+            {
+                var doc = _project.TryGetDocument(item.TargetPath!);
+                if (doc is null)
+                {
+                    warnings.Add($"Не удалось прочитать {item.TargetPath}");
+                    continue;
+                }
+
+                var expanded = RefResolver.ExpandConrefs(_project, doc);
+                var topicNode = item.TargetTopicId is null
+                    ? expanded.Root
+                    : RefResolver.FindById(expanded.Root, item.TargetTopicId) ?? expanded.Root;
+
+                var bookmarkName = bookmarks[BookmarkKey(item.TargetPath!, item.TargetTopicId)];
+                renderOptions.CurrentKeyScope = item.KeyScopeChain;
+                renderOptions.RelatedTopics = tree.RelatedLinks.TryGetValue(Path.GetFullPath(item.TargetPath!), out var related)
+                    ? related
+                    : null;
+                renderer.RenderTopic(expanded, topicNode, body, Math.Clamp(item.Level, 1, 6), bookmarkName);
             }
 
-            var expanded = RefResolver.ExpandConrefs(_project, doc);
-            var topicNode = item.TargetTopicId is null
-                ? expanded.Root
-                : RefResolver.FindById(expanded.Root, item.TargetTopicId) ?? expanded.Root;
+            body.Append(BuildSectionProperties(mainPart, styles.Page, layout, title, date));
 
-            var bookmarkName = bookmarks[BookmarkKey(item.TargetPath!, item.TargetTopicId)];
-            renderOptions.CurrentKeyScope = item.KeyScopeChain;
-            renderOptions.RelatedTopics = tree.RelatedLinks.TryGetValue(Path.GetFullPath(item.TargetPath!), out var related)
-                ? related
-                : null;
-            renderer.RenderTopic(expanded, topicNode, body, Math.Clamp(item.Level, 1, 6), bookmarkName);
-        }
-
-        body.Append(BuildSectionProperties(mainPart, styles.Page, layout, title, date));
-
-        warnings.AddRange(renderOptions.Warnings);
-        mainPart.Document.Save();
+            warnings.AddRange(renderOptions.Warnings);
+            mainPart.Document.Save();
+        });
 
         return new DocxPublishResult(outputFile, warnings);
     }
