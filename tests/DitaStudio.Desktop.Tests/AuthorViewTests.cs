@@ -547,6 +547,63 @@ public sealed class AuthorViewTests
         }
     }
 
+    [AvaloniaFact]
+    public void Images_ShownAsPictures_ResizeWritesWidth()
+    {
+        // Замечание: изображение в «Авторе» — картинкой, а не надписью, и размер меняется мышью.
+        const string png = "iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAIAAABwJOjsAAAAJ0lEQVR4nGM8oaHBMBCAaUBsHbV41OJRi0ctHrV41OJRi0ctHhAAABx5AUDfR9jWAAAAAElFTkSuQmCC";
+        var dir = Path.Combine(Path.GetTempPath(), "DitaStudioImageTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        File.WriteAllBytes(Path.Combine(dir, "pic.png"), Convert.FromBase64String(png));
+        var path = Path.Combine(dir, "topic.dita");
+        File.WriteAllText(path, "<concept id=\"c\"><title>Картинки</title><conbody>" +
+            "<p>Значок <image href=\"pic.png\" height=\"10px\"/> в строке.</p>" +
+            "<fig><image href=\"pic.png\" placement=\"break\"/></fig></conbody></concept>");
+        var document = DitaDocument.Load(path);
+        var author = new AuthorView();
+        var undo = new List<string>();
+        author.BeforeStructuralEdit += (_, description) => undo.Add(description);
+        author.Load(document);
+        var window = new Window { Width = 900, Height = 700, Content = author };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var images = author.GetVisualDescendants().OfType<ResizableImage>().ToList();
+        Assert.Equal(2, images.Count);
+        var inline = images.First(i => i.FindAncestorOfType<BlockEditor>() is not null);
+        Assert.Equal(20, inline.ShownWidth, 1); // height="10px" при пропорциях 2:1
+        Assert.DoesNotContain(author.GetVisualDescendants().OfType<TextBlock>(), t => t.Text?.StartsWith("🖼") == true);
+
+        // Перетаскивание маркера в углу картинки-блока мышью.
+        var block = images.Single(i => !ReferenceEquals(i, inline));
+        var before = block.ShownWidth;
+        var inside = block.TranslatePoint(new Point(5, 5), window)!.Value;
+        window.CaptureRenderedFrame(); // проверка попадания идёт по отрисованному кадру
+        window.MouseMove(new Point(1, 1), RawInputModifiers.None);
+        window.MouseMove(inside, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        var thumb = block.Children.OfType<Border>().Single();
+        Assert.True(thumb.IsVisible);
+        var corner = thumb.TranslatePoint(new Point(5, 5), window)!.Value;
+        window.MouseDown(corner, MouseButton.Left, RawInputModifiers.None);
+        window.MouseMove(corner + new Vector(60, 0), RawInputModifiers.LeftMouseButton);
+        window.MouseUp(corner + new Vector(60, 0), MouseButton.Left, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(before + 60, block.ShownWidth, 1);
+        Assert.Equal($"{Math.Round(before + 60)}px", document.Root.Descendants().Last(n => n.Name == "image").GetAttribute("width"));
+
+        inline.ResizeTo(64);
+        var image = document.Root.Descendants().First(n => n.Name == "image");
+        Assert.Equal("64px", image.GetAttribute("width"));
+        Assert.Null(image.GetAttribute("height"));
+        Assert.True(document.IsDirty);
+        Assert.Contains("Размер изображения", undo);
+        author.FlushPendingEdits();
+        Assert.Contains("<image href=\"pic.png\" width=\"64px\"/>", XmlSerializer.ToXml(document.Root));
+
+        window.Close();
+    }
+
     private const char InlineChar = Presentation.Authoring.InlineContent.ChipChar;
 
     [AvaloniaTheory]

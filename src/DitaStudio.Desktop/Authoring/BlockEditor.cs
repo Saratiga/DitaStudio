@@ -722,8 +722,16 @@ public sealed class BlockEditor : TextEditor
         }
     }
 
+    /// <summary>Свой вид плашки (например, картинка вместо подписи); null — обычная плашка.</summary>
+    public Func<DitaNode, Control?>? ChipFactory { get; set; }
+
     private Control BuildChip(DitaNode? node)
     {
+        if (node is not null && ChipFactory?.Invoke(node) is { } custom)
+        {
+            return custom;
+        }
+
         var label = node is null ? "?" : InlineContent.DescribeChip(node);
         var chip = new Border
         {

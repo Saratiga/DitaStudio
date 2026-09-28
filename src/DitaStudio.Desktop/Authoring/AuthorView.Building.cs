@@ -467,6 +467,10 @@ public sealed partial class AuthorView
         editor.ContentChanged += (_, _) => Modified();
         editor.ContextMenuBuilding += (sender, items) => ContextMenuBuilding?.Invoke(sender, items);
         editor.Written += (_, _) => RefreshFootnotes();
+        editor.ChipFactory = chip => chip.Name == "image" && TryLoadImage(chip) is { } bitmap
+            ? new ResizableImage(bitmap, ResizableImage.WidthFromAttributes(chip.GetAttribute("width"), chip.GetAttribute("height"), bitmap),
+                480, 240, width => ResizeImage(chip, width, editor))
+            : null;
         editor.Focused += (_, _) =>
         {
             _activeEditor = editor;
@@ -518,12 +522,10 @@ public sealed partial class AuthorView
 
         if (TryLoadImage(node) is { } bitmap)
         {
-            panel.Children.Add(new Image
+            panel.Children.Add(new ResizableImage(bitmap,
+                ResizableImage.WidthFromAttributes(node.GetAttribute("width"), node.GetAttribute("height"), bitmap),
+                520, 260, width => ResizeImage(node, width, null))
             {
-                Source = bitmap,
-                MaxHeight = 260,
-                MaxWidth = 520,
-                Stretch = Stretch.Uniform,
                 Margin = new Thickness(0, 0, 10, 0)
             });
         }
@@ -556,6 +558,16 @@ public sealed partial class AuthorView
 
         AttachSelection(border, node);
         return border;
+    }
+
+    /// <summary>Размер картинки мышью: @width в px, @height снимается — пропорции сохраняются.</summary>
+    private void ResizeImage(DitaNode image, double width, BlockEditor? editor)
+    {
+        BeforeStructuralEdit?.Invoke(this, "Размер изображения");
+        image.SetAttribute("width", width.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "px");
+        image.RemoveAttribute("height");
+        Modified();
+        editor?.TextArea.TextView.Redraw();
     }
 
     private Bitmap? TryLoadImage(DitaNode node)
