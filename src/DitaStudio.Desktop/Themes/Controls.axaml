@@ -37,6 +37,9 @@
         <Setter Property="Background" Value="{DynamicResource SurfaceAlt}" />
         <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
         <Setter Property="Padding" Value="4,3" />
+        <!-- Fluent задаёт полосе меню фиксированную высоту (MenuBarHeight = 32): с отступами
+             как в WPF текст пунктов в неё не помещается и срезается снизу. Высота — по содержимому. -->
+        <Setter Property="Height" Value="NaN" />
     </Style>
 
     <Style Selector="Menu > MenuItem">

@@ -1,7 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.LogicalTree;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -119,6 +121,26 @@ public sealed class MainWindowTests : IDisposable
 
         editor.Text = "<concept><title>незакрытый";
         Assert.NotNull(pane.CommitPendingEdits());
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void TopMenuItems_FitTheirText()
+    {
+        // Полоса меню Fluent была фиксированной высоты — пункты сжимались, текст срезался снизу.
+        var window = new MainWindow();
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var items = window.GetLogicalDescendants().OfType<Menu>().First().Items.OfType<MenuItem>().ToList();
+        Assert.NotEmpty(items);
+        foreach (var item in items)
+        {
+            var header = item.GetVisualDescendants().OfType<ContentPresenter>().First(p => p.Name == "PART_HeaderPresenter");
+            Assert.True(item.Bounds.Height + 0.5 >= header.DesiredSize.Height,
+                $"«{item.Header}»: высота пункта {item.Bounds.Height}, тексту с отступами нужно {header.DesiredSize.Height}");
+        }
+
         window.Close();
     }
 
