@@ -136,9 +136,19 @@ public sealed class MainWindowTests : IDisposable
         Assert.NotEmpty(items);
         foreach (var item in items)
         {
-            var header = item.GetVisualDescendants().OfType<ContentPresenter>().First(p => p.Name == "PART_HeaderPresenter");
-            Assert.True(item.Bounds.Height + 0.5 >= header.DesiredSize.Height,
-                $"«{item.Header}»: высота пункта {item.Bounds.Height}, тексту с отступами нужно {header.DesiredSize.Height}");
+            // DesiredSize уже урезан доступной высотой — естественную высоту текста меряем
+            // отдельным TextBlock с тем же шрифтом без ограничений.
+            var text = item.GetVisualDescendants().OfType<TextBlock>().First();
+            var probe = new TextBlock
+            {
+                Text = text.Text,
+                FontFamily = text.FontFamily,
+                FontSize = text.FontSize,
+                FontWeight = text.FontWeight,
+            };
+            probe.Measure(Size.Infinity);
+            Assert.True(text.Bounds.Height + 0.5 >= probe.DesiredSize.Height,
+                $"«{text.Text}»: тексту выделено {text.Bounds.Height:0.#}, нужно {probe.DesiredSize.Height:0.#}");
         }
 
         window.Close();
