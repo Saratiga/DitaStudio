@@ -13,7 +13,7 @@
     <AssemblyName>DitaStudio.Desktop</AssemblyName>
     <Version>0.3.0</Version>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <!-- Привязки пока по отражению: ViewModel'и переедут в общий проект на этапе 2. -->
+    <!-- Привязки по отражению: разметка привязана к общим ViewModel'ям (DitaStudio.Presentation). -->
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
@@ -33,6 +33,7 @@
   <ItemGroup>
     <ProjectReference Include="..\DitaStudio.Core\DitaStudio.Core.csproj" />
     <ProjectReference Include="..\DitaStudio.Docx\DitaStudio.Docx.csproj" />
+    <ProjectReference Include="..\DitaStudio.Presentation\DitaStudio.Presentation.csproj" />
   </ItemGroup>
 
 </Project>

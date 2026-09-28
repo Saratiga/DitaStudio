@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Services;
 
 namespace DitaStudio.Presentation.ViewModels;
@@ -25,6 +26,13 @@ public partial class ProjectViewModel : ObservableObject
 
     [ObservableProperty]
     private string scopedKeysHintText = string.Empty;
+
+    /// <summary>Дерево файлов проекта (корень — папка проекта). Строит <see cref="RebuildTree"/>;
+    /// WPF-оболочка пока строит своё дерево сама.</summary>
+    public ObservableCollection<ProjectTreeNode> Tree { get; } = new();
+
+    [ObservableProperty]
+    private ProjectTreeNode? selectedTreeNode;
 
     public ProjectViewModel(MainViewModel main)
     {
@@ -282,5 +290,175 @@ public partial class ProjectViewModel : ObservableObject
         DitaCatalog.Activate(project.LoadCatalog().Catalog);
         _main.RefreshEditorContext?.Invoke();
         _main.StatusText = "Внешний DTD отключён — его элементы убраны из каталога проекта.";
+    }
+
+    // ------------------------------------------------------------ дерево файлов
+
+    public void RebuildTree()
+    {
+        Tree.Clear();
+        var project = _main.Project;
+        if (project is null)
+        {
+            return;
+        }
+
+        var root = new ProjectTreeNode(project.Name, project.RootPath, null);
+        var folders = new Dictionary<string, ProjectTreeNode>(StringComparer.OrdinalIgnoreCase) { [string.Empty] = root };
+
+        foreach (var file in project.Files)
+        {
+            var directory = Path.GetDirectoryName(file.RelativePath) ?? string.Empty;
+            EnsureFolder(project, folders, directory).Children.Add(new ProjectTreeNode(file.FileName, null, file));
+        }
+
+        Tree.Add(root);
+    }
+
+    private static ProjectTreeNode EnsureFolder(DitaProject project, Dictionary<string, ProjectTreeNode> folders, string relativeDirectory)
+    {
+        if (folders.TryGetValue(relativeDirectory, out var existing))
+        {
+            return existing;
+        }
+
+        var parent = EnsureFolder(project, folders, Path.GetDirectoryName(relativeDirectory) ?? string.Empty);
+        var node = new ProjectTreeNode(Path.GetFileName(relativeDirectory), Path.Combine(project.RootPath, relativeDirectory), null);
+        parent.Children.Add(node);
+        folders[relativeDirectory] = node;
+        return node;
+    }
+
+    [RelayCommand]
+    private void OpenSelectedFile()
+    {
+        if (SelectedTreeNode?.File is { } file)
+        {
+            _main.OpenDocument?.Invoke(file.FullPath);
+        }
+    }
+
+    /// <summary>Переименовывает/переносит выбранный в дереве файл и обновляет ссылки на него по
+    /// всему проекту (RefactorService.MoveFile).</summary>
+    [RelayCommand]
+    private async Task MoveSelectedFile()
+    {
+        var project = _main.Project;
+        if (project is null || SelectedTreeNode?.File is not { } file)
+        {
+            return;
+        }
+
+        var newRelative = await _main.Dialogs.RenameFileAsync(file.RelativePath);
+        if (string.IsNullOrWhiteSpace(newRelative))
+        {
+            return;
+        }
+
+        var newFull = Path.GetFullPath(Path.Combine(project.RootPath, newRelative));
+        if (string.Equals(newFull, file.FullPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (File.Exists(newFull))
+        {
+            if (!await _main.Dialogs.ConfirmAsync("Перенос файла", $"Файл {newRelative} уже существует. Заменить?"))
+            {
+                return;
+            }
+
+            File.Delete(newFull);
+        }
+
+        foreach (var pane in _main.Panes.Values)
+        {
+            pane.CommitPendingEdits();
+        }
+
+        RefactorResult result;
+        try
+        {
+            result = RefactorService.MoveFile(project, file.FullPath, newFull);
+        }
+        catch (IOException ex)
+        {
+            await _main.Dialogs.MessageAsync("Перенос файла", ex.Message);
+            return;
+        }
+
+        if (_main.Panes.Remove(file.FullPath, out var movedPane))
+        {
+            _main.Panes[newFull] = movedPane;
+            foreach (var tab in _main.Documents.Tabs.Where(t => ReferenceEquals(t.Pane, movedPane)))
+            {
+                tab.FullPath = newFull;
+            }
+        }
+
+        _main.ApplyRefactorResult?.Invoke(result);
+        project.Scan();
+        _main.RefreshProjectTree?.Invoke();
+        _main.RefreshMapSelector?.Invoke();
+        RefreshKeysList();
+        _main.StatusText = $"Файл перенесён: {file.RelativePath} → {newRelative}. Обновлено ссылок: {result.UpdatedReferences}.";
+    }
+
+    /// <summary>Создаёт документ по шаблону — в папке, выбранной в дереве проекта (или в папке
+    /// выбранного файла), и открывает его.</summary>
+    [RelayCommand]
+    private async Task NewDocument()
+    {
+        var project = _main.Project;
+        if (project is null)
+        {
+            await _main.Dialogs.MessageAsync("Создание документа", "Сначала откройте папку проекта.");
+            return;
+        }
+
+        var folders = new List<string> { project.RootPath };
+        folders.AddRange(Directory.EnumerateDirectories(project.RootPath, "*", SearchOption.AllDirectories)
+            .Where(d => !Path.GetFileName(d).StartsWith('.'))
+            .OrderBy(d => d, StringComparer.OrdinalIgnoreCase));
+
+        var selected = SelectedTreeNode switch
+        {
+            { FolderPath: { } folder } when Directory.Exists(folder) => folder,
+            { File: { } selectedFile } => Path.GetDirectoryName(selectedFile.FullPath),
+            _ => null
+        };
+
+        var result = await _main.Dialogs.NewDocumentAsync(project.RootPath, folders, selected);
+        if (result is null)
+        {
+            return;
+        }
+
+        var path = Path.Combine(result.Folder, result.FileName);
+        if (File.Exists(path) && !await _main.Dialogs.ConfirmAsync("Создание документа", $"Файл {result.FileName} уже существует. Перезаписать?"))
+        {
+            return;
+        }
+
+        var document = DocumentTemplates.Create(result.Template.Key, result.Title);
+        document.FilePath = path;
+
+        try
+        {
+            document.Save(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            await _main.Dialogs.MessageAsync("Создание документа", ex.Message);
+            return;
+        }
+
+        project.Register(document);
+        project.AddFile(path);
+        project.RebuildKeySpace();
+        _main.RefreshProjectTree?.Invoke();
+        _main.RefreshMapSelector?.Invoke();
+        RefreshKeysList();
+        _main.OpenDocument?.Invoke(path);
     }
 }

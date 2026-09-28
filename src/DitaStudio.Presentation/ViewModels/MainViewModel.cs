@@ -80,11 +80,39 @@ public partial class MainViewModel : ObservableObject
     public InsertViewModel Insert { get; }
     public MapViewModel Map { get; }
 
+    // Правая панель (атрибуты, палитра, структура) — использует Avalonia-оболочка.
+    public SidePanelsViewModel SidePanels { get; }
+
     // Защита от потери данных: копии несохранённых правок и слежение за
     // изменениями файлов другими программами. Подключаются к проекту в
     // ProjectViewModel.LoadProject.
     public AutoRecovery Recovery { get; }
     public ExternalChangeWatcher ExternalChanges { get; }
+
+    /// <summary>Общий хвост рефакторинга (перенос файла, переименование id, вынесение в conref):
+    /// документы, открытые во вкладках, помечаются несохранёнными и перерисовываются
+    /// (пользователь сохранит сам, как обычную правку); закрытые документы сохраняются на диск
+    /// сразу — иначе изменения в файлах, которые никто сейчас не видит, легко потерять.
+    /// Оболочка подключает его как <see cref="ApplyRefactorResult"/>.</summary>
+    public void ApplyRefactorResultToDocuments(RefactorResult result)
+    {
+        foreach (var doc in result.ChangedDocuments)
+        {
+            var openPane = Panes.Values.FirstOrDefault(p => ReferenceEquals(p.Document, doc));
+            if (openPane is not null)
+            {
+                openPane.Document.IsDirty = true;
+                openPane.ReloadViews();
+            }
+            else if (doc.FilePath is not null)
+            {
+                doc.Save(doc.FilePath);
+            }
+        }
+
+        Documents.RefreshAllTabTitles();
+        RefreshAttributePanel?.Invoke();
+    }
 
     public MainViewModel(UiServices services)
     {
@@ -97,6 +125,7 @@ public partial class MainViewModel : ObservableObject
         Publish = new PublishViewModel(this);
         Insert = new InsertViewModel(this);
         Map = new MapViewModel(this);
+        SidePanels = new SidePanelsViewModel(this);
         Recovery = new AutoRecovery(this);
         ExternalChanges = new ExternalChangeWatcher(this);
     }
