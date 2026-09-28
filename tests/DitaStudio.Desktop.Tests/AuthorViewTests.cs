@@ -217,6 +217,48 @@ public sealed class AuthorViewTests
     }
 
     [AvaloniaFact]
+    public void Div_TextIsEditable_EmptyDivAcceptsTyping_InsertedDivGetsCaret()
+    {
+        // div, bodydiv, sectiondiv по DITA 1.3 — смешанное содержимое. Раньше текст прямо в div
+        // в «Авторе» не показывался вовсе, а в пустой div (в том числе только что вставленный)
+        // напечатать было некуда: у блока не было ни одного поля ввода.
+        var (window, author, document, _) = Show(
+            "<topic id=\"t\"><title>T</title><body>" +
+            "<div>Текст в div и <b>жирное</b>.<p>Абзац.</p></div>" +
+            "<div/>" +
+            "<section><sectiondiv/></section>" +
+            "</body></topic>");
+        var body = document.Root.FirstElement("body")!;
+        var divs = body.ElementChildren().Where(n => n.Name == "div").ToList();
+        var sectiondiv = body.FirstElement("section")!.FirstElement("sectiondiv")!;
+
+        var textEditor = Assert.Single(author.Editors, e => ReferenceEquals(e.Node, divs[0]));
+        Assert.Equal("Текст в div и жирное.", textEditor.Text);
+        Assert.NotNull(author.EditorFor(divs[0].FirstElement("p")!));
+
+        var emptyEditor = Assert.Single(author.Editors, e => ReferenceEquals(e.Node, divs[1]));
+        emptyEditor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        window.KeyTextInput("Новый текст");
+        author.FlushPendingEdits();
+        Assert.Equal("<div>Новый текст</div>", XmlSerializer.ToXml(divs[1]));
+
+        Assert.Single(author.Editors, e => ReferenceEquals(e.Node, sectiondiv));
+
+        // Вставка div из палитры — курсор сразу в новом блоке, можно печатать.
+        Focus(window, author, body.FirstElement("div")!.FirstElement("p")!, 0);
+        Assert.True(author.Surface.InsertElement("div"));
+        Dispatcher.UIThread.RunJobs();
+        var inserted = FocusedEditor(author);
+        Assert.NotNull(inserted);
+        Assert.Equal("div", inserted!.Node.Name);
+        window.KeyTextInput("вставлено");
+        author.FlushPendingEdits();
+        Assert.Equal("вставлено", inserted.Node.InnerText);
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void StructuralEdits_RebuildOnlyAffectedBlocks()
     {
         // Enter, Backspace и вставка из палитры не пересоздают редакторы соседних блоков —

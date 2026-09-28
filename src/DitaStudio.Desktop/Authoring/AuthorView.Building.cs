@@ -227,14 +227,18 @@ public sealed partial class AuthorView
         var counter = 0;
 
         // Смешанное содержимое: участки текста между вложенными блоками — редакторами. У
-        // контейнеров (section, body) пустые участки не показываются — писать текст прямо в
-        // раздел можно, но обычно не нужно; у блоков (p, li, note, entry) участок есть всегда.
+        // контейнеров (section, div) пустые участки между блоками не показываются — писать текст
+        // прямо в раздел можно, но обычно не нужно; у блоков (p, li, note, entry) участок есть
+        // всегда. Но контейнер без единого вложенного блока (пустой div, только что вставленный
+        // sectiondiv) получает поле ввода — иначе в него нельзя ничего напечатать.
         var def = DitaCatalog.Default.Get(node.Name);
         var mixed = def is { IsMixed: true };
+        var noBlocks = mixed && !node.Children.Any(InlineContent.IsStructuralChild);
         var segments = !mixed
             ? Array.Empty<(DitaNode? After, DitaNode? Before)>()
             : InlineContent.Segments(node)
-                .Where(s => def!.Display != DisplayKind.Container || InlineContent.Segment(node, s.After, s.Before).Length > 0)
+                .Where(s => def!.Display != DisplayKind.Container || noBlocks ||
+                            InlineContent.Segment(node, s.After, s.Before).Length > 0)
                 .ToArray();
 
         void AddSegmentBefore(DitaNode? before)

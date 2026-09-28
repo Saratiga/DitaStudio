@@ -15,12 +15,12 @@ searchtitle :: - topic/searchtitle :: block :: (%title.cnt;)* :: %univ-atts; :: 
 subtitle :: - topic/subtitle :: block :: (%title.cnt;)* :: %univ-atts; :: Подзаголовок
 shortdesc :: - topic/shortdesc :: block :: (%text.cnt;)* :: %univ-atts; :: Краткое описание топика (одно-два предложения)
 abstract :: - topic/abstract :: container :: (#PCDATA|%basic.ph;|shortdesc|%basic.block;)* :: %univ-atts; :: Расширенное вступление, может содержать shortdesc
-body :: - topic/body :: container :: (%body.cnt;)* :: %univ-atts; :: Тело универсального топика
-bodydiv :: - topic/bodydiv :: container :: (%basic.block;)* :: %univ-atts; :: Логическая группа блоков в теле топика
+body :: - topic/body :: container :: (%body.cnt;|bodydiv)* :: %univ-atts; :: Тело универсального топика
+bodydiv :: - topic/bodydiv :: container :: (#PCDATA|%basic.ph;|%basic.block;|bodydiv|section)* :: %univ-atts; :: Логическая группа содержимого в теле топика: текст, блоки, разделы
 section :: - topic/section :: container :: (#PCDATA|title|%basic.ph;|%basic.block;|sectiondiv)* :: %univ-atts; :: Раздел с необязательным заголовком
-sectiondiv :: - topic/sectiondiv :: container :: (#PCDATA|%basic.ph;|%basic.block;)* :: %univ-atts; :: Группа содержимого внутри раздела
+sectiondiv :: - topic/sectiondiv :: container :: (#PCDATA|%basic.ph;|%basic.block;|sectiondiv)* :: %univ-atts; :: Группа содержимого внутри раздела
 example :: - topic/example :: container :: (#PCDATA|title|%basic.ph;|%basic.block;)* :: %univ-atts; :: Пример использования
-div :: - topic/div :: container :: (%basic.block;)* :: %univ-atts; :: Произвольная группа блоков
+div :: - topic/div :: container :: (#PCDATA|%basic.ph;|%basic.block;)* :: %univ-atts; :: Произвольная группа содержимого: текст, фразы и блоки без собственного заголовка
 
 # ------------------------------------------------------------------------ блоки
 p :: - topic/p :: block :: (%mixed.cnt;)* :: %univ-atts; :: Абзац

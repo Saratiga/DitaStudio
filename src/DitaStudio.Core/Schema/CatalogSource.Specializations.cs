@@ -7,8 +7,8 @@ public static partial class CatalogSource
 @domain concept
 
 concept :: - topic/topic concept/concept :: topic :: (title, titlealts?, (shortdesc|abstract)?, prolog?, conbody?, related-links?, (concept|topic|task|reference|troubleshooting|glossentry|glossgroup)*) :: %univ-atts; :: Концепция — объясняет, что это такое и зачем нужно
-conbody :: - topic/body concept/conbody :: container :: (%body.cnt;)* :: %univ-atts; :: Тело концепции
-conbodydiv :: - topic/bodydiv concept/conbodydiv :: container :: (%basic.block;)* :: %univ-atts; :: Группа блоков в теле концепции
+conbody :: - topic/body concept/conbody :: container :: (%body.cnt;|conbodydiv)* :: %univ-atts; :: Тело концепции
+conbodydiv :: - topic/bodydiv concept/conbodydiv :: container :: (example|section)* :: %univ-atts; :: Группа разделов и примеров в теле концепции
 
 @domain task
 
@@ -39,7 +39,7 @@ postreq :: - topic/section task/postreq :: container :: (%mixed.cnt;)* :: %univ-
 
 reference :: - topic/topic reference/reference :: topic :: (title, titlealts?, (shortdesc|abstract)?, prolog?, refbody?, related-links?, (reference|topic|concept|task|troubleshooting|glossentry|glossgroup)*) :: %univ-atts; :: Справка — таблицы, параметры, синтаксис
 refbody :: - topic/body reference/refbody :: container :: (section|refsyn|example|table|simpletable|properties|refbodydiv)* :: %univ-atts; :: Тело справочного топика
-refbodydiv :: - topic/bodydiv reference/refbodydiv :: container :: (section|refsyn|example|table|simpletable|properties)* :: %univ-atts; :: Группа разделов справки
+refbodydiv :: - topic/bodydiv reference/refbodydiv :: container :: (section|refsyn|example|table|simpletable|properties|refbodydiv)* :: %univ-atts; :: Группа разделов справки
 refsyn :: - topic/section reference/refsyn :: container :: (#PCDATA|title|%basic.ph;|%basic.block;)* :: %univ-atts; spectitle :: Краткий синтаксис
 
 @domain troubleshooting

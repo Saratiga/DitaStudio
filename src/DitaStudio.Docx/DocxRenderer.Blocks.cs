@@ -14,13 +14,50 @@ namespace DitaStudio.Docx;
 // DOCX: блочные элементы — разделы, примечания, код, списки определений и параметров, рисунки.
 public sealed partial class DocxRenderer
 {
-    private IEnumerable<OpenXmlCompositeElement> RenderChildrenBlocks(DitaNode node, int level)
+    private IEnumerable<OpenXmlCompositeElement> RenderChildrenBlocks(DitaNode node, int level) =>
+        RenderMixedChildren(node, level);
+
+    /// <summary>
+    /// Смешанное содержимое (div, bodydiv, sectiondiv, section, example, abstract…): текст и
+    /// фразовые элементы, идущие подряд, собираются в один абзац, блочный элемент его закрывает —
+    /// как в HTML. Раньше обходились только дочерние элементы: текст прямо внутри div или section
+    /// в DOCX пропадал, а каждая фраза (b, ph, keyword) становилась отдельным абзацем.
+    /// </summary>
+    private IEnumerable<OpenXmlCompositeElement> RenderMixedChildren(DitaNode node, int level, DitaNode? skip = null)
     {
+        var pending = new List<OpenXmlElement>();
+        var hasText = false;
+
         foreach (var child in node.Children)
         {
+            if (ReferenceEquals(child, skip))
+            {
+                continue;
+            }
+
+            if (child.Kind == NodeKind.Text)
+            {
+                hasText |= !string.IsNullOrWhiteSpace(child.Value);
+                pending.AddRange(RenderInlineRunsForNode(child));
+                continue;
+            }
+
             if (child.Kind != NodeKind.Element || !Include(child))
             {
                 continue;
+            }
+
+            if (IsInlineElement(child))
+            {
+                var runs = RenderInlineRunsForNode(child).ToList();
+                hasText |= runs.Count > 0;
+                pending.AddRange(runs);
+                continue;
+            }
+
+            if (FlushInline() is { } paragraph)
+            {
+                yield return paragraph;
             }
 
             foreach (var block in RenderBlock(child, level))
@@ -28,7 +65,24 @@ public sealed partial class DocxRenderer
                 yield return block;
             }
         }
+
+        if (FlushInline() is { } last)
+        {
+            yield return last;
+        }
+
+        // Пробелы и переносы строк между блоками абзаца не дают — только настоящий текст.
+        W.Paragraph? FlushInline()
+        {
+            W.Paragraph? result = hasText ? Para(DocxStyleCatalog.BodyText, pending.ToList()) : null;
+            pending.Clear();
+            hasText = false;
+            return result;
+        }
     }
+
+    private bool IsInlineElement(DitaNode node) =>
+        _catalog.Get(node.Name)?.Display is DisplayKind.Inline or DisplayKind.Empty;
 
     private IEnumerable<OpenXmlCompositeElement> RenderBlock(DitaNode node, int level) =>
         Include(node) && PagePlacement.Of(node) is { } place
@@ -330,22 +384,9 @@ public sealed partial class DocxRenderer
             yield return HeadingParagraph(new List<OpenXmlElement> { new W.Run(new W.Text(label)) }, Math.Min(level + 1, 6));
         }
 
-        foreach (var child in node.Children)
+        foreach (var block in RenderMixedChildren(node, level + 1, skip: explicitTitle))
         {
-            if (child.Kind == NodeKind.Element && ReferenceEquals(child, explicitTitle))
-            {
-                continue;
-            }
-
-            if (child.Kind != NodeKind.Element || !Include(child))
-            {
-                continue;
-            }
-
-            foreach (var block in RenderBlock(child, level + 1))
-            {
-                yield return block;
-            }
+            yield return block;
         }
     }
 
