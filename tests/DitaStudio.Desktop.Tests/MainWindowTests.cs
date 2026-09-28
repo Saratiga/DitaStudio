@@ -7,6 +7,7 @@ using Avalonia.LogicalTree;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using DitaStudio.Core.Model;
 using DitaStudio.Desktop.Views;
 using DitaStudio.Presentation.ViewModels;
 using Xunit;
@@ -145,6 +146,65 @@ public sealed class MainWindowTests : IDisposable
         Assert.Equal(refs.IndexOf("reference/settings.dita") + 1, refs.IndexOf("tasks/new-topic.dita"));
         Assert.True(mapPane.Document.IsDirty);
         Assert.EndsWith("new-topic.dita", vm.Map.SelectedNode?.Item.TargetPath);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task MapContextMenu_DuplicatePasteFindReferencesDeleteFile()
+    {
+        var (window, vm) = await OpenAsync();
+        var map = Path.Combine(_project, "guide.ditamap");
+        var menu = window.GetLogicalDescendants().OfType<TreeView>().Single(t => t.Name == "MapTreeView").ContextMenu!;
+        var headers = menu.Items.OfType<MenuItem>().Select(i => i.Header as string).ToList();
+        foreach (var expected in new[] { "Открыть", "Свойства…", "Добавить дочерний топик…", "Дублировать", "Найти ссылки на топик",
+                     "Вырезать", "Копировать", "Вставить после", "Убрать из карты", "Удалить файл…", "Развернуть всё", "Свернуть всё" })
+        {
+            Assert.Contains(expected, headers);
+        }
+
+        static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
+        MapTreeNode Row(string file) => vm.Map.Tree.SelectMany(All).First(n => n.Item.TargetPath?.EndsWith(file) == true);
+        DitaNode MapRoot() => vm.Documents.Tabs.Single(t => t.FullPath == map).Pane.Document.Root;
+        List<string?> Hrefs() => MapRoot().ElementChildren().Where(n => n.Name == "topicref").Select(n => n.GetAttribute("href")).ToList();
+
+        // Дублировать — копия строки сразу после неё.
+        vm.Map.SelectedNode = Row("settings.dita");
+        vm.Map.DuplicateCommand.Execute(null);
+        Assert.Equal(2, Hrefs().Count(h => h == "reference/settings.dita"));
+
+        // Копировать + вставить как дочерний.
+        vm.Map.SelectedNode = Row("no-start.dita");
+        vm.Map.CopyCommand.Execute(null);
+        Assert.True(vm.Map.CanPaste);
+        vm.Map.SelectedNode = Row("about.dita");
+        vm.Map.PasteAsChildCommand.Execute(null);
+        var about = MapRoot().ElementChildren().First(n => n.GetAttribute("href") == "concepts/about.dita");
+        Assert.Equal("troubleshooting/no-start.dita", about.ElementChildren().Last().GetAttribute("href"));
+
+        // Найти ссылки — на вкладку «Поиск».
+        vm.Map.SelectedNode = Row("install.dita");
+        vm.Map.FindReferencesCommand.Execute(null);
+        Assert.Equal(1, vm.BottomTabIndex);
+        Assert.Contains(vm.Search.Results, h => h.File.FullPath == map);
+
+        vm.Map.CollapseAllCommand.Execute(null);
+        Assert.All(vm.Map.Tree[0].Children, n => Assert.False(n.IsExpanded));
+        vm.Map.ExpandAllCommand.Execute(null);
+        Assert.All(vm.Map.Tree[0].Children, n => Assert.True(n.IsExpanded));
+
+        // Удалить файл — с подтверждением; строки карты уходят, файл — с диска и из проекта.
+        var file = Path.Combine(_project, "troubleshooting", "no-start.dita");
+        vm.Map.SelectedNode = Row("no-start.dita");
+        var deleting = vm.Map.DeleteFileCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        var confirm = Assert.Single(window.OwnedWindows);
+        confirm.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Да")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        await deleting;
+        Assert.False(File.Exists(file));
+        Assert.Null(vm.Project!.FindFile(file));
+        Assert.DoesNotContain(MapRoot().DescendantsAndSelf(), n => n.GetAttribute("href")?.Contains("no-start") == true);
         window.Close();
     }
 

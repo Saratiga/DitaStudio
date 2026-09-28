@@ -105,4 +105,37 @@ internal static partial class CoreChecks
                 "DOCX: ссылка на топик без заголовка ведёт на закладку в теле документа");
         });
     }
+
+    /// <summary>П. 10: «Найти ссылки на топик» и удаление файла из проекта (меню карты).</summary>
+    internal static void FileReferencesTests()
+    {
+        Section("Ссылки на файл");
+
+        WithProject(new Dictionary<string, string>
+        {
+            ["topics/a.dita"] = """
+<concept id="a"><title>A</title><conbody><p>См. <xref href="b.dita#b"/> и <xref href="#a"/>, сайт <xref href="https://b.dita" scope="external"/>.</p></conbody></concept>
+""",
+            ["topics/b.dita"] = """
+<concept id="b"><title>B</title><conbody><p conref="a.dita#a/x"/></conbody></concept>
+""",
+            ["guide.ditamap"] = """
+<map><title>Книга</title><topicref href="topics/a.dita"/><topicref href="topics/b.dita"/><keydef keys="kb" href="topics/b.dita"/></map>
+"""
+        }, (root, project) =>
+        {
+            var toB = project.FindReferencesTo(Path.Combine(root, "topics", "b.dita"));
+            Check(toB.Count == 3, $"на b.dita три ссылки (xref, topicref, keydef): {toB.Count}");
+            Check(toB.Any(h => h.Node.Name == "keydef") && toB.Any(h => h.Node.Name == "xref"), "среди ссылок — keydef и xref");
+
+            var toA = project.FindReferencesTo(Path.Combine(root, "topics", "a.dita"));
+            Check(toA.Count == 2 && toA.Any(h => h.Context.Contains("conref")),
+                $"на a.dita — topicref и conref, ссылка файла на себя не считается: {string.Join("; ", toA.Select(h => h.Context))}");
+
+            project.RemoveFile(Path.Combine(root, "topics", "b.dita"));
+            Check(project.FindFile(Path.Combine(root, "topics", "b.dita")) is null, "RemoveFile убирает файл из проекта");
+            Check(project.FindReferencesTo(Path.Combine(root, "topics", "a.dita")).Count == 1,
+                "ссылки из убранного файла больше не находятся");
+        });
+    }
 }

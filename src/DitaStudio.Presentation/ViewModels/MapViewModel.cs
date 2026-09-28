@@ -124,8 +124,24 @@ public partial class MapViewModel : ObservableObject
 
     // ------------------------------------------------------------ добавление
 
+    /// <summary>Куда вставлять относительно выбранного узла карты.</summary>
+    private enum Place
+    {
+        After,
+        Before,
+        Child
+    }
+
     [RelayCommand]
-    private async Task AddTopicref()
+    private Task AddTopicref() => AddTopicrefAsync(Place.After);
+
+    [RelayCommand]
+    private Task AddTopicrefBefore() => AddTopicrefAsync(Place.Before);
+
+    [RelayCommand]
+    private Task AddChildTopicref() => AddTopicrefAsync(Place.Child);
+
+    private async Task AddTopicrefAsync(Place place)
     {
         var project = _main.Project;
         if (project is null || SelectedMap is not { } map)
@@ -148,7 +164,7 @@ public partial class MapViewModel : ObservableObject
         pane.PushUndo("Добавление ссылки в карту");
         var topicref = DitaNode.Element("topicref");
         topicref.SetAttribute("href", RefResolver.MakeRelative(map.FullPath, result.File.FullPath));
-        InsertAtSelection(pane, topicref);
+        InsertAtSelection(pane, topicref, place);
         AfterMapEdit(pane);
     }
 
@@ -204,19 +220,25 @@ public partial class MapViewModel : ObservableObject
         AfterMapEdit(pane);
     }
 
-    /// <summary>Новый элемент — после выбранного в дереве; без выбора или на корне — в конец карты.</summary>
-    private void InsertAtSelection(IDocumentView pane, DitaNode element)
+    /// <summary>
+    /// Новый элемент — после выбранного в дереве (или перед ним, или последним дочерним);
+    /// без выбора или на корне — в конец карты.
+    /// </summary>
+    private void InsertAtSelection(IDocumentView pane, DitaNode element, Place place = Place.After)
     {
         var target = SelectedNode?.Item.Node ?? pane.Document.Root;
-        if (ReferenceEquals(target, pane.Document.Root) || target.Name is "map" or "bookmap")
+        if (IsMapRoot(target, pane) || place == Place.Child)
         {
             target.Add(element);
         }
         else
         {
-            target.Parent?.Insert(target.IndexInParent + 1, element);
+            target.Parent?.Insert(target.IndexInParent + (place == Place.After ? 1 : 0), element);
         }
     }
+
+    private static bool IsMapRoot(DitaNode node, IDocumentView pane) =>
+        ReferenceEquals(node, pane.Document.Root) || node.Name is "map" or "bookmap" || node.Parent is null;
 
     // ------------------------------------------------------------ структура
 
@@ -262,6 +284,18 @@ public partial class MapViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void Duplicate() => StructureOperation(node =>
+    {
+        if (node.Parent is null || node.Name is "map" or "bookmap")
+        {
+            return false;
+        }
+
+        node.Parent.Insert(node.IndexInParent + 1, node.CloneDeep());
+        return true;
+    }, "Дублирование в карте");
+
+    [RelayCommand]
     private void Indent() => StructureOperation(node =>
     {
         var previous = EditCommands.PreviousElement(node);
@@ -290,6 +324,208 @@ public partial class MapViewModel : ObservableObject
         grand.Insert(index, node);
         return true;
     }, "Вынос из вложения");
+
+    // ------------------------------------------------ контекстное меню
+
+    // Буфер карты: копия узла и карта, относительно которой записаны его ссылки.
+    private (DitaNode Node, string MapPath)? _clipboard;
+
+    public bool CanPaste => _clipboard is not null;
+
+    private ProjectFile? SelectedFile =>
+        SelectedNode?.Item.TargetPath is { } target ? _main.Project?.FindFile(target) : null;
+
+    /// <summary>«Свойства»: карта открывается с выделенной строкой — её атрибуты на панели «Атрибуты».</summary>
+    [RelayCommand]
+    private void ShowProperties()
+    {
+        if (SelectedNode?.Item.Node is { } node && OpenMapPane() is { } pane)
+        {
+            pane.FocusNode(node);
+        }
+    }
+
+    [RelayCommand]
+    private void Copy()
+    {
+        if (SelectedNode?.Item.Node is not { Parent: not null } node || node.Name is "map" or "bookmap" || SelectedMap is not { } map)
+        {
+            return;
+        }
+
+        _clipboard = (node.CloneDeep(), map.FullPath);
+        OnPropertyChanged(nameof(CanPaste));
+        _main.StatusText = $"Скопировано: {SelectedNode.Title}";
+    }
+
+    [RelayCommand]
+    private void Cut()
+    {
+        Copy();
+        if (_clipboard is not null)
+        {
+            StructureOperation(EditCommands.Delete, "Вырезание из карты");
+        }
+    }
+
+    [RelayCommand]
+    private void Paste() => PasteAt(Place.After);
+
+    [RelayCommand]
+    private void PasteBefore() => PasteAt(Place.Before);
+
+    [RelayCommand]
+    private void PasteAsChild() => PasteAt(Place.Child);
+
+    private void PasteAt(Place place)
+    {
+        if (_clipboard is not { } clip || SelectedMap is not { } map || OpenMapPane() is not { } pane)
+        {
+            return;
+        }
+
+        pane.PushUndo("Вставка в карту");
+        var copy = clip.Node.CloneDeep();
+        RebaseHrefs(copy, clip.MapPath, map.FullPath);
+        InsertAtSelection(pane, copy, place);
+        AfterMapEdit(pane);
+    }
+
+    /// <summary>Ссылки узла из другой карты пересчитываются от папки новой карты.</summary>
+    private static void RebaseHrefs(DitaNode node, string fromMap, string toMap)
+    {
+        if (string.Equals(Path.GetDirectoryName(Path.GetFullPath(fromMap)), Path.GetDirectoryName(Path.GetFullPath(toMap)), StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        foreach (var element in node.DescendantsAndSelf().Where(n => n.Kind == NodeKind.Element))
+        {
+            var href = element.GetAttribute("href");
+            if (string.IsNullOrWhiteSpace(href) || RefResolver.IsExternal(href!) || element.GetAttribute("scope") is "external" or "peer")
+            {
+                continue;
+            }
+
+            var hash = href!.IndexOf('#');
+            var filePart = hash >= 0 ? href[..hash] : href;
+            if (filePart.Length == 0)
+            {
+                continue;
+            }
+
+            var full = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Path.GetFullPath(fromMap))!, filePart));
+            element.SetAttribute("href", RefResolver.MakeRelative(toMap, full) + (hash >= 0 ? href[hash..] : string.Empty));
+        }
+    }
+
+    /// <summary>Все ссылки проекта на файл выбранной строки — на вкладку «Поиск».</summary>
+    [RelayCommand]
+    private void FindReferences()
+    {
+        if (_main.Project is not { } project || SelectedNode?.Item.TargetPath is not { } target)
+        {
+            return;
+        }
+
+        foreach (var pane in _main.Panes.Values)
+        {
+            pane.CommitPendingEdits();
+        }
+
+        var hits = project.FindReferencesTo(target);
+        _main.Search.ShowResults(hits);
+        _main.BottomTabIndex = 1;
+        _main.StatusText = $"Ссылок на {Path.GetFileName(target)}: {hits.Count}";
+    }
+
+    [RelayCommand]
+    private async Task RenameFile()
+    {
+        if (SelectedFile is { } file)
+        {
+            await _main.ProjectPanel.MoveFileAsync(file);
+            RebuildTree();
+        }
+    }
+
+    /// <summary>Удаляет файл топика с диска и все строки этой карты, которые на него ссылаются.</summary>
+    [RelayCommand]
+    private async Task DeleteFile()
+    {
+        if (_main.Project is not { } project || SelectedFile is not { } file || SelectedMap is not { } map)
+        {
+            return;
+        }
+
+        var target = Path.GetFullPath(file.FullPath);
+        var elsewhere = project.FindReferencesTo(target)
+            .Where(h => !string.Equals(h.File.FullPath, map.FullPath, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var warning = elsewhere.Count == 0
+            ? string.Empty
+            : $"\n\nЕщё {elsewhere.Count} ссыл. в других файлах ({string.Join(", ", elsewhere.Select(h => h.File.RelativePath).Distinct().Take(5))}) станут битыми.";
+        if (!await _main.Dialogs.ConfirmAsync("Удаление файла",
+                $"Удалить файл {file.RelativePath} с диска? Отменить это будет нельзя. Строки этой карты, которые на него ссылаются, будут убраны.{warning}"))
+        {
+            return;
+        }
+
+        if (OpenMapPane() is { } pane)
+        {
+            var rows = pane.Document.Root.DescendantsAndSelf()
+                .Where(n => n.Kind == NodeKind.Element && n.GetAttribute("href") is { } href && !RefResolver.IsExternal(href) &&
+                            RefResolver.Parse(map.FullPath, href).Path is { } path &&
+                            string.Equals(Path.GetFullPath(path), target, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (rows.Count > 0)
+            {
+                pane.PushUndo("Удаление файла из карты");
+                foreach (var row in rows)
+                {
+                    // Дочерние строки удаляемой не теряются — поднимаются на её место.
+                    var parent = row.Parent!;
+                    var index = parent.IndexOf(row);
+                    foreach (var child in row.ElementChildren().Where(c => c.Name is not "topicmeta").ToList())
+                    {
+                        child.RemoveSelf();
+                        parent.Insert(++index, child);
+                    }
+
+                    row.RemoveSelf();
+                }
+
+                AfterMapEdit(pane);
+            }
+        }
+
+        if (_main.ProjectPanel.DeleteFile(file) is { } error)
+        {
+            await _main.Dialogs.MessageAsync("Удаление файла", error);
+            return;
+        }
+
+        RebuildTree();
+        _main.StatusText = $"Файл {file.RelativePath} удалён.";
+    }
+
+    [RelayCommand]
+    private void ExpandAll() => SetExpanded(true);
+
+    [RelayCommand]
+    private void CollapseAll() => SetExpanded(false);
+
+    private void SetExpanded(bool expanded)
+    {
+        foreach (var root in Tree)
+        {
+            foreach (var node in Flatten(root))
+            {
+                // Корень карты не сворачивается — иначе дерево выглядит пустым.
+                node.IsExpanded = expanded || ReferenceEquals(node, root);
+            }
+        }
+    }
 
     /// <summary>Перетаскивание: ставит <paramref name="dragged"/> перед или после
     /// <paramref name="target"/>. Допустимо только между элементами одного уровня.</summary>

@@ -74,6 +74,7 @@ public sealed class CoreTests
     [Fact] public void XmlSafetyTests() => Run(CoreChecks.XmlSafetyTests);
     [Fact] public void DocxStylingTests() => Run(CoreChecks.DocxStylingTests);
     [Fact] public void UntitledTopicTests() => Run(CoreChecks.UntitledTopicTests);
+    [Fact] public void FileReferencesTests() => Run(CoreChecks.FileReferencesTests);
 
     private void Run(Action section)
     {
