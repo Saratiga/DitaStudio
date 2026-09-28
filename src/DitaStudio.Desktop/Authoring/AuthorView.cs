@@ -24,6 +24,9 @@ public sealed partial class AuthorView : UserControl
 {
     private readonly StackPanel _panel = new() { Margin = new Thickness(24, 18, 24, 120) };
     private readonly ScrollViewer _scroll;
+
+    // Корень: прокрутка с блоками и всплывающие подсказки (им нужно место в дереве — ресурсы темы).
+    private readonly Panel _root = new();
     private readonly Dictionary<DitaNode, BlockEditor> _editors = new();
     private readonly List<BlockEditor> _order = new();
     private readonly Dictionary<DitaNode, Control> _views = new();
@@ -45,7 +48,8 @@ public sealed partial class AuthorView : UserControl
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
         };
-        Content = _scroll;
+        _root.Children.Add(_scroll);
+        Content = _root;
         Themed(this, BackgroundProperty, "Surface");
         Surface = new AuthorViewSurface(this);
     }

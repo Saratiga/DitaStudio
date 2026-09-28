@@ -9,6 +9,7 @@ using Avalonia.VisualTree;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Desktop.Authoring;
+using DitaStudio.Presentation.Authoring;
 using Xunit;
 
 namespace DitaStudio.Desktop.Tests;
@@ -400,6 +401,77 @@ public sealed class AuthorViewTests
         author.Surface.ApplyTextFormat(size, null);
         author.FlushPendingEdits();
         Assert.Equal("<p outputclass=\"size-12\">Второй абзац. Мелко</p>", XmlSerializer.ToXml(second));
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void EnterAtEnd_ShowsSuggestions_DefaultSplits_FilterInserts()
+    {
+        // Замечание: по Enter — панелька с подсказкой, какой блок будет (как в Oxygen).
+        var (window, author, document, undo) = Show();
+        var first = Paragraphs(document)[0];
+        Focus(window, author, first, InlineContent.FromNode(first).Length);
+        Press(window, Key.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+
+        var popup = Assert.IsType<ElementSuggestions>(author.Suggestions);
+        Assert.True(popup.IsOpen);
+        Assert.Null(popup.Visible[0].Element);
+        Assert.Contains("как обычно", popup.Visible[0].Title);
+        Assert.Contains(popup.Visible, s => s.Element == "note");
+        Assert.DoesNotContain(popup.Visible, s => s.Element == "b");
+        var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+        Directory.CreateDirectory(dir);
+        window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "author-enter-suggestions.png"));
+
+        // Первая строка — прежний Enter: новый абзац после текущего.
+        popup.Apply();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(3, Paragraphs(document).Count);
+        Assert.Null(author.Suggestions);
+
+        // Фильтр и выбор элемента.
+        var second = Paragraphs(document)[1];
+        Focus(window, author, second, 0);
+        Press(window, Key.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        author.Suggestions!.Filter("note");
+        Assert.Equal("note", author.Suggestions.Selected?.Element);
+        author.Suggestions.Apply();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("note", EditCommands.NextElement(second)!.Name);
+        Assert.Contains("Вставка <note>", undo);
+
+        // В конце последнего пункта списка — элементы и после самого списка.
+        var lastItem = document.Root.Descendants().Last(n => n.Name == "li");
+        Focus(window, author, lastItem, InlineContent.FromNode(lastItem).Length);
+        Press(window, Key.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains(author.Suggestions!.Visible, s => s.Element == "p" && s.Title.EndsWith("после <ul>"));
+        author.Suggestions.Filter("после <ul>");
+        var p = author.Suggestions.Visible.First(s => s.Element == "p");
+        author.Suggestions.Filter(string.Empty);
+        author.Suggestions.IsOpen = false; // Esc / щелчок мимо — ничего не меняется
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(lastItem, author.CurrentNode);
+        Assert.Equal(2, document.Root.Descendants().Count(n => n.Name == "li"));
+        Assert.NotNull(p);
+
+        // Флажок выключен — Enter снова сразу создаёт блок.
+        AuthorView.EnterSuggestionsEnabled = false;
+        try
+        {
+            Focus(window, author, lastItem, InlineContent.FromNode(lastItem).Length);
+            Press(window, Key.Enter, RawInputModifiers.None);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Null(author.Suggestions);
+            Assert.Equal(3, document.Root.Descendants().Count(n => n.Name == "li"));
+        }
+        finally
+        {
+            AuthorView.EnterSuggestionsEnabled = true;
+        }
+
         window.Close();
     }
 

@@ -176,6 +176,9 @@ public partial class MainWindow : Window
     private void OnMapTreeDoubleTapped(object? sender, TappedEventArgs e) =>
         ViewModel.Map.OpenSelectedCommand.Execute(null);
 
+    private void OnToggleEnterSuggestions(object? sender, RoutedEventArgs e) =>
+        Authoring.AuthorView.EnterSuggestionsEnabled = EnterSuggestionsMenu.IsChecked;
+
     /// <summary>Флажок «публиковать» у строки карты.</summary>
     private void OnMapPublishClick(object? sender, RoutedEventArgs e)
     {

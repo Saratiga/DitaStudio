@@ -118,6 +118,8 @@
                 <MenuItem Header="Track changes: отклонить правку" Command="{Binding Insert.RejectTrackedChangeCommand}" />
                 <Separator />
                 <MenuItem Header="Показывать имена элементов" ToggleType="CheckBox" IsChecked="{Binding Insert.ShowElementTags, Mode=TwoWay}" />
+                <MenuItem Name="EnterSuggestionsMenu" Header="Подсказка по Enter" ToggleType="CheckBox" IsChecked="True" Click="OnToggleEnterSuggestions"
+                          ToolTip.Tip="Enter в конце блока показывает, какой элемент вставить дальше (первая строка — обычное действие Enter)" />
                 <Separator />
                 <MenuItem Header="Команда плагина…" Command="{Binding Insert.RunAuthorCommandPluginCommand}" />
             </MenuItem>
