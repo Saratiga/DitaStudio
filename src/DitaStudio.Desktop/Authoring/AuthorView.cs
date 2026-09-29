@@ -87,6 +87,9 @@ public sealed partial class AuthorView : UserControl
     /// <summary>Документ изменён (для отметки «не сохранено»).</summary>
     public event EventHandler? DocumentModified;
 
+    /// <summary>Фокус ушёл из заголовка (title) корневого топика, и текст заголовка был изменён.</summary>
+    public event EventHandler? RootTitleCommitted;
+
     /// <summary>Просьба сохранить состояние для отмены перед структурной операцией.</summary>
     public event EventHandler<string>? BeforeStructuralEdit;
 

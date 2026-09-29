@@ -36,6 +36,7 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
         _author.Load(document);
         _author.DocumentModified += (_, _) => RaiseDirty();
         _author.SelectionChanged += (_, _) => SelectionChanged?.Invoke(this, EventArgs.Empty);
+        _author.RootTitleCommitted += (_, _) => RootTitleCommitted?.Invoke(this, EventArgs.Empty);
         _author.BeforeStructuralEdit += (_, description) => Undo.Push(Document, description);
 
         _source.TextEdited += (_, _) =>
@@ -77,6 +78,8 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
     public event EventHandler? Saved;
 
     public event EventHandler? SelectionChanged;
+
+    public event EventHandler? RootTitleCommitted;
 
     public EditorMode Mode
     {

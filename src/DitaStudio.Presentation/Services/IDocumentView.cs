@@ -39,6 +39,14 @@ public interface IDocumentView
     /// <summary>Сменился текущий элемент (курсор в «Авторе» или исходном коде).</summary>
     event EventHandler? SelectionChanged;
 
+    /// <summary>Фокус ушёл из изменённого заголовка топика: имя файла можно привести в соответствие с ним.
+    /// Оболочки без такого редактирования событие не поднимают.</summary>
+    event EventHandler? RootTitleCommitted
+    {
+        add { }
+        remove { }
+    }
+
     /// <summary>Переносит в модель несохранённый ввод (текст редактора, исходный XML).
     /// Возвращает текст ошибки разбора или null.</summary>
     string? CommitPendingEdits();

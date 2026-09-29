@@ -54,6 +54,7 @@ public partial class DocumentsViewModel : ObservableObject
         var tab = new TabViewModel(this, pane, full);
         pane.DirtyChanged += (_, _) => tab.RefreshTitle();
         pane.SelectionChanged += (_, _) => _main.RefreshEditorContext?.Invoke();
+        pane.RootTitleCommitted += (_, _) => _ = _main.ProjectPanel.OfferRenameByTitleAsync(pane);
         pane.Saved += (_, _) =>
         {
             if (pane.FilePath is { } saved)

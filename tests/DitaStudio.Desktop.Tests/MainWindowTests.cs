@@ -634,6 +634,82 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Уход фокуса из изменённого заголовка топика: вопрос, переименовать ли файл; «Да» — файл и ссылки на него меняются,
+    /// «Нет» — ничего, и тот же заголовок больше не спрашивают.</summary>
+    [AvaloniaFact]
+    public async Task TitleEdit_LostFocus_OffersRenamingFile_ByTitle()
+    {
+        var (window, vm) = await OpenAsync();
+        var oldPath = Path.Combine(_project, "concepts", "about.dita");
+        var pane = (DocumentView)vm.OpenDocument!(oldPath)!;
+        Dispatcher.UIThread.RunJobs();
+        var title = pane.Document.Root.FirstElement("title")!;
+        var shortdesc = pane.Document.Root.FirstElement("shortdesc")!;
+
+        void EditTitleAndLeave(string typed)
+        {
+            var editor = pane.AuthorEditor.EditorFor(title)!;
+            editor.FocusEditor(0);
+            Dispatcher.UIThread.RunJobs();
+            window.KeyTextInput(typed);
+            Dispatcher.UIThread.RunJobs();
+            pane.AuthorEditor.EditorFor(shortdesc)!.FocusEditor(0); // фокус уходит из заголовка
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        // Пока заголовок не тронут — вопроса нет.
+        pane.AuthorEditor.EditorFor(shortdesc)!.FocusEditor(0);
+        pane.AuthorEditor.EditorFor(title)!.FocusEditor(0);
+        pane.AuthorEditor.EditorFor(shortdesc)!.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Empty(window.OwnedWindows);
+
+        // Напечатали и стёрли — заголовок прежний, вопроса нет.
+        var same = pane.AuthorEditor.EditorFor(title)!;
+        same.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        window.KeyTextInput("x");
+        Dispatcher.UIThread.RunJobs();
+        same.Document.Remove(0, 1);
+        pane.AuthorEditor.EditorFor(shortdesc)!.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Empty(window.OwnedWindows);
+        Assert.Equal("О продукте", title.InnerText);
+
+        // Отказ: файл остался, повторно про тот же заголовок не спрашивают.
+        EditTitleAndLeave("Новый ");
+        var ask = Assert.Single(window.OwnedWindows);
+        Assert.Contains("Новый О продукте".Length > 0 ? "novyy_o_produkte.dita" : string.Empty, ask.GetLogicalDescendants().OfType<SelectableTextBlock>().First().Text);
+        ask.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Нет")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(File.Exists(oldPath));
+
+        pane.AuthorEditor.EditorFor(title)!.FocusEditor(0);
+        pane.AuthorEditor.EditorFor(shortdesc)!.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Empty(window.OwnedWindows);
+
+        // Согласие: заголовок меняется ещё раз, файл переименован по заголовку, ссылка в карте обновлена.
+        EditTitleAndLeave("Ещё ");
+        ask = Assert.Single(window.OwnedWindows);
+        ask.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Да")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        for (var i = 0; i < 20 && File.Exists(oldPath); i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            await Task.Delay(20);
+        }
+
+        var newPath = Path.Combine(_project, "concepts", "esche_novyy_o_produkte.dita");
+        Assert.False(File.Exists(oldPath), "старый файл переименован");
+        Assert.True(File.Exists(newPath), "файл назван по заголовку: " + string.Join(", ", Directory.GetFiles(Path.Combine(_project, "concepts")).Select(Path.GetFileName)));
+        Assert.Contains("Ещё Новый О продукте", File.ReadAllText(newPath));
+        Assert.Contains("concepts/esche_novyy_o_produkte.dita", File.ReadAllText(Path.Combine(_project, "guide.ditamap")));
+        Assert.DoesNotContain("concepts/about.dita", File.ReadAllText(Path.Combine(_project, "guide.ditamap")));
+        window.Close();
+    }
+
     [AvaloniaFact]
     public async Task AuthorContextMenu_HasInsertSubmenu_InsertingAtCaret()
     {

@@ -369,6 +369,79 @@ public partial class ProjectViewModel : ObservableObject
             return;
         }
 
+        await MoveFileToAsync(file, newRelative);
+    }
+
+    // Заголовки, для которых переименование файла уже предлагали и от него отказались: тот же заголовок не спрашиваем снова.
+    private readonly Dictionary<string, string> _renameDeclined = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Фокус ушёл из изменённого заголовка топика: спрашивает, переименовать ли файл по новому заголовку
+    /// (имя строится так же, как при создании документа), и при согласии переименовывает его с обновлением
+    /// ссылок по всему проекту. Отказ запоминается до следующего изменения заголовка.
+    /// </summary>
+    public async Task OfferRenameByTitleAsync(IDocumentView pane)
+    {
+        var project = _main.Project;
+        if (project is null || pane.FilePath is not { } path || project.FindFile(path) is not { } file ||
+            DitaCatalog.Default.Get(pane.Document.Root.Name)?.IsTopicType != true)
+        {
+            return;
+        }
+
+        var title = string.Join(' ', (pane.Document.Root.FirstElement("title")?.InnerText ?? string.Empty)
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        if (title.Length == 0)
+        {
+            return;
+        }
+
+        var extension = Path.GetExtension(file.RelativePath);
+        var directory = Path.GetDirectoryName(file.RelativePath) ?? string.Empty;
+        var name = DocumentTemplates.SuggestId(title, pane.Document.Root.Name);
+        string Candidate(int n) => Path.Combine(directory, (n <= 1 ? name : name + "_" + n) + extension);
+
+        // Уже называется по заголовку (с возможным числовым хвостом) — спрашивать не о чем.
+        var currentName = Path.GetFileNameWithoutExtension(file.RelativePath);
+        if (string.Equals(currentName, name, StringComparison.OrdinalIgnoreCase) ||
+            currentName.StartsWith(name + "_", StringComparison.OrdinalIgnoreCase) && int.TryParse(currentName[(name.Length + 1)..], out _))
+        {
+            return;
+        }
+
+        var number = 1;
+        while (File.Exists(Path.Combine(project.RootPath, Candidate(number))))
+        {
+            number++;
+        }
+
+        var newRelative = Candidate(number).Replace('\\', '/');
+        if (_renameDeclined.TryGetValue(path, out var declined) && string.Equals(declined, newRelative, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var agreed = await _main.Dialogs.ConfirmAsync("Название топика",
+            $"Заголовок топика изменён.\n\nПереименовать файл «{file.RelativePath}» в «{newRelative}»? " +
+            "Ссылки на него в проекте будут обновлены.");
+        if (!agreed)
+        {
+            _renameDeclined[path] = newRelative;
+            return;
+        }
+
+        await MoveFileToAsync(file, newRelative);
+    }
+
+    /// <summary>Переносит файл на новый относительный путь и обновляет ссылки на него по всему проекту.</summary>
+    public async Task MoveFileToAsync(ProjectFile file, string newRelative)
+    {
+        var project = _main.Project;
+        if (project is null)
+        {
+            return;
+        }
+
         var newFull = Path.GetFullPath(Path.Combine(project.RootPath, newRelative));
         if (string.Equals(newFull, file.FullPath, StringComparison.OrdinalIgnoreCase))
         {

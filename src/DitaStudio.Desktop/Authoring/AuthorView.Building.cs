@@ -564,6 +564,9 @@ public sealed partial class AuthorView
         return Math.Min(level, 4);
     }
 
+    private static string NormalizedTitle(DitaNode title) =>
+        string.Join(' ', title.InnerText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
     private BlockEditor CreateEditor(InlineContent content)
     {
         var node = content.Node;
@@ -571,6 +574,18 @@ public sealed partial class AuthorView
         editor.ContentChanged += (_, _) => Modified();
         editor.ContextMenuBuilding += (sender, items) => ContextMenuBuilding?.Invoke(sender, items);
         editor.Written += (_, _) => RefreshFootnotes();
+        // Вопрос о переименовании файла — только если текст заголовка на выходе отличается от того, что был при входе.
+        string? titleAtFocus = null;
+        var isRootTitle = node.Name == "title" && Document is not null && ReferenceEquals(node.Parent, Document.Root);
+        editor.GotFocusRecorded += (_, _) => titleAtFocus = isRootTitle ? NormalizedTitle(node) : null;
+        editor.EditCommitted += (_, _) =>
+        {
+            if (isRootTitle && titleAtFocus is not null && titleAtFocus != NormalizedTitle(node))
+            {
+                titleAtFocus = NormalizedTitle(node);
+                RootTitleCommitted?.Invoke(this, EventArgs.Empty);
+            }
+        };
         editor.ChipFactory = chip => chip.Name == "image" && TryLoadImage(chip) is { } bitmap
             ? new ResizableImage(bitmap, ResizableImage.WidthFromAttributes(chip.GetAttribute("width"), chip.GetAttribute("height"), bitmap),
                 480, 240, width => ResizeImage(chip, width, editor))

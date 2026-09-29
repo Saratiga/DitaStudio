@@ -104,8 +104,20 @@ public sealed class BlockEditor : TextEditor
         };
         DetachedFromVisualTree += (_, _) => SpellChecker.Default.Changed -= OnSpellingChanged;
         TextArea.AddHandler(KeyDownEvent, OnKeyDownTunnel, RoutingStrategies.Tunnel);
-        TextArea.GotFocus += (_, _) => Focused?.Invoke(this, EventArgs.Empty);
-        TextArea.LostFocus += (_, _) => Flush();
+        TextArea.GotFocus += (_, _) =>
+        {
+            GotFocusRecorded?.Invoke(this, EventArgs.Empty);
+            Focused?.Invoke(this, EventArgs.Empty);
+        };
+        TextArea.LostFocus += (_, _) =>
+        {
+            var edited = _dirty;
+            Flush();
+            if (edited)
+            {
+                EditCommitted?.Invoke(this, EventArgs.Empty);
+            }
+        };
         ActualThemeVariantChanged += (_, _) => TextArea.TextView.Redraw();
     }
 
@@ -154,6 +166,12 @@ public sealed class BlockEditor : TextEditor
         _content.WriteBack();
         Written?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>Фокус пришёл в редактор (до остальных обработчиков) — здесь запоминается исходный текст.</summary>
+    public event EventHandler? GotFocusRecorded;
+
+    /// <summary>Фокус ушёл из редактора, в котором текст был изменён, — правка записана в модель.</summary>
+    public event EventHandler? EditCommitted;
 
     /// <summary>Содержимое записано в модель (например, по уходу фокуса).</summary>
     public event EventHandler? Written;
