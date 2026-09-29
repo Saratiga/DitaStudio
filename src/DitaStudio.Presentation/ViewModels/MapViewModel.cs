@@ -240,6 +240,12 @@ public partial class MapViewModel : ObservableObject
             return;
         }
 
+        if (!CanInsertAtSelection(pane, "topicref", place, out var reason))
+        {
+            _main.StatusText = reason;
+            return;
+        }
+
         pane.PushUndo("Добавление ссылки в карту");
         var topicref = DitaNode.Element("topicref");
         topicref.SetAttribute("href", RefResolver.MakeRelative(ownerMap, result.File.FullPath));
@@ -288,6 +294,12 @@ public partial class MapViewModel : ObservableObject
             return;
         }
 
+        if (!CanInsertAtSelection(pane, "topichead", Place.After, out var reason))
+        {
+            _main.StatusText = reason;
+            return;
+        }
+
         pane.PushUndo("Добавление раздела в карту");
         var topichead = DitaNode.Element("topichead");
         var meta = DitaNode.Element("topicmeta");
@@ -304,6 +316,16 @@ public partial class MapViewModel : ObservableObject
     /// Новый элемент — после выбранного в дереве (или перед ним, или последним дочерним);
     /// без выбора или на корне — в конец карты.
     /// </summary>
+    /// <summary>Можно ли поставить элемент в то место, куда его поставит <see cref="InsertAtSelection"/>:
+    /// по контент-модели карты. Причина отказа — для строки состояния.</summary>
+    private bool CanInsertAtSelection(IDocumentView pane, string elementName, Place place, out string reason)
+    {
+        var target = SelectedNode?.Item.Node ?? pane.Document.Root;
+        var position = IsMapRoot(target, pane) || place == Place.Child ? DropPosition.Child
+            : place == Place.After ? DropPosition.After : DropPosition.Before;
+        return MapMoves.CanPlace(elementName, target, position, null, out reason);
+    }
+
     private void InsertAtSelection(IDocumentView pane, DitaNode element, Place place = Place.After)
     {
         var target = SelectedNode?.Item.Node ?? pane.Document.Root;
@@ -329,6 +351,12 @@ public partial class MapViewModel : ObservableObject
             return;
         }
 
+        if (!MapMoves.Try(item.Node, operation, out var reason))
+        {
+            _main.StatusText = reason;
+            return;
+        }
+
         var pane = OpenMapPane(mapPath: item.MapPath);
         if (pane is null)
         {
@@ -336,12 +364,7 @@ public partial class MapViewModel : ObservableObject
         }
 
         pane.PushUndo(description);
-        if (!operation(item.Node))
-        {
-            _main.StatusText = "Операция здесь недоступна.";
-            return;
-        }
-
+        operation(item.Node);
         AfterMapEdit(pane);
     }
 
@@ -462,6 +485,12 @@ public partial class MapViewModel : ObservableObject
         var ownerMap = SelectedNode?.Item.MapPath ?? SelectedMap?.FullPath;
         if (_clipboard is not { } clip || ownerMap is null || OpenMapPane(mapPath: ownerMap) is not { } pane)
         {
+            return;
+        }
+
+        if (!CanInsertAtSelection(pane, clip.Node.Name, place, out var reason))
+        {
+            _main.StatusText = reason;
             return;
         }
 

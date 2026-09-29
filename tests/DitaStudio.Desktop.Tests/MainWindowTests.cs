@@ -450,6 +450,131 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>
+    /// В1: матрица «команда меню карты × тип строки». Ни одна команда не бросает исключение, не даёт
+    /// карту с новыми ошибками структуры и не отказывает молча — если карта не изменилась, в строке
+    /// состояния причина. Типы строк: топик с потомком, раздел без файла, topicgroup, keydef с href и
+    /// без, mapref, строки bookmap (booktitle, frontmatter, chapter, part, appendix, backmatter), корень.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task MapCommands_Matrix_NeverThrowNeverBreakStructure_NeverFailSilently()
+    {
+        const string Head = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+        File.WriteAllText(Path.Combine(_project, "sub.ditamap"),
+            Head + "<map><title>Вложенная</title><topicref href=\"tasks/first-run.dita\"/></map>");
+        File.WriteAllText(Path.Combine(_project, "matrix.ditamap"), Head +
+            "<map><title>Матрица</title>" +
+            "<topicref href=\"concepts/about.dita\"><topicref href=\"reference/settings.dita\"/></topicref>" +
+            "<topichead navtitle=\"Группа\"><topicref href=\"tasks/install.dita\"/></topichead>" +
+            "<topicgroup><topicref href=\"concepts/about.dita\"/></topicgroup>" +
+            "<keydef keys=\"k1\" href=\"concepts/about.dita\"/><keydef keys=\"k2\"/>" +
+            "<mapref href=\"sub.ditamap\"/><topicref navtitle=\"Без файла\"/></map>");
+        File.WriteAllText(Path.Combine(_project, "matrix.bookmap"), Head +
+            "<bookmap><booktitle><mainbooktitle>Книга</mainbooktitle></booktitle>" +
+            "<frontmatter><preface href=\"concepts/about.dita\"/></frontmatter>" +
+            "<chapter href=\"concepts/about.dita\"><topicref href=\"reference/settings.dita\"/></chapter>" +
+            "<part><chapter href=\"tasks/install.dita\"/></part>" +
+            "<appendices><appendix href=\"tasks/first-run.dita\"/></appendices><backmatter/></bookmap>");
+
+        var (window, vm) = await OpenAsync();
+        static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
+        var validator = new DitaStudio.Core.Validation.DitaValidator { CheckStyleRules = false };
+        var failures = new System.Text.StringBuilder();
+        var mutations = 0;
+        var rowsChecked = 0;
+
+        foreach (var mapFile in new[] { "matrix.ditamap", "matrix.bookmap" })
+        {
+            var full = Path.Combine(_project, mapFile);
+            vm.Map.SelectedMap = vm.Map.Maps.First(m => m.FullPath == full);
+            vm.OpenDocument!(full);
+            vm.OpenDocument!(Path.Combine(_project, "sub.ditamap"));
+            vm.OpenDocument!(full);
+            var docs = vm.Documents.Tabs.Where(t => t.Pane is not null && t.FullPath is not null && t.FullPath.EndsWith("map"))
+                .Select(t => t.Pane!.Document).Distinct().ToList();
+            var originals = docs.ToDictionary(d => d, d => d.ToXmlString());
+            int Errors() => docs.Sum(d => validator.Validate(d).Count(i => i.Severity == DitaStudio.Core.Validation.IssueSeverity.Error));
+            void Restore()
+            {
+                foreach (var doc in docs)
+                {
+                    doc.Root = DitaDocument.Parse(originals[doc]).Root;
+                    doc.IsDirty = false;
+                }
+
+                vm.Map.RebuildTree();
+            }
+
+            var baseline = Errors();
+            vm.Map.RebuildTree();
+            var rowCount = vm.Map.Tree.SelectMany(All).Count();
+            Assert.True(rowCount >= 7, $"{mapFile}: в дереве {rowCount} строк");
+
+            for (var row = 0; row < rowCount; row++)
+            {
+                rowsChecked++;
+                var commands = new (string Name, CommunityToolkit.Mvvm.Input.IRelayCommand Command, bool NeedsClipboard)[]
+                {
+                    ("Вверх", vm.Map.MoveUpCommand, false), ("Вниз", vm.Map.MoveDownCommand, false),
+                    ("Дублировать", vm.Map.DuplicateCommand, false), ("Вложить", vm.Map.IndentCommand, false),
+                    ("Вынести", vm.Map.OutdentCommand, false), ("Вырезать", vm.Map.CutCommand, false),
+                    ("+ Раздел", vm.Map.AddTopicheadCommand, false),
+                    ("Вставить после", vm.Map.PasteCommand, true), ("Вставить перед", vm.Map.PasteBeforeCommand, true),
+                    ("Вставить внутрь", vm.Map.PasteAsChildCommand, true),
+                    ("Свойства", vm.Map.ShowPropertiesCommand, false)
+                };
+                // Вставка проверяется с каждым видом строки в буфере (topicref, preface, chapter, keydef…).
+                var sources = vm.Map.Tree.SelectMany(All).Where(n => !n.IsRoot && n.Item.TargetPath is not null)
+                    .Select(n => n.Item.Node.Name).Distinct().ToList();
+                var cases = commands.SelectMany(c => c.NeedsClipboard ? sources.Select(s => (c.Name + " ← " + s, c.Command, s)) : new[] { (c.Name, c.Command, (string?)null) });
+                foreach (var (name, command, source) in cases)
+                {
+                    Restore();
+                    var rows = vm.Map.Tree.SelectMany(All).ToList();
+                    var label = $"{mapFile} / строка {row} «{rows[row].Item.Node.Name}» / {name}";
+                    try
+                    {
+                        if (source is not null)
+                        {
+                            vm.Map.SelectedNode = rows.First(n => !n.IsRoot && n.Item.Node.Name == source && n.Item.TargetPath is not null);
+                            vm.Map.CopyCommand.Execute(null);
+                        }
+
+                        vm.Map.SelectedNode = rows[row];
+                        if (!command.CanExecute(null))
+                        {
+                            continue;
+                        }
+
+                        vm.StatusText = string.Empty;
+                        command.Execute(null);
+                        Dispatcher.UIThread.RunJobs();
+                        var changed = docs.Any(d => d.ToXmlString() != originals[d]);
+                        mutations += changed ? 1 : 0;
+                        if (name != "Свойства" && !changed && string.IsNullOrEmpty(vm.StatusText))
+                        {
+                            failures.AppendLine($"{label}: молчаливый отказ");
+                        }
+
+                        if (Errors() > baseline)
+                        {
+                            failures.AppendLine($"{label}: новые ошибки структуры — " +
+                                string.Join("; ", docs.SelectMany(d => validator.Validate(d)).Where(i => i.Severity == DitaStudio.Core.Validation.IssueSeverity.Error).Select(i => i.Message).Distinct()));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        failures.AppendLine($"{label}: исключение {ex.GetType().Name}: {ex.Message}");
+                    }
+                }
+            }
+        }
+
+        Assert.True(mutations > 40, $"команды почти ничего не меняли ({mutations})");
+        Assert.True(failures.Length == 0, $"строк проверено: {rowsChecked}\n{failures}");
+        window.Close();
+    }
+
     [AvaloniaFact]
     public async Task MapContextMenu_DuplicatePasteFindReferencesDeleteFile()
     {
