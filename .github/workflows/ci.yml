@@ -1,8 +1,7 @@
-# Сборка всего решения и тесты ядра на каждый пуш.
-# Windows-раннер: приложение — WPF (net8.0-windows), а часть проверок ядра рассчитана на
-# файловую систему Windows (регистр в путях, атрибут «только для чтения»).
-# UI-тесты (tests/DitaStudio.UiTests) здесь не запускаются: им нужен живой рабочий стол
-# и запущенный DitaStudio.exe — прогоняются локально, см. CLAUDE.md.
+# Тесты ядра на каждый пуш (Windows) и тесты интерфейса Avalonia (Linux).
+# Windows-раннер для ядра: часть его проверок рассчитана на файловую систему Windows
+# (регистр в путях, атрибут «только для чтения»).
+# Легаси-версия WPF (src/DitaStudio.App) в CI не собирается и не тестируется.
 name: CI
 
 on:
@@ -36,11 +35,8 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
           restore-keys: nuget-${{ runner.os }}-
 
-      - name: Восстановление пакетов
-        run: dotnet restore DitaStudio.sln
-
-      - name: Сборка
-        run: dotnet build DitaStudio.sln -c Debug --no-restore
+      - name: Сборка ядра и тестов
+        run: dotnet build tests/DitaStudio.Tests -c Debug
 
       - name: Тесты ядра (с покрытием)
         run: >

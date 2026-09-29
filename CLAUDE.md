@@ -26,10 +26,10 @@ dotnet test tests\DitaStudio.UiTests          # UI-тесты WPF (реальн�
 Новую логику сопровождать проверкой там же; прогон должен оставаться зелёным.
 
 CI — `.github/workflows/`:
-- `ci.yml` — каждый пуш: на Windows сборка `DitaStudio.sln`, тесты ядра с покрытием (coverlet,
+- `ci.yml` — каждый пуш: на Windows сборка `tests/DitaStudio.Tests`, тесты ядра с покрытием (coverlet,
   `tests/DitaStudio.Tests/coverage.runsettings`, отчёт ReportGenerator в Summary и артефакте);
-  на Linux — `DitaStudio.Desktop.Tests` headless и `CefPreviewTests` под `xvfb-run`;
-- `ui-tests.yml` — UI-тесты WPF на рабочем столе Windows-раннера: пуш в `master` и вручную;
+  на Linux — `DitaStudio.Desktop.Tests` headless и `CefPreviewTests` под `xvfb-run`.
+  WPF (`src/DitaStudio.App`) и его UI-тесты в CI не собираются и не гоняются.
 - `release.yml` — тег `vX.Y.Z` (должен совпадать с `<Version>` в `DitaStudio.Desktop.csproj`):
   тесты интерфейса (Linux) и ядра (Windows), `dotnet publish` Avalonia-версии self-contained
   на раннере каждой ОС (win-x64, linux-x64, osx-x64 — нативный Chromium копируется только при

@@ -223,8 +223,7 @@ dotnet test tests\DitaStudio.UiTests          # UI-тесты легаси-ве�
 dotnet test tests\DitaStudio.Tests --settings tests\DitaStudio.Tests\coverage.runsettings
 ```
 
-UI-тесты гоняет отдельный workflow `ui-tests.yml` — после пуша в `master` и вручную
-(Actions → UI tests → Run workflow); при падении к прогону прикладывается снимок экрана.
+Легаси-версия WPF и её UI-тесты в CI не участвуют — их можно собрать и запустить только локально.
 
 Релиз: пуш тега `vX.Y.Z` (равного `<Version>` в `DitaStudio.Desktop.csproj`) запускает
 `release.yml` — тесты, самодостаточные сборки на раннерах каждой ОС и черновик релиза с
