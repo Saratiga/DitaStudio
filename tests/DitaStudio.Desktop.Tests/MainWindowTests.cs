@@ -235,6 +235,32 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    [AvaloniaFact(Skip = "В1 (этап 2 плана docs/REVIEW_PLAN_2.md): после «Добавить раздел» выделение теряется, команды без файла молчат")]
+    public async Task MapMenu_AddedSection_IsSelected_AndCommandsWithoutFileExplainThemselves()
+    {
+        var (window, vm) = await OpenAsync();
+        static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
+        vm.Map.SelectedNode = vm.Map.Tree.SelectMany(All).First(n => n.Item.TargetPath?.EndsWith("settings.dita") == true);
+        vm.Map.AddTopicheadCommand.Execute(null);
+
+        // Новая строка выделена: следующая команда из меню действует на неё.
+        Assert.Equal("topichead", vm.Map.SelectedNode?.Item.Node.Name);
+
+        // Команды, которым нужен файл, на разделе либо недоступны, либо объясняют отказ.
+        foreach (var command in new System.Windows.Input.ICommand[] { vm.Map.FindReferencesCommand, vm.Map.RenameFileCommand, vm.Map.DeleteFileCommand })
+        {
+            vm.StatusText = string.Empty;
+            if (command.CanExecute(null))
+            {
+                command.Execute(null);
+                Dispatcher.UIThread.RunJobs();
+                Assert.NotEmpty(vm.StatusText);
+            }
+        }
+
+        window.Close();
+    }
+
     [AvaloniaFact]
     public async Task MapContextMenu_DuplicatePasteFindReferencesDeleteFile()
     {
