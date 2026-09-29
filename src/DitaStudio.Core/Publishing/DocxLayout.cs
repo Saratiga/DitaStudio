@@ -127,6 +127,18 @@ public sealed class DocxLayout
     /// <summary>Размер бумаги (A4, A3, A5, B5, Letter, Legal); пусто — как в CSS проекта (по умолчанию A4).</summary>
     public string PaperSize { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Свой размер бумаги, мм (ширина × высота в книжной ориентации): заданы оба или ни один. Если
+    /// заданы, главнее <see cref="PaperSize"/>. Границы — <see cref="MinPaperMm"/>…<see cref="MaxPaperMm"/>.
+    /// </summary>
+    public double? PaperWidthMm { get; set; }
+
+    public double? PaperHeightMm { get; set; }
+
+    public const double MinPaperMm = 50;
+
+    public const double MaxPaperMm = 2000;
+
     /// <summary>Альбомная ориентация.</summary>
     public bool Landscape { get; set; }
 
@@ -151,10 +163,21 @@ public sealed class DocxLayout
             ["Legal"] = (215.9, 355.6)
         };
 
+    /// <summary>Свой размер бумаги, если задан.</summary>
+    [JsonIgnore]
+    public bool HasCustomPaper => PaperWidthMm is not null && PaperHeightMm is not null;
+
+    /// <summary>Размер бумаги в мм (книжная ориентация): свой, иначе выбранный из списка, иначе null —
+    /// «как в CSS проекта».</summary>
+    public (double Width, double Height)? PaperMm() =>
+        HasCustomPaper ? (PaperWidthMm!.Value, PaperHeightMm!.Value)
+        : PaperSizesMm.TryGetValue(PaperSize, out var named) ? named
+        : null;
+
     /// <summary>Задано ли что-то о странице (иначе всё берётся из CSS проекта).</summary>
     [JsonIgnore]
     public bool HasPageSetup =>
-        PaperSize.Length > 0 || Landscape || MarginTopMm is not null || MarginBottomMm is not null ||
+        PaperSize.Length > 0 || HasCustomPaper || Landscape || MarginTopMm is not null || MarginBottomMm is not null ||
         MarginLeftMm is not null || MarginRightMm is not null;
 
     /// <summary>Правило @page для печати HTML в PDF; пусто — ничего не задано.</summary>
@@ -169,7 +192,19 @@ public sealed class DocxLayout
 
         var rules = new List<string>();
         var size = PaperSize.Length > 0 ? PaperSize : string.Empty;
-        if (Landscape)
+        if (HasCustomPaper)
+        {
+            // Ключевое слово landscape в CSS сочетается только с именем формата, поэтому у своего
+            // размера альбомная ориентация — это размеры, поставленные в порядке «шире, чем выше».
+            var (width, height) = (PaperWidthMm!.Value, PaperHeightMm!.Value);
+            if (Landscape && width < height)
+            {
+                (width, height) = (height, width);
+            }
+
+            size = $"{Mm(width)} {Mm(height)}";
+        }
+        else if (Landscape)
         {
             size = (size + " landscape").Trim();
         }
@@ -219,6 +254,19 @@ public sealed class DocxLayout
         NumberingDepth = Math.Clamp(NumberingDepth, 1, 6);
         GutterMm = double.IsFinite(GutterMm) ? Math.Clamp(GutterMm, 0, 100) : 0;
         PaperSize = PaperSizesMm.Keys.FirstOrDefault(k => string.Equals(k, PaperSize?.Trim(), StringComparison.OrdinalIgnoreCase)) ?? string.Empty;
+        if (PaperWidthMm is { } paperWidth && PaperHeightMm is { } paperHeight &&
+            double.IsFinite(paperWidth) && double.IsFinite(paperHeight))
+        {
+            PaperWidthMm = Math.Clamp(paperWidth, MinPaperMm, MaxPaperMm);
+            PaperHeightMm = Math.Clamp(paperHeight, MinPaperMm, MaxPaperMm);
+            PaperSize = string.Empty; // свой размер главнее
+        }
+        else
+        {
+            PaperWidthMm = null;
+            PaperHeightMm = null;
+        }
+
         MarginTopMm = Margin(MarginTopMm);
         MarginBottomMm = Margin(MarginBottomMm);
         MarginLeftMm = Margin(MarginLeftMm);

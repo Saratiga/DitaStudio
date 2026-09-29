@@ -262,6 +262,30 @@ internal static partial class CoreChecks
             "правило @page: " + layout.PageCss());
         Check(new DocxLayout { Landscape = true }.PageCss().Contains("size: landscape;"), "только ориентация — size: landscape");
 
+        // Свой размер листа
+        var custom = new DocxLayout { PaperSize = "A4", PaperWidthMm = 100, PaperHeightMm = 2500 };
+        custom.Normalize();
+        Check(custom.PaperWidthMm == 100 && custom.PaperHeightMm == DocxLayout.MaxPaperMm && custom.PaperSize == string.Empty,
+            $"свой размер: высота ограничена {DocxLayout.MaxPaperMm} мм, имя формата сбрасывается ({custom.PaperWidthMm} × {custom.PaperHeightMm})");
+        Check(custom.PaperMm() == (100, 2000), "PaperMm возвращает свой размер");
+        var tooSmall = new DocxLayout { PaperWidthMm = 10, PaperHeightMm = 20 };
+        tooSmall.Normalize();
+        Check(tooSmall.PaperWidthMm == DocxLayout.MinPaperMm && tooSmall.PaperHeightMm == DocxLayout.MinPaperMm, "свой размер: не меньше 50 мм");
+        var half = new DocxLayout { PaperSize = "A5", PaperWidthMm = 120 };
+        half.Normalize();
+        Check(!half.HasCustomPaper && half.PaperWidthMm is null && half.PaperSize == "A5" && half.PaperMm() == (148, 210),
+            "свой размер задан не полностью (только ширина) — не действует, остаётся выбранный формат");
+        var nan = new DocxLayout { PaperWidthMm = double.NaN, PaperHeightMm = 200 };
+        nan.Normalize();
+        Check(!nan.HasCustomPaper, "свой размер: NaN — «как в CSS»");
+        var restoredCustom = DocxLayout.FromJson(new DocxLayout { PaperWidthMm = 120.5, PaperHeightMm = 300, Landscape = true }.ToJson());
+        Check(restoredCustom.PaperWidthMm == 120.5 && restoredCustom.PaperHeightMm == 300 && restoredCustom.Landscape,
+            "свой размер переживает сохранение в JSON");
+        var customCss = new DocxLayout { PaperWidthMm = 120.5, PaperHeightMm = 300 }.PageCss();
+        Check(customCss.Contains("size: 120.5mm 300mm;"), "правило @page для своего размера: " + customCss);
+        Check(new DocxLayout { PaperWidthMm = 120, PaperHeightMm = 300, Landscape = true }.PageCss().Contains("size: 300mm 120mm;"),
+            "своя альбомная страница — размеры «шире, чем выше» (landscape с длинами в CSS не сочетается)");
+
         WithProject(new Dictionary<string, string>
         {
             ["a.dita"] = "<concept id=\"a\"><title>A</title><conbody><p>Текст</p></conbody></concept>",
@@ -289,6 +313,34 @@ internal static partial class CoreChecks
                 new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true });
             Check(File.ReadAllText(single.EntryFile).Contains("@page { size: A5 landscape; margin-top: 10mm; margin-bottom: 15mm; }"),
                 "HTML для печати в PDF: правило @page из параметров страницы");
+
+            // Свой размер листа: 100 × 200 мм книжная, затем альбомная
+            project.SetDocxLayout(new DocxLayout { PaperWidthMm = 100, PaperHeightMm = 200 });
+            var customFile = Path.Combine(root, "custom.docx");
+            new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, customFile);
+            CheckValidDocx(customFile, "DOCX со своим размером листа");
+            using (var package = WordprocessingDocument.Open(customFile, false))
+            {
+                var size = package.MainDocumentPart!.Document.Body!.Elements<W.SectionProperties>().Last().GetFirstChild<W.PageSize>()!;
+                Check(Math.Abs((int)size.Width!.Value - 5669) <= 2 && Math.Abs((int)size.Height!.Value - 11339) <= 2,
+                    $"DOCX: свой размер 100 × 200 мм — {size.Width.Value} × {size.Height.Value} twips");
+                Check(size.Orient?.Value != W.PageOrientationValues.Landscape, "DOCX: свой размер — книжная ориентация");
+            }
+
+            project.SetDocxLayout(new DocxLayout { PaperWidthMm = 100, PaperHeightMm = 200, Landscape = true });
+            new DocxPublisher(project).Publish(Path.Combine(root, "guide.ditamap"), new PublishOptions { Language = "ru" }, customFile);
+            using (var package = WordprocessingDocument.Open(customFile, false))
+            {
+                var size = package.MainDocumentPart!.Document.Body!.Elements<W.SectionProperties>().Last().GetFirstChild<W.PageSize>()!;
+                Check(Math.Abs((int)size.Width!.Value - 11339) <= 2 && Math.Abs((int)size.Height!.Value - 5669) <= 2 &&
+                      size.Orient?.Value == W.PageOrientationValues.Landscape,
+                    $"DOCX: свой размер, альбомная — {size.Width.Value} × {size.Height.Value} twips");
+            }
+
+            var customHtml = new HtmlPublisher(project).Publish(Path.Combine(root, "guide.ditamap"),
+                new PublishOptions { OutputDirectory = Path.Combine(root, "out2"), SingleFile = true });
+            Check(File.ReadAllText(customHtml.EntryFile).Contains("@page { size: 200mm 100mm; }"),
+                "HTML для печати в PDF: @page со своим размером");
         });
     }
 

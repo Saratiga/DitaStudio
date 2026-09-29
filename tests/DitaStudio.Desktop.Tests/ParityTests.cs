@@ -145,6 +145,54 @@ public sealed class ParityTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task PageSetupDialog_CustomPaperSize_ShowsFieldsValidatesAndSaves()
+    {
+        var window = await OpenViaRecentProjectsAsync();
+        ClickMenu(window, "Публикация", "Параметры страницы…");
+        var dialog = Assert.Single(window.OwnedWindows);
+        TextBox Box(string name) => dialog.GetLogicalDescendants().OfType<TextBox>().Single(t => Avalonia.Automation.AutomationProperties.GetName(t) == name);
+        var width = Box("Ширина листа, мм");
+        var height = Box("Высота листа, мм");
+        Assert.False(((Control)width.Parent!).IsVisible, "поля своего размера скрыты, пока не выбран пункт");
+
+        dialog.GetLogicalDescendants().OfType<ComboBox>().Single().SelectedItem = "Свой размер…";
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(((Control)width.Parent!).IsVisible);
+        Assert.Contains("Укажите ширину и высоту листа", AllText(dialog));
+
+        width.Text = "10";
+        height.Text = "300";
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains("Укажите ширину и высоту листа", AllText(dialog)); // 10 мм — меньше границы
+
+        var separator = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+        width.Text = "120" + separator + "5";
+        height.Text = "300";
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains("Свой размер, книжная: 120" + separator + "5 × 300 мм", AllText(dialog));
+
+        ClickButton(dialog, "ОК");
+        Dispatcher.UIThread.RunJobs();
+        var layout = window.ViewModel.Project!.DocxLayout;
+        Assert.Equal(120.5, layout.PaperWidthMm);
+        Assert.Equal(300, layout.PaperHeightMm);
+        Assert.Equal(string.Empty, layout.PaperSize);
+
+        // Повторное открытие показывает сохранённый размер, а выбор A4 снимает свой.
+        ClickMenu(window, "Публикация", "Параметры страницы…");
+        dialog = Assert.Single(window.OwnedWindows);
+        Assert.Equal("Свой размер…", dialog.GetLogicalDescendants().OfType<ComboBox>().Single().SelectedItem);
+        dialog.GetLogicalDescendants().OfType<ComboBox>().Single().SelectedItem = "A4";
+        Dispatcher.UIThread.RunJobs();
+        ClickButton(dialog, "ОК");
+        Dispatcher.UIThread.RunJobs();
+        layout = window.ViewModel.Project!.DocxLayout;
+        Assert.Equal("A4", layout.PaperSize);
+        Assert.Null(layout.PaperWidthMm);
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public async Task DocxLayoutDialog_ShowsSectionsAndCancelDoesNotSave()
     {
         var window = await OpenViaRecentProjectsAsync();

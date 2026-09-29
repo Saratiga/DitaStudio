@@ -283,7 +283,7 @@ public sealed class DocxPublisher
     private static DocxPageSetup WithLayoutPage(DocxPageSetup page, DocxLayout layout)
     {
         var (width, height) = (page.WidthPt, page.HeightPt);
-        if (DocxLayout.PaperSizesMm.TryGetValue(layout.PaperSize, out var paper))
+        if (layout.PaperMm() is { } paper)
         {
             (width, height) = (paper.Width * DocxPageSetup.MmToPt, paper.Height * DocxPageSetup.MmToPt);
         }

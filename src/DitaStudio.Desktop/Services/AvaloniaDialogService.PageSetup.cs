@@ -14,6 +14,7 @@ namespace DitaStudio.Desktop.Services;
 public sealed partial class AvaloniaDialogService
 {
     private const string PaperFromCss = "Как в CSS проекта (обычно A4)";
+    private const string PaperCustom = "Свой размер…";
 
     public async Task<DocxLayout?> PageSetupAsync(DitaProject project)
     {
@@ -25,13 +26,47 @@ public sealed partial class AvaloniaDialogService
 
         var paper = new ComboBox
         {
-            ItemsSource = new[] { PaperFromCss }.Concat(DocxLayout.PaperSizesMm.Keys).ToList(),
-            SelectedItem = current.PaperSize.Length > 0 ? current.PaperSize : PaperFromCss,
+            ItemsSource = new[] { PaperFromCss }.Concat(DocxLayout.PaperSizesMm.Keys).Append(PaperCustom).ToList(),
+            SelectedItem = current.HasCustomPaper ? PaperCustom : current.PaperSize.Length > 0 ? current.PaperSize : PaperFromCss,
             MinWidth = 220
         };
         AutomationProperties.SetName(paper, "Размер бумаги");
         panel.Children.Add(Label("Размер бумаги"));
         panel.Children.Add(paper);
+
+        // Свой размер: ширина и высота книжной страницы, мм — поля видны, только когда выбран пункт.
+        TextBox PaperBox(double? value, string name)
+        {
+            var box = new TextBox
+            {
+                Text = value?.ToString("0.#", CultureInfo.CurrentCulture) ?? string.Empty,
+                Width = 90,
+                Padding = new Thickness(4, 3, 4, 3)
+            };
+            AutomationProperties.SetName(box, name);
+            return box;
+        }
+
+        var paperWidth = PaperBox(current.PaperWidthMm, "Ширина листа, мм");
+        var paperHeight = PaperBox(current.PaperHeightMm, "Высота листа, мм");
+        var customPaper = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(0, 6, 0, 0),
+            Children =
+            {
+                new TextBlock { Text = "Ширина", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) },
+                paperWidth,
+                new TextBlock { Text = "Высота", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 8, 0) },
+                paperHeight,
+                new TextBlock
+                {
+                    Text = $"мм ({DocxLayout.MinPaperMm:0}–{DocxLayout.MaxPaperMm:0})", VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(8, 0, 0, 0)
+                }
+            }
+        };
+        panel.Children.Add(customPaper);
 
         var portrait = new RadioButton { Content = "Книжная", GroupName = "orientation", IsChecked = !current.Landscape };
         var landscape = new RadioButton { Content = "Альбомная", GroupName = "orientation", IsChecked = current.Landscape, Margin = new Thickness(16, 0, 0, 0) };
@@ -91,11 +126,24 @@ public sealed partial class AvaloniaDialogService
         double? Parse(TextBox box) =>
             double.TryParse((box.Text ?? string.Empty).Trim().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var mm) ? mm : null;
 
+        // Свой размер из полей; null — пока не заполнены или вне границ.
+        (double Width, double Height)? CustomSize()
+        {
+            var probe = new DocxLayout { PaperWidthMm = Parse(paperWidth), PaperHeightMm = Parse(paperHeight) };
+            return probe.PaperWidthMm is { } w && probe.PaperHeightMm is { } h &&
+                   w is >= DocxLayout.MinPaperMm and <= DocxLayout.MaxPaperMm && h is >= DocxLayout.MinPaperMm and <= DocxLayout.MaxPaperMm
+                ? (w, h)
+                : null;
+        }
+
         void Update()
         {
             var name = paper.SelectedItem as string ?? PaperFromCss;
-            var (width, height) = DocxLayout.PaperSizesMm.TryGetValue(name, out var size) ? size : DocxLayout.PaperSizesMm["A4"];
-            if (landscape.IsChecked == true)
+            var isCustom = name == PaperCustom;
+            customPaper.IsVisible = isCustom;
+            var custom = isCustom ? CustomSize() : null;
+            var (width, height) = custom ?? (DocxLayout.PaperSizesMm.TryGetValue(name, out var size) ? size : DocxLayout.PaperSizesMm["A4"]);
+            if (landscape.IsChecked == true && width < height)
             {
                 (width, height) = (height, width);
             }
@@ -106,14 +154,16 @@ public sealed partial class AvaloniaDialogService
             sheet.VerticalAlignment = VerticalAlignment.Center;
             double M(TextBox box) => Math.Clamp(Parse(box) ?? 20, 0, 100) * scale;
             textArea.Margin = new Thickness(M(left), M(top), M(right), M(bottom));
-            caption.Text = $"{(name == PaperFromCss ? "A4" : name)}, {(landscape.IsChecked == true ? "альбомная" : "книжная")}: " +
-                           $"{width:0.#} × {height:0.#} мм";
+            caption.Text = isCustom && custom is null
+                ? $"Укажите ширину и высоту листа: от {DocxLayout.MinPaperMm:0} до {DocxLayout.MaxPaperMm:0} мм."
+                : $"{(name == PaperFromCss ? "A4" : isCustom ? "Свой размер" : name)}, {(landscape.IsChecked == true ? "альбомная" : "книжная")}: " +
+                  $"{width:0.#} × {height:0.#} мм";
         }
 
         paper.SelectionChanged += (_, _) => Update();
         portrait.IsCheckedChanged += (_, _) => Update();
         landscape.IsCheckedChanged += (_, _) => Update();
-        foreach (var box in new[] { top, bottom, left, right })
+        foreach (var box in new[] { top, bottom, left, right, paperWidth, paperHeight })
         {
             box.TextChanged += (_, _) => Update();
         }
@@ -125,7 +175,11 @@ public sealed partial class AvaloniaDialogService
         panel.Children.Add(Buttons(window, () =>
         {
             result = current.Clone();
-            result.PaperSize = paper.SelectedItem as string is { } selected && selected != PaperFromCss ? selected : string.Empty;
+            var selectedPaper = paper.SelectedItem as string ?? PaperFromCss;
+            var customSize = selectedPaper == PaperCustom ? CustomSize() : null;
+            result.PaperSize = selectedPaper is PaperFromCss or PaperCustom ? string.Empty : selectedPaper;
+            result.PaperWidthMm = customSize?.Width;
+            result.PaperHeightMm = customSize?.Height;
             result.Landscape = landscape.IsChecked == true;
             result.MarginTopMm = Parse(top);
             result.MarginBottomMm = Parse(bottom);
