@@ -113,6 +113,7 @@ internal static partial class CoreChecks
             .toc a:hover { color: red; }
             #main .x { color: red; }
             p:first-child { color: red; }
+            p:lang(ru) { color: red; }
             .note { box-shadow: 0 0 2px #000; border-radius: 4px; }
             h1 { font-size: calc(2em + 1px); }
             @page { size: A5 landscape; margin: 15mm 20mm; }
@@ -170,7 +171,8 @@ internal static partial class CoreChecks
             "docx-css: @page margin с двумя значениями");
 
         var warnings = string.Join("\n", sheet.Warnings);
-        Check(warnings.Contains("#main .x") && warnings.Contains("p:first-child"), "docx-css: предупреждение о неподдерживаемых селекторах");
+        Check(warnings.Contains("p:lang(ru)") && !warnings.Contains("p:first-child") && !warnings.Contains("#main .x"),
+            "docx-css: предупреждение только о неподдерживаемых селекторах (:lang); потомок с id и :first-child теперь работают");
         Check(!warnings.Contains(".toc"), "docx-css: служебные классы сайта и :hover молча пропускаются");
         Check(warnings.Contains("box-shadow") && warnings.Contains("border-radius"), "docx-css: предупреждение о свойствах, которых нет в Word");
         Check(warnings.Contains("calc("), "docx-css: нераспознанное значение попадает в предупреждение");

@@ -228,6 +228,6 @@ public sealed partial class DocxRenderer
                 new W.NumberingId { Val = numId })));
         paragraph.Append(runs);
         TrimEdges(paragraph);
-        return paragraph;
+        return Track(paragraph);
     }
 }

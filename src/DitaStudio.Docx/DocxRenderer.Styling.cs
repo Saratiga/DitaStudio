@@ -18,25 +18,57 @@ public sealed partial class DocxRenderer
 
     private DocxStyleSheet Sheet => _options.Styles;
 
-    private sealed record ClassContext(string Key, IReadOnlyList<string> Classes);
+    private sealed record ClassContext(string Key, IReadOnlyList<string> Classes, IReadOnlyList<DocxSelectorRule> Rules);
 
     private sealed class Scope : IDisposable
     {
         private readonly List<ClassContext>? _list;
+        private readonly Action? _onDispose;
 
-        public Scope(List<ClassContext>? list)
+        public Scope(List<ClassContext>? list, Action? onDispose = null)
         {
             _list = list;
+            _onDispose = onDispose;
         }
 
-        public void Dispose() => _list?.RemoveAt(_list.Count - 1);
+        public void Dispose()
+        {
+            _list?.RemoveAt(_list.Count - 1);
+            _onDispose?.Invoke();
+        }
+    }
+
+    // ::before блока — текст в начале его первого абзаца, ::after — в конце последнего (content из CSS).
+    private readonly List<string> _pendingBefore = new();
+    private W.Paragraph? _lastParagraph;
+
+    private W.Paragraph Track(W.Paragraph paragraph)
+    {
+        if (_pendingBefore.Count > 0)
+        {
+            var text = string.Concat(_pendingBefore);
+            _pendingBefore.Clear();
+            var run = new W.Run(new W.Text(text) { Space = SpaceProcessingModeValues.Preserve });
+            var first = paragraph.ChildElements.FirstOrDefault(e => e is not W.ParagraphProperties);
+            if (first is null)
+            {
+                paragraph.Append(run);
+            }
+            else
+            {
+                paragraph.InsertBefore(run, first);
+            }
+        }
+
+        _lastParagraph = paragraph;
+        return paragraph;
     }
 
     /// <summary>Классы элемента, для которых в CSS есть правило: значения outputclass и имя
     /// элемента (HTML-публикация ставит его классом, так что «.keyword {…}» работает и тут).</summary>
     private ClassContext? ContextFor(DitaNode node)
     {
-        if (node.Kind != NodeKind.Element || Sheet.CustomClasses.Count == 0)
+        if (node.Kind != NodeKind.Element || Sheet.CustomClasses.Count == 0 && !Sheet.HasSelectorRules)
         {
             return null;
         }
@@ -53,25 +85,53 @@ public sealed partial class DocxRenderer
             }
         }
 
-        if (classes.Count == 0 || Sheet.PropsForClasses(classes, Styling.DocxDefaults.FontSizePt) is null)
+        var rules = Sheet.HasSelectorRules ? Sheet.MatchSelectorRules(node) : Array.Empty<DocxSelectorRule>();
+        if (classes.Count == 0 && rules.Count == 0 || Sheet.PropsFor(classes, rules, Styling.DocxDefaults.FontSizePt) is null)
         {
             return null;
         }
 
-        return new ClassContext(string.Join(".", classes), classes);
+        // Ключ читается в названии стиля Word: классы, затем селекторы сработавших правил.
+        var key = string.Join(".", classes);
+        if (rules.Count > 0)
+        {
+            key += (key.Length > 0 ? " · " : string.Empty) + string.Join(" · ", rules.Select(r => r.Selector.Text));
+        }
+
+        return new ClassContext(key, classes, rules);
     }
 
     /// <summary>Пока область открыта, все абзацы получают производный стиль с классами узла.</summary>
     private IDisposable BlockScope(DitaNode node)
     {
         var context = ContextFor(node);
+        var before = Sheet.HasSelectorRules ? Sheet.PseudoContent(node, "before") : null;
+        var after = Sheet.HasSelectorRules ? Sheet.PseudoContent(node, "after") : null;
+        if (before is not null)
+        {
+            _pendingBefore.Add(before);
+        }
+
+        void Finish()
+        {
+            if (before is not null)
+            {
+                _pendingBefore.Remove(before); // абзацев внутри не было — метка не переносится на чужой абзац
+            }
+
+            if (after is not null && _lastParagraph is not null)
+            {
+                _lastParagraph.Append(new W.Run(new W.Text(after) { Space = SpaceProcessingModeValues.Preserve }));
+            }
+        }
+
         if (context is null)
         {
-            return new Scope(null);
+            return new Scope(null, before is null && after is null ? null : Finish);
         }
 
         _blockContexts.Add(context);
-        return new Scope(_blockContexts);
+        return new Scope(_blockContexts, before is null && after is null ? null : Finish);
     }
 
     private string ParagraphStyle(string baseStyle) =>
@@ -90,7 +150,7 @@ public sealed partial class DocxRenderer
         var props = new DocxStyleProps();
         foreach (var context in contexts)
         {
-            if (Sheet.PropsForClasses(context.Classes, baseSize) is { } overlay)
+            if (Sheet.PropsFor(context.Classes, context.Rules, baseSize) is { } overlay)
             {
                 props.Overlay(overlay);
             }
@@ -147,7 +207,7 @@ public sealed partial class DocxRenderer
             TrimEdges(paragraph);
         }
 
-        return paragraph;
+        return Track(paragraph);
     }
 
     /// <summary>Пробелы и переносы строк из исходного XML схлопываются в один пробел — как в HTML.</summary>
@@ -182,9 +242,11 @@ public sealed partial class DocxRenderer
     private IEnumerable<OpenXmlElement> WithInlineClasses(DitaNode node, Func<IEnumerable<OpenXmlElement>> render)
     {
         var context = ContextFor(node);
+        var before = Sheet.HasSelectorRules ? Sheet.PseudoContent(node, "before") : null;
+        var after = Sheet.HasSelectorRules ? Sheet.PseudoContent(node, "after") : null;
         if (context is null)
         {
-            return render();
+            return before is null && after is null ? render() : WithPseudo(render(), before, after);
         }
 
         _inlineContexts.Add(context);
@@ -215,7 +277,24 @@ public sealed partial class DocxRenderer
             }
         }
 
-        return produced;
+        return before is null && after is null ? produced : WithPseudo(produced, before, after);
+    }
+
+    private static List<OpenXmlElement> WithPseudo(IEnumerable<OpenXmlElement> runs, string? before, string? after)
+    {
+        var result = new List<OpenXmlElement>();
+        if (before is not null)
+        {
+            result.Add(new W.Run(new W.Text(before) { Space = SpaceProcessingModeValues.Preserve }));
+        }
+
+        result.AddRange(runs);
+        if (after is not null)
+        {
+            result.Add(new W.Run(new W.Text(after) { Space = SpaceProcessingModeValues.Preserve }));
+        }
+
+        return result;
     }
 
     private static void SetRunStyle(W.Run run, string styleId)
@@ -229,7 +308,9 @@ public sealed partial class DocxRenderer
     {
         var look = Sheet.Table;
         var properties = new W.TableProperties(
-            new W.TableWidth { Width = "5000", Type = W.TableWidthUnitValues.Pct },
+            look.WidthPt is { } widthPt
+                ? new W.TableWidth { Width = DocxPropsWriter.Twips(widthPt).ToString(), Type = W.TableWidthUnitValues.Dxa }
+                : new W.TableWidth { Width = ((int)Math.Round((look.WidthPercent ?? 100) * 50)).ToString(), Type = W.TableWidthUnitValues.Pct },
             new W.TableBorders(
                 DocxPropsWriter.Border(new W.TopBorder(), look.Outer),
                 DocxPropsWriter.Border(new W.LeftBorder(), look.Outer),

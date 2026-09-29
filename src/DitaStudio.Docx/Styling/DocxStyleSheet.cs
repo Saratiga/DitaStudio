@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using DitaStudio.Core.Model;
 
 namespace DitaStudio.Docx.Styling;
 
@@ -16,6 +17,12 @@ public sealed class DocxTableLook
 
     /// <summary>Внутренние поля ячеек, пт; null — как в Word по умолчанию.</summary>
     public double? CellPaddingPt { get; set; }
+
+    /// <summary>Ширина таблицы (CSS <c>table { width }</c>) в процентах ширины текста; null — 100 %.</summary>
+    public double? WidthPercent { get; set; }
+
+    /// <summary>Ширина таблицы в пунктах (если задана длиной); null — не задана.</summary>
+    public double? WidthPt { get; set; }
 }
 
 /// <summary>Размер страницы и поля, пт. По умолчанию — A4 с полями 20 мм.</summary>
@@ -30,6 +37,31 @@ public sealed record DocxPageSetup(double WidthPt, double HeightPt, double TopPt
 public sealed record DocxClassRule(IReadOnlyList<string> Classes, IReadOnlyList<CssDeclaration> Declarations, int Specificity, int Order);
 
 /// <summary>
+/// Правило с настоящим селектором (потомок, ребёнок, атрибут, <c>:first-child</c>, <c>:nth-child()</c>, <c>:not()</c>,
+/// <c>::before</c>…): сопоставляется с элементом DITA во время сборки. <see cref="Hits"/> — на сколько элементов
+/// оно подошло (для предупреждения о правиле, которое ничего не оформило).
+/// </summary>
+public sealed class DocxSelectorRule
+{
+    public DocxSelectorRule(CssSelector selector, IReadOnlyList<CssDeclaration> declarations, int order)
+    {
+        Selector = selector;
+        Declarations = declarations;
+        Order = order;
+    }
+
+    public CssSelector Selector { get; }
+
+    public IReadOnlyList<CssDeclaration> Declarations { get; }
+
+    public int Order { get; }
+
+    public int Specificity => Selector.Specificity;
+
+    public int Hits { get; set; }
+}
+
+/// <summary>
 /// Оформление DOCX, полученное из пользовательского CSS проекта: стили Word (оформление по
 /// умолчанию + правила CSS по селекторам HTML-публикации), вид таблиц, пометка изменений, размер
 /// страницы из @page и правила для собственных классов (outputclass). Применяются правила без
@@ -39,6 +71,8 @@ public sealed class DocxStyleSheet
 {
     private readonly Dictionary<string, DocxStyleProps> _styles = new(StringComparer.Ordinal);
     private readonly List<DocxClassRule> _classRules = new();
+    private readonly List<DocxSelectorRule> _selectorRules = new();
+    private readonly List<DocxSelectorRule> _pseudoRules = new();
     private readonly Dictionary<string, string> _variables = new(StringComparer.Ordinal);
     private readonly Diagnostics _diag = new();
 
@@ -128,17 +162,125 @@ public sealed class DocxStyleSheet
         return styleId == DocxStyleCatalog.Normal ? DocxDefaults.FontSizePt : FontSizeOf(DocxStyleCatalog.Normal);
     }
 
+    /// <summary>Есть правила с настоящими селекторами (потомок, атрибут, псевдокласс, псевдоэлемент).</summary>
+    public bool HasSelectorRules => _selectorRules.Count > 0 || _pseudoRules.Count > 0;
+
+    /// <summary>Правила с селекторами, подошедшие элементу (без псевдоэлементов), в порядке каскада.</summary>
+    public IReadOnlyList<DocxSelectorRule> MatchSelectorRules(DitaNode node)
+    {
+        List<DocxSelectorRule>? matched = null;
+        foreach (var rule in _selectorRules)
+        {
+            if (rule.Selector.Matches(node))
+            {
+                rule.Hits++;
+                (matched ??= new List<DocxSelectorRule>()).Add(rule);
+            }
+        }
+
+        return matched is null
+            ? Array.Empty<DocxSelectorRule>()
+            : matched.OrderBy(r => r.Specificity).ThenBy(r => r.Order).ToList();
+    }
+
+    /// <summary>
+    /// Текст <c>content</c> псевдоэлемента <c>::before</c> / <c>::after</c> элемента: строки в кавычках и
+    /// <c>attr(имя)</c>; null — правила нет, <c>content: none</c> или значение не разобрано.
+    /// </summary>
+    public string? PseudoContent(DitaNode node, string which)
+    {
+        string? content = null;
+        foreach (var rule in _pseudoRules.Where(r => r.Selector.PseudoElement == which && r.Selector.Matches(node))
+                     .OrderBy(r => r.Specificity).ThenBy(r => r.Order))
+        {
+            rule.Hits++;
+            foreach (var d in rule.Declarations.Where(d => d.Property == "content"))
+            {
+                content = ParseContent(Substitute(d.Value), node);
+            }
+        }
+
+        return string.IsNullOrEmpty(content) ? null : content;
+    }
+
+    private static string? ParseContent(string value, DitaNode node)
+    {
+        if (value.Trim() is "none" or "normal" or "")
+        {
+            return null;
+        }
+
+        var text = new System.Text.StringBuilder();
+        var i = 0;
+        while (i < value.Length)
+        {
+            var c = value[i];
+            if (char.IsWhiteSpace(c))
+            {
+                i++;
+            }
+            else if (c is '"' or '\'')
+            {
+                i++;
+                while (i < value.Length && value[i] != c)
+                {
+                    if (value[i] == '\\' && i + 1 < value.Length)
+                    {
+                        i++;
+                        text.Append(value[i] is 'A' or 'a' ? ' ' : value[i]);
+                    }
+                    else
+                    {
+                        text.Append(value[i]);
+                    }
+
+                    i++;
+                }
+
+                i++;
+            }
+            else if (value.AsSpan(i).StartsWith("attr(", StringComparison.OrdinalIgnoreCase))
+            {
+                var close = value.IndexOf(')', i);
+                if (close < 0)
+                {
+                    return null;
+                }
+
+                text.Append(node.GetAttribute(value[(i + 5)..close].Trim()) ?? string.Empty);
+                i = close + 1;
+            }
+            else
+            {
+                return null; // counter(), url() и прочее в тексте Word не воспроизводится
+            }
+        }
+
+        return text.ToString();
+    }
+
+    /// <summary>Селекторы, не подошедшие ни к одному элементу публикации, — для предупреждения в журнале сборки.</summary>
+    public IReadOnlyList<string> UnmatchedSelectors() =>
+        _selectorRules.Concat(_pseudoRules).Where(r => r.Hits == 0).Select(r => r.Selector.Text).Distinct().ToList();
+
     /// <summary>Оформление для элемента с данными классами поверх базового стиля (null — ни одно
     /// правило не подошло). Правила применяются в порядке специфичности и следования в файле.</summary>
-    public DocxStyleProps? PropsForClasses(IReadOnlyCollection<string> classes, double baseFontPt)
+    public DocxStyleProps? PropsForClasses(IReadOnlyCollection<string> classes, double baseFontPt) =>
+        PropsFor(classes, Array.Empty<DocxSelectorRule>(), baseFontPt);
+
+    /// <summary>То же, что <see cref="PropsForClasses"/>, но вместе с правилами селекторов: классовые и селекторные правила
+    /// складываются в один каскад по специфичности и порядку.</summary>
+    public DocxStyleProps? PropsFor(IReadOnlyCollection<string> classes, IReadOnlyList<DocxSelectorRule> selectorRules, double baseFontPt)
     {
-        if (classes.Count == 0 || _classRules.Count == 0)
+        if (classes.Count == 0 && selectorRules.Count == 0)
         {
             return null;
         }
 
         var declarations = _classRules
-            .Where(r => r.Classes.All(classes.Contains))
+            .Where(r => classes.Count > 0 && r.Classes.All(classes.Contains))
+            .Select(r => (r.Specificity, r.Order, r.Declarations))
+            .Concat(selectorRules.Select(r => (r.Specificity, r.Order, r.Declarations)))
             .OrderBy(r => r.Specificity).ThenBy(r => r.Order)
             .SelectMany(r => r.Declarations)
             .ToList();
@@ -260,10 +402,18 @@ public sealed class DocxStyleSheet
     private void ClassifySelector(string selector, int order, IReadOnlyList<CssDeclaration> declarations,
         Dictionary<string, List<(int, int, IReadOnlyList<CssDeclaration>)>> targets)
     {
-        // Состояния (наведение и т. п.) и генерируемое содержимое к документу неприменимы.
-        if (StatePseudo.IsMatch(selector) || selector.Contains("::", StringComparison.Ordinal) ||
-            selector.Contains(":before", StringComparison.Ordinal) || selector.Contains(":after", StringComparison.Ordinal))
+        // Состояния (наведение и т. п.) к документу неприменимы.
+        if (StatePseudo.IsMatch(selector))
         {
+            return;
+        }
+
+        // Метки li::marker разбирают списки; ::before/::after — псевдоэлементы, их разбирает движок селекторов.
+        var pseudoElement = selector.Contains("::", StringComparison.Ordinal) && !selector.Contains("::marker", StringComparison.Ordinal) ||
+                            selector.Contains(":before", StringComparison.Ordinal) || selector.Contains(":after", StringComparison.Ordinal);
+        if (pseudoElement)
+        {
+            AddSelectorRule(selector, order, declarations);
             return;
         }
 
@@ -277,6 +427,19 @@ public sealed class DocxStyleSheet
 
         // ul, ul ul, ol… — не стили, а маркеры списков (CollectListRules); li остаётся и стилем
         // «Элемент списка», поэтому здесь не перехватывается.
+        if (key != "li" && ParseListSelector(key) is { Marker: false } chain)
+        {
+            // «ol > li», «ul li»: маркеры разбирают списки, а всё остальное (цвет, размер, начертание) относится
+            // к тексту пункта — это обычное правило селектора. Списки ul/ol сами текст не оформляют.
+            var text = declarations.Where(d => !d.Property.StartsWith("list-style", StringComparison.Ordinal)).ToList();
+            if (text.Count > 0 && key.EndsWith("li", StringComparison.Ordinal))
+            {
+                AddSelectorRule(selector, order, text);
+            }
+
+            return;
+        }
+
         if (key != "li" && ParseListSelector(key) is not null)
         {
             return;
@@ -322,7 +485,21 @@ public sealed class DocxStyleSheet
             return;
         }
 
-        _diag.UnsupportedSelector(selector);
+        AddSelectorRule(selector, order, declarations);
+    }
+
+    // Селектор, которого нет среди стилей каталога и простых классов: разбирается движком CssSelector и
+    // сопоставляется с деревом DITA при сборке. Не разобранный — в предупреждение.
+    private void AddSelectorRule(string selector, int order, IReadOnlyList<CssDeclaration> declarations)
+    {
+        if (CssSelector.TryParse(selector, out var error) is not { } parsed)
+        {
+            _diag.UnsupportedSelector(selector + (error is null ? string.Empty : " (" + error + ")"));
+            return;
+        }
+
+        var rule = new DocxSelectorRule(parsed, declarations, order);
+        (parsed.PseudoElement is null ? _selectorRules : _pseudoRules).Add(rule);
     }
 
     // =============================================================== списки
@@ -461,6 +638,20 @@ public sealed class DocxStyleSheet
         }
 
         static DocxBorder? AnySide(DocxStyleProps p) => p.BorderTop ?? p.BorderLeft ?? p.BorderBottom ?? p.BorderRight;
+
+        if (targets.TryGetValue(DocxStyleCatalog.TableTarget, out var tableRules) &&
+            Ordered(tableRules).LastOrDefault(d => d.Property == "width") is { } widthRule)
+        {
+            var width = Substitute(widthRule.Value).Trim();
+            if (width.EndsWith('%') && double.TryParse(width[..^1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var percent))
+            {
+                Table.WidthPercent = Math.Clamp(percent, 5, 100);
+            }
+            else if (CssApplier.Length(width, DocxDefaults.FontSizePt) is { } widthPt && widthPt > 0)
+            {
+                Table.WidthPt = widthPt;
+            }
+        }
 
         var table = Resolve(DocxStyleCatalog.TableTarget);
         var th = Resolve(DocxStyleCatalog.HeaderCellTarget);
@@ -662,7 +853,9 @@ public sealed class DocxStyleSheet
                     if (_selectors.Count > 0)
                     {
                         _messages.Add("CSS → DOCX: селекторы не поддерживаются, правила пропущены: " + Sample(_selectors) +
-                                      ". В DOCX работают теги и классы HTML-публикации (p, h1, .note, .shortdesc…) и классы outputclass.");
+                                      ". В DOCX работают теги и классы HTML-публикации (p, h1, .note, .shortdesc…), классы outputclass и " +
+                                      "селекторы по элементам DITA: имя, .класс, #id, [атрибут], потомок, ребёнок, соседи, :first-child, " +
+                                      ":last-child, :nth-child(), :nth-of-type(), :not(), :empty, ::before, ::after.");
                     }
 
                     if (_properties.Count > 0)

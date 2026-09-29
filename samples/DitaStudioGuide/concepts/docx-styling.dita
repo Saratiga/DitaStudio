@@ -57,6 +57,17 @@
   body { font-family: Georgia; font-size: 12pt; }
   h1 { color: #1a5fb4; border-bottom: 1pt solid #1a5fb4; }
 }</codeblock>
+      <p>Кроме тегов и классов HTML-публикации в DOCX работают настоящие селекторы CSS по
+        элементам DITA: имя элемента (<codeph>cmd</codeph>, <codeph>entry</codeph>), класс
+        <parmname>outputclass</parmname>, атрибут (<codeph>note[type="warning"]</codeph>), потомок и
+        ребёнок (<codeph>section &gt; title</codeph>), соседи, <codeph>:first-child</codeph>,
+        <codeph>:nth-child()</codeph>, <codeph>:not()</codeph>, а также текст
+        <codeph>::before</codeph> и <codeph>::after</codeph>. Правила складываются каскадом по
+        специфичности и порядку в файле.</p>
+      <codeblock>ol &gt; li:first-child { font-weight: bold; }
+note[type="warning"] { background-color: #fff2cc; }
+tbody &gt; row:nth-child(even) &gt; entry { font-size: 9pt; }
+li::before { content: "▸ "; }</codeblock>
       <note>Скругления, тени, фоновые картинки и вёрстка веб-страницы в Word не переносятся. О
         пропущенных свойствах и селекторах сообщает «Журнал сборки». Шрифт должен быть установлен
         на компьютере, где открывают документ.</note>

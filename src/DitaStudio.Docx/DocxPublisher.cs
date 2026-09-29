@@ -152,6 +152,12 @@ public sealed class DocxPublisher
             FinishPlacedSections(body, mainSection);
 
             warnings.AddRange(renderOptions.Warnings);
+            if (styles.UnmatchedSelectors() is { Count: > 0 } unmatched)
+            {
+                warnings.Add("CSS → DOCX: селекторы не совпали ни с одним элементом публикации и ничего не оформили: " +
+                             string.Join("; ", unmatched.Take(5)) + (unmatched.Count > 5 ? $" и ещё {unmatched.Count - 5}" : string.Empty) +
+                             ". Селекторы сопоставляются с элементами DITA (имя элемента, .outputclass, [атрибут], потомок, ребёнок, :nth-child…), а не с тегами HTML-публикации.");
+            }
             mainPart.Document.Save();
         });
 
