@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.VisualTree;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Schema;
@@ -31,6 +32,7 @@ public sealed partial class AuthorView
             StructureRequest.Outdent => HandleIndent(e.Node, outdent: true),
             StructureRequest.NextBlock => MoveFocus(editor, 1),
             StructureRequest.PreviousBlock => MoveFocus(editor, -1),
+            StructureRequest.InsertAfterBlock => ShowInsertMenuAfter(editor),
             _ => false
         };
     }
@@ -129,6 +131,182 @@ public sealed partial class AuthorView
         _root.Children.Add(popup);
         Suggestions = popup;
         popup.IsOpen = true;
+    }
+
+    // ---- «Вставить после блока»: Ctrl+Enter и двойной щелчок по свободному месту
+
+    /// <summary>Предки, внутри которых нового блока не бывает: строки и ячейки таблицы предлагать не нужно —
+    /// выход из таблицы делается по самой таблице.</summary>
+    private static readonly HashSet<string> TablePartParents = new() { "tgroup", "tbody", "thead", "row", "strow", "sthead" };
+
+    private sealed record InsertSlot(DitaNode Parent, int Index, bool Inside);
+
+    /// <summary>Открытое сейчас меню «вставить после блока» (или null).</summary>
+    public ElementSuggestions? InsertMenu => Suggestions;
+
+    private bool ShowInsertMenuAfter(BlockEditor editor)
+    {
+        var caret = editor.TextArea.Caret.CalculateCaretRectangle();
+        var textView = editor.TextArea.TextView;
+        var rect = new Rect(caret.X - textView.ScrollOffset.X, caret.Y - textView.ScrollOffset.Y, 1, caret.Height);
+        return OpenInsertMenu(editor.Node, null, textView, rect, () => editor.FocusEditor(editor.CaretOffset));
+    }
+
+    /// <summary>
+    /// Двойной щелчок по свободному месту (под последним блоком, между блоками, в пустом контейнере):
+    /// то же меню допустимых элементов, что и по Enter, для места после ближайшего блока над точкой.
+    /// <paramref name="point"/> — в координатах панели документа. false — вставлять некуда.
+    /// </summary>
+    public bool ShowInsertMenuAt(Point point)
+    {
+        if (Document is null || _order.Count == 0)
+        {
+            return false;
+        }
+
+        // Пустой контейнер (div без содержимого): меню предлагает вставить внутрь.
+        DitaNode? emptyContainer = null;
+        var smallest = double.MaxValue;
+        foreach (var (node, view) in _views)
+        {
+            if (node.ElementChildren().Any() || !string.IsNullOrWhiteSpace(node.InnerText) || view.GetVisualRoot() is null || DitaCatalog.Default.Get(node.Name) is null ||
+                view.TranslatePoint(new Point(0, 0), _panel) is not { } origin)
+            {
+                continue;
+            }
+
+            var bounds = new Rect(origin, view.Bounds.Size);
+            if (bounds.Contains(point) && bounds.Width * bounds.Height < smallest)
+            {
+                smallest = bounds.Width * bounds.Height;
+                emptyContainer = node;
+            }
+        }
+
+        // Ближайший блок над точкой (а если точка выше всех — первый).
+        BlockEditor? above = null;
+        var aboveTop = double.MinValue;
+        foreach (var editor in _order)
+        {
+            if (editor.GetVisualRoot() is null || editor.Node.Name == "fn" || editor.TranslatePoint(new Point(0, 0), _panel) is not { } top)
+            {
+                continue;
+            }
+
+            if (top.Y <= point.Y && top.Y >= aboveTop)
+            {
+                above = editor;
+                aboveTop = top.Y;
+            }
+        }
+
+        above ??= _order.FirstOrDefault(e => e.Node.Name != "fn");
+        if (above is null && emptyContainer is null)
+        {
+            return false;
+        }
+
+        return OpenInsertMenu(above?.Node, emptyContainer, _panel, new Rect(point, new Size(1, 1)), () => above?.FocusEditor(above.CaretOffset));
+    }
+
+    private bool OpenInsertMenu(DitaNode? anchor, DitaNode? emptyContainer, Control target, Rect rect, Action cancelled)
+    {
+        var catalog = DitaCatalog.Default;
+        var items = new List<ElementSuggestion>();
+        var slots = new Dictionary<ElementSuggestion, InsertSlot>();
+
+        void Offer(DitaNode parent, int index, string where, bool inside)
+        {
+            foreach (var def in catalog.InsertableAt(parent, index)
+                         .Where(d => d.Display is not (DisplayKind.Inline or DisplayKind.Empty))
+                         .DistinctBy(d => d.Name)
+                         .OrderBy(d => string.IsNullOrEmpty(d.Description) ? d.Name : d.Description, StringComparer.CurrentCulture))
+            {
+                var item = new ElementSuggestion(def.Name, $"{Describe(def.Name)}  <{def.Name}> — {where}",
+                    $"<{def.Name}>\n\n{def.Description}\n\nСодержимое: {def.ModelText}");
+                items.Add(item);
+                slots[item] = new InsertSlot(parent, index, inside);
+            }
+        }
+
+        if (emptyContainer is not null)
+        {
+            Offer(emptyContainer, 0, $"внутрь <{emptyContainer.Name}>", inside: true);
+        }
+
+        var level = anchor;
+        for (var depth = 0; depth < 6 && level?.Parent is { } parent; depth++)
+        {
+            if (!TablePartParents.Contains(parent.Name))
+            {
+                Offer(parent, EditCommands.ElementIndexOf(parent, level) + 1, depth == 0 ? "после этого блока" : $"после <{level.Name}>", inside: false);
+            }
+
+            if (catalog.Get(parent.Name)?.IsTopicType == true)
+            {
+                break;
+            }
+
+            level = parent;
+        }
+
+        if (items.Count == 0)
+        {
+            return false;
+        }
+
+        var popup = new ElementSuggestions(target, rect, items, chosen =>
+        {
+            if (chosen.Element is not null && slots.TryGetValue(chosen, out var slot))
+            {
+                InsertAtSlot(slot, chosen.Element);
+            }
+        });
+        popup.Cancelled += (_, _) => cancelled();
+        popup.Closed += (_, _) =>
+        {
+            _root.Children.Remove(popup);
+            Suggestions = null;
+        };
+        _root.Children.Add(popup);
+        Suggestions = popup;
+        popup.IsOpen = true;
+        return true;
+    }
+
+    private void InsertAtSlot(InsertSlot slot, string element)
+    {
+        BeforeStructuralEdit?.Invoke(this, $"Вставка <{element}>");
+        if (EditCommands.InsertInto(slot.Parent, element, slot.Index) is not { } created)
+        {
+            return;
+        }
+
+        Modified();
+        var focus = created.DescendantsAndSelf().FirstOrDefault(n => n.Kind == NodeKind.Element && DitaCatalog.Default.Get(n.Name) is { IsMixed: true }) ?? created;
+        RefreshChildren(slot.Parent, Array.Empty<DitaNode>(), focus);
+    }
+
+    private void OnScrollPointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        if (e.ClickCount != 2 || !e.GetCurrentPoint(_panel).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        // Двойной щелчок в тексте блока выделяет слово — меню только по свободному месту.
+        for (var source = e.Source as Avalonia.Visual; source is not null; source = Avalonia.VisualTree.VisualExtensions.GetVisualParent(source))
+        {
+            if (source is BlockEditor or Avalonia.Controls.Primitives.ScrollBar or Avalonia.Controls.Primitives.Popup)
+            {
+                return;
+            }
+        }
+
+        if (ShowInsertMenuAt(e.GetPosition(_panel)))
+        {
+            e.Handled = true;
+        }
     }
 
     private static string Describe(string name) =>

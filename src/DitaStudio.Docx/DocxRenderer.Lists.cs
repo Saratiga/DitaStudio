@@ -41,6 +41,7 @@ public sealed partial class DocxRenderer
 
     private IEnumerable<OpenXmlCompositeElement> RenderStepListItem(DitaNode item, int level, int numId, int ilvl)
     {
+        using var itemScope = BlockScope(item);
         var cmd = item.FirstElement("cmd");
         var firstParagraph = true;
         foreach (var child in item.Children)
@@ -52,7 +53,11 @@ public sealed partial class DocxRenderer
 
             if (ReferenceEquals(child, cmd))
             {
-                yield return NumberedParagraph(RenderInlineRuns(child), numId, ilvl, DocxStyleCatalog.StepCommand);
+                using (BlockScope(child))
+                {
+                    yield return NumberedParagraph(RenderInlineRuns(child), numId, ilvl, DocxStyleCatalog.StepCommand);
+                }
+
                 firstParagraph = false;
                 continue;
             }
@@ -83,6 +88,7 @@ public sealed partial class DocxRenderer
     // li / sli / choice / stepsection — обычный пункт списка, возможно с вложенными блоками
     private IEnumerable<OpenXmlCompositeElement> RenderPlainListItem(DitaNode item, int numId, int ilvl)
     {
+        using var itemScope = BlockScope(item);
         var nested = item.ElementChildren().Where(c => c.Name is "ul" or "ol" or "sl" or "choices").ToList();
         var directRuns = new List<OpenXmlElement>();
         foreach (var child in item.Children)

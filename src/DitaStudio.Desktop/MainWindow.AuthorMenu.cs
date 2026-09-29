@@ -227,6 +227,7 @@ public partial class MainWindow
         {
             CommandItem("Сноска", insert.InsertFootnoteCommand),
             CommandItem("Изображение…", insert.InsertImageCommand),
+            CommandItem("Оформить изображение как рисунок", insert.WrapImageAsFigureCommand),
             CommandItem("Перекрёстная ссылка…", insert.InsertXrefCommand),
             CommandItem("Таблица…", insert.InsertTableCommand),
             new Separator(),

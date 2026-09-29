@@ -2,9 +2,22 @@ using DitaStudio.Core.Model;
 
 namespace DitaStudio.Core.Publishing;
 
+/// <summary>Разделитель между номером и названием в подписи.</summary>
+public enum CaptionSeparator
+{
+    /// <summary>«Рисунок 1. Название».</summary>
+    Period,
+
+    /// <summary>«Рисунок 1 — Название».</summary>
+    Dash
+}
+
 /// <summary>Подписи таблиц и рисунков: когда подпись выводится и получает номер.</summary>
 public static class CaptionRules
 {
+    /// <summary>Текст между номером и названием: «. » или « — ».</summary>
+    public static string Separator(CaptionSeparator separator) => separator == CaptionSeparator.Dash ? " — " : ". ";
+
     /// <summary>
     /// В <paramref name="title"/> есть что показать: текст или вложенный элемент (например, ключевое
     /// слово или картинка). Пустой <c>&lt;title/&gt;</c> и заголовок из одних пробелов подписью не

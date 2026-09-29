@@ -22,6 +22,8 @@ public sealed class DocxRenderOptions
 
     public bool NumberFiguresAndTables { get; set; } = true;
 
+    public CaptionSeparator CaptionSeparator { get; set; } = CaptionSeparator.Period;
+
     /// <summary>Список заголовков Word (нумерация включена) — в него же входят нумерованные абзацы; null — нумерации нет.</summary>
     public int? HeadingNumId { get; set; }
 

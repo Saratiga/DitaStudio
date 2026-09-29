@@ -344,6 +344,15 @@ public sealed partial class AvaloniaDialogService
         panel.Children.Add(pageBreak);
         var numberFigures = Check("Нумеровать рисунки и таблицы в подписях", current.NumberFiguresAndTables, top: 6);
         panel.Children.Add(numberFigures);
+        var captionFormat = Named(new ComboBox
+        {
+            ItemsSource = new[] { "Рисунок 1. Название", "Рисунок 1 — Название" },
+            SelectedIndex = (int)current.CaptionSeparator,
+            Width = 200,
+            Padding = new Thickness(4, 3, 4, 3)
+        }, "Формат подписи");
+        panel.Children.Add(Row("Формат подписи:", captionFormat));
+        Bind(numberFigures, captionFormat);
 
         // ---- колонтитулы
         panel.Children.Add(Header("Колонтитулы"));
@@ -418,6 +427,7 @@ public sealed partial class AvaloniaDialogService
                 NumberingDepth = numberingDepth.SelectedItem as int? ?? current.NumberingDepth,
                 PageBreakBeforeTopLevel = pageBreak.IsChecked == true,
                 NumberFiguresAndTables = numberFigures.IsChecked == true,
+                CaptionSeparator = (CaptionSeparator)Math.Max(0, captionFormat.SelectedIndex),
                 HeaderText = header.Text ?? string.Empty,
                 HeaderAlignment = (DocxHeaderAlignment)Math.Max(0, headerAlign.SelectedIndex),
                 FooterText = footer.Text ?? string.Empty,

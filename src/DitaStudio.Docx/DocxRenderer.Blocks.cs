@@ -448,14 +448,21 @@ public sealed partial class DocxRenderer
 
         foreach (var entry in node.ElementChildren().Where(e => e.Name == "dlentry"))
         {
+            using var entryScope = BlockScope(entry);
             foreach (var dt in entry.ElementChildren().Where(e => e.Name == "dt"))
             {
-                yield return Para(DocxStyleCatalog.DefinitionTerm, RenderInlineRuns(dt));
+                using (BlockScope(dt))
+                {
+                    yield return Para(DocxStyleCatalog.DefinitionTerm, RenderInlineRuns(dt));
+                }
             }
 
             foreach (var dd in entry.ElementChildren().Where(e => e.Name == "dd"))
             {
-                yield return Para(DocxStyleCatalog.Definition, RenderInlineRuns(dd));
+                using (BlockScope(dd))
+                {
+                    yield return Para(DocxStyleCatalog.Definition, RenderInlineRuns(dd));
+                }
             }
         }
     }
@@ -464,14 +471,21 @@ public sealed partial class DocxRenderer
     {
         foreach (var entry in node.ElementChildren().Where(e => e.Name == "plentry"))
         {
+            using var entryScope = BlockScope(entry);
             foreach (var pt in entry.ElementChildren().Where(e => e.Name == "pt"))
             {
-                yield return Para(DocxStyleCatalog.DefinitionTerm, RenderInlineRuns(pt));
+                using (BlockScope(pt))
+                {
+                    yield return Para(DocxStyleCatalog.DefinitionTerm, RenderInlineRuns(pt));
+                }
             }
 
             foreach (var pd in entry.ElementChildren().Where(e => e.Name == "pd"))
             {
-                yield return Para(DocxStyleCatalog.Definition, RenderInlineRuns(pd));
+                using (BlockScope(pd))
+                {
+                    yield return Para(DocxStyleCatalog.Definition, RenderInlineRuns(pd));
+                }
             }
         }
     }
@@ -493,6 +507,7 @@ public sealed partial class DocxRenderer
 
             foreach (var block in RenderBlock(child, level))
             {
+                CenterUnlessAligned(block);
                 yield return block;
             }
         }
@@ -503,7 +518,7 @@ public sealed partial class DocxRenderer
             var captionRuns = new List<OpenXmlElement>();
             if (_options.NumberFiguresAndTables)
             {
-                captionRuns.Add(new W.Run(new W.Text($"{L.Figure} {_figureNumber}. ") { Space = SpaceProcessingModeValues.Preserve }));
+                captionRuns.AddRange(CaptionLabel(L.Figure, _figureNumber));
             }
 
             captionRuns.AddRange(RenderInlineRuns(title!));

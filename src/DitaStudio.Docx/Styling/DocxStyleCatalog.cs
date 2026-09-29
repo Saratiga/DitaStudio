@@ -209,7 +209,7 @@ public static class DocxStyleCatalog
             new(Definition, "Определение", DocxStyleKind.Paragraph, Normal,
                 P(p => p.IndentLeftPt = 11.35), new[] { "dd", ".dd", ".pd" }),
             new(FigureCaption, "Подпись рисунка", DocxStyleKind.Paragraph, Normal,
-                P(p => p.Italic = true), new[] { ".fig-title", "figcaption", ".figcap" }),
+                P(p => { p.Italic = true; p.Align = "center"; }), new[] { ".fig-title", "figcaption", ".figcap" }),
             new(TableCaption, "Подпись таблицы", DocxStyleKind.Paragraph, Normal,
                 P(p => { p.Bold = true; p.KeepNext = true; }), new[] { ".table-title", "caption" }),
             new(TableText, "Текст таблицы", DocxStyleKind.Paragraph, Normal,

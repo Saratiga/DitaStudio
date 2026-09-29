@@ -28,6 +28,10 @@ public sealed partial class HtmlRenderer
     /// если он задан — иначе пустая строка.</summary>
     private string OptionalClassAttr(DitaNode node) => BuildClassAttr(null, node);
 
+    /// <summary>class="..." только из outputclass — для ячеек, у которых свой style (выравнивание).</summary>
+    private string OutputClassAttr(DitaNode node) =>
+        node.GetAttribute("outputclass") is { } value && !string.IsNullOrWhiteSpace(value) ? $" class=\"{Escape(value)}\"" : string.Empty;
+
     /// <summary>class="baseClass outputclass" одним атрибутом — не дублирует class, если outputclass задан.</summary>
     private string MergedClassAttr(string baseClass, DitaNode? node) => BuildClassAttr(baseClass, node);
 

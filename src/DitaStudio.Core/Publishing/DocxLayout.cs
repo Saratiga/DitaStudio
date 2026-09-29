@@ -51,6 +51,9 @@ public sealed class DocxLayout
     /// <summary>Нумеровать рисунки и таблицы в подписях («Рисунок 3.», «Таблица 2.»).</summary>
     public bool NumberFiguresAndTables { get; set; } = true;
 
+    /// <summary>Как отделяется название от номера: «Рисунок 1. Название» или «Рисунок 1 — Название».</summary>
+    public CaptionSeparator CaptionSeparator { get; set; } = CaptionSeparator.Period;
+
     /// <summary>Текст верхнего колонтитула; поля: {page}, {pages}, {title}, {date}.</summary>
     public string HeaderText { get; set; } = string.Empty;
 

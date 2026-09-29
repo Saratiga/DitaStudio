@@ -92,25 +92,137 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         FlushPendingEdits();
         BeforeStructuralEdit($"Вставка <{name}>");
 
-        var created = EditCommands.InsertAfter(CurrentNode, name);
-        if (created is null && CurrentNode.Parent is not null)
-        {
-            created = EditCommands.Append(CurrentNode, name);
-        }
-
-        var ancestor = CurrentNode.Parent;
-        while (created is null && ancestor is not null)
-        {
-            created = EditCommands.InsertAfter(ancestor, name) ?? EditCommands.Append(ancestor, name);
-            ancestor = ancestor.Parent;
-        }
-
+        var created = PlaceBlock(CurrentNode, name);
         if (created is null)
         {
             return false;
         }
 
         Changed(FirstEditable(created), created.Parent);
+        return true;
+    }
+
+    /// <summary>Ставит новый блочный элемент после <paramref name="current"/>, а если там нельзя — в конец
+    /// ближайшего родителя, куда он допустим. null — нигде нельзя.</summary>
+    private static DitaNode? PlaceBlock(DitaNode current, string name)
+    {
+        var created = EditCommands.InsertAfter(current, name);
+        if (created is null && current.Parent is not null)
+        {
+            created = EditCommands.Append(current, name);
+        }
+
+        var ancestor = current.Parent;
+        while (created is null && ancestor is not null)
+        {
+            created = EditCommands.InsertAfter(ancestor, name) ?? EditCommands.Append(ancestor, name);
+            ancestor = ancestor.Parent;
+        }
+
+        return created;
+    }
+
+    /// <summary>Заготовка названия нового рисунка — сразу видна и выделена для замены.</summary>
+    public const string FigureTitlePlaceholder = "Название рисунка";
+
+    /// <summary>
+    /// Вставляет рисунок: блок <c>fig</c> с названием и изображением после текущего блока (подпись
+    /// «Рисунок N. Название» получается при публикации). false — сюда рисунок не поставить, тогда
+    /// вызывающий может вставить изображение в строку.
+    /// </summary>
+    public bool InsertFigure(DitaNode image)
+    {
+        if (Document is null || CurrentNode is null || DitaCatalog.Default.Get("fig") is null)
+        {
+            return false;
+        }
+
+        // Заранее: если fig нигде не допустим, отмена и перерисовка не нужны.
+        if (!CanPlaceBlock(CurrentNode, "fig"))
+        {
+            return false;
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit("Вставка рисунка");
+        var figure = PlaceBlock(CurrentNode, "fig");
+        if (figure is null)
+        {
+            return false;
+        }
+
+        FillFigure(figure, image);
+        Changed(figure.FirstElement("title") ?? figure, figure.Parent);
+        return true;
+    }
+
+    private static bool CanPlaceBlock(DitaNode current, string name)
+    {
+        var catalog = DitaCatalog.Default;
+        for (var node = current; node.Parent is { } parent; node = parent)
+        {
+            var index = parent.ElementChildren().TakeWhile(child => !ReferenceEquals(child, node)).Count() + 1;
+            if (catalog.CanInsert(parent, name, index) || catalog.CanInsert(parent, name, parent.ElementChildren().Count()))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void FillFigure(DitaNode figure, DitaNode image)
+    {
+        var title = figure.FirstElement("title");
+        if (title is null)
+        {
+            title = DitaNode.Element("title");
+            figure.Insert(0, title);
+        }
+
+        if (string.IsNullOrWhiteSpace(title.InnerText))
+        {
+            title.SetText(FigureTitlePlaceholder);
+        }
+
+        figure.Add(image);
+    }
+
+    /// <summary>
+    /// «Оформить как рисунок»: изображение из абзаца под курсором выносится в блок <c>fig</c> с названием,
+    /// который встаёт сразу после абзаца; пустой после этого абзац убирается. false — нечего оформлять
+    /// (в блоке нет изображения, оно уже в <c>fig</c>) или <c>fig</c> здесь недопустим.
+    /// </summary>
+    public bool WrapImageAsFigure()
+    {
+        if (Document is null || CurrentNode is not { Parent: { } parent } paragraph ||
+            paragraph.ElementChildren().FirstOrDefault(child => child.Name == "image") is not { } image ||
+            parent.Name == "fig")
+        {
+            return false;
+        }
+
+        var index = parent.ElementChildren().TakeWhile(child => !ReferenceEquals(child, paragraph)).Count() + 1;
+        if (!DitaCatalog.Default.CanInsert(parent, "fig", index))
+        {
+            return false;
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit("Оформление изображения как рисунка");
+        var figure = DitaCatalog.Default.CreateElement("fig");
+        image.RemoveSelf();
+        image.RemoveAttribute("placement");
+        FillFigure(figure, image);
+        parent.Insert(parent.IndexOf(paragraph) + 1, figure);
+
+        var empty = string.IsNullOrWhiteSpace(paragraph.InnerText) && !paragraph.ElementChildren().Any();
+        if (empty)
+        {
+            paragraph.RemoveSelf();
+        }
+
+        Changed(figure.FirstElement("title") ?? figure, parent);
         return true;
     }
 

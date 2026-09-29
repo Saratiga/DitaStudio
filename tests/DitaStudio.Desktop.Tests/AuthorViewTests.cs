@@ -448,6 +448,201 @@ public sealed class AuthorViewTests
         window.Close();
     }
 
+    /// <summary>В2: кнопки размера, цвета и выравнивания действуют на блок под курсором любого текстового вида,
+    /// а не только на абзац: пункт списка, термин и определение, ячейка, команда шага, абзац в заметке.</summary>
+    [AvaloniaFact]
+    public void TextFormat_WorksOnAnyTextBlock()
+    {
+        var (window, author, document, _) = Show(
+            "<task id=\"t\"><title>Т</title><taskbody>" +
+            "<context><ul><li>Пункт</li></ul><dl><dlentry><dt>Термин</dt><dd>Определение</dd></dlentry></dl>" +
+            "<note><p>В заметке</p></note>" +
+            "<table><tgroup cols=\"1\"><tbody><row><entry>Ячейка</entry></row></tbody></tgroup></table></context>" +
+            "<steps><step><cmd>Команда</cmd></step></steps></taskbody></task>");
+        const string size = Core.Publishing.TextFormatting.SizePrefix;
+        const string color = Core.Publishing.TextFormatting.ColorPrefix;
+
+        foreach (var name in new[] { "li", "dt", "dd", "entry", "cmd" })
+        {
+            var node = document.Root.DescendantsAndSelf().First(n => n.Name == name);
+            var editor = Focus(window, author, node, 0);
+            editor.Select(0, editor.Document.TextLength);
+            Assert.True(author.Surface.ApplyTextFormat(size, "size-18"), name + ": размер");
+            editor = Focus(window, author, node, 0);
+            editor.Select(0, editor.Document.TextLength);
+            Assert.True(author.Surface.ApplyTextFormat(color, "color-red"), name + ": цвет");
+            Assert.True(author.Surface.SetCurrentBlockFormat(Core.Publishing.TextFormatting.AlignPrefix, "align-center") || name == "entry", name + ": выравнивание");
+            author.FlushPendingEdits();
+            Dispatcher.UIThread.RunJobs();
+            var classes = node.GetAttribute("outputclass") ?? string.Empty;
+            Assert.Contains("size-18", classes);
+            Assert.Contains("color-red", classes);
+            Assert.Equal(24, author.EditorFor(node)!.FontSize);
+        }
+
+        var inNote = document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.Parent?.Name == "note");
+        var noteEditor = Focus(window, author, inNote, 0);
+        noteEditor.Select(0, noteEditor.Document.TextLength);
+        Assert.True(author.Surface.ApplyTextFormat(size, "size-14"));
+        author.FlushPendingEdits();
+        Assert.Equal("size-14", inNote.GetAttribute("outputclass"));
+        window.Close();
+    }
+
+    /// <summary>В7: изображение вставляется рисунком (fig с названием), из абзаца оформляется как рисунок,
+    /// а подпись «Рисунок N.» видна в «Авторе».</summary>
+    [AvaloniaFact]
+    public void Figure_InsertAndWrap_MakeFigWithTitle_AndShowNumber()
+    {
+        var (window, author, document, undo) = Show(
+            "<concept id=\"c\"><title>Р</title><conbody><p>Текст.</p><p><image href=\"a.png\" placement=\"break\"/></p></conbody></concept>");
+        var body = document.Root.FirstElement("conbody")!;
+        var texts = Paragraphs(document);
+
+        // «Оформить как рисунок»: изображение уходит в fig после абзаца, пустой абзац убирается.
+        Focus(window, author, texts[1], 0);
+        Assert.True(author.Surface.WrapImageAsFigure());
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new[] { "p", "fig" }, body.ElementChildren().Select(n => n.Name).ToArray());
+        var figure = body.FirstElement("fig")!;
+        Assert.Equal(new[] { "title", "image" }, figure.ElementChildren().Select(n => n.Name).ToArray());
+        Assert.Equal(AuthorSurfaceBase.FigureTitlePlaceholder, figure.FirstElement("title")!.InnerText);
+        Assert.Equal("a.png", figure.FirstElement("image")!.GetAttribute("href"));
+        Assert.Null(figure.FirstElement("image")!.GetAttribute("placement"));
+        Assert.Contains("Оформление изображения как рисунка", undo);
+
+        // Изображения в абзаце нет — команда отказывает и ничего не меняет.
+        Focus(window, author, texts[0], 0);
+        var before = body.ToString();
+        Assert.False(author.Surface.WrapImageAsFigure());
+        Assert.Equal(before, body.ToString());
+
+        // Вставка нового рисунка после текущего блока.
+        var image = DitaNode.Element("image");
+        image.SetAttribute("href", "b.png");
+        Focus(window, author, texts[0], 0);
+        Assert.True(author.Surface.InsertFigure(image));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new[] { "p", "fig", "fig" }, body.ElementChildren().Select(n => n.Name).ToArray());
+        Assert.Equal("b.png", body.ElementChildren().ElementAt(1).FirstElement("image")!.GetAttribute("href"));
+
+        // Подпись «Рисунок N.» в «Авторе»: по порядку в топике.
+        var badges = window.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).Where(t => t is not null && t.StartsWith("Рисунок ")).ToList();
+        Assert.Equal(new[] { "Рисунок 1.", "Рисунок 2." }, badges);
+        window.Close();
+    }
+
+    private const string InsertMenuTopic =
+        "<concept id=\"c\"><title>Т</title><conbody>" +
+        "<div><p>Первый div.</p></div><div><p>Второй div.</p></div>" +
+        "<table><tgroup cols=\"1\"><tbody><row><entry>Ячейка</entry></row></tbody></tgroup></table>" +
+        "</conbody></concept>";
+
+    /// <summary>В12: Ctrl+Enter в ячейке — меню допустимых элементов; выйти из таблицы можно выбором «после table».</summary>
+    [AvaloniaFact]
+    public void CtrlEnter_InTableCell_OffersElementsAfterTable_NotAfterCellsOrRows()
+    {
+        var (window, author, document, _) = Show(InsertMenuTopic);
+        var body = document.Root.FirstElement("conbody")!;
+        var entry = document.Root.DescendantsAndSelf().First(n => n.Name == "entry");
+        Focus(window, author, entry, 0);
+        Press(window, Key.Enter, RawInputModifiers.Control);
+        Dispatcher.UIThread.RunJobs();
+
+        var menu = author.InsertMenu;
+        Assert.NotNull(menu);
+        var titles = menu!.Visible.Select(i => i.Title).ToList();
+        Assert.Contains(titles, t => t.Contains("<p>") && t.Contains("после <table>"));
+        Assert.DoesNotContain(titles, t => t.Contains("после <entry>") || t.Contains("после <row>") || t.Contains("после этого блока"));
+
+        menu.Filter("после <table>");
+        var paragraph = menu.Visible.First(i => i.Element == "p");
+        menu.Select(paragraph);
+        menu.Apply();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new[] { "div", "div", "table", "p" }, body.ElementChildren().Select(n => n.Name).ToArray());
+        window.Close();
+    }
+
+    /// <summary>В12: двойной щелчок по свободному месту под последним блоком и между блоками — то же меню.</summary>
+    [AvaloniaFact]
+    public void DoubleClickOnFreeSpace_ShowsInsertMenu_UnderLastBlock_AndBetweenBlocks()
+    {
+        var (window, author, document, _) = Show(InsertMenuTopic);
+        var body = document.Root.FirstElement("conbody")!;
+        var panelOf = author.GetVisualDescendants().OfType<StackPanel>().First(sp => sp.GetVisualDescendants().OfType<BlockEditor>().Any());
+
+        // Под последней таблицей: место после таблицы (внешний блок), не «после ячейки».
+        var bottom = author.Editors.Max(e => e.TranslatePoint(new Point(0, e.Bounds.Height), panelOf)?.Y ?? 0);
+        Assert.True(author.ShowInsertMenuAt(new Point(40, bottom + 40)));
+        Dispatcher.UIThread.RunJobs();
+        var titles = author.InsertMenu!.Visible.Select(i => i.Title).ToList();
+        Assert.Contains(titles, t => t.Contains("после <table>"));
+        Assert.DoesNotContain(titles, t => t.Contains("после <entry>") || t.Contains("после <row>"));
+        author.InsertMenu.Filter("<note>");
+        author.InsertMenu.Apply();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new[] { "div", "div", "table", "note" }, body.ElementChildren().Select(n => n.Name).ToArray());
+
+        // Между двумя div: точка у верхней кромки второго div — ближайший блок сверху это первый div.
+        var second = author.EditorFor(body.ElementChildren().ElementAt(1).FirstElement("p")!)!;
+        var top = second.TranslatePoint(new Point(0, 0), panelOf)!.Value.Y;
+        Assert.True(author.ShowInsertMenuAt(new Point(40, top - 2)));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains(author.InsertMenu!.Visible.Select(i => i.Title), t => t.Contains("после <div>"));
+        author.InsertMenu.Cancel();
+        window.Close();
+    }
+
+    /// <summary>В12: настоящий двойной щелчок мыши по пустому месту открывает меню; двойной щелчок в тексте — нет.</summary>
+    [AvaloniaFact]
+    public void DoubleClick_RealMouse_FreeSpaceOpensMenu_TextDoesNot()
+    {
+        var (window, author, document, _) = Show(InsertMenuTopic);
+        var panelOf = author.GetVisualDescendants().OfType<StackPanel>().First(sp => sp.GetVisualDescendants().OfType<BlockEditor>().Any());
+        var bottom = author.Editors.Max(e => e.TranslatePoint(new Point(0, e.Bounds.Height), window)?.Y ?? 0);
+
+        window.MouseDown(new Point(60, bottom + 60), Avalonia.Input.MouseButton.Left);
+        window.MouseUp(new Point(60, bottom + 60), Avalonia.Input.MouseButton.Left);
+        window.MouseDown(new Point(60, bottom + 60), Avalonia.Input.MouseButton.Left);
+        window.MouseUp(new Point(60, bottom + 60), Avalonia.Input.MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.NotNull(author.InsertMenu);
+        author.InsertMenu!.Cancel();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(author.InsertMenu);
+
+        var text = author.Editors[0].TranslatePoint(new Point(10, 8), window)!.Value;
+        window.MouseDown(text, Avalonia.Input.MouseButton.Left);
+        window.MouseUp(text, Avalonia.Input.MouseButton.Left);
+        window.MouseDown(text, Avalonia.Input.MouseButton.Left);
+        window.MouseUp(text, Avalonia.Input.MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(author.InsertMenu);
+        window.Close();
+    }
+
+    /// <summary>В12: в пустом div меню предлагает вставить элемент внутрь.</summary>
+    [AvaloniaFact]
+    public void DoubleClick_InsideEmptyDiv_OffersInsert()
+    {
+        var (window, author, document, _) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><p>Текст.</p><div/></conbody></concept>");
+        var body = document.Root.FirstElement("conbody")!;
+        var div = body.FirstElement("div")!;
+        var panelOf = author.GetVisualDescendants().OfType<StackPanel>().First(sp => sp.GetVisualDescendants().OfType<BlockEditor>().Any());
+        var view = author.ViewFor(div)!;
+        var origin = view.TranslatePoint(new Point(0, 0), panelOf)!.Value;
+        Assert.True(author.ShowInsertMenuAt(new Point(origin.X + 4, origin.Y + Math.Max(1, view.Bounds.Height / 2))));
+        Assert.Contains(author.InsertMenu!.Visible.Select(i => i.Title), t => t.Contains("внутрь <div>"));
+        author.InsertMenu.Filter("внутрь");
+        author.InsertMenu.Select(author.InsertMenu.Visible.First(i => i.Element == "p"));
+        author.InsertMenu.Apply();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("p", div.ElementChildren().Single().Name);
+        window.Close();
+    }
+
     [AvaloniaFact]
     public void EnterAtEnd_ShowsSuggestions_DefaultSplits_FilterInserts()
     {

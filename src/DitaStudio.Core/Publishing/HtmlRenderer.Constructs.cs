@@ -117,12 +117,12 @@ public sealed partial class HtmlRenderer
         {
             foreach (var dt in entry.ElementChildren().Where(e => e.Name == "dt"))
             {
-                sb.Append("<dt>").Append(RenderInlineChildren(dt)).Append("</dt>\n");
+                sb.Append("<dt").Append(OptionalClassAttr(dt)).Append('>').Append(RenderInlineChildren(dt)).Append("</dt>\n");
             }
 
             foreach (var dd in entry.ElementChildren().Where(e => e.Name == "dd"))
             {
-                sb.Append("<dd>").Append(RenderInlineChildren(dd)).Append("</dd>\n");
+                sb.Append("<dd").Append(OptionalClassAttr(dd)).Append('>').Append(RenderInlineChildren(dd)).Append("</dd>\n");
             }
         }
 
@@ -137,12 +137,12 @@ public sealed partial class HtmlRenderer
         {
             foreach (var pt in entry.ElementChildren().Where(e => e.Name == "pt"))
             {
-                sb.Append("<dt>").Append(RenderInlineChildren(pt)).Append("</dt>\n");
+                sb.Append("<dt").Append(OptionalClassAttr(pt)).Append('>').Append(RenderInlineChildren(pt)).Append("</dt>\n");
             }
 
             foreach (var pd in entry.ElementChildren().Where(e => e.Name == "pd"))
             {
-                sb.Append("<dd>").Append(RenderInlineChildren(pd)).Append("</dd>\n");
+                sb.Append("<dd").Append(OptionalClassAttr(pd)).Append('>').Append(RenderInlineChildren(pd)).Append("</dd>\n");
             }
         }
 
@@ -158,7 +158,7 @@ public sealed partial class HtmlRenderer
         {
             _figureNumber++;
             var caption = _options.NumberFiguresAndTables
-                ? $"{L.Figure} {_figureNumber}. {RenderInlineChildren(title!)}"
+                ? $"{L.Figure} {_figureNumber}{CaptionRules.Separator(_options.CaptionSeparator)}{RenderInlineChildren(title!)}"
                 : RenderInlineChildren(title!);
             sb.Append("<figcaption class=\"fig-title\">").Append(caption).Append("</figcaption>\n");
         }

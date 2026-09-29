@@ -129,7 +129,9 @@ public sealed class HtmlPublisher
             ImageSource = ImageSource,
             Filter = node => PublishFilter.IsIncluded(node, options),
             FlagRules = options.FlagConditions,
-            Numbering = new HeadingNumbering(_project.DocxLayout.NumberHeadings, _project.DocxLayout.NumberingDepth)
+            Numbering = new HeadingNumbering(_project.DocxLayout.NumberHeadings, _project.DocxLayout.NumberingDepth),
+            NumberFiguresAndTables = _project.DocxLayout.NumberFiguresAndTables,
+            CaptionSeparator = _project.DocxLayout.CaptionSeparator
         };
 
         if (options.SingleFile)
@@ -300,7 +302,9 @@ public sealed class HtmlPublisher
             // В отличие от Publish() — предпросмотр показывает помеченное на удаление содержимое
             // (зачёркнутым, см. .tc-deleted), чтобы правку можно было принять/отклонить осознанно.
             Filter = node => PublishFilter.IsIncluded(node, options, showTrackedDeletions: true),
-            FlagRules = options.FlagConditions
+            FlagRules = options.FlagConditions,
+            NumberFiguresAndTables = _project.DocxLayout.NumberFiguresAndTables,
+            CaptionSeparator = _project.DocxLayout.CaptionSeparator
         };
 
         var renderer = new HtmlRenderer(_project, renderOptions);

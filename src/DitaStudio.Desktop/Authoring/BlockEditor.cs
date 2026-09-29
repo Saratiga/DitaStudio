@@ -25,7 +25,10 @@ public enum StructureRequest
     Outdent,
     DeleteForward,
     NextBlock,
-    PreviousBlock
+    PreviousBlock,
+
+    /// <summary>Ctrl+Enter: меню допустимых элементов после текущего блока, в том числе после внешних (таблицы, div).</summary>
+    InsertAfterBlock
 }
 
 public sealed class StructureRequestEventArgs : EventArgs
@@ -384,6 +387,12 @@ public sealed class BlockEditor : TextEditor
         var selectionEmpty = TextArea.Selection.IsEmpty;
         switch (e.Key)
         {
+            case Key.Enter when ctrl:
+                e.Handled = true;
+                Flush();
+                Raise(StructureRequest.InsertAfterBlock, CaretOffset);
+                return;
+
             case Key.Enter:
                 // Перевода строки внутри блока не бывает — Enter всегда структурная операция.
                 e.Handled = true;

@@ -84,4 +84,56 @@ internal static partial class CoreChecks
             }
         }
     }
+
+    internal static void FigureCaptionFormatTests()
+    {
+        Section("Подпись рисунка: формат, поле SEQ, по центру, HTML и DOCX");
+
+        WithProject(new Dictionary<string, string>
+        {
+            ["t.dita"] = """
+                <topic id="t"><title>Р</title><body>
+                <fig><title>Первый</title><image href="pic.png"/></fig>
+                <fig><title/><image href="none.png"/></fig>
+                <fig><title>Второй</title><image href="none.png"/></fig>
+                </body></topic>
+                """,
+            ["m.ditamap"] = "<map><title>M</title><topicref href=\"t.dita\"/></map>"
+        }, (root, project) =>
+        {
+            File.WriteAllBytes(Path.Combine(root, "pic.png"), Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="));
+            var map = Path.Combine(root, "m.ditamap");
+            string Html(string dir) => File.ReadAllText(new HtmlPublisher(project).Publish(map,
+                new PublishOptions { OutputDirectory = Path.Combine(root, dir), SingleFile = true }).EntryFile);
+
+            var html = Html("h1");
+            Check(html.Contains("Рисунок 1. Первый") && html.Contains("Рисунок 2. Второй"), "HTML: по умолчанию «Рисунок N. Название»");
+            Check(html.Contains("figure { text-align: center; }") && html.Contains("figcaption.fig-title { text-align: center; }"),
+                "HTML: рисунок и подпись по умолчанию по центру");
+
+            project.SetDocxLayout(new DocxLayout { CaptionSeparator = CaptionSeparator.Dash });
+            html = Html("h2");
+            Check(html.Contains("Рисунок 1 — Первый") && html.Contains("Рисунок 2 — Второй"), "HTML: формат «Рисунок N — Название»");
+
+            project.SetDocxLayout(new DocxLayout { NumberFiguresAndTables = false });
+            html = Html("h3");
+            Check(!html.Contains("Рисунок 1") && html.Contains(">Первый<"), "HTML: переключатель «Нумеровать» отключает номера и в HTML");
+
+            project.SetDocxLayout(new DocxLayout { CaptionSeparator = CaptionSeparator.Dash });
+            var docx = Path.Combine(root, "d.docx");
+            new DocxPublisher(project).Publish(map, new PublishOptions { Language = "ru" }, docx);
+            CheckValidDocx(docx, "подписи рисунков: SEQ и тире");
+            using var doc = WordprocessingDocument.Open(docx, false);
+            var body = doc.MainDocumentPart!.Document.Body!;
+            var captions = body.Descendants<Paragraph>().Where(p => p.ParagraphProperties?.ParagraphStyleId?.Val == "FigureCaption").ToList();
+            Check(captions.Select(c => c.InnerText).SequenceEqual(new[] { "Рисунок 1 — Первый", "Рисунок 2 — Второй" }),
+                "DOCX: подписи «Рисунок N — Название», пустой заголовок номера не занимает");
+            Check(captions.All(c => c.Descendants<SimpleField>().Any(f => f.Instruction?.Value?.Contains("SEQ") == true)),
+                "DOCX: номер — поле Word SEQ (обновляется, попадает в список иллюстраций)");
+            var style = doc.MainDocumentPart.StyleDefinitionsPart!.Styles!.Elements<Style>().First(s => s.StyleId == "FigureCaption");
+            Check(style.StyleParagraphProperties?.Justification?.Val?.Value == JustificationValues.Center, "DOCX: стиль подписи рисунка — по центру");
+            var pictures = body.Descendants<Paragraph>().Where(p => p.Descendants<DocumentFormat.OpenXml.Drawing.Blip>().Any()).ToList();
+            Check(pictures.Count == 1 && pictures[0].ParagraphProperties?.Justification?.Val?.Value == JustificationValues.Center, "DOCX: абзац с рисунком по центру");
+        });
+    }
 }

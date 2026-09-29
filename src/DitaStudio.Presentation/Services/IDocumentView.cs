@@ -87,6 +87,12 @@ public interface IAuthorSurface
     /// <summary>Вставляет фразовый узел в позицию курсора внутри текстового блока.</summary>
     bool InsertInlineNode(DitaNode node);
 
+    /// <summary>Вставляет рисунок (блок <c>fig</c> с названием и этим изображением) после текущего блока.</summary>
+    bool InsertFigure(DitaNode image) => false;
+
+    /// <summary>Выносит изображение из абзаца под курсором в рисунок <c>fig</c> с названием.</summary>
+    bool WrapImageAsFigure() => false;
+
     /// <summary>Оборачивает выделенный текст в фразовый элемент.</summary>
     bool WrapCurrentInline(string element);
 

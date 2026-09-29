@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using DitaStudio.Core.Model;
@@ -424,6 +425,30 @@ public sealed partial class AuthorView
     /// Пометки, видные без атрибутов: у заголовка «без номера» — справа, у нумерованного абзаца —
     /// «№» слева (сам номер зависит от места в карте и считается при публикации).
     /// </summary>
+    /// <summary>«Рисунок N.» / «Таблица N.»: номер — по порядку подписанных рисунков (таблиц) в топике.</summary>
+    private static string CaptionBadgeText(DitaNode captioned)
+    {
+        var root = captioned;
+        while (root.Parent is not null)
+        {
+            root = root.Parent;
+        }
+
+        var number = root.DescendantsAndSelf().Where(n => n.Name == captioned.Name && CaptionRules.HasContent(n.FirstElement("title")))
+            .TakeWhile(n => !ReferenceEquals(n, captioned)).Count() + 1;
+        var labels = Labels.For("ru");
+        return $"{(captioned.Name == "fig" ? labels.Figure : labels.Table)} {number}.";
+    }
+
+    /// <summary>Пересчитывает номера подписей после правки: добавленный или убранный рисунок сдвигает соседние.</summary>
+    private void RefreshCaptionBadges()
+    {
+        foreach (var badge in _panel.GetLogicalDescendants().OfType<TextBlock>().Where(t => t.Tag is DitaNode { Name: "fig" or "table" }))
+        {
+            badge.Text = CaptionBadgeText((DitaNode)badge.Tag!);
+        }
+    }
+
     private static Control WithTitleBadge(DitaNode node, BlockEditor editor)
     {
         if (node.Name == "p" && HeadingNumbering.IsNumbered(node))
@@ -431,6 +456,25 @@ public sealed partial class AuthorView
             var mark = new TextBlock { Text = "№", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 1, 6, 0) };
             Themed(mark, TextBlock.ForegroundProperty, "Accent");
             ToolTip.SetTip(mark, "Нумерованный абзац: номер по заголовкам (например, 2.3.1) — при публикации");
+            var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
+            Grid.SetColumn(editor, 1);
+            row.Children.Add(mark);
+            row.Children.Add(editor);
+            return row;
+        }
+
+        if (node.Name == "title" && node.Parent is { Name: "fig" or "table" } captioned && CaptionRules.HasContent(node))
+        {
+            // Подпись «Рисунок N.» / «Таблица N.»: в файле её нет, она складывается при публикации.
+            var mark = new TextBlock
+            {
+                Text = CaptionBadgeText(captioned),
+                Tag = captioned,
+                FontWeight = FontWeight.SemiBold,
+                Margin = new Thickness(0, 1, 6, 0)
+            };
+            Themed(mark, TextBlock.ForegroundProperty, "Accent");
+            ToolTip.SetTip(mark, "Подпись при публикации. Номер сквозной по изданию и зависит от настройки «Нумеровать рисунки и таблицы»; здесь — по порядку в этом топике.");
             var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
             Grid.SetColumn(editor, 1);
             row.Children.Add(mark);

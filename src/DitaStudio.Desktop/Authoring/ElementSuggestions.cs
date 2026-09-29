@@ -86,6 +86,12 @@ public sealed class ElementSuggestions : Popup
         _apply(item);
     }
 
+    /// <summary>Выбирает строку списка (для тестов).</summary>
+    public void Select(ElementSuggestion item) => _list.SelectedItem = item;
+
+    /// <summary>Закрывает без выбора.</summary>
+    public void Cancel() => IsOpen = false;
+
     /// <summary>Фильтр по имени элемента и подписи.</summary>
     public void Filter(string text)
     {

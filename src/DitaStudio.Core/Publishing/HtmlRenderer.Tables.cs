@@ -18,7 +18,7 @@ public sealed partial class HtmlRenderer
         {
             _tableNumber++;
             var caption = _options.NumberFiguresAndTables
-                ? $"{L.Table} {_tableNumber}. {RenderInlineChildren(title!)}"
+                ? $"{L.Table} {_tableNumber}{CaptionRules.Separator(_options.CaptionSeparator)}{RenderInlineChildren(title!)}"
                 : RenderInlineChildren(title!);
             sb.Append("<div class=\"table-title\">").Append(caption).Append("</div>\n");
         }
@@ -108,7 +108,7 @@ public sealed partial class HtmlRenderer
         var sb = new StringBuilder(RowStart(row));
         foreach (var entry in row.ElementChildren().Where(e => e.Name == "entry"))
         {
-            sb.Append('<').Append(cellTag);
+            sb.Append('<').Append(cellTag).Append(OutputClassAttr(entry));
 
             var namest = entry.GetAttribute("namest");
             var nameend = entry.GetAttribute("nameend");
@@ -189,7 +189,7 @@ public sealed partial class HtmlRenderer
             sb.Append("<thead>\n<tr>\n");
             foreach (var cell in head.ElementChildren().Where(c => headNames.Contains(c.Name)))
             {
-                sb.Append("<th>").Append(RenderInlineChildren(cell)).Append("</th>\n");
+                sb.Append("<th").Append(OutputClassAttr(cell)).Append('>').Append(RenderInlineChildren(cell)).Append("</th>\n");
             }
 
             sb.Append("</tr>\n</thead>\n");
@@ -218,7 +218,7 @@ public sealed partial class HtmlRenderer
             sb.Append(RowStart(row));
             foreach (var cell in row.ElementChildren().Where(c => rowNames.Contains(c.Name)))
             {
-                sb.Append("<td>").Append(RenderInlineChildren(cell)).Append("</td>\n");
+                sb.Append("<td").Append(OutputClassAttr(cell)).Append('>').Append(RenderInlineChildren(cell)).Append("</td>\n");
             }
 
             sb.Append("</tr>\n");

@@ -216,18 +216,46 @@ public partial class InsertViewModel : ObservableObject
         var href = RefResolver.MakeRelative(pane.FilePath, file);
         var image = DitaNode.Element("image");
         image.SetAttribute("href", href);
-        image.SetAttribute("placement", "break");
 
         var alt = DitaNode.Element("alt");
         alt.SetText(Path.GetFileNameWithoutExtension(file));
         image.Add(alt);
 
+        // Рисунок — блок fig с названием: при публикации у него подпись «Рисунок N. Название».
+        // Там, где fig недопустим (например, в середине заголовка), изображение идёт в строку.
+        if (pane.Author.InsertFigure(image))
+        {
+            _main.StatusText = "Рисунок вставлен: замените название под ним. Подпись «Рисунок N» появится при публикации.";
+            _main.Documents.RefreshAllTabTitles();
+            return;
+        }
+
+        image.SetAttribute("placement", "break");
         if (!pane.Author.InsertInlineNode(image))
         {
             _main.StatusText = "Поставьте курсор в абзац, куда вставить изображение.";
             return;
         }
 
+        _main.Documents.RefreshAllTabTitles();
+    }
+
+    /// <summary>Изображение из абзаца под курсором — в рисунок с названием и номером.</summary>
+    [RelayCommand]
+    private void WrapImageAsFigure()
+    {
+        if (_main.Current is not { } pane)
+        {
+            return;
+        }
+
+        if (!pane.Author.WrapImageAsFigure())
+        {
+            _main.StatusText = "Поставьте курсор в абзац с изображением (вне рисунка), чтобы оформить его как рисунок.";
+            return;
+        }
+
+        _main.StatusText = "Изображение оформлено как рисунок: замените название под ним.";
         _main.Documents.RefreshAllTabTitles();
     }
 

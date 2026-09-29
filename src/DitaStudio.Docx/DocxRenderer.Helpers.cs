@@ -73,6 +73,29 @@ public sealed partial class DocxRenderer
         }
     }
 
+    /// <summary>
+    /// Начало подписи: «Рисунок », поле Word <c>SEQ Рисунок</c> с текущим номером (работают «Обновить поля»,
+    /// список иллюстраций и перекрёстные ссылки) и разделитель перед названием.
+    /// </summary>
+    private IEnumerable<OpenXmlElement> CaptionLabel(string label, int number)
+    {
+        yield return new W.Run(new W.Text(label + " ") { Space = SpaceProcessingModeValues.Preserve });
+        yield return new W.SimpleField(new W.Run(new W.Text(number.ToString(System.Globalization.CultureInfo.InvariantCulture))))
+        {
+            Instruction = $" SEQ {label.Replace(' ', '_')} \\* ARABIC "
+        };
+        yield return new W.Run(new W.Text(CaptionRules.Separator(_options.CaptionSeparator)) { Space = SpaceProcessingModeValues.Preserve });
+    }
+
+    /// <summary>Абзацы рисунка по умолчанию стоят по центру; своё выравнивание (align-…) остаётся.</summary>
+    private static void CenterUnlessAligned(OpenXmlCompositeElement block)
+    {
+        if (block is W.Paragraph paragraph && EnsureParagraphProperties(paragraph).Justification is null)
+        {
+            paragraph.ParagraphProperties!.Justification = new W.Justification { Val = W.JustificationValues.Center };
+        }
+    }
+
     private static W.ParagraphProperties EnsureParagraphProperties(W.Paragraph paragraph) =>
         paragraph.ParagraphProperties ??= new W.ParagraphProperties();
 

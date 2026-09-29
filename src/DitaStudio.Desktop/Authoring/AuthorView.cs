@@ -53,6 +53,7 @@ public sealed partial class AuthorView : UserControl
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
         };
         _root.Children.Add(_scroll);
+        _scroll.AddHandler(PointerPressedEvent, OnScrollPointerPressed, RoutingStrategies.Bubble, handledEventsToo: false);
         Content = _root;
         Themed(this, BackgroundProperty, "Surface");
         Surface = new AuthorViewSurface(this);
@@ -141,6 +142,7 @@ public sealed partial class AuthorView : UserControl
     private void FocusAfterRebuild(DitaNode? focusNode, int caretOffset)
     {
         RefreshFootnotes();
+        RefreshCaptionBadges();
         if (focusNode is not null && _editors.TryGetValue(focusNode, out var editor))
         {
             CurrentNode = focusNode;

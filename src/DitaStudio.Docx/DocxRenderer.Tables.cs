@@ -24,7 +24,7 @@ public sealed partial class DocxRenderer
             var captionRuns = new List<OpenXmlElement>();
             if (_options.NumberFiguresAndTables)
             {
-                captionRuns.Add(new W.Run(new W.Text($"{L.Table} {_tableNumber}. ") { Space = SpaceProcessingModeValues.Preserve }));
+                captionRuns.AddRange(CaptionLabel(L.Table, _tableNumber));
             }
 
             captionRuns.AddRange(RenderInlineRuns(title!));
@@ -238,7 +238,12 @@ public sealed partial class DocxRenderer
             }});
         }
 
-        var paragraph = Para(isHeader ? DocxStyleCatalog.TableHeading : DocxStyleCatalog.TableText, runs);
+        W.Paragraph paragraph;
+        using (BlockScope(entry))
+        {
+            paragraph = Para(isHeader ? DocxStyleCatalog.TableHeading : DocxStyleCatalog.TableText, runs);
+        }
+
         foreach (var property in paragraphProps)
         {
             EnsureParagraphProperties(paragraph).Append(property);
@@ -304,7 +309,10 @@ public sealed partial class DocxRenderer
             var column = 0;
             foreach (var cell in head.ElementChildren().Where(c => headNames.Contains(c.Name)))
             {
-                tr.Append(Cell(RenderInlineRuns(cell), isHeader: true, column++));
+                using (BlockScope(cell))
+                {
+                    tr.Append(Cell(RenderInlineRuns(cell), isHeader: true, column++));
+                }
             }
 
             table.Append(tr);
@@ -332,7 +340,10 @@ public sealed partial class DocxRenderer
             var column = 0;
             foreach (var cell in row.ElementChildren().Where(c => rowNames.Contains(c.Name)))
             {
-                tr.Append(Cell(RenderInlineRuns(cell), isHeader: false, column++));
+                using (BlockScope(cell))
+                {
+                    tr.Append(Cell(RenderInlineRuns(cell), isHeader: false, column++));
+                }
             }
 
             table.Append(tr);

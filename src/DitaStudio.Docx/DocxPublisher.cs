@@ -119,6 +119,7 @@ public sealed class DocxPublisher
                 TopicBookmark = (path, id) => bookmarks.TryGetValue(BookmarkKey(path, id), out var name) ? name : null,
                 Styles = styles,
                 NumberFiguresAndTables = layout.NumberFiguresAndTables,
+                CaptionSeparator = layout.CaptionSeparator,
                 HeadingNumId = layout.NumberHeadings ? HeadingNumId : null
             };
             var renderer = new DocxRenderer(_project, mainPart, numberingPart, renderOptions);

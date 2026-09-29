@@ -27,6 +27,8 @@ public sealed class RenderOptions
 
     public bool NumberFiguresAndTables { get; set; } = true;
 
+    public CaptionSeparator CaptionSeparator { get; set; } = CaptionSeparator.Period;
+
     /// <summary>Номера заголовков и нумерованных абзацев (один счётчик на издание); null — без номеров.</summary>
     public HeadingNumbering? Numbering { get; set; }
 

@@ -74,6 +74,7 @@
                 <MenuItem Header="Сноска" Command="{Binding Insert.InsertFootnoteCommand}" />
                 <MenuItem Header="Таблица…" Command="{Binding Insert.InsertTableCommand}" />
                 <MenuItem Header="Изображение…" Command="{Binding Insert.InsertImageCommand}" />
+                <MenuItem Header="Оформить изображение как рисунок" Command="{Binding Insert.WrapImageAsFigureCommand}" />
                 <MenuItem Header="Перекрёстная ссылка…" Command="{Binding Insert.InsertXrefCommand}" />
                 <Separator />
                 <MenuItem Header="Полужирный" Command="{Binding Insert.FormatBoldCommand}" InputGesture="Ctrl+B" />

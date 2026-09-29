@@ -74,6 +74,9 @@ table { border-collapse: collapse; margin: 1.2em 0; width: 100%; font-size: .95e
 th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
 th { background: #f0f2f5; font-weight: 600; }
 .table-title, .fig-title { font-weight: 600; margin: 1.2em 0 .4em; }
+figure { text-align: center; }
+figure img { max-width: 100%; }
+figcaption.fig-title { text-align: center; }
 .generated-title { font-weight: 600; font-size: 1.05em; margin: 1.5em 0 .4em; }
 figure { margin: 1.2em 0; }
 img { max-width: 100%; height: auto; }
