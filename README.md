@@ -9,7 +9,8 @@
 
 Готовые сборки (не требуют установленного .NET) — на странице
 [релизов](https://github.com/Saratiga/DitaStudio/releases): Windows x64, Linux x64,
-macOS (Intel, на Apple Silicon — через Rosetta) и легаси-сборка WPF. Предпросмотр и печать
+macOS (Intel, на Apple Silicon — через Rosetta). Легаси-версия WPF в релизы больше не входит
+(последняя — в v4.0.0), её можно собрать из исходников. Предпросмотр и печать
 в PDF — встроенный Chromium, отдельно ничего ставить не нужно.
 
 ## Что умеет
@@ -225,10 +226,9 @@ dotnet test tests\DitaStudio.Tests --settings tests\DitaStudio.Tests\coverage.ru
 UI-тесты гоняет отдельный workflow `ui-tests.yml` — после пуша в `master` и вручную
 (Actions → UI tests → Run workflow); при падении к прогону прикладывается снимок экрана.
 
-Релиз: пуш тега `vX.Y.Z` (равного `<Version>` в `DitaStudio.Desktop.csproj` и
-`DitaStudio.App.csproj`) запускает `release.yml` — тесты, самодостаточные сборки на раннерах
-каждой ОС и черновик релиза с архивами `DitaStudio-vX.Y.Z-win-x64.zip`,
-`-linux-x64.tar.gz`, `-osx-x64.tar.gz` и `DitaStudio-Legacy-WPF-vX.Y.Z-win-x64.zip`; текст
+Релиз: пуш тега `vX.Y.Z` (равного `<Version>` в `DitaStudio.Desktop.csproj`) запускает
+`release.yml` — тесты, самодостаточные сборки на раннерах каждой ОС и черновик релиза с
+архивами `DitaStudio-vX.Y.Z-win-x64.zip`, `-linux-x64.tar.gz` и `-osx-x64.tar.gz`; текст
 «Что нового» дописывается вручную перед публикацией. Ручной запуск — пробная сборка без релиза.
 
 UI-тесты WPF (xUnit + FlaUI) запускают собранный `DitaStudio.exe` и управляют им через UI

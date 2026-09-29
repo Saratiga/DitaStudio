@@ -30,12 +30,12 @@ CI — `.github/workflows/`:
   `tests/DitaStudio.Tests/coverage.runsettings`, отчёт ReportGenerator в Summary и артефакте);
   на Linux — `DitaStudio.Desktop.Tests` headless и `CefPreviewTests` под `xvfb-run`;
 - `ui-tests.yml` — UI-тесты WPF на рабочем столе Windows-раннера: пуш в `master` и вручную;
-- `release.yml` — тег `vX.Y.Z` (должен совпадать с `<Version>` в `DitaStudio.Desktop.csproj`
-  и `DitaStudio.App.csproj` — держать равными): тесты, `dotnet publish` Avalonia-версии
-  self-contained на раннере каждой ОС (win-x64, linux-x64, osx-x64 — нативный Chromium
-  копируется только при публикации на своей ОС, кросс-сборка его теряет), легаси WPF
-  (`DitaStudio-Legacy-WPF-vX.Y.Z-win-x64.zip`), черновик релиза со всеми архивами. Ручной
-  запуск — пробная сборка без релиза (архивы — артефакты прогона).
+- `release.yml` — тег `vX.Y.Z` (должен совпадать с `<Version>` в `DitaStudio.Desktop.csproj`):
+  тесты интерфейса (Linux) и ядра (Windows), `dotnet publish` Avalonia-версии self-contained
+  на раннере каждой ОС (win-x64, linux-x64, osx-x64 — нативный Chromium копируется только при
+  публикации на своей ОС, кросс-сборка его теряет), черновик релиза со всеми архивами. WPF в
+  релизы не входит (последняя сборка — v4.0.0). Ручной запуск — пробная сборка без релиза
+  (архивы — артефакты прогона).
 На Linux три проверки `FileSafetyTests` падают ожидаемо (регистр в путях, root игнорирует
 «только для чтения»), а svn-тест требует UTF-8-локаль — целевая платформа Windows.
 
