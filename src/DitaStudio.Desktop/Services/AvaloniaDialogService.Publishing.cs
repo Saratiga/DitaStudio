@@ -373,10 +373,14 @@ public sealed partial class AvaloniaDialogService
             Text = "Поля: {page} — номер страницы, {pages} — число страниц, {title} — название карты, " +
                    "{date} — дата публикации. Например: «Стр. {page} из {pages}». Пусто — колонтитула нет. " +
                    "Картинка (например, логотип; PNG, JPEG, GIF, BMP) ставится слева, по центру или справа, " +
-                   "высота — в миллиметрах; она появится и в колонтитулах PDF.",
+                   "высота — в миллиметрах; она появится и в колонтитулах PDF. Колонтитулы можно задать и в CSS " +
+                   "проекта — полями страницы @page { @top-left { content: … } }: они перекрывают эти настройки.",
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 6, 0, 0)
         }));
+        var fitImages = Check("Подгонять картинки под колонтитул (высота — по полю страницы, пропорции сохраняются)",
+            current.FitHeaderFooterImages, top: 6);
+        panel.Children.Add(fitImages);
         var noFirst = Check("Не показывать колонтитулы на первой странице", current.NoHeaderOnFirstPage, top: 6);
         panel.Children.Add(noFirst);
 
@@ -433,6 +437,7 @@ public sealed partial class AvaloniaDialogService
                 FooterText = footer.Text ?? string.Empty,
                 FooterAlignment = (DocxHeaderAlignment)Math.Max(0, footerAlign.SelectedIndex),
                 NoHeaderOnFirstPage = noFirst.IsChecked == true,
+                FitHeaderFooterImages = fitImages.IsChecked == true,
                 HeaderImage = headerImage.Path(),
                 HeaderImageAlignment = headerImage.Alignment(),
                 HeaderImageHeightMm = headerImage.HeightMm() ?? current.HeaderImageHeightMm,

@@ -110,7 +110,7 @@ public static class CssParser
                         break;
                     case "page":
                         var pseudo = prelude[5..].Trim();
-                        sheet.PageRules.Add(new CssPageRule(pseudo.Length == 0 ? null : pseudo, ParseDeclarations(body), order++));
+                        sheet.PageRules.Add(new CssPageRule(pseudo.Length == 0 ? null : pseudo, ParseDeclarations(WithoutNestedBlocks(body)), order++));
                         break;
                     default:
                         sheet.SkippedAtRules.Add("@" + name);
@@ -129,6 +129,43 @@ public static class CssParser
                 sheet.Rules.Add(new CssRule(selectors, ParseDeclarations(body), order++));
             }
         }
+    }
+
+    /// <summary>Тело @page без вложенных блоков полей страницы (<c>@top-left { … }</c>): их разбирает
+    /// <see cref="DitaStudio.Core.Publishing.PageMarginBoxes"/>, а среди свойств страницы они были бы мусором.</summary>
+    private static string WithoutNestedBlocks(string body)
+    {
+        if (!body.Contains('{'))
+        {
+            return body;
+        }
+
+        var result = new StringBuilder();
+        var depth = 0;
+        foreach (var c in body)
+        {
+            if (c == '{')
+            {
+                if (depth == 0)
+                {
+                    // Заголовок блока — хвост после последней ';' — уже попал в result: отрезаем.
+                    var cut = result.ToString().LastIndexOf(';') + 1;
+                    result.Length = cut;
+                }
+
+                depth++;
+            }
+            else if (c == '}')
+            {
+                depth = Math.Max(0, depth - 1);
+            }
+            else if (depth == 0)
+            {
+                result.Append(c);
+            }
+        }
+
+        return result.ToString();
     }
 
     public static List<CssDeclaration> ParseDeclarations(string body)

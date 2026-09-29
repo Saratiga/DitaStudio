@@ -46,6 +46,9 @@ public sealed class DocxStyleSheet
     public DocxTableLook Table { get; } = new();
     public DocxBorder RevBorder { get; private set; } = new("single", 2.25, "D4380D", 4);
     public DocxPageSetup Page { get; private set; } = DocxPageSetup.A4;
+
+    /// <summary>Колонтитулы из <c>@page { @top-left { content: … } }</c> — перекрывают заданные в диалоге.</summary>
+    public DitaStudio.Core.Publishing.PageMarginBoxes MarginBoxes { get; private set; } = DitaStudio.Core.Publishing.PageMarginBoxes.Empty;
     public IReadOnlyList<DocxClassRule> ClassRules => _classRules;
 
     /// <summary>Все классы, упомянутые в правилах для собственных классов.</summary>
@@ -99,6 +102,12 @@ public sealed class DocxStyleSheet
         var sheet = new DocxStyleSheet();
         var parsed = CssParser.Parse(css ?? string.Empty, CssParser.DocxMedia);
         sheet.Build(parsed);
+        sheet.MarginBoxes = DitaStudio.Core.Publishing.PageMarginBoxes.Parse(css);
+        foreach (var warning in sheet.MarginBoxes.Warnings)
+        {
+            sheet._diag.Add(warning);
+        }
+
         return sheet;
     }
 

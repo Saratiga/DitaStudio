@@ -136,6 +136,11 @@ public sealed class CefPdfPrinter : IPdfPrinter
     /// <summary>Шапка: текст по центру; картинка (логотип) — на своём месте слева, по центру или справа.</summary>
     public static string HeaderTemplate(PdfPageDecoration decoration)
     {
+        if (decoration.HeaderHtml is { } cssHeader)
+        {
+            return cssHeader;
+        }
+
         var text = WebUtility.HtmlEncode(decoration.HeaderText ?? string.Empty);
         if (decoration.HeaderImage is null)
         {
@@ -149,6 +154,11 @@ public sealed class CefPdfPrinter : IPdfPrinter
     /// <summary>Подвал: текст слева, «стр. N из M» справа; картинка — на своём месте.</summary>
     public static string FooterTemplate(PdfPageDecoration decoration)
     {
+        if (decoration.FooterHtml is { } cssFooter)
+        {
+            return cssFooter;
+        }
+
         var text = WebUtility.HtmlEncode(decoration.FooterText ?? string.Empty);
         const string pages = "стр. <span class=\"pageNumber\"></span> из <span class=\"totalPages\"></span>";
         if (decoration.FooterImage is null)
@@ -162,7 +172,7 @@ public sealed class CefPdfPrinter : IPdfPrinter
     }
 
     private static string Image(string dataUri, double heightMm) =>
-        $"<img src=\"{dataUri}\" style=\"height:{heightMm.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)}mm;vertical-align:middle\">";
+        $"<img src=\"{dataUri}\" style=\"height:{heightMm.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)}mm;max-width:100%;vertical-align:middle\">";
 
     /// <summary>Три места — слева, по центру, справа; картинка и текст на одном месте встают рядом.</summary>
     private static string Slots(string image, DocxHeaderAlignment imageAt, params (DocxHeaderAlignment At, string Html)[] texts)

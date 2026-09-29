@@ -56,6 +56,12 @@ li::marker { color: var(--accent); }
 
 @page { size: A4; margin: 20mm 15mm 20mm 25mm; }
 
+/* Колонтитулы — поля страницы; они перекрывают колонтитулы из «Оформление DOCX» */
+@page {
+  @top-right { content: string(title); font-size: 9pt; color: #6b7a90; border-bottom: 0.5pt solid #b6c9e6; }
+  @bottom-center { content: "Стр. " counter(page) " из " counter(pages); font-size: 9pt; color: #6b7a90; }
+}
+
 /* ---------------------------------------------------------------- только для Word */
 @media docx {
   body { font-family: "Segoe UI", sans-serif; font-size: 10.5pt; }

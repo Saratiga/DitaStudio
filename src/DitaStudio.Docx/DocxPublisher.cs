@@ -147,7 +147,7 @@ public sealed class DocxPublisher
                     unnumbered: TocRules.IsHiddenInMap(item.Node));
             }
 
-            var mainSection = BuildSectionProperties(mainPart, WithLayoutPage(styles.Page, layout), layout, title, date, warnings);
+            var mainSection = BuildSectionProperties(mainPart, WithLayoutPage(styles.Page, layout), layout, styles.MarginBoxes, title, date, warnings);
             body.Append(mainSection);
             FinishPlacedSections(body, mainSection);
 
@@ -401,7 +401,7 @@ public sealed class DocxPublisher
     }
 
     private W.SectionProperties BuildSectionProperties(MainDocumentPart mainPart, DocxPageSetup page,
-        DocxLayout layout, string title, string date, List<string> warnings)
+        DocxLayout layout, PageMarginBoxes boxes, string title, string date, List<string> warnings)
     {
         var section = new W.SectionProperties();
         string? Image(string relative)
@@ -415,12 +415,25 @@ public sealed class DocxPublisher
             return full;
         }
 
-        var headerImage = Image(layout.HeaderImage);
-        var footerImage = Image(layout.FooterImage);
+        // Колонтитулы из CSS (@page { @top-left {…} }) перекрывают диалог: верх — при любом верхнем поле, низ — при нижнем.
+        var headerImage = boxes.HasTop ? null : Image(layout.HeaderImage);
+        var footerImage = boxes.HasBottom ? null : Image(layout.FooterImage);
         var textWidthPt = page.WidthPt - page.LeftPt - page.RightPt - layout.GutterMm * DocxPageSetup.MmToPt;
-        var hasHeader = layout.HeaderText.Trim().Length > 0 || headerImage is not null;
-        var hasFooter = layout.FooterText.Trim().Length > 0 || footerImage is not null;
+        var hasHeader = boxes.HasTop || layout.HeaderText.Trim().Length > 0 || headerImage is not null;
+        var hasFooter = boxes.HasBottom || layout.FooterText.Trim().Length > 0 || footerImage is not null;
         var distinctFirst = layout.NoHeaderOnFirstPage && (hasHeader || hasFooter);
+
+        // Отступ колонтитула от края листа: из CSS (margin-top / margin-bottom поля) или 12,5 мм, но не больше половины поля.
+        var topTwips = DocxPropsWriter.Twips(page.TopPt);
+        var bottomTwips = DocxPropsWriter.Twips(page.BottomPt);
+        var headerDistance = boxes.Top.FirstOrDefault(b => b.EdgeDistanceMm is not null)?.EdgeDistanceMm is { } topMm
+            ? Math.Min((int)Math.Round(topMm * 1440 / 25.4), Math.Max(0, topTwips - 200)) : DocxHeaderFooter.DefaultDistanceTwips(topTwips);
+        var footerDistance = boxes.Bottom.FirstOrDefault(b => b.EdgeDistanceMm is not null)?.EdgeDistanceMm is { } bottomMm
+            ? Math.Min((int)Math.Round(bottomMm * 1440 / 25.4), Math.Max(0, bottomTwips - 200)) : DocxHeaderFooter.DefaultDistanceTwips(bottomTwips);
+        var headerArea = DocxHeaderFooter.AreaHeightMm(topTwips, headerDistance);
+        var footerArea = DocxHeaderFooter.AreaHeightMm(bottomTwips, footerDistance);
+        var headerImageHeight = layout.FitHeaderFooterImages ? headerArea : layout.HeaderImageHeightMm;
+        var footerImageHeight = layout.FitHeaderFooterImages ? footerArea : layout.FooterImageHeightMm;
 
         // Схема требует: сначала все headerReference, потом footerReference.
         if (hasHeader)
@@ -428,8 +441,10 @@ public sealed class DocxPublisher
             section.Append(new W.HeaderReference
             {
                 Type = W.HeaderFooterValues.Default,
-                Id = AddHeader(mainPart, part => HeaderFooterBlock(part, DocxStyleCatalog.PageHeader, layout.HeaderText, layout.HeaderAlignment,
-                    headerImage, layout.HeaderImageAlignment, layout.HeaderImageHeightMm, textWidthPt, title, date, 9001))
+                Id = AddHeader(mainPart, part => boxes.HasTop
+                    ? DocxHeaderFooter.FromBoxes(part, DocxStyleCatalog.PageHeader, boxes.Top, _project.RootPath, title, textWidthPt, headerArea, 9001, warnings)
+                    : HeaderFooterBlock(part, DocxStyleCatalog.PageHeader, layout.HeaderText, layout.HeaderAlignment,
+                        headerImage, layout.HeaderImageAlignment, headerImageHeight, textWidthPt, title, date, 9001))
             });
         }
 
@@ -443,8 +458,10 @@ public sealed class DocxPublisher
             section.Append(new W.FooterReference
             {
                 Type = W.HeaderFooterValues.Default,
-                Id = AddFooter(mainPart, part => HeaderFooterBlock(part, DocxStyleCatalog.PageFooter, layout.FooterText, layout.FooterAlignment,
-                    footerImage, layout.FooterImageAlignment, layout.FooterImageHeightMm, textWidthPt, title, date, 9002))
+                Id = AddFooter(mainPart, part => boxes.HasBottom
+                    ? DocxHeaderFooter.FromBoxes(part, DocxStyleCatalog.PageFooter, boxes.Bottom, _project.RootPath, title, textWidthPt, footerArea, 9002, warnings)
+                    : HeaderFooterBlock(part, DocxStyleCatalog.PageFooter, layout.FooterText, layout.FooterAlignment,
+                        footerImage, layout.FooterImageAlignment, footerImageHeight, textWidthPt, title, date, 9002))
             });
         }
 
@@ -468,8 +485,8 @@ public sealed class DocxPublisher
             Right = (uint)DocxPropsWriter.Twips(page.RightPt),
             Bottom = DocxPropsWriter.Twips(page.BottomPt),
             Left = (uint)DocxPropsWriter.Twips(page.LeftPt),
-            Header = 709,
-            Footer = 709,
+            Header = (uint)headerDistance,
+            Footer = (uint)footerDistance,
             Gutter = (uint)DocxPropsWriter.Twips(layout.GutterMm * DocxPageSetup.MmToPt)
         });
 
@@ -511,8 +528,7 @@ public sealed class DocxPublisher
         }
 
         var (naturalWidth, naturalHeight) = ImageSize.ReadEmuSize(image, null, null);
-        var heightEmu = (long)(imageHeightMm * 36000);
-        var widthEmu = naturalHeight > 0 ? (long)(naturalWidth * (double)heightEmu / naturalHeight) : heightEmu;
+        var (widthEmu, heightEmu) = DocxHeaderFooter.Fit(naturalWidth, naturalHeight, imageHeightMm, textWidthPt);
         var picture = DocxPictures.Inline(relId, widthEmu, heightEmu, imageId, Path.GetFileName(image), "Логотип");
         var textRuns = textParagraph.ChildElements.Where(e => e is not W.ParagraphProperties).Select(e => e.CloneNode(true)).ToList();
 

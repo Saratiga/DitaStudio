@@ -40,7 +40,19 @@
         <uicontrol>Публикация</uicontrol><uicontrol>Параметры страницы…</uicontrol></menucascade>.
         Схема листа в диалоге сразу показывает результат; заданное там действует на DOCX и PDF и
         главнее правила <codeph>@page</codeph>, пустые поля берутся из CSS.</p>
+      <p>Колонтитулы тоже задаются в CSS — полями страницы <codeph>@top-left</codeph>,
+        <codeph>@top-center</codeph>, <codeph>@top-right</codeph> и такими же <codeph>@bottom-…</codeph>
+        внутри <codeph>@page</codeph>. В <codeph>content</codeph> работают строки,
+        <codeph>counter(page)</codeph>, <codeph>counter(pages)</codeph>,
+        <codeph>string(title)</codeph> и <codeph>url(картинка)</codeph>; у поля — шрифт, размер,
+        цвет и линия <codeph>border-bottom</codeph> / <codeph>border-top</codeph>. Они перекрывают
+        колонтитулы из диалога <uicontrol>Оформление DOCX</uicontrol> и попадают в DOCX и PDF.
+        Картинка в колонтитуле по умолчанию подгоняется под его высоту.</p>
       <codeblock>@page { size: A4; margin: 20mm 15mm 20mm 25mm; }
+@page {
+  @top-right { content: string(title); font-size: 9pt; color: #666; }
+  @bottom-center { content: "Стр. " counter(page) " из " counter(pages); font-size: 9pt; }
+}
 @media docx {
   body { font-family: Georgia; font-size: 12pt; }
   h1 { color: #1a5fb4; border-bottom: 1pt solid #1a5fb4; }

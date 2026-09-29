@@ -521,6 +521,7 @@ internal static partial class CoreChecks
                 HeaderImage = "images/logo.png",
                 HeaderImageAlignment = DocxHeaderAlignment.Left,
                 HeaderImageHeightMm = 12,
+                FitHeaderFooterImages = false, // ручная высота
                 FooterImage = "images/missing.png"
             });
             var outFile = Path.Combine(root, "book.docx");

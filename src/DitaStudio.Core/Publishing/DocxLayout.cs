@@ -72,6 +72,12 @@ public sealed class DocxLayout
     /// <summary>Высота картинки верхнего колонтитула, мм (ширина — по пропорциям).</summary>
     public double HeaderImageHeightMm { get; set; } = 10;
 
+    /// <summary>
+    /// Картинки колонтитулов подгоняются под область колонтитула (поле страницы минус отступ от края), с сохранением
+    /// пропорций и не шире текста; иначе берётся высота, заданная для каждой картинки вручную.
+    /// </summary>
+    public bool FitHeaderFooterImages { get; set; } = true;
+
     /// <summary>Картинка нижнего колонтитула — путь от папки проекта; пусто — нет.</summary>
     public string FooterImage { get; set; } = string.Empty;
 

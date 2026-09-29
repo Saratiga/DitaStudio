@@ -76,6 +76,8 @@ public sealed class CoreTests
     [Fact] public void DivContentTests() => Run(CoreChecks.DivContentTests);
     [Fact] public void CaptionTests() => Run(CoreChecks.CaptionTests);
     [Fact] public void FigureCaptionFormatTests() => Run(CoreChecks.FigureCaptionFormatTests);
+    [Fact] public void PageMarginBoxTests() => Run(CoreChecks.PageMarginBoxTests);
+    [Fact] public void HeaderFooterCssDocxTests() => Run(CoreChecks.HeaderFooterCssDocxTests);
     [Fact] public void MapMoveTests() => Run(CoreChecks.MapMoveTests);
     [Fact]
     public void FormatClassOnAnyElementTests() => Run(CoreChecks.FormatClassOnAnyElementTests);

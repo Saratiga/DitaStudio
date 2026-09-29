@@ -41,15 +41,29 @@ public sealed record PdfPageDecoration(
     double HeaderImageHeightMm = 10,
     string? FooterImage = null,
     DocxHeaderAlignment FooterImageAlignment = DocxHeaderAlignment.Left,
-    double FooterImageHeightMm = 10)
+    double FooterImageHeightMm = 10,
+    string? HeaderHtml = null,
+    string? FooterHtml = null)
 {
     /// <summary>Колонтитулы проекта: текст из настроек PDF, картинки — общие с DOCX.</summary>
     public static PdfPageDecoration For(DitaProject project)
     {
         var layout = project.DocxLayout;
         string? Uri(string relative) => DocxLayout.ResolveImage(project.RootPath, relative) is { } full ? DocxLayout.ImageDataUri(full) : null;
-        return new PdfPageDecoration(project.PdfShowHeaderFooter, project.PdfHeaderText, project.PdfFooterText,
-            Uri(layout.HeaderImage), layout.HeaderImageAlignment, layout.HeaderImageHeightMm,
-            Uri(layout.FooterImage), layout.FooterImageAlignment, layout.FooterImageHeightMm);
+
+        // Поля страницы из CSS проекта (@page { @top-left { content: … } }) перекрывают колонтитулы из диалога.
+        var boxes = PageMarginBoxes.Parse(project.ReadCustomCss(out _));
+        var topMm = layout.MarginTopMm ?? 10;
+        var bottomMm = layout.MarginBottomMm ?? 10;
+        var sideMm = layout.MarginLeftMm ?? 12;
+        var headerArea = PdfMarginTemplates.AreaHeightMm(topMm);
+        var footerArea = PdfMarginTemplates.AreaHeightMm(bottomMm);
+        var show = project.PdfShowHeaderFooter || boxes.HasTop || boxes.HasBottom;
+        var headerHtml = boxes.HasTop ? PdfMarginTemplates.Html(boxes.Top, Uri, sideMm, headerArea) : boxes.HasBottom && !project.PdfShowHeaderFooter ? "<div></div>" : null;
+        var footerHtml = boxes.HasBottom ? PdfMarginTemplates.Html(boxes.Bottom, Uri, sideMm, footerArea) : boxes.HasTop && !project.PdfShowHeaderFooter ? "<div></div>" : null;
+        return new PdfPageDecoration(show, project.PdfHeaderText, project.PdfFooterText,
+            Uri(layout.HeaderImage), layout.HeaderImageAlignment, layout.FitHeaderFooterImages ? headerArea : layout.HeaderImageHeightMm,
+            Uri(layout.FooterImage), layout.FooterImageAlignment, layout.FitHeaderFooterImages ? footerArea : layout.FooterImageHeightMm,
+            headerHtml, footerHtml);
     }
 }

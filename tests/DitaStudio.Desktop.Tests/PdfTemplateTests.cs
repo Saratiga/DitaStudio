@@ -48,4 +48,62 @@ public sealed class PdfTemplateTests
         Assert.Contains("<img", settings.HeaderTemplate);
         Assert.False(CefPdfPrinter.CreateSettings(new PdfPageDecoration(false, "Шапка", null, Logo)).DisplayHeaderFooter);
     }
+
+    /// <summary>В9б: колонтитулы из CSS (@page { @top-left { … } }) — шаблоны Chromium; перекрывают настройки диалога.</summary>
+    [Fact]
+    public void CssMarginBoxes_BecomeTemplates_AndOverrideDialogSettings()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioPdf", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "m.ditamap"), "<map><title>M</title></map>");
+            File.WriteAllText(Path.Combine(root, "custom.css"),
+                "@page { @top-left { content: \"Слева\" url(logo.png); color: #C00000; font-size: 9pt; border-bottom: 1pt solid #888 }" +
+                " @bottom-right { content: \"Стр. \" counter(page) \" из \" counter(pages); font-weight: bold } }");
+            File.WriteAllBytes(Path.Combine(root, "logo.png"), new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 });
+            var project = new DitaStudio.Core.Project.DitaProject(root);
+            project.Scan();
+            project.SetCustomCssPath("custom.css");
+            project.SetPdfHeaderFooter(false, "Из диалога", "Подвал из диалога");
+            project.SetDocxLayout(new DocxLayout { MarginTopMm = 20, MarginBottomMm = 20 });
+
+            var decoration = PdfPageDecoration.For(project);
+            Assert.True(decoration.Show, "CSS включает колонтитулы, даже если в диалоге они выключены");
+            var header = CefPdfPrinter.HeaderTemplate(decoration);
+            var footer = CefPdfPrinter.FooterTemplate(decoration);
+            Assert.Contains("Слева", header);
+            Assert.DoesNotContain("Из диалога", header);
+            Assert.Contains("color:#C00000", header);
+            Assert.Contains("border-bottom:1pt solid #888", header);
+            Assert.Contains("<img src=\"data:image/png;base64,", header);
+            Assert.Contains("height:9mm", header); // поле 20 мм: область колонтитула 9 мм
+            Assert.Contains("class=\"pageNumber\"", footer);
+            Assert.Contains("class=\"totalPages\"", footer);
+            Assert.DoesNotContain("Подвал из диалога", footer);
+            Assert.True(footer.IndexOf("text-align:right", StringComparison.Ordinal) < footer.IndexOf("pageNumber", StringComparison.Ordinal), "номер — в правом поле");
+
+            // Только верх в CSS: подвал из диалога не подставляется, если диалог его выключил.
+            File.WriteAllText(Path.Combine(root, "custom.css"), "@page { @top-center { content: string(title) } }");
+            var topOnly = PdfPageDecoration.For(project);
+            Assert.Contains("class=\"title\"", CefPdfPrinter.HeaderTemplate(topOnly));
+            Assert.DoesNotContain("pageNumber", CefPdfPrinter.FooterTemplate(topOnly));
+
+            // Без CSS — прежние шаблоны из диалога.
+            File.WriteAllText(Path.Combine(root, "custom.css"), "p { color: red }");
+            project.SetPdfHeaderFooter(true, "Из диалога", "Подвал из диалога");
+            var plain = PdfPageDecoration.For(project);
+            Assert.Contains("Из диалога", CefPdfPrinter.HeaderTemplate(plain));
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch (IOException)
+            {
+            }
+        }
+    }
 }
