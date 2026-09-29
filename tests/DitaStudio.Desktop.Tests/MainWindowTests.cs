@@ -149,6 +149,92 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Строки дерева карты, реально стоящие в окне (не остатки прежнего дерева).</summary>
+    private static List<TreeViewItem> MapRows(Window window)
+    {
+        window.GetLogicalDescendants().OfType<TabControl>().First(t => t.Name == "LeftTabs").SelectedIndex = 1;
+        Dispatcher.UIThread.RunJobs();
+        var tree = window.GetLogicalDescendants().OfType<TreeView>().First(t => t.Name == "MapTreeView");
+        return tree.GetVisualDescendants().OfType<TreeViewItem>().Where(i => i.IsAttachedToVisualTree() && i.DataContext is MapTreeNode).ToList();
+    }
+
+    private static Point Center(Visual visual, Window window) =>
+        visual.TranslatePoint(new Point(visual.Bounds.Width / 2, visual.Bounds.Height / 2), window)!.Value;
+
+    private static void Click(Window window, Point point, int times = 1)
+    {
+        for (var i = 0; i < times; i++)
+        {
+            window.MouseDown(point, Avalonia.Input.MouseButton.Left);
+            window.MouseUp(point, Avalonia.Input.MouseButton.Left);
+        }
+
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    [AvaloniaFact]
+    public async Task MapTree_DoubleClickOnParentTopic_OpensIt_AndKeepsExpansion()
+    {
+        var (window, vm) = await OpenAsync();
+        window.Width = 1200;
+        window.Height = 900;
+        var rows = MapRows(window);
+        var parent = rows.First(r => r.DataContext is MapTreeNode { Children.Count: > 0, Item.TargetPath: not null });
+        var node = (MapTreeNode)parent.DataContext!;
+        Assert.True(node.IsExpanded);
+        var tabsBefore = vm.Documents.Tabs.Count;
+
+        // Точка — на самой строке заголовка (у раскрытого родителя высота строки включает детей).
+        var header = new Point(90, 10);
+        Click(window, parent.TranslatePoint(header, window)!.Value, times: 2);
+
+        Assert.Equal(tabsBefore + 1, vm.Documents.Tabs.Count);
+        Assert.EndsWith(Path.GetFileName(node.Item.TargetPath!), vm.Documents.SelectedTab!.FullPath);
+        Assert.True(node.IsExpanded, "двойной щелчок открывает топик и не сворачивает ветку");
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task MapTree_PublishCheckbox_ChangesOnlyItself()
+    {
+        var (window, vm) = await OpenAsync();
+        window.Width = 1200;
+        window.Height = 900;
+        static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
+        var branch = vm.Map.Tree.SelectMany(All).First(n => n.Children.Count > 0 && !n.IsRoot);
+        branch.IsExpanded = false; // ветка свёрнута пользователем
+        var leaf = vm.Map.Tree.SelectMany(All).First(n => n.Children.Count == 0 && n.CanExclude && n.Item.TargetPath is not null
+                                                         && !branch.Children.Contains(n));
+        vm.OpenDocument!(Path.Combine(_project, "reference", "settings.dita")); // рабочий документ, от которого нельзя уводить
+        var rows = MapRows(window);
+        var row = rows.First(r => ReferenceEquals(r.DataContext, leaf));
+        var box = row.GetVisualDescendants().OfType<CheckBox>().First();
+        vm.Map.SelectedNode = branch;
+        var selectedTabBefore = vm.Documents.SelectedTab;
+        var expandedBefore = vm.Map.Tree.SelectMany(All).Select(n => (n.Item.Node, n.IsExpanded)).ToList();
+        var tabsBefore = vm.Documents.Tabs.Count;
+        var publishedBefore = leaf.IsPublished;
+
+        // Два быстрых щелчка по флажку: переключается только он.
+        Click(window, Center(box, window), times: 2);
+
+        var leafAfter = vm.Map.Tree.SelectMany(All).First(n => ReferenceEquals(n.Item.Node, leaf.Item.Node));
+        Assert.Equal(publishedBefore, leafAfter.IsPublished);
+        Assert.Same(selectedTabBefore, vm.Documents.SelectedTab);
+        Assert.NotNull(vm.Map.SelectedNode); // выделение не теряется при перестроении дерева
+        Assert.Equal(expandedBefore, vm.Map.Tree.SelectMany(All).Select(n => (n.Item.Node, n.IsExpanded)).ToList());
+        Assert.All(vm.Map.Tree.SelectMany(All).Where(n => ReferenceEquals(n.Item.Node, branch.Item.Node)), n => Assert.False(n.IsExpanded));
+        Assert.True(vm.Documents.Tabs.Count <= tabsBefore + 1);
+
+        // Одиночный щелчок — переключение, и снова только оно.
+        rows = MapRows(window);
+        row = rows.First(r => r.DataContext is MapTreeNode m && ReferenceEquals(m.Item.Node, leaf.Item.Node));
+        Click(window, Center(row.GetVisualDescendants().OfType<CheckBox>().First(), window));
+        Assert.False(vm.Map.Tree.SelectMany(All).First(n => ReferenceEquals(n.Item.Node, leaf.Item.Node)).IsPublished);
+        Assert.Same(selectedTabBefore, vm.Documents.SelectedTab);
+        window.Close();
+    }
+
     [AvaloniaFact]
     public async Task MapContextMenu_DuplicatePasteFindReferencesDeleteFile()
     {

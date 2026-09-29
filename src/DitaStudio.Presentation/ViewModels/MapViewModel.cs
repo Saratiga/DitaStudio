@@ -61,8 +61,20 @@ public partial class MapViewModel : ObservableObject
 
     // ------------------------------------------------------------ дерево
 
+    /// <summary>
+    /// Строит дерево заново. Раскрытые и свёрнутые ветки и выделенная строка запоминаются по узлам
+    /// документа и возвращаются — правка карты (флажок «публиковать», перестановка) не должна
+    /// раскрывать всё дерево и сбрасывать выделение. Узел, которого больше нет, раскрыт по умолчанию.
+    /// </summary>
     public void RebuildTree()
     {
+        var expanded = new Dictionary<DitaNode, bool>(ReferenceEqualityComparer.Instance);
+        foreach (var node in Tree.SelectMany(Flatten))
+        {
+            expanded[node.Item.Node] = node.IsExpanded;
+        }
+
+        var selected = SelectedNode?.Item.Node;
         Tree.Clear();
         var project = _main.Project;
         if (project is null || SelectedMap is not { } map)
@@ -81,15 +93,24 @@ public partial class MapViewModel : ObservableObject
             return;
         }
 
-        Tree.Add(BuildNode(mapTree.Root, true));
+        Tree.Add(BuildNode(mapTree.Root, true, expanded));
+        if (selected is not null)
+        {
+            SelectedNode = Tree.SelectMany(Flatten).FirstOrDefault(n => ReferenceEquals(n.Item.Node, selected));
+        }
     }
 
-    private static MapTreeNode BuildNode(MapItem item, bool isRoot)
+    private static MapTreeNode BuildNode(MapItem item, bool isRoot, Dictionary<DitaNode, bool> expanded)
     {
         var node = new MapTreeNode(item, isRoot);
+        if (!isRoot && expanded.TryGetValue(item.Node, out var wasExpanded))
+        {
+            node.IsExpanded = wasExpanded;
+        }
+
         foreach (var child in item.Children)
         {
-            node.Children.Add(BuildNode(child, false));
+            node.Children.Add(BuildNode(child, false, expanded));
         }
 
         return node;
@@ -109,8 +130,24 @@ public partial class MapViewModel : ObservableObject
         }
     }
 
-    private IDocumentView? OpenMapPane() =>
-        SelectedMap is { } map ? _main.OpenDocument?.Invoke(map.FullPath) : null;
+    /// <param name="activate">false — карта открывается во вкладке, но вкладка не выбирается: правка
+    /// вроде флажка «публиковать» не должна уводить пользователя от документа, над которым он работает.</param>
+    private IDocumentView? OpenMapPane(bool activate = true)
+    {
+        if (SelectedMap is not { } map)
+        {
+            return null;
+        }
+
+        var previous = _main.Documents.SelectedTab;
+        var pane = _main.OpenDocument?.Invoke(map.FullPath);
+        if (!activate && previous is not null)
+        {
+            _main.Documents.SelectedTab = previous;
+        }
+
+        return pane;
+    }
 
     /// <summary>Правка карты открывает её во вкладке: изменения видны, отменяются и сохраняются
     /// как обычные правки документа.</summary>
@@ -517,7 +554,7 @@ public partial class MapViewModel : ObservableObject
     [RelayCommand]
     private void TogglePublished(MapTreeNode? node)
     {
-        if (node is not { CanExclude: true } || OpenMapPane() is not { } pane)
+        if (node is not { CanExclude: true } || OpenMapPane(activate: false) is not { } pane)
         {
             return;
         }

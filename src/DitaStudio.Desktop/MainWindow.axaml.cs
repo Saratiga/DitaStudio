@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Styling;
@@ -64,6 +65,7 @@ public partial class MainWindow : Window
 
         AddHandler(KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
         MapTreeView.AddHandler(PointerPressedEvent, OnMapPointerPressed, RoutingStrategies.Tunnel);
+        MapTreeView.AddHandler(DoubleTappedEvent, OnMapTreeDoubleTapped, RoutingStrategies.Bubble, handledEventsToo: true);
         MapTreeView.AddHandler(PointerMovedEvent, OnMapPointerMoved, RoutingStrategies.Tunnel);
         MapTreeView.AddHandler(DragDrop.DragOverEvent, OnMapDragOver);
         MapTreeView.AddHandler(DragDrop.DropEvent, OnMapDrop);
@@ -173,8 +175,45 @@ public partial class MainWindow : Window
     private void OnProjectTreeDoubleTapped(object? sender, TappedEventArgs e) =>
         ViewModel.ProjectPanel.OpenSelectedFileCommand.Execute(null);
 
-    private void OnMapTreeDoubleTapped(object? sender, TappedEventArgs e) =>
+    /// <summary>
+    /// Двойной щелчок по строке карты открывает её топик — и у строки с дочерними тоже: обработчик
+    /// стоит в туннеле, раньше самой строки дерева, которая иначе забирает двойной щелчок себе
+    /// (раскрывает или сворачивает ветку). Ветка раскрывается стрелкой и клавишами. Щелчок по флажку
+    /// «публиковать» и по стрелке раскрытия ничего не открывает.
+    /// </summary>
+    private void OnMapTreeDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (e.Source is not Visual source)
+        {
+            return;
+        }
+
+        if (source.FindAncestorOfType<CheckBox>(includeSelf: true) is not null)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        if (source.FindAncestorOfType<ToggleButton>(includeSelf: true) is not null || MapNodeAt(source) is not { } node)
+        {
+            return;
+        }
+
+        ViewModel.Map.SelectedNode = node;
         ViewModel.Map.OpenSelectedCommand.Execute(null);
+        e.Handled = true;
+
+        // Строка дерева сама сворачивает или раскрывает ветку по двойному щелчку — возвращаем
+        // состояние, которое было в момент второго нажатия.
+        if (_doubleClickExpansion is { } saved && ReferenceEquals(saved.Node, node))
+        {
+            node.IsExpanded = saved.Expanded;
+        }
+
+        _doubleClickExpansion = null;
+    }
+
+    private (MapTreeNode Node, bool Expanded)? _doubleClickExpansion;
 
     private void OnToggleEnterSuggestions(object? sender, RoutedEventArgs e) =>
         Authoring.AuthorView.EnterSuggestionsEnabled = EnterSuggestionsMenu.IsChecked;
@@ -227,6 +266,15 @@ public partial class MainWindow : Window
 
     private void OnMapPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+        // Нажатие на флажок — не начало перетаскивания строки.
+        if ((e.Source as Visual)?.FindAncestorOfType<CheckBox>(includeSelf: true) is not null)
+        {
+            _dragCandidate = null;
+            return;
+        }
+
+        _doubleClickExpansion = e.ClickCount == 2 && MapNodeAt(e.Source) is { } pressed ? (pressed, pressed.IsExpanded) : null;
+
         if (e.GetCurrentPoint(MapTreeView).Properties.IsLeftButtonPressed)
         {
             _dragStart = e.GetPosition(MapTreeView);

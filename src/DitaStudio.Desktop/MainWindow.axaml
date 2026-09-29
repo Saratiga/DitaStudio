@@ -318,8 +318,7 @@
                         </WrapPanel>
                         <TreeView Name="MapTreeView" DragDrop.AllowDrop="True"
                                   ItemsSource="{Binding Map.Tree}"
-                                  SelectedItem="{Binding Map.SelectedNode}"
-                                  DoubleTapped="OnMapTreeDoubleTapped">
+                                  SelectedItem="{Binding Map.SelectedNode}">
                             <TreeView.ContextMenu>
                                 <ContextMenu Name="MapContextMenu">
                                     <MenuItem Header="Открыть" Command="{Binding Map.OpenSelectedCommand}" />
