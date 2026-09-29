@@ -643,6 +643,57 @@ public sealed class AuthorViewTests
         window.Close();
     }
 
+    /// <summary>В2: размер, цвет и выравнивание контейнера (note, section, div) — щелчок по рамке и кнопка;
+    /// класс встаёт на сам контейнер, а абзацы внутри в «Авторе» показывают его оформление.</summary>
+    [AvaloniaFact]
+    public void TextFormat_OnContainer_SetsClassOnContainer_AndChildrenShowIt()
+    {
+        var (window, author, document, _) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody>" +
+            "<note><p>Первый в заметке</p><p>Второй в заметке</p></note>" +
+            "<section><title>Раздел</title><p>В разделе</p></section>" +
+            "<p>Снаружи</p></conbody></concept>");
+        var note = document.Root.DescendantsAndSelf().First(n => n.Name == "note");
+        var section = document.Root.DescendantsAndSelf().First(n => n.Name == "section");
+        var inside = note.ElementChildren().ToList();
+        var outside = document.Root.FirstElement("conbody")!.ElementChildren().Last();
+
+        // Щелчок по рамке выбирает контейнер (у него нет своего редактора).
+        var frame = (Avalonia.Controls.Border)author.ViewFor(note)!;
+        var point = frame.TranslatePoint(new Point(1, frame.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(point, Avalonia.Input.MouseButton.Left);
+        window.MouseUp(point, Avalonia.Input.MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(note, author.CurrentNode);
+
+        Assert.True(author.Surface.ApplyTextFormat(Core.Publishing.TextFormatting.SizePrefix, "size-18"));
+        Assert.True(author.Surface.ApplyTextFormat(Core.Publishing.TextFormatting.ColorPrefix, "color-red"));
+        Assert.True(author.Surface.SetCurrentBlockFormat(Core.Publishing.TextFormatting.AlignPrefix, "align-center"));
+        author.FlushPendingEdits();
+        Dispatcher.UIThread.RunJobs();
+        var classes = note.GetAttribute("outputclass") ?? string.Empty;
+        Assert.Contains("size-18", classes);
+        Assert.Contains("color-red", classes);
+        Assert.Contains("align-center", classes);
+        Assert.All(inside, p => Assert.Null(p.GetAttribute("outputclass")));
+        Assert.All(inside, p =>
+        {
+            var editor = author.EditorFor(p)!;
+            Assert.Equal(24, editor.FontSize);
+            Assert.Equal(Avalonia.Layout.HorizontalAlignment.Center, editor.HorizontalAlignment);
+        });
+        Assert.NotEqual(24, author.EditorFor(outside)!.FontSize);
+
+        // Раздел — так же; снять размер с контейнера можно тем же списком.
+        author.CurrentNode = section;
+        Assert.True(author.Surface.ApplyTextFormat(Core.Publishing.TextFormatting.SizePrefix, "size-14"));
+        Assert.Equal("size-14", section.GetAttribute("outputclass"));
+        author.CurrentNode = note;
+        Assert.True(author.Surface.ApplyTextFormat(Core.Publishing.TextFormatting.SizePrefix, null));
+        Assert.DoesNotContain("size-", note.GetAttribute("outputclass") ?? string.Empty);
+        window.Close();
+    }
+
     [AvaloniaFact]
     public void EnterAtEnd_ShowsSuggestions_DefaultSplits_FilterInserts()
     {

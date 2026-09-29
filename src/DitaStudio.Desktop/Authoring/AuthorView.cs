@@ -550,9 +550,16 @@ public sealed partial class AuthorView : UserControl
 
         public override bool ApplyTextFormat(string prefix, string? token)
         {
-            if (CurrentNode is null || _view.ActiveEditorFor(CurrentNode) is not { } editor)
+            if (CurrentNode is null)
             {
                 return false;
+            }
+
+            // Контейнер (note, section, div…), выбранный щелчком по рамке: у него нет своего текста —
+            // класс ставится на сам контейнер и действует на всё внутри.
+            if (_view.ActiveEditorFor(CurrentNode) is not { } editor)
+            {
+                return SetCurrentBlockFormat(prefix, token);
             }
 
             var selection = editor.TextArea.Selection;

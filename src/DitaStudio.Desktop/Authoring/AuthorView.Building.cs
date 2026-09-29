@@ -400,21 +400,38 @@ public sealed partial class AuthorView
     /// целиком — AvaloniaEdit не выравнивает строки внутри себя, поэтому короткий текст (заголовок,
     /// подпись, ячейка) стоит как в публикации, а у длинного абзаца видна только сторона.
     /// </summary>
+    private static DitaNode FormatSource(DitaNode node, Func<DitaNode, bool> has)
+    {
+        for (var current = node; current is not null; current = current.Parent)
+        {
+            if (has(current))
+            {
+                return current;
+            }
+        }
+
+        return node;
+    }
+
     internal static void ApplyBlockFormat(BlockEditor editor, DitaNode node)
     {
-        editor.HorizontalAlignment = TextFormatting.AlignmentOf(node) switch
+        // Оформление контейнера (note, section, div) действует на всё внутри: берётся у ближайшего предка с классом.
+        var aligned = FormatSource(node, n => TextFormatting.AlignmentOf(n) is not null);
+        var sized = FormatSource(node, n => TextFormatting.SizeOf(n) is not null);
+        var colored = FormatSource(node, n => TextFormatting.ColorOf(n) is not null);
+        editor.HorizontalAlignment = TextFormatting.AlignmentOf(aligned) switch
         {
             "center" => HorizontalAlignment.Center,
             "right" => HorizontalAlignment.Right,
             _ => HorizontalAlignment.Stretch
         };
         editor.MinWidth = editor.HorizontalAlignment == HorizontalAlignment.Stretch ? 0 : 40;
-        if (TextFormatting.SizeOf(node) is { } points)
+        if (TextFormatting.SizeOf(sized) is { } points)
         {
             editor.FontSize = points * 4.0 / 3;
         }
 
-        if (TextFormatting.ColorOf(node) is { } hex)
+        if (TextFormatting.ColorOf(colored) is { } hex)
         {
             // Цвет текста редактора привязан к ресурсу темы — своя привязка его вытесняет.
             editor.Bind(ForegroundProperty, new Avalonia.Data.Binding { Source = new SolidColorBrush(Color.Parse(hex)) });
