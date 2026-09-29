@@ -235,29 +235,97 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
-    [AvaloniaFact(Skip = "В1 (этап 2 плана docs/REVIEW_PLAN_2.md): после «Добавить раздел» выделение теряется, команды без файла молчат")]
-    public async Task MapMenu_AddedSection_IsSelected_AndCommandsWithoutFileExplainThemselves()
+    [AvaloniaFact]
+    public async Task MapMenu_AddedSection_IsSelected_AndFileCommandsAreUnavailable()
     {
         var (window, vm) = await OpenAsync();
         static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
-        vm.Map.SelectedNode = vm.Map.Tree.SelectMany(All).First(n => n.Item.TargetPath?.EndsWith("settings.dita") == true);
+        var topic = vm.Map.Tree.SelectMany(All).First(n => n.Item.TargetPath?.EndsWith("settings.dita") == true);
+        vm.Map.SelectedNode = topic;
+        Assert.True(vm.Map.SelectedHasFile);
+        Assert.True(vm.Map.DeleteFileCommand.CanExecute(null));
+        Assert.True(vm.Map.FindReferencesCommand.CanExecute(null));
+
         vm.Map.AddTopicheadCommand.Execute(null);
 
-        // Новая строка выделена: следующая команда из меню действует на неё.
+        // Новая строка выделена: следующая команда меню («Убрать из карты», «Дублировать») действует на неё.
         Assert.Equal("topichead", vm.Map.SelectedNode?.Item.Node.Name);
 
-        // Команды, которым нужен файл, на разделе либо недоступны, либо объясняют отказ.
-        foreach (var command in new System.Windows.Input.ICommand[] { vm.Map.FindReferencesCommand, vm.Map.RenameFileCommand, vm.Map.DeleteFileCommand })
-        {
-            vm.StatusText = string.Empty;
-            if (command.CanExecute(null))
-            {
-                command.Execute(null);
-                Dispatcher.UIThread.RunJobs();
-                Assert.NotEmpty(vm.StatusText);
-            }
-        }
+        // У раздела нет файла: команды про файл недоступны, а не «молча ничего не делают».
+        Assert.False(vm.Map.SelectedHasFile);
+        Assert.False(vm.Map.FindReferencesCommand.CanExecute(null));
+        Assert.False(vm.Map.RenameFileCommand.CanExecute(null));
+        Assert.False(vm.Map.DeleteFileCommand.CanExecute(null));
+        Assert.True(vm.Map.DeleteCommand.CanExecute(null), "убрать раздел из карты можно");
 
+        // Если такую команду всё же запустили (не из меню) — сообщение, а не тишина.
+        vm.StatusText = string.Empty;
+        await vm.Map.DeleteFileCommand.ExecuteAsync(null);
+        Assert.Contains("нет файла", vm.StatusText);
+
+        // Корень карты не переставляется и не удаляется.
+        vm.Map.SelectedNode = vm.Map.Tree[0];
+        Assert.False(vm.Map.DeleteCommand.CanExecute(null));
+        Assert.False(vm.Map.MoveUpCommand.CanExecute(null));
+        Assert.False(vm.Map.CutCommand.CanExecute(null));
+        Assert.False(vm.Map.DuplicateCommand.CanExecute(null));
+
+        // Без выбранной строки то же самое.
+        vm.Map.SelectedNode = null;
+        Assert.False(vm.Map.DeleteCommand.CanExecute(null));
+        Assert.False(vm.Map.DeleteFileCommand.CanExecute(null));
+        window.Close();
+    }
+
+    /// <summary>Сценарий из замечания: «+ Раздел», правый щелчок по «Новый раздел», пункты контекстного меню.</summary>
+    [AvaloniaFact]
+    public async Task MapMenu_NewSection_RightClick_ShowsOnlyApplicableItems_AndRemovesFromMap()
+    {
+        var (window, vm) = await OpenAsync();
+        window.Width = 1200;
+        window.Height = 900;
+        static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
+        int Heads() => vm.Map.Tree.SelectMany(All).Count(n => n.Item.Node.Name == "topichead" && n.Title == "Новый раздел");
+        var before = Heads();
+
+        MapRows(window); // вкладка «Карта»
+        var add = window.GetLogicalDescendants().OfType<Button>().First(x => x.Content as string == "+ Раздел");
+        Click(window, Center(add, window)); // настоящий щелчок по кнопке «+ Раздел»
+        Assert.Equal(before + 1, Heads());
+
+        var menu = window.GetLogicalDescendants().OfType<TreeView>().First(t => t.Name == "MapTreeView").ContextMenu!;
+        bool Visible(string header) => menu.Items.OfType<MenuItem>().First(i => i.Header as string == header).IsVisible;
+        IEnumerable<string> VisibleHeaders() => menu.Items.OfType<MenuItem>().Where(i => i.IsVisible).Select(i => (string)i.Header!);
+
+        var row = MapRows(window).First(r => (r.DataContext as MapTreeNode)?.Title == "Новый раздел");
+        var point = row.TranslatePoint(new Point(100, 10), window)!.Value;
+        window.MouseDown(point, Avalonia.Input.MouseButton.Right);
+        window.MouseUp(point, Avalonia.Input.MouseButton.Right);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("Новый раздел", vm.Map.SelectedNode?.Title);
+        Assert.False(Visible("Удалить файл…"), "у раздела нет файла — пункта «Удалить файл…» нет");
+        Assert.False(Visible("Найти ссылки на топик"));
+        Assert.False(Visible("Переименовать / переместить файл…"));
+        Assert.All(new[] { "Убрать из карты", "Дублировать", "Вырезать", "Копировать", "Добавить раздел" }, h => Assert.True(Visible(h), h));
+
+        // «Убрать из карты» — с подтверждением.
+        var remove = menu.Items.OfType<MenuItem>().First(i => i.Header as string == "Убрать из карты");
+        remove.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        var confirm = Assert.Single(window.OwnedWindows);
+        confirm.GetLogicalDescendants().OfType<Button>().First(x => x.Content as string == "Да")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(before, Heads());
+
+        // У строки-топика пункты про файл на месте.
+        var topicRow = MapRows(window).First(r => (r.DataContext as MapTreeNode)?.Item.TargetPath?.EndsWith("settings.dita") == true);
+        var topicPoint = topicRow.TranslatePoint(new Point(100, 10), window)!.Value;
+        window.MouseDown(topicPoint, Avalonia.Input.MouseButton.Right);
+        window.MouseUp(topicPoint, Avalonia.Input.MouseButton.Right);
+        Dispatcher.UIThread.RunJobs();
+        Assert.All(new[] { "Удалить файл…", "Найти ссылки на топик", "Переименовать / переместить файл…" }, h => Assert.True(Visible(h), h));
         window.Close();
     }
 

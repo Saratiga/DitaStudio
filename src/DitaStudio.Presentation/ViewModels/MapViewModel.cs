@@ -57,7 +57,36 @@ public partial class MapViewModel : ObservableObject
         {
             _main.StatusText = $"{value.Item.ElementName}: {value.Title}{(value.IsBroken ? " — файл не найден" : string.Empty)}";
         }
+
+        // Что доступно строке, зависит от её вида: у раздела нет файла, у корня карты нет родителя.
+        OnPropertyChanged(nameof(SelectedHasFile));
+        OnPropertyChanged(nameof(HasStructureSelection));
+        FindReferencesCommand.NotifyCanExecuteChanged();
+        RenameFileCommand.NotifyCanExecuteChanged();
+        DeleteFileCommand.NotifyCanExecuteChanged();
+        MoveUpCommand.NotifyCanExecuteChanged();
+        MoveDownCommand.NotifyCanExecuteChanged();
+        DeleteCommand.NotifyCanExecuteChanged();
+        DuplicateCommand.NotifyCanExecuteChanged();
+        IndentCommand.NotifyCanExecuteChanged();
+        OutdentCommand.NotifyCanExecuteChanged();
+        CopyCommand.NotifyCanExecuteChanged();
+        CutCommand.NotifyCanExecuteChanged();
     }
+
+    /// <summary>У выбранной строки есть файл проекта (топик, вложенная карта). У раздела
+    /// (<c>topichead</c>), группы, ключа без файла и битой ссылки его нет — команды «Найти ссылки»,
+    /// «Переименовать / переместить файл», «Удалить файл» им недоступны, а раздел убирается из карты
+    /// командой «Убрать из карты».</summary>
+    public bool SelectedHasFile => SelectedFile is not null;
+
+    /// <summary>Выбрана строка, которую можно переставить, скопировать, дублировать и убрать:
+    /// любая, кроме корня карты.</summary>
+    public bool HasStructureSelection => SelectedNode is { IsRoot: false };
+
+    /// <summary>Выбирает в дереве строку по узлу документа (после перестроения дерева).</summary>
+    private void Select(DitaNode node) =>
+        SelectedNode = Tree.SelectMany(Flatten).FirstOrDefault(n => ReferenceEquals(n.Item.Node, node));
 
     // ------------------------------------------------------------ дерево
 
@@ -255,6 +284,7 @@ public partial class MapViewModel : ObservableObject
         topichead.Add(meta);
         InsertAtSelection(pane, topichead);
         AfterMapEdit(pane);
+        Select(topichead); // следующая команда меню («Убрать из карты», «Дублировать») действует на новый раздел
     }
 
     /// <summary>
@@ -302,13 +332,13 @@ public partial class MapViewModel : ObservableObject
         AfterMapEdit(pane);
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasStructureSelection))]
     private void MoveUp() => StructureOperation(EditCommands.MoveUp, "Перемещение в карте");
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasStructureSelection))]
     private void MoveDown() => StructureOperation(EditCommands.MoveDown, "Перемещение в карте");
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasStructureSelection))]
     private async Task Delete()
     {
         if (SelectedNode?.Item is not { } item ||
@@ -320,7 +350,7 @@ public partial class MapViewModel : ObservableObject
         StructureOperation(EditCommands.Delete, "Удаление из карты");
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasStructureSelection))]
     private void Duplicate() => StructureOperation(node =>
     {
         if (node.Parent is null || node.Name is "map" or "bookmap")
@@ -332,7 +362,7 @@ public partial class MapViewModel : ObservableObject
         return true;
     }, "Дублирование в карте");
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasStructureSelection))]
     private void Indent() => StructureOperation(node =>
     {
         var previous = EditCommands.PreviousElement(node);
@@ -346,7 +376,7 @@ public partial class MapViewModel : ObservableObject
         return true;
     }, "Вложение в карте");
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasStructureSelection))]
     private void Outdent() => StructureOperation(node =>
     {
         var parent = node.Parent;
@@ -382,7 +412,7 @@ public partial class MapViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasStructureSelection))]
     private void Copy()
     {
         if (SelectedNode?.Item.Node is not { Parent: not null } node || node.Name is "map" or "bookmap" || SelectedMap is not { } map)
@@ -395,7 +425,7 @@ public partial class MapViewModel : ObservableObject
         _main.StatusText = $"Скопировано: {SelectedNode.Title}";
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasStructureSelection))]
     private void Cut()
     {
         Copy();
@@ -457,11 +487,12 @@ public partial class MapViewModel : ObservableObject
     }
 
     /// <summary>Все ссылки проекта на файл выбранной строки — на вкладку «Поиск».</summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(SelectedHasFile))]
     private void FindReferences()
     {
         if (_main.Project is not { } project || SelectedNode?.Item.TargetPath is not { } target)
         {
+            NoFileMessage();
             return;
         }
 
@@ -476,7 +507,14 @@ public partial class MapViewModel : ObservableObject
         _main.StatusText = $"Ссылок на {Path.GetFileName(target)}: {hits.Count}";
     }
 
-    [RelayCommand]
+    /// <summary>Команда, которой нужен файл, запущена на строке без файла (не из меню — там она
+    /// недоступна): объясняем, а не молчим.</summary>
+    private void NoFileMessage() =>
+        _main.StatusText = SelectedNode is null
+            ? "Выберите строку карты."
+            : $"У строки «{SelectedNode.Title}» нет файла. Чтобы убрать её из карты, выберите «Убрать из карты».";
+
+    [RelayCommand(CanExecute = nameof(SelectedHasFile))]
     private async Task RenameFile()
     {
         if (SelectedFile is { } file)
@@ -487,11 +525,12 @@ public partial class MapViewModel : ObservableObject
     }
 
     /// <summary>Удаляет файл топика с диска и все строки этой карты, которые на него ссылаются.</summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(SelectedHasFile))]
     private async Task DeleteFile()
     {
         if (_main.Project is not { } project || SelectedFile is not { } file || SelectedMap is not { } map)
         {
+            NoFileMessage();
             return;
         }
 
