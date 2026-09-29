@@ -4,7 +4,9 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
+using DitaStudio.Core.Editing;
 using DitaStudio.Desktop.Services;
 using DitaStudio.Desktop.Preview;
 using DitaStudio.Desktop.Views;
@@ -70,6 +72,9 @@ public partial class MainWindow : Window
         MapTreeView.AddHandler(DragDrop.DragOverEvent, OnMapDragOver);
         MapTreeView.AddHandler(DragDrop.DropEvent, OnMapDrop);
         MapTreeView.AddHandler(Button.ClickEvent, OnMapPublishClick);
+        MapTreeView.AddHandler(DragDrop.DragLeaveEvent, OnMapDragLeave);
+        ViewModel.Map.Tree.CollectionChanged += OnMapTreeCollectionChanged;
+        ViewModel.Map.RevealRequested += OnMapRevealRequested;
         BuildColorPalette();
     }
 
@@ -312,22 +317,167 @@ public partial class MainWindow : Window
         finally
         {
             _dragged = null;
+            EndMapDrag();
         }
     }
 
-    private static void OnMapDragOver(object? sender, DragEventArgs e) =>
-        e.DragEffects = e.DataTransfer.Contains(MapNodeFormat) ? DragDropEffects.Move : DragDropEffects.None;
+    private void OnMapDragOver(object? sender, DragEventArgs e)
+    {
+        if (!e.DataTransfer.Contains(MapNodeFormat) || _dragged is not { } dragged)
+        {
+            e.DragEffects = DragDropEffects.None;
+            return;
+        }
+
+        UpdateMapAutoScroll(e.GetPosition(MapTreeView).Y);
+        if (DropTargetAt(e) is not { } drop)
+        {
+            ShowDropIndicator(null, default);
+            e.DragEffects = DragDropEffects.None;
+            return;
+        }
+
+        if (!MapViewModel.CanDrop(dragged, drop.Node, drop.Position, out var reason))
+        {
+            ShowDropIndicator(null, default);
+            e.DragEffects = DragDropEffects.None;
+            ViewModel.StatusText = reason;
+            return;
+        }
+
+        ShowDropIndicator(drop.Item, drop.Position);
+        e.DragEffects = DragDropEffects.Move;
+        ViewModel.StatusText = drop.Position switch
+        {
+            DropPosition.Before => $"Перед «{drop.Node.Title}»",
+            DropPosition.After => $"После «{drop.Node.Title}»",
+            _ => $"Внутрь «{drop.Node.Title}»"
+        };
+    }
 
     private void OnMapDrop(object? sender, DragEventArgs e)
     {
-        if (!e.DataTransfer.Contains(MapNodeFormat) || _dragged is not { } dragged ||
-            (e.Source as Visual)?.FindAncestorOfType<TreeViewItem>(includeSelf: true) is not { DataContext: MapTreeNode target } targetItem)
+        try
+        {
+            if (!e.DataTransfer.Contains(MapNodeFormat) || _dragged is not { } dragged || DropTargetAt(e) is not { } drop)
+            {
+                return;
+            }
+
+            ViewModel.Map.MoveByDrag(dragged, drop.Node, drop.Position);
+        }
+        finally
+        {
+            EndMapDrag();
+        }
+    }
+
+    private void OnMapDragLeave(object? sender, DragEventArgs e) => ShowDropIndicator(null, default);
+
+    /// <summary>Строка под указателем и зона в ней (перед / после / внутрь); null — указатель не над строкой.</summary>
+    private (TreeViewItem Item, MapTreeNode Node, DropPosition Position)? DropTargetAt(DragEventArgs e)
+    {
+        if ((e.Source as Visual)?.FindAncestorOfType<TreeViewItem>(includeSelf: true) is not { DataContext: MapTreeNode node } item)
+        {
+            return null;
+        }
+
+        // Высота самой строки — «корень» шаблона; у TreeViewItem она включает вложенные строки.
+        var header = item.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => b.Name == "PART_LayoutRoot");
+        var y = header is null ? e.GetPosition(item).Y : e.GetPosition(header).Y;
+        var height = header?.Bounds.Height ?? 24;
+        return (item, node, MapDropZones.PositionAt(y, height));
+    }
+
+    private TreeViewItem? _dropIndicatorItem;
+    private static readonly string[] DropClasses = { "dropBefore", "dropAfter", "dropChild" };
+
+    private void ShowDropIndicator(TreeViewItem? item, DropPosition position)
+    {
+        if (_dropIndicatorItem is not null && !ReferenceEquals(_dropIndicatorItem, item))
+        {
+            _dropIndicatorItem.Classes.RemoveAll(DropClasses);
+        }
+
+        _dropIndicatorItem = item;
+        if (item is null)
         {
             return;
         }
 
-        // Высота TreeViewItem включает раскрытые вложенные — сравниваем с высотой строки заголовка.
-        var before = e.GetPosition(targetItem).Y < 12;
-        ViewModel.Map.MoveByDrag(dragged, target, before);
+        item.Classes.RemoveAll(DropClasses);
+        item.Classes.Add(position switch
+        {
+            DropPosition.Before => "dropBefore",
+            DropPosition.After => "dropAfter",
+            _ => "dropChild"
+        });
     }
+
+    // ------------------------------------------------ прокрутка списка карты
+
+    private DispatcherTimer? _mapAutoScrollTimer;
+    private double _mapAutoScrollStep;
+
+    private ScrollViewer? MapScroll => MapTreeView.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+
+    /// <summary>У верхнего и нижнего края списка во время перетаскивания — плавная прокрутка (по таймеру,
+    /// чтобы шла и когда указатель неподвижен); в остальной области список стоит на месте.</summary>
+    private void UpdateMapAutoScroll(double y)
+    {
+        _mapAutoScrollStep = MapDropZones.AutoScrollStep(y, MapTreeView.Bounds.Height);
+        if (_mapAutoScrollStep == 0)
+        {
+            _mapAutoScrollTimer?.Stop();
+            return;
+        }
+
+        _mapAutoScrollTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(30), DispatcherPriority.Input, (_, _) =>
+        {
+            if (MapScroll is { } scroll)
+            {
+                var offset = Math.Clamp(scroll.Offset.Y + _mapAutoScrollStep, 0, Math.Max(0, scroll.Extent.Height - scroll.Viewport.Height));
+                scroll.Offset = new Vector(scroll.Offset.X, offset);
+            }
+        });
+        _mapAutoScrollTimer.Start();
+    }
+
+    private void EndMapDrag()
+    {
+        _mapAutoScrollTimer?.Stop();
+        _mapAutoScrollStep = 0;
+        ShowDropIndicator(null, default);
+    }
+
+    // Список карты пересоздаётся после каждой правки (Clear + Add) — полоса прокрутки при этом
+    // сбрасывалась бы вверх и «уезжала» за перенесённой строкой. Запоминаем смещение и возвращаем.
+    private Vector? _mapScrollBeforeRebuild;
+
+    private void OnMapTreeCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset)
+        {
+            _mapScrollBeforeRebuild = MapScroll?.Offset;
+        }
+        else if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add && _mapScrollBeforeRebuild is { } offset)
+        {
+            _mapScrollBeforeRebuild = null;
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (MapScroll is { } scroll)
+                {
+                    scroll.Offset = offset;
+                }
+            }, DispatcherPriority.Loaded);
+        }
+    }
+
+    /// <summary>Показывает строку, добавленную командой (она могла оказаться за краем списка).</summary>
+    private void OnMapRevealRequested(MapTreeNode node) =>
+        Dispatcher.UIThread.Post(() =>
+        {
+            MapTreeView.GetVisualDescendants().OfType<TreeViewItem>()
+                .FirstOrDefault(i => ReferenceEquals(i.DataContext, node))?.BringIntoView();
+        }, DispatcherPriority.Loaded);
 }

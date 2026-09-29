@@ -316,7 +316,7 @@
                             <Button Content="✕" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.DeleteCommand}" />
                             <Button Content="Таблица соответствий…" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.EditRelTableCommand}" />
                         </WrapPanel>
-                        <TreeView Name="MapTreeView" DragDrop.AllowDrop="True"
+                        <TreeView Name="MapTreeView" DragDrop.AllowDrop="True" AutoScrollToSelectedItem="False"
                                   ItemsSource="{Binding Map.Tree}"
                                   SelectedItem="{Binding Map.SelectedNode}">
                             <TreeView.ContextMenu>

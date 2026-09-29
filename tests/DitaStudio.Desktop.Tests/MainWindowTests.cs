@@ -7,6 +7,7 @@ using Avalonia.LogicalTree;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Desktop.Views;
 using DitaStudio.Presentation.ViewModels;
@@ -326,6 +327,126 @@ public sealed class MainWindowTests : IDisposable
         window.MouseUp(topicPoint, Avalonia.Input.MouseButton.Right);
         Dispatcher.UIThread.RunJobs();
         Assert.All(new[] { "Удалить файл…", "Найти ссылки на топик", "Переименовать / переместить файл…" }, h => Assert.True(Visible(h), h));
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task MapDrag_IntoParent_MakesChild_KeepsSelection_IsOneUndoStep_AndRejectsOwnBranch()
+    {
+        var (window, vm) = await OpenAsync();
+        var map = Path.Combine(_project, "guide.ditamap");
+        static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
+        MapTreeNode Row(string file) => vm.Map.Tree.SelectMany(All).First(n => n.Item.TargetPath?.EndsWith(file) == true);
+        DitaNode MapRoot() => vm.Documents.Tabs.Single(t => t.FullPath == map).Pane.Document.Root;
+        DitaNode Node(string file) => MapRoot().DescendantsAndSelf().First(n => n.GetAttribute("href")?.EndsWith(file) == true);
+
+        vm.OpenDocument!(map); // правки карты идут в её вкладку
+        var settings = Row("settings.dita");
+        var about = Row("about.dita");
+        Assert.NotSame(Node("settings.dita").Parent, Node("about.dita"));
+
+        // Перетащить на середину строки — стать дочерним.
+        Assert.True(MapViewModel.CanDrop(settings, about, DropPosition.Child, out _));
+        vm.Map.MoveByDrag(settings, about, DropPosition.Child);
+        Assert.Same(Node("about.dita"), Node("settings.dita").Parent);
+        Assert.Same(Node("settings.dita"), Node("about.dita").ElementChildren().Last());
+        Assert.Equal("settings.dita", Path.GetFileName(vm.Map.SelectedNode?.Item.TargetPath)); // перенесённая строка остаётся выделенной
+        Assert.True(Row("about.dita").IsExpanded, "цель раскрыта, чтобы перенесённая строка была видна");
+
+        // Один шаг отмены возвращает всё как было.
+        vm.Insert.UndoCommand.Execute(null); // Ctrl+Alt+Z: дерево карты обновляется вместе с документом
+        Assert.NotSame(Node("about.dita"), Node("settings.dita").Parent);
+        Assert.Same(Node("settings.dita"), Row("settings.dita").Item.Node);
+
+        // Перед и после — на уровень цели, из другой ветки.
+        vm.Map.MoveByDrag(Row("settings.dita"), Row("install.dita"), DropPosition.Before);
+        Assert.Same(Node("install.dita").Parent, Node("settings.dita").Parent);
+        Assert.True(Node("settings.dita").IndexInParent < Node("install.dita").IndexInParent);
+
+        // В собственную ветку нельзя: сообщение, карта не менялась.
+        var parentRow = vm.Map.Tree.SelectMany(All).First(n => n.Children.Count > 0 && n.Item.TargetPath is not null && !n.IsRoot);
+        var child = parentRow.Children[0];
+        Assert.False(MapViewModel.CanDrop(parentRow, child, DropPosition.Child, out var reason));
+        Assert.Contains("собственную ветку", reason);
+        var before = MapRoot().ToString();
+        vm.Map.MoveByDrag(parentRow, child, DropPosition.Child);
+        Assert.Equal(before, MapRoot().ToString());
+        Assert.Contains("собственную ветку", vm.StatusText);
+        window.Close();
+    }
+
+    /// <summary>Строка вложенной карты (mapref) правится в её собственном файле, а не в открытой карте.</summary>
+    [AvaloniaFact]
+    public async Task MapNested_EditsGoToTheNestedMapFile()
+    {
+        File.WriteAllText(Path.Combine(_project, "sub.ditamap"),
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<map><title>Вложенная</title>" +
+            "<topicref href=\"tasks/install.dita\"/><topichead><topicmeta><navtitle>Внутри</navtitle></topicmeta></topichead></map>");
+        File.WriteAllText(Path.Combine(_project, "outer.ditamap"),
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<map><title>Внешняя</title><topicref href=\"concepts/about.dita\"/><mapref href=\"sub.ditamap\"/></map>");
+        var (window, vm) = await OpenAsync();
+        var outer = Path.Combine(_project, "outer.ditamap");
+        var sub = Path.Combine(_project, "sub.ditamap");
+        vm.Map.SelectedMap = vm.Map.Maps.First(m => m.FullPath == outer);
+        Dispatcher.UIThread.RunJobs();
+        static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
+        var innerHead = vm.Map.Tree.SelectMany(All).First(n => n.Title == "Внутри");
+        Assert.Equal(sub, Path.GetFullPath(innerHead.Item.MapPath));
+
+        // Убрать вложенный раздел: он исчезает из вложенной карты, внешняя карта не тронута.
+        vm.Map.SelectedNode = innerHead;
+        var deleting = vm.Map.DeleteCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        window.OwnedWindows[0].GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Да")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        await deleting;
+
+        var subTab = vm.Documents.Tabs.Single(t => Path.GetFullPath(t.FullPath) == sub);
+        Assert.DoesNotContain(subTab.Pane.Document.Root.DescendantsAndSelf(), n => n.Name == "topichead");
+        Assert.True(subTab.Pane.Document.IsDirty, "правка записана во вкладку вложенной карты");
+        Assert.DoesNotContain(vm.Map.Tree.SelectMany(All), n => n.Title == "Внутри");
+        Assert.DoesNotContain(vm.Documents.Tabs, t => Path.GetFullPath(t.FullPath) == outer && t.Pane.Document.IsDirty);
+
+        // Добавить раздел, выделив строку вложенной карты: он появляется во вложенной карте.
+        vm.Map.SelectedNode = vm.Map.Tree.SelectMany(All).First(n => n.Item.TargetPath?.EndsWith("install.dita") == true);
+        vm.Map.AddTopicheadCommand.Execute(null);
+        Assert.Contains(subTab.Pane.Document.Root.ElementChildren(), n => n.Name == "topichead");
+        Assert.Equal("topichead", vm.Map.SelectedNode?.Item.Node.Name);
+        Assert.Equal(sub, Path.GetFullPath(vm.Map.SelectedNode!.Item.MapPath));
+        window.Close();
+    }
+
+    /// <summary>Длинная карта: правка (перенос, флажок) не сдвигает полосу прокрутки — список не «убегает» за строкой.</summary>
+    [AvaloniaFact]
+    public async Task MapTree_LongMap_EditKeepsScrollPosition()
+    {
+        var rows = string.Concat(Enumerable.Range(1, 90).Select(i => $"<topicref href=\"concepts/about.dita\" navtitle=\"Строка {i}\"/>"));
+        File.WriteAllText(Path.Combine(_project, "long.ditamap"),
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<map><title>Длинная</title>" + rows + "</map>");
+        var (window, vm) = await OpenAsync();
+        window.Width = 1200;
+        window.Height = 700;
+        vm.Map.SelectedMap = vm.Map.Maps.First(m => Path.GetFileName(m.FullPath) == "long.ditamap");
+        MapRows(window);
+        Dispatcher.UIThread.RunJobs();
+        var scroll = window.GetLogicalDescendants().OfType<TreeView>().First(t => t.Name == "MapTreeView")
+            .GetVisualDescendants().OfType<ScrollViewer>().First();
+        Assert.True(scroll.Extent.Height > scroll.Viewport.Height * 2, "карта длиннее окна");
+
+        scroll.Offset = new Vector(0, 1500);
+        Dispatcher.UIThread.RunJobs();
+        var offset = scroll.Offset.Y;
+        Assert.InRange(offset, 1400, 1600);
+
+        static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
+        var last = vm.Map.Tree.SelectMany(All).Where(n => !n.IsRoot).ToList();
+        // Строка из нижней части списка поднимается высоко вверх, за край видимой области.
+        vm.Map.MoveByDrag(last[80], last[10], Core.Editing.DropPosition.Before);
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.InRange(scroll.Offset.Y, offset - 2, offset + 2);
         window.Close();
     }
 

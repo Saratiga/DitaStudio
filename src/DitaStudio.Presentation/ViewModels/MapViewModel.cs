@@ -84,9 +84,18 @@ public partial class MapViewModel : ObservableObject
     /// любая, кроме корня карты.</summary>
     public bool HasStructureSelection => SelectedNode is { IsRoot: false };
 
+    /// <summary>Окну нужно показать строку (она может быть за краем прокрутки): после добавления новой строки.</summary>
+    public event Action<MapTreeNode>? RevealRequested;
+
     /// <summary>Выбирает в дереве строку по узлу документа (после перестроения дерева).</summary>
-    private void Select(DitaNode node) =>
+    private void Select(DitaNode node, bool reveal = false)
+    {
         SelectedNode = Tree.SelectMany(Flatten).FirstOrDefault(n => ReferenceEquals(n.Item.Node, node));
+        if (reveal && SelectedNode is { } selected)
+        {
+            RevealRequested?.Invoke(selected);
+        }
+    }
 
     // ------------------------------------------------------------ дерево
 
@@ -161,7 +170,10 @@ public partial class MapViewModel : ObservableObject
 
     /// <param name="activate">false — карта открывается во вкладке, но вкладка не выбирается: правка
     /// вроде флажка «публиковать» не должна уводить пользователя от документа, над которым он работает.</param>
-    private IDocumentView? OpenMapPane(bool activate = true)
+    /// <param name="mapPath">Файл карты, в котором лежит правимая строка: у строк вложенной карты
+    /// (<c>mapref</c>) это файл вложенной карты, а не выбранной. Правка идёт в его документ — иначе
+    /// изменился бы узел, которого нет в открытой карте, и правка пропала бы. null — выбранная карта.</param>
+    private IDocumentView? OpenMapPane(bool activate = true, string? mapPath = null)
     {
         if (SelectedMap is not { } map)
         {
@@ -169,7 +181,7 @@ public partial class MapViewModel : ObservableObject
         }
 
         var previous = _main.Documents.SelectedTab;
-        var pane = _main.OpenDocument?.Invoke(map.FullPath);
+        var pane = _main.OpenDocument?.Invoke(mapPath ?? map.FullPath);
         if (!activate && previous is not null)
         {
             _main.Documents.SelectedTab = previous;
@@ -221,7 +233,8 @@ public partial class MapViewModel : ObservableObject
             return;
         }
 
-        var pane = OpenMapPane();
+        var ownerMap = SelectedNode?.Item.MapPath ?? map.FullPath;
+        var pane = OpenMapPane(mapPath: ownerMap);
         if (pane is null)
         {
             return;
@@ -229,9 +242,10 @@ public partial class MapViewModel : ObservableObject
 
         pane.PushUndo("Добавление ссылки в карту");
         var topicref = DitaNode.Element("topicref");
-        topicref.SetAttribute("href", RefResolver.MakeRelative(map.FullPath, result.File.FullPath));
+        topicref.SetAttribute("href", RefResolver.MakeRelative(ownerMap, result.File.FullPath));
         InsertAtSelection(pane, topicref, place);
         AfterMapEdit(pane);
+        Select(topicref, reveal: true);
     }
 
     /// <summary>
@@ -245,7 +259,8 @@ public partial class MapViewModel : ObservableObject
             return false;
         }
 
-        var pane = OpenMapPane();
+        var ownerMap = SelectedNode?.Item.MapPath ?? map.FullPath;
+        var pane = OpenMapPane(mapPath: ownerMap);
         if (pane is null)
         {
             return false;
@@ -253,13 +268,11 @@ public partial class MapViewModel : ObservableObject
 
         pane.PushUndo("Добавление нового топика в карту");
         var topicref = DitaNode.Element("topicref");
-        topicref.SetAttribute("href", RefResolver.MakeRelative(map.FullPath, path));
+        topicref.SetAttribute("href", RefResolver.MakeRelative(ownerMap, path));
         InsertAtSelection(pane, topicref);
         AfterMapEdit(pane);
 
-        var full = Path.GetFullPath(path);
-        SelectedNode = Tree.SelectMany(Flatten).FirstOrDefault(n =>
-            n.Item.TargetPath is { } target && string.Equals(Path.GetFullPath(target), full, StringComparison.OrdinalIgnoreCase));
+        Select(topicref, reveal: true);
         return true;
     }
 
@@ -269,7 +282,7 @@ public partial class MapViewModel : ObservableObject
     [RelayCommand]
     private void AddTopichead()
     {
-        var pane = OpenMapPane();
+        var pane = OpenMapPane(mapPath: SelectedNode?.Item.MapPath);
         if (pane is null)
         {
             return;
@@ -284,7 +297,7 @@ public partial class MapViewModel : ObservableObject
         topichead.Add(meta);
         InsertAtSelection(pane, topichead);
         AfterMapEdit(pane);
-        Select(topichead); // следующая команда меню («Убрать из карты», «Дублировать») действует на новый раздел
+        Select(topichead, reveal: true); // следующая команда меню («Убрать из карты», «Дублировать») действует на новый раздел
     }
 
     /// <summary>
@@ -316,7 +329,7 @@ public partial class MapViewModel : ObservableObject
             return;
         }
 
-        var pane = OpenMapPane();
+        var pane = OpenMapPane(mapPath: item.MapPath);
         if (pane is null)
         {
             return;
@@ -406,7 +419,7 @@ public partial class MapViewModel : ObservableObject
     [RelayCommand]
     private void ShowProperties()
     {
-        if (SelectedNode?.Item.Node is { } node && OpenMapPane() is { } pane)
+        if (SelectedNode?.Item.Node is { } node && OpenMapPane(mapPath: SelectedNode.Item.MapPath) is { } pane)
         {
             pane.FocusNode(node);
         }
@@ -446,14 +459,15 @@ public partial class MapViewModel : ObservableObject
 
     private void PasteAt(Place place)
     {
-        if (_clipboard is not { } clip || SelectedMap is not { } map || OpenMapPane() is not { } pane)
+        var ownerMap = SelectedNode?.Item.MapPath ?? SelectedMap?.FullPath;
+        if (_clipboard is not { } clip || ownerMap is null || OpenMapPane(mapPath: ownerMap) is not { } pane)
         {
             return;
         }
 
         pane.PushUndo("Вставка в карту");
         var copy = clip.Node.CloneDeep();
-        RebaseHrefs(copy, clip.MapPath, map.FullPath);
+        RebaseHrefs(copy, clip.MapPath, ownerMap);
         InsertAtSelection(pane, copy, place);
         AfterMapEdit(pane);
     }
@@ -593,7 +607,7 @@ public partial class MapViewModel : ObservableObject
     [RelayCommand]
     private void TogglePublished(MapTreeNode? node)
     {
-        if (node is not { CanExclude: true } || OpenMapPane(activate: false) is not { } pane)
+        if (node is not { CanExclude: true } || OpenMapPane(activate: false, mapPath: node.Item.MapPath) is not { } pane)
         {
             return;
         }
@@ -638,33 +652,50 @@ public partial class MapViewModel : ObservableObject
         }
     }
 
-    /// <summary>Перетаскивание: ставит <paramref name="dragged"/> перед или после
-    /// <paramref name="target"/>. Допустимо только между элементами одного уровня.</summary>
-    public void MoveByDrag(MapTreeNode dragged, MapTreeNode target, bool before)
+    /// <summary>Можно ли бросить <paramref name="dragged"/> на <paramref name="target"/> в указанное
+    /// место — по контент-модели, без переноса в собственную ветку и между разными файлами карты.
+    /// Причина отказа — для подсказки у указателя.</summary>
+    public static bool CanDrop(MapTreeNode dragged, MapTreeNode target, DropPosition position, out string reason) =>
+        MapMoves.CanMove(dragged.Item.Node, target.Item.Node, position, out reason);
+
+    /// <summary>
+    /// Перетаскивание: строка встаёт перед или после цели на её уровне либо становится последней
+    /// дочерней цели (перенос в другого родителя и на другой уровень). Перенос — одна правка карты,
+    /// один шаг отмены; перенесённая строка остаётся выделенной, а цель раскрывается, если в неё вложили.
+    /// </summary>
+    public void MoveByDrag(MapTreeNode dragged, MapTreeNode target, DropPosition position)
     {
         if (ReferenceEquals(dragged, target))
         {
             return;
         }
 
-        var parent = dragged.Item.Node.Parent;
-        if (parent is null || !ReferenceEquals(target.Item.Node.Parent, parent))
+        if (!CanDrop(dragged, target, position, out var reason))
         {
-            _main.StatusText = "Перетаскивание допустимо только между элементами одного уровня.";
+            _main.StatusText = reason;
             return;
         }
 
-        var pane = OpenMapPane();
+        var pane = OpenMapPane(mapPath: dragged.Item.MapPath);
         if (pane is null)
         {
             return;
         }
 
+        var moved = dragged.Item.Node;
+        var container = target.Item.Node;
         pane.PushUndo("Перестановка в карте");
-        parent.Remove(dragged.Item.Node);
-        var targetIndex = parent.IndexOf(target.Item.Node);
-        parent.Insert(before ? targetIndex : targetIndex + 1, dragged.Item.Node);
+        MapMoves.Move(moved, container, position);
         AfterMapEdit(pane);
+        if (position == DropPosition.Child && Tree.SelectMany(Flatten).FirstOrDefault(n => ReferenceEquals(n.Item.Node, container)) is { } parent)
+        {
+            parent.IsExpanded = true;
+        }
+
+        Select(moved);
+        _main.StatusText = position == DropPosition.Child
+            ? $"«{dragged.Title}» теперь вложен в «{target.Title}»."
+            : $"«{dragged.Title}» перенесён.";
     }
 
     // ------------------------------------------------ таблица соответствий

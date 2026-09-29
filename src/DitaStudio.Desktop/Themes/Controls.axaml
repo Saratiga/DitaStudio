@@ -277,6 +277,21 @@
         <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
     </Style>
 
+    <!-- Куда упадёт строка при перетаскивании в дереве карты: линия сверху, линия снизу или рамка «внутрь» -->
+    <Style Selector="TreeViewItem.dropBefore /template/ Border#PART_LayoutRoot">
+        <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        <Setter Property="BorderThickness" Value="0,2,0,0" />
+    </Style>
+    <Style Selector="TreeViewItem.dropAfter /template/ Border#PART_LayoutRoot">
+        <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        <Setter Property="BorderThickness" Value="0,0,0,2" />
+    </Style>
+    <Style Selector="TreeViewItem.dropChild /template/ Border#PART_LayoutRoot">
+        <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
     <!-- ============================================================ Списки -->
 
     <Style Selector="ListBox">

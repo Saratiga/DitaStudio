@@ -781,6 +781,9 @@ public partial class InsertViewModel : ObservableObject
         _main.StatusText = "Отменено.";
         _main.Documents.RefreshAllTabTitles();
         _main.RefreshOutline?.Invoke();
+        // Отмена правки карты заменяет её узлы новыми — строки дерева карты ссылались бы на старые
+        // и команды меню действовали бы на узлы, которых уже нет в документе.
+        _main.RefreshMapTree?.Invoke();
     }
 
     [RelayCommand]
@@ -790,5 +793,8 @@ public partial class InsertViewModel : ObservableObject
         _main.StatusText = "Повторено.";
         _main.Documents.RefreshAllTabTitles();
         _main.RefreshOutline?.Invoke();
+        // Отмена правки карты заменяет её узлы новыми — строки дерева карты ссылались бы на старые
+        // и команды меню действовали бы на узлы, которых уже нет в документе.
+        _main.RefreshMapTree?.Invoke();
     }
 }

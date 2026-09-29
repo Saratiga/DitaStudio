@@ -75,6 +75,7 @@ public sealed class CoreTests
     [Fact] public void DocxStylingTests() => Run(CoreChecks.DocxStylingTests);
     [Fact] public void DivContentTests() => Run(CoreChecks.DivContentTests);
     [Fact] public void CaptionTests() => Run(CoreChecks.CaptionTests);
+    [Fact] public void MapMoveTests() => Run(CoreChecks.MapMoveTests);
     [Fact(Skip = "В2 (этап 3 плана docs/REVIEW_PLAN_2.md): DOCX пока не переводит классы размера, цвета и выравнивания на li, dt, dd и ячейки")]
     public void FormatClassOnAnyElementTests() => Run(CoreChecks.FormatClassOnAnyElementTests);
     [Fact] public void UntitledTopicTests() => Run(CoreChecks.UntitledTopicTests);
