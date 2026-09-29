@@ -14,12 +14,12 @@ public sealed partial class HtmlRenderer
     {
         var sb = new StringBuilder();
         var title = node.FirstElement("title");
-        if (title is not null)
+        if (CaptionRules.HasContent(title))
         {
             _tableNumber++;
             var caption = _options.NumberFiguresAndTables
-                ? $"{L.Table} {_tableNumber}. {RenderInlineChildren(title)}"
-                : RenderInlineChildren(title);
+                ? $"{L.Table} {_tableNumber}. {RenderInlineChildren(title!)}"
+                : RenderInlineChildren(title!);
             sb.Append("<div class=\"table-title\">").Append(caption).Append("</div>\n");
         }
 

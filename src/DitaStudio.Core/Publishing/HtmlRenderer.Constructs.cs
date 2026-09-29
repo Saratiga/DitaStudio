@@ -154,12 +154,12 @@ public sealed partial class HtmlRenderer
     {
         var sb = new StringBuilder("<figure").Append(Attrs(node)).Append(">\n");
         var title = node.FirstElement("title");
-        if (title is not null)
+        if (CaptionRules.HasContent(title))
         {
             _figureNumber++;
             var caption = _options.NumberFiguresAndTables
-                ? $"{L.Figure} {_figureNumber}. {RenderInlineChildren(title)}"
-                : RenderInlineChildren(title);
+                ? $"{L.Figure} {_figureNumber}. {RenderInlineChildren(title!)}"
+                : RenderInlineChildren(title!);
             sb.Append("<figcaption class=\"fig-title\">").Append(caption).Append("</figcaption>\n");
         }
 

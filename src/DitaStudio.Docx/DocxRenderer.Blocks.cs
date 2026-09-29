@@ -497,7 +497,7 @@ public sealed partial class DocxRenderer
             }
         }
 
-        if (title is not null)
+        if (CaptionRules.HasContent(title))
         {
             _figureNumber++;
             var captionRuns = new List<OpenXmlElement>();
@@ -506,7 +506,7 @@ public sealed partial class DocxRenderer
                 captionRuns.Add(new W.Run(new W.Text($"{L.Figure} {_figureNumber}. ") { Space = SpaceProcessingModeValues.Preserve }));
             }
 
-            captionRuns.AddRange(RenderInlineRuns(title));
+            captionRuns.AddRange(RenderInlineRuns(title!));
             yield return Para(DocxStyleCatalog.FigureCaption, captionRuns);
         }
 

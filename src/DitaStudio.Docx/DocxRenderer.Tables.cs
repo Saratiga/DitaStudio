@@ -18,7 +18,7 @@ public sealed partial class DocxRenderer
     private IEnumerable<OpenXmlCompositeElement> RenderTable(DitaNode node)
     {
         var title = node.FirstElement("title");
-        if (title is not null)
+        if (CaptionRules.HasContent(title))
         {
             _tableNumber++;
             var captionRuns = new List<OpenXmlElement>();
@@ -27,7 +27,7 @@ public sealed partial class DocxRenderer
                 captionRuns.Add(new W.Run(new W.Text($"{L.Table} {_tableNumber}. ") { Space = SpaceProcessingModeValues.Preserve }));
             }
 
-            captionRuns.AddRange(RenderInlineRuns(title));
+            captionRuns.AddRange(RenderInlineRuns(title!));
             yield return Para(DocxStyleCatalog.TableCaption, captionRuns);
         }
 
