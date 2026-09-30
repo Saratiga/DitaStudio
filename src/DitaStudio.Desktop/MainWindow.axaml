@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:DitaStudio.Presentation.ViewModels"
         xmlns:edit="using:DitaStudio.Core.Editing"
+        xmlns:pub="using:DitaStudio.Core.Publishing"
         x:Class="DitaStudio.Desktop.MainWindow"
         Title="{Binding WindowTitle, FallbackValue='DITA Studio'}"
         Width="1440" Height="820"
@@ -99,6 +100,17 @@
                 <MenuItem Header="Таблица">
                     <MenuItem Header="Выделить таблицу" Command="{Binding Insert.SelectTableCommand}" />
                     <MenuItem Header="Удалить таблицу" Command="{Binding Insert.DeleteTableCommand}" />
+                    <MenuItem Header="Границы">
+                        <MenuItem Header="Все границы" Command="{Binding Insert.SetTableBordersCommand}" CommandParameter="{x:Static pub:TableBorderMode.All}" />
+                        <MenuItem Header="Только внешняя рамка" Command="{Binding Insert.SetTableBordersCommand}" CommandParameter="{x:Static pub:TableBorderMode.OuterOnly}" />
+                        <MenuItem Header="Только горизонтальные линии" Command="{Binding Insert.SetTableBordersCommand}" CommandParameter="{x:Static pub:TableBorderMode.HorizontalOnly}" />
+                        <MenuItem Header="Без границ" Command="{Binding Insert.SetTableBordersCommand}" CommandParameter="{x:Static pub:TableBorderMode.None}" />
+                        <Separator />
+                        <MenuItem Header="Линия под строкой: убрать" Command="{Binding Insert.SetRowBorderCommand}" CommandParameter="{x:False}" />
+                        <MenuItem Header="Линия под строкой: показать" Command="{Binding Insert.SetRowBorderCommand}" CommandParameter="{x:True}" />
+                        <MenuItem Header="Линия справа от столбца: убрать" Command="{Binding Insert.SetColumnBorderCommand}" CommandParameter="{x:False}" />
+                        <MenuItem Header="Линия справа от столбца: показать" Command="{Binding Insert.SetColumnBorderCommand}" CommandParameter="{x:True}" />
+                    </MenuItem>
                     <Separator />
                     <MenuItem Header="Вставить строку выше" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertRowAbove}" />
                     <MenuItem Header="Вставить строку ниже" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertRowBelow}" />

@@ -27,12 +27,30 @@ public sealed partial class HtmlRenderer
             }
         }
 
+        // Таблица с отключёнными линиями (frame, rowsep, colsep): границы каждой ячейки считаются заранее.
+        var outerBorders = _cellBorders;
+        _cellBorders = CalsBorders.IsCustom(node) ? CalsBorders.Compute(node) : null;
         foreach (var tgroup in node.ElementChildren().Where(e => e.Name == "tgroup"))
         {
             sb.Append(RenderTgroup(tgroup, level, node));
         }
 
+        _cellBorders = outerBorders;
         return sb.ToString();
+    }
+
+    private Dictionary<DitaNode, CellBorders>? _cellBorders;
+
+    /// <summary>Стиль границ ячейки таблицы с отключёнными линиями: у каждой стороны линия или «none».</summary>
+    private string BorderCss(DitaNode entry)
+    {
+        if (_cellBorders is null || !_cellBorders.TryGetValue(entry, out var borders))
+        {
+            return string.Empty;
+        }
+
+        static string Side(string name, bool visible) => visible ? $"border-{name}:1px solid var(--line);" : $"border-{name}:none;";
+        return Side("top", borders.Top) + Side("right", borders.Right) + Side("bottom", borders.Bottom) + Side("left", borders.Left);
     }
 
     private string RenderTgroup(DitaNode tgroup, int level, DitaNode table)
@@ -134,9 +152,10 @@ public sealed partial class HtmlRenderer
 
             var align = entry.GetAttribute("align");
             var valign = entry.GetAttribute("valign");
-            if (align is not null || valign is not null)
+            var borderCss = BorderCss(entry);
+            if (align is not null || valign is not null || borderCss.Length > 0)
             {
-                sb.Append(" style=\"");
+                sb.Append(" style=\"").Append(borderCss);
                 if (align is not null)
                 {
                     sb.Append("text-align:").Append(Escape(align)).Append(';');

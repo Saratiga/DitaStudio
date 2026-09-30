@@ -1,5 +1,6 @@
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Publishing;
 
 namespace DitaStudio.Presentation.Services;
 
@@ -106,6 +107,15 @@ public interface IAuthorSurface
     /// (подпись «Рисунок N» / «Таблица N»). true — добавлена, false — убрана, null — здесь нет ни рисунка, ни таблицы.
     /// </summary>
     bool? ToggleCaption() => null;
+
+    /// <summary>Границы таблицы CALS под курсором одним выбором (все, внешняя рамка, горизонтальные, без границ). false — курсор не в таблице.</summary>
+    bool SetTableBorders(TableBorderMode mode) => false;
+
+    /// <summary>Линия под строкой таблицы, в которой стоит курсор: показать или убрать. false — курсор не в строке таблицы.</summary>
+    bool SetRowBorder(bool visible) => false;
+
+    /// <summary>Линия справа от столбца, в котором стоит курсор: показать или убрать. false — курсор не в ячейке таблицы.</summary>
+    bool SetColumnBorder(bool visible) => false;
 
     /// <summary>Выделяет целиком таблицу, в которой стоит курсор (контур; Delete удаляет). false — курсор не в таблице.</summary>
     bool SelectCurrentTable() => false;

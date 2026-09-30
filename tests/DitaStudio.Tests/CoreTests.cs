@@ -83,6 +83,7 @@ public sealed class CoreTests
     [Fact] public void TopicPageBreakTests() => Run(CoreChecks.TopicPageBreakTests);
     [Fact] public void BrokenTopicTests() => Run(CoreChecks.BrokenTopicTests);
     [Fact] public void CustomFontSizeTests() => Run(CoreChecks.CustomFontSizeTests);
+    [Fact] public void TableBordersTests() => Run(CoreChecks.TableBordersTests);
     [Fact] public void CssCascadeDocxTests() => Run(CoreChecks.CssCascadeDocxTests);
     [Fact] public void HeaderFooterCssDocxTests() => Run(CoreChecks.HeaderFooterCssDocxTests);
     [Fact] public void MapMoveTests() => Run(CoreChecks.MapMoveTests);

@@ -204,6 +204,71 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
 
     public virtual bool SelectCurrentTable() => false;
 
+    private DitaNode? CurrentCalsTable() => CurrentTable() is { Name: "table" } table ? table : null;
+
+    /// <summary>Границы всей таблицы CALS: frame, rowsep и colsep (см. <see cref="CalsBorders"/>).</summary>
+    public bool SetTableBorders(TableBorderMode mode)
+    {
+        if (Document is null || CurrentCalsTable() is not { } table)
+        {
+            return false;
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit("Границы таблицы");
+        CalsBorders.SetMode(table, mode);
+        Changed(FirstEditable(table), table.Parent, table);
+        return true;
+    }
+
+    /// <summary>Линия под строкой таблицы под курсором.</summary>
+    public bool SetRowBorder(bool visible)
+    {
+        var row = CurrentNode;
+        while (row is not null && row.Name != "row")
+        {
+            row = row.Parent;
+        }
+
+        if (Document is null || row is null || CurrentCalsTable() is not { } table)
+        {
+            return false;
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit("Линия под строкой");
+        CalsBorders.SetRowSeparator(row, visible);
+        Changed(FirstEditable(row), table.Parent, table);
+        return true;
+    }
+
+    /// <summary>Линия справа от столбца таблицы под курсором (колонка — по ячейке с курсором).</summary>
+    public bool SetColumnBorder(bool visible)
+    {
+        var entry = CurrentNode;
+        while (entry is not null && entry.Name != "entry")
+        {
+            entry = entry.Parent;
+        }
+
+        if (Document is null || entry is null || CurrentCalsTable() is not { } table || entry.Closest("tgroup") is not { } tgroup)
+        {
+            return false;
+        }
+
+        var column = CalsBorders.LastColumnOf(entry);
+        if (column < 0)
+        {
+            return false;
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit("Линия справа от столбца");
+        CalsBorders.SetColumnSeparator(tgroup, column, visible);
+        Changed(FirstEditable(entry), table.Parent, table);
+        return true;
+    }
+
     /// <summary>Удаляет таблицу под курсором целиком (один шаг отмены).</summary>
     public bool DeleteCurrentTable()
     {

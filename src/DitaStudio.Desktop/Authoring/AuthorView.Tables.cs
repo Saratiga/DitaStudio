@@ -22,6 +22,8 @@ public sealed partial class AuthorView
             stack.Children.Add(WithTitleBadge(title, titleEditor)); // слева — «Таблица N.»
         }
 
+        // Границы ячеек (frame, rowsep, colsep) — если таблица оформлена не по умолчанию.
+        _authorCellBorders = CalsBorders.IsCustom(node) ? CalsBorders.Compute(node) : null;
         foreach (var tgroup in node.ElementChildren().Where(e => e.Name == "tgroup"))
         {
             var rows = new List<DitaNode>();
@@ -139,11 +141,20 @@ public sealed partial class AuthorView
         }
     }
 
+    private Dictionary<DitaNode, CellBorders>? _authorCellBorders;
+
     private Border BuildCell(DitaNode? cellNode, bool isHeader, bool firstColumn, bool firstRow)
     {
+        // Без ячейки-модели (пустое место сетки) и у обычных таблиц — прежняя рамка; у «своих» — линии по frame/rowsep/colsep.
+        var thickness = new Thickness(firstColumn ? 1 : 0, firstRow ? 1 : 0, 1, 1);
+        if (cellNode is not null && _authorCellBorders is not null && _authorCellBorders.TryGetValue(cellNode, out var cellBorders))
+        {
+            thickness = new Thickness(cellBorders.Left ? 1 : 0, cellBorders.Top ? 1 : 0, cellBorders.Right ? 1 : 0, cellBorders.Bottom ? 1 : 0);
+        }
+
         var border = new Border
         {
-            BorderThickness = new Thickness(firstColumn ? 1 : 0, firstRow ? 1 : 0, 1, 1),
+            BorderThickness = thickness,
             Padding = new Thickness(7, 5, 7, 5),
             Background = Brushes.Transparent
         };

@@ -240,6 +240,53 @@ public partial class InsertViewModel : ObservableObject
         _main.Documents.RefreshAllTabTitles();
     }
 
+    /// <summary>Границы таблицы под курсором: все, внешняя рамка, горизонтальные, без границ.</summary>
+    [RelayCommand]
+    private void SetTableBorders(TableBorderMode mode)
+    {
+        var ok = _main.Current?.Author.SetTableBorders(mode) == true;
+        if (ok)
+        {
+            _main.Documents.RefreshAllTabTitles();
+        }
+
+        _main.StatusText = ok
+            ? mode switch
+            {
+                TableBorderMode.All => "Границы таблицы: все линии.",
+                TableBorderMode.OuterOnly => "Границы таблицы: только внешняя рамка.",
+                TableBorderMode.HorizontalOnly => "Границы таблицы: только горизонтальные линии.",
+                _ => "Границы таблицы убраны."
+            }
+            : "Поставьте курсор в ячейку таблицы (обычной, CALS).";
+    }
+
+    /// <summary>Линия под строкой таблицы, в которой стоит курсор: true — показать, false — убрать.</summary>
+    [RelayCommand]
+    private void SetRowBorder(bool visible)
+    {
+        var ok = _main.Current?.Author.SetRowBorder(visible) == true;
+        if (ok)
+        {
+            _main.Documents.RefreshAllTabTitles();
+        }
+
+        _main.StatusText = ok ? (visible ? "Линия под строкой показана." : "Линия под строкой убрана.") : "Поставьте курсор в ячейку таблицы.";
+    }
+
+    /// <summary>Линия справа от столбца, в котором стоит курсор: true — показать, false — убрать.</summary>
+    [RelayCommand]
+    private void SetColumnBorder(bool visible)
+    {
+        var ok = _main.Current?.Author.SetColumnBorder(visible) == true;
+        if (ok)
+        {
+            _main.Documents.RefreshAllTabTitles();
+        }
+
+        _main.StatusText = ok ? (visible ? "Линия справа от столбца показана." : "Линия справа от столбца убрана.") : "Поставьте курсор в ячейку таблицы.";
+    }
+
     /// <summary>Выделить целиком таблицу под курсором (контур; затем Delete удаляет её).</summary>
     [RelayCommand]
     private void SelectTable()

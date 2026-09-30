@@ -1016,6 +1016,59 @@ public sealed class AuthorViewTests
         window.Close();
     }
 
+    /// <summary>Г12: границы таблицы — всей, строки и столбца: атрибуты frame/rowsep/colsep, отмена, вид ячеек в «Авторе».</summary>
+    [AvaloniaFact]
+    public void TableBorders_Commands_SetAttributes_AndAuthorShowsLines()
+    {
+        var (window, author, document, undo) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><table><tgroup cols=\"2\"><tbody>" +
+            "<row><entry>А</entry><entry>Б</entry></row><row><entry>В</entry><entry>Г</entry></row></tbody></tgroup></table></conbody></concept>");
+        var table = document.Root.DescendantsAndSelf().First(n => n.Name == "table");
+        var entries = table.DescendantsAndSelf().Where(n => n.Name == "entry").ToList();
+        author.CurrentNode = entries[0];
+
+        Thickness LinesOf(DitaNode entry) => author.EditorFor(entry)!.FindAncestorOfType<Avalonia.Controls.Border>()!.BorderThickness;
+        Assert.Equal(new Thickness(1, 1, 1, 1), LinesOf(entries[0]));
+
+        // «Без границ»: рамка и линии убраны, в «Авторе» у ячеек нет границ.
+        Assert.True(author.Surface.SetTableBorders(Core.Publishing.TableBorderMode.None));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("none", table.GetAttribute("frame"));
+        Assert.Contains("Границы таблицы", undo);
+        Assert.Equal(new Thickness(0, 0, 0, 0), LinesOf(author.EditorFor(entries[0])!.Node));
+        Assert.Equal(new Thickness(0, 0, 0, 0), LinesOf(entries[3]));
+
+        // «Все границы» возвращает.
+        author.CurrentNode = entries[0];
+        Assert.True(author.Surface.SetTableBorders(Core.Publishing.TableBorderMode.All));
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(table.HasAttribute("frame"));
+        Assert.Equal(new Thickness(1, 1, 1, 1), LinesOf(entries[0]));
+
+        // Линия под строкой и справа от столбца — у той строки и того столбца, где курсор.
+        author.CurrentNode = entries[0];
+        Assert.True(author.Surface.SetRowBorder(false));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("0", entries[0].Parent!.GetAttribute("rowsep"));
+        Assert.Equal(0, LinesOf(entries[0]).Bottom);
+        Assert.Equal(1, LinesOf(entries[2]).Bottom); // нижняя рамка таблицы осталась
+
+        author.CurrentNode = entries[0];
+        Assert.True(author.Surface.SetColumnBorder(false));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("0", entries[0].GetAttribute("colsep"));
+        Assert.Equal("0", entries[2].GetAttribute("colsep"));
+        Assert.Null(entries[1].GetAttribute("colsep"));
+        Assert.Equal(0, LinesOf(entries[0]).Right);
+
+        // Вне таблицы — отказ.
+        author.CurrentNode = document.Root.FirstElement("title");
+        Assert.False(author.Surface.SetTableBorders(Core.Publishing.TableBorderMode.None));
+        Assert.False(author.Surface.SetRowBorder(true));
+        Assert.False(author.Surface.SetColumnBorder(true));
+        window.Close();
+    }
+
     [AvaloniaFact]
     public void EnterAtEnd_ShowsSuggestions_DefaultSplits_FilterInserts()
     {

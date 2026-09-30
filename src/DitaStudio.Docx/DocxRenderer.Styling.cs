@@ -308,6 +308,8 @@ public sealed partial class DocxRenderer
         properties.RunStyle = new W.RunStyle { Val = styleId };
     }
 
+    private static readonly DocxBorder NoBorder = new("none", 0, "auto");
+
     /// <summary>Свойства таблицы: ширина, рамки и поля ячеек из CSS (table, th, td).</summary>
     private W.TableProperties TableProperties()
     {
@@ -316,13 +318,14 @@ public sealed partial class DocxRenderer
             look.WidthPt is { } widthPt
                 ? new W.TableWidth { Width = DocxPropsWriter.Twips(widthPt).ToString(), Type = W.TableWidthUnitValues.Dxa }
                 : new W.TableWidth { Width = ((int)Math.Round((look.WidthPercent ?? 100) * 50)).ToString(), Type = W.TableWidthUnitValues.Pct },
+            // У таблицы с отключёнными линиями всё задано в ячейках (tcBorders): на уровне таблицы границ нет.
             new W.TableBorders(
-                DocxPropsWriter.Border(new W.TopBorder(), look.Outer),
-                DocxPropsWriter.Border(new W.LeftBorder(), look.Outer),
-                DocxPropsWriter.Border(new W.BottomBorder(), look.Outer),
-                DocxPropsWriter.Border(new W.RightBorder(), look.Outer),
-                DocxPropsWriter.Border(new W.InsideHorizontalBorder(), look.Inner),
-                DocxPropsWriter.Border(new W.InsideVerticalBorder(), look.Inner)));
+                DocxPropsWriter.Border(new W.TopBorder(), _cellBorders is null ? look.Outer : NoBorder),
+                DocxPropsWriter.Border(new W.LeftBorder(), _cellBorders is null ? look.Outer : NoBorder),
+                DocxPropsWriter.Border(new W.BottomBorder(), _cellBorders is null ? look.Outer : NoBorder),
+                DocxPropsWriter.Border(new W.RightBorder(), _cellBorders is null ? look.Outer : NoBorder),
+                DocxPropsWriter.Border(new W.InsideHorizontalBorder(), _cellBorders is null ? look.Inner : NoBorder),
+                DocxPropsWriter.Border(new W.InsideVerticalBorder(), _cellBorders is null ? look.Inner : NoBorder)));
 
         if (look.CellPaddingPt is { } padding)
         {

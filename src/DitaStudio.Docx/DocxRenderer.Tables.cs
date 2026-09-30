@@ -40,11 +40,35 @@ public sealed partial class DocxRenderer
         }
 
         var allowSplit = HasOutputClass(node, "page-break-auto");
+        var outerBorders = _cellBorders;
+        _cellBorders = CalsBorders.IsCustom(node) ? CalsBorders.Compute(node) : null;
         foreach (var tgroup in node.ElementChildren().Where(e => e.Name == "tgroup"))
         {
             yield return RenderTgroup(tgroup, allowSplit);
             yield return new W.Paragraph(); // Word требует абзац после таблицы, иначе следующий блок "прилипает"
         }
+
+        _cellBorders = outerBorders;
+    }
+
+    // Границы ячеек таблицы, у которой линии отключены (frame, rowsep, colsep); null — обычная таблица.
+    private Dictionary<DitaNode, CellBorders>? _cellBorders;
+
+    /// <summary>Границы ячейки для <c>tcBorders</c>: где линия есть — как в оформлении (внешняя рамка или внутренняя), где нет — nil.</summary>
+    private W.TableCellBorders? CellBordersFor(DitaNode entry, int col, int span, int numCols)
+    {
+        if (_cellBorders is null || !_cellBorders.TryGetValue(entry, out var b))
+        {
+            return null;
+        }
+
+        var look = Sheet.Table;
+        var none = new DocxBorder("none", 0, "auto");
+        return new W.TableCellBorders(
+            DocxPropsWriter.Border(new W.TopBorder(), b.Top ? look.Inner : none),
+            DocxPropsWriter.Border(new W.LeftBorder(), b.Left ? look.Inner : none),
+            DocxPropsWriter.Border(new W.BottomBorder(), b.Bottom ? look.Inner : none),
+            DocxPropsWriter.Border(new W.RightBorder(), b.Right ? look.Inner : none));
     }
 
     private W.Table RenderTgroup(DitaNode tgroup, bool allowRowSplit)
@@ -211,6 +235,11 @@ public sealed partial class DocxRenderer
         if (isSpanStart)
         {
             props.Append(new W.VerticalMerge { Val = W.MergedCellValues.Restart });
+        }
+
+        if (CellBordersFor(entry, col, span, 0) is { } cellBorders)
+        {
+            props.TableCellBorders = cellBorders;
         }
 
         if (CellShading(isHeader) is { } shading)
