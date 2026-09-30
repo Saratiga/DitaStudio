@@ -147,6 +147,8 @@ public static class PagedPreview
               parent.appendChild(w);
               stack[i].el = w;
               parent = w;
+              // Шапка таблицы повторяется на каждом листе, как при печати.
+              if (stack[i].head) { w.appendChild(stack[i].head.cloneNode(true)); }
             }
           }
 
@@ -174,8 +176,12 @@ public static class PagedPreview
             if (CONTAINERS.test(tag) && elementChildren(node).length > 0) {
               var w = shallow(node);
               parent.appendChild(w);
-              stack.push({ src: node, el: w });
-              for (var c = node.firstChild; c; c = c.nextSibling) { place(c); }
+              var entry = { src: node, el: w, head: null };
+              stack.push(entry);
+              for (var c = node.firstChild; c; c = c.nextSibling) {
+                place(c);
+                if (tag === 'TABLE' && c.nodeType === 1 && c.tagName === 'THEAD') { entry.head = c; }
+              }
               stack.pop();
               return;
             }

@@ -1016,6 +1016,31 @@ public sealed class AuthorViewTests
         window.Close();
     }
 
+    /// <summary>Снимки для глаз: таблицы в «Авторе» — с названием, без границ, с убранной линией, выделенная целиком (Г4, Г12, Г16, Г18).</summary>
+    [AvaloniaFact]
+    public void TableVisuals_Screenshots()
+    {
+        static string Table(string title, string attrs = "") =>
+            "<table" + attrs + ">" + title + "<tgroup cols=\"3\"><thead><row><entry>Параметр</entry><entry>Тип</entry><entry>Описание</entry></row></thead><tbody>" +
+            "<row><entry>width</entry><entry>число</entry><entry>Ширина</entry></row><row><entry>height</entry><entry>число</entry><entry>Высота</entry></row></tbody></tgroup></table>";
+        var (window, author, document, _) = Show(
+            "<concept id=\"c\"><title>Таблицы</title><conbody><p>Все границы, с названием:</p>" + Table("<title>Параметры изображения</title>") +
+            "<p>Без границ, название пустое:</p>" + Table("<title/>", " frame=\"none\" rowsep=\"0\" colsep=\"0\"") +
+            "<p>Только горизонтальные линии, без названия:</p>" + Table("", " frame=\"topbot\" colsep=\"0\"") +
+            "<p>Выделена целиком:</p>" + Table("<title>Выделенная таблица</title>") + "</conbody></concept>");
+        window.Width = 900;
+        window.Height = 1000;
+        Dispatcher.UIThread.RunJobs();
+        var tables = document.Root.DescendantsAndSelf().Where(n => n.Name == "table").ToList();
+        author.CurrentNode = tables[3].DescendantsAndSelf().First(n => n.Name == "entry");
+        Assert.True(author.Surface.SelectCurrentTable());
+        Dispatcher.UIThread.RunJobs();
+        var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+        Directory.CreateDirectory(dir);
+        window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "author-tables.png"));
+        window.Close();
+    }
+
     /// <summary>Г12: границы таблицы — всей, строки и столбца: атрибуты frame/rowsep/colsep, отмена, вид ячеек в «Авторе».</summary>
     [AvaloniaFact]
     public void TableBorders_Commands_SetAttributes_AndAuthorShowsLines()

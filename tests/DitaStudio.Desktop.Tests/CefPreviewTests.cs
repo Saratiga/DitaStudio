@@ -153,7 +153,7 @@ public sealed class CefPreviewTests
         var file = Path.Combine(root, "long.dita");
         await File.WriteAllTextAsync(file,
             "<topic id=\"t\"><title>Длинный топик</title><body>" + paragraphs + "<ul>" + items + "</ul>" +
-            "<table><tgroup cols=\"2\"><tbody>" + rows + "</tbody></tgroup></table></body></topic>");
+            "<table><tgroup cols=\"2\"><thead><row><entry>ШАПКА</entry><entry>Значение</entry></row></thead><tbody>" + rows + "</tbody></tgroup></table></body></topic>");
         var project = new DitaProject(root);
         project.Scan();
         project.DocxLayout.PaperSize = "A5";
@@ -200,6 +200,8 @@ public sealed class CefPreviewTests
         // Список и таблица режутся между пунктами/строками: на листах, где они продолжаются, оболочка ul/table повторяется.
         var tableSheets = await pane.EvaluateAsync("document.querySelectorAll('.sheet table').length");
         Assert.True(int.Parse(tableSheets!) >= 2, "таблица должна лечь на несколько листов");
+        var headers = await pane.EvaluateAsync("document.getElementById('pages').innerText.split('ШАПКА').length - 1");
+        Assert.Equal(tableSheets, headers); // шапка таблицы повторяется на каждом листе, как при печати
 
         // Колонтитул: поля {page} и {pages}.
         var footer = await pane.EvaluateAsync("document.querySelectorAll('.sheet .foot')[1].textContent");
