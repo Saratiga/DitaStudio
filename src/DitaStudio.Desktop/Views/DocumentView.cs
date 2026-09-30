@@ -22,16 +22,21 @@ namespace DitaStudio.Desktop.Views;
 public sealed class DocumentView : UserControl, IDocumentView, IDisposable
 {
     private readonly DitaProject _project;
+    private readonly IPdfPrinter _pdfPrinter;
     private readonly TabControl _tabs = new();
     private readonly XmlSourceEditor _source = new();
     private readonly AuthorView _author = new();
     private readonly PreviewPane _preview;
     private readonly MapOutlineView? _outline;
     private bool _syncing;
+    private PreviewPane? _live;
+    private GridSplitter? _liveSplitter;
+    private readonly Grid _layout = new();
 
     public DocumentView(DitaProject project, DitaDocument document, IPdfPrinter pdfPrinter)
     {
         _project = project;
+        _pdfPrinter = pdfPrinter;
         Document = document;
         _preview = new PreviewPane(project, document, CommitPendingEdits, pdfPrinter);
         _author.Load(document);
@@ -63,7 +68,82 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
             new TabItem { Header = "Предпросмотр", Content = _preview }
         };
         _tabs.SelectionChanged += OnTabChanged;
-        Content = _tabs;
+        _layout.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+        _layout.Children.Add(_tabs);
+        Content = _layout;
+    }
+
+    /// <summary>Постраничный предпросмотр «рядом с текстом» (null, пока не включён) — для тестов.</summary>
+    public PreviewPane? LivePreview => _live;
+
+    /// <summary>
+    /// «Предпросмотр рядом с текстом»: справа от редактора показываются листы размера из «Параметров страницы»; текст разбивается на
+    /// листы при каждом нажатии клавиши (через <see cref="PreviewPane.LiveDelay"/>). Работает в «Авторе» и в исходном коде.
+    /// Не для карты: у неё «Автор» — список топиков, а текст издания — вкладка «Предпросмотр».
+    /// </summary>
+    public bool ShowLivePreview
+    {
+        get => _live is not null;
+        set
+        {
+            if (value == (_live is not null) || (value && Document.Root.Name is "map" or "bookmap"))
+            {
+                return;
+            }
+
+            if (value)
+            {
+                _live = new PreviewPane(_project, Document, CommitPendingEdits, _pdfPrinter)
+                {
+                    LiveCommit = () =>
+                    {
+                        if (Mode == EditorMode.Author)
+                        {
+                            _author.FlushForPreview();
+                        }
+                    },
+                    LiveDocument = ParsedSourceOrNull
+                };
+                _live.MakeLive();
+                _liveSplitter = new GridSplitter { Width = 4, ResizeDirection = GridResizeDirection.Columns };
+                _layout.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+                _layout.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(1, GridUnitType.Star)));
+                Grid.SetColumn(_liveSplitter, 1);
+                Grid.SetColumn(_live, 2);
+                _layout.Children.Add(_liveSplitter);
+                _layout.Children.Add(_live);
+                _ = _live.RefreshAsync();
+            }
+            else
+            {
+                _layout.Children.Remove(_live!);
+                _layout.Children.Remove(_liveSplitter!);
+                _layout.ColumnDefinitions.RemoveRange(1, 2);
+                _live!.DisposeBrowser();
+                _live = null;
+                _liveSplitter = null;
+            }
+        }
+    }
+
+    // Исходный код, ещё не перенесённый в модель: разбирается для предпросмотра (модель и отмена не трогаются).
+    private DitaDocument? ParsedSourceOrNull()
+    {
+        if (Mode != EditorMode.Source || string.IsNullOrWhiteSpace(_source.Text))
+        {
+            return null;
+        }
+
+        try
+        {
+            var parsed = DitaDocument.Parse(_source.Text);
+            parsed.FilePath = Document.FilePath;
+            return parsed;
+        }
+        catch (Exception)
+        {
+            return null; // пока XML не разбирается — остаётся прежний вид
+        }
     }
 
     public DitaDocument Document { get; }
@@ -100,7 +180,11 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
         set => _tabs.SelectedIndex = value switch { EditorMode.Source => 1, EditorMode.Preview => 2, _ => 0 };
     }
 
-    internal void RaiseDirty() => DirtyChanged?.Invoke(this, EventArgs.Empty);
+    internal void RaiseDirty()
+    {
+        DirtyChanged?.Invoke(this, EventArgs.Empty);
+        _live?.NotifyChanged();
+    }
 
     // ------------------------------------------------------------ исходный код
 
@@ -211,7 +295,11 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
     public PreviewPane Preview => _preview;
 
     /// <summary>Закрытие вкладки документа: освобождаем встроенный браузер предпросмотра.</summary>
-    public void Dispose() => _preview.DisposeBrowser();
+    public void Dispose()
+    {
+        _preview.DisposeBrowser();
+        _live?.DisposeBrowser();
+    }
 
     // ------------------------------------------------------------ сохранение и отмена
 

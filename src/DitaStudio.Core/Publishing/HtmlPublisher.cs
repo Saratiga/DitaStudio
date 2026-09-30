@@ -325,8 +325,30 @@ public sealed class HtmlPublisher
     {
         options ??= new PublishOptions();
         var labels = Labels.For(options.Language);
-        var baseDir = document.FilePath is null ? _project.RootPath : Path.GetDirectoryName(document.FilePath)!;
+        var body = PreviewBody(document, options, labels);
+        var customCss = LoadCustomCss(out _);
+        if (!string.IsNullOrEmpty(extraCss))
+        {
+            customCss = customCss is null ? extraCss : customCss + "\n" + extraCss;
+        }
 
+        return Page(document.Title, null, body, labels, customCss);
+    }
+
+    /// <summary>
+    /// Текст топика и стили для постраничного предпросмотра (<see cref="PagedPreview"/>): тело без оболочки страницы и
+    /// CSS (стили публикации + CSS проекта). Вызывается при каждой правке, поэтому ничего не пишет на диск.
+    /// </summary>
+    public (string Body, string Css) RenderPagedParts(DitaDocument document, PublishOptions? options = null)
+    {
+        options ??= new PublishOptions();
+        var labels = Labels.For(options.Language);
+        var body = PreviewBody(document, options, labels);
+        return (body, Assets.StyleSheet + "\n" + LoadCustomCss(out _));
+    }
+
+    private string PreviewBody(DitaDocument document, PublishOptions options, Labels labels)
+    {
         var renderOptions = new RenderOptions
         {
             Labels = labels,
@@ -345,35 +367,22 @@ public sealed class HtmlPublisher
         };
 
         var renderer = new HtmlRenderer(_project, renderOptions);
-
-        string body;
         if (document.Kind == DitaDocumentKind.Map)
         {
-            body = RenderMapPreview(document, labels);
+            return RenderMapPreview(document, labels);
         }
-        else
+
+        DitaDocument expanded;
+        try
         {
-            DitaDocument expanded;
-            try
-            {
-                expanded = RefResolver.ExpandConrefs(_project, document);
-            }
-            catch
-            {
-                expanded = document;
-            }
-
-            body = renderer.RenderTopic(expanded, expanded.Root);
+            expanded = RefResolver.ExpandConrefs(_project, document);
         }
-
-        _ = baseDir;
-        var customCss = LoadCustomCss(out _);
-        if (!string.IsNullOrEmpty(extraCss))
+        catch
         {
-            customCss = customCss is null ? extraCss : customCss + "\n" + extraCss;
+            expanded = document;
         }
 
-        return Page(document.Title, null, body, labels, customCss);
+        return renderer.RenderTopic(expanded, expanded.Root);
     }
 
     private string RenderMapPreview(DitaDocument document, Labels labels)

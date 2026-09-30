@@ -19,6 +19,11 @@ public partial class MainWindow
     private DocumentView CreateDocumentView(DitaProject project, DitaDocument document, IPdfPrinter pdfPrinter)
     {
         var view = new DocumentView(project, document, pdfPrinter);
+        if (_livePreview)
+        {
+            view.ShowLivePreview = true;
+        }
+
         view.AuthorEditor.ContextMenuBuilding += (_, items) =>
         {
             if (ViewModel.Current?.Author.CurrentNode is { } node && TableCommands.CellOf(node) is not null)

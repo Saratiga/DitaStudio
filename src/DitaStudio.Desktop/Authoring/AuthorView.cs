@@ -411,6 +411,15 @@ public sealed partial class AuthorView : UserControl
         }
     }
 
+    /// <summary>Записывает несохранённый текст блоков в модель для «живого» предпросмотра, не закрывая правку (см. <see cref="BlockEditor.FlushForPreview"/>).</summary>
+    public void FlushForPreview()
+    {
+        foreach (var editor in _order.ToList())
+        {
+            editor.FlushForPreview();
+        }
+    }
+
     /// <summary>Ставит курсор в редактор узла; false — у узла нет своего редактора.</summary>
     public bool FocusNode(DitaNode node)
     {

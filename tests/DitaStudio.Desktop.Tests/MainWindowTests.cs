@@ -980,6 +980,59 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Г6: «Страницы (живой)» — лист размера из параметров страницы; «Предпросмотр рядом с текстом» открывается справа,
+    /// закрывается, у карты не включается; правка в «Авторе» не съедает вопрос о смене имени файла.</summary>
+    [AvaloniaFact]
+    public async Task LivePagedPreview_FormatSideBySide_AndPageSizeFromLayout()
+    {
+        var (window, vm) = await OpenAsync();
+        vm.Project!.DocxLayout.PaperSize = "A5";
+        vm.Project.DocxLayout.Landscape = true;
+        vm.Project.DocxLayout.MarginLeftMm = 15;
+        vm.Project.DocxLayout.HeaderText = "Шапка {title}";
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+
+        // Формат «Страницы (живой)»: страница с листами A5 альбомной ориентации, текст топика и скрипт раскладки.
+        pane.Preview.Format = Desktop.Preview.PreviewFormat.Pages;
+        var file = await pane.Preview.RefreshAsync();
+        Assert.EndsWith("-pages.html", file);
+        var html = File.ReadAllText(file!);
+        Assert.Contains("width:210mm", html);
+        Assert.Contains("height:148mm", html);
+        Assert.Contains("left:15mm", html);
+        Assert.Contains("Шапка {title}", html);
+        Assert.Contains("ditaSetContent", html);
+        Assert.Contains("О продукте", html);
+
+        // Рядом с текстом: включается отдельная панель в режиме «Страницы», без выбора формата; выключается.
+        Assert.Null(pane.LivePreview);
+        pane.ShowLivePreview = true;
+        Dispatcher.UIThread.RunJobs();
+        Assert.NotNull(pane.LivePreview);
+        Assert.Equal(Desktop.Preview.PreviewFormat.Pages, pane.LivePreview!.Format);
+        pane.LivePreview.NotifyChanged(); // без браузера (headless) — просто не падает
+        pane.ShowLivePreview = false;
+        Assert.Null(pane.LivePreview);
+
+        // Окно: переключатель меню применяется к открытым документам и к новым.
+        window.LivePreviewEnabled = true;
+        Assert.NotNull(pane.LivePreview);
+        var second = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "reference", "settings.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        Assert.NotNull(second.LivePreview);
+        window.LivePreviewEnabled = false;
+        Assert.Null(pane.LivePreview);
+        Assert.Null(second.LivePreview);
+
+        // У карты живой предпросмотр не включается: её «Автор» — список топиков.
+        File.WriteAllText(Path.Combine(_project, "live.ditamap"), "<map><title>Издание</title><topicref href=\"concepts/about.dita\"/></map>");
+        var map = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "live.ditamap"))!;
+        map.ShowLivePreview = true;
+        Assert.Null(map.LivePreview);
+        window.Close();
+    }
+
     /// <summary>Г9: продукты — выбор из списка проекта (несколько значений) на панели «Атрибуты»; список правится в окне;
     /// «Условия сборки» отмечают включаемые продукты.</summary>
     [AvaloniaFact]

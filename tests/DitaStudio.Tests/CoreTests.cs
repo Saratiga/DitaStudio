@@ -86,6 +86,7 @@ public sealed class CoreTests
     [Fact] public void TableBordersTests() => Run(CoreChecks.TableBordersTests);
     [Fact] public void TitleImageTests() => Run(CoreChecks.TitleImageTests);
     [Fact] public void ProductListTests() => Run(CoreChecks.ProductListTests);
+    [Fact] public void PagedPreviewTests() => Run(CoreChecks.PagedPreviewTests);
     [Fact] public void CssCascadeDocxTests() => Run(CoreChecks.CssCascadeDocxTests);
     [Fact] public void HeaderFooterCssDocxTests() => Run(CoreChecks.HeaderFooterCssDocxTests);
     [Fact] public void MapMoveTests() => Run(CoreChecks.MapMoveTests);

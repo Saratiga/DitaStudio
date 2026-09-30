@@ -229,6 +229,25 @@ public partial class MainWindow : Window
         }
     }
 
+    private bool _livePreview;
+
+    /// <summary>Включён ли «Предпросмотр рядом с текстом»: относится ко всем документам окна, открытым и новым.</summary>
+    public bool LivePreviewEnabled
+    {
+        get => _livePreview;
+        set
+        {
+            _livePreview = value;
+            LivePreviewMenu.IsChecked = value;
+            foreach (var pane in ViewModel.Panes.Values.OfType<DocumentView>())
+            {
+                pane.ShowLivePreview = value;
+            }
+        }
+    }
+
+    private void OnToggleLivePreview(object? sender, RoutedEventArgs e) => LivePreviewEnabled = LivePreviewMenu.IsChecked;
+
     private void OnToggleEnterSuggestions(object? sender, RoutedEventArgs e) =>
         Authoring.AuthorView.EnterSuggestionsEnabled = EnterSuggestionsMenu.IsChecked;
 

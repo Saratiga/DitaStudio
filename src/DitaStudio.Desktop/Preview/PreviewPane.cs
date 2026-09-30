@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
@@ -20,7 +21,11 @@ public enum PreviewFormat
 
     /// <summary>Приближённая имитация вида DOCX через CSS (<see cref="Assets.WordPreviewCss"/>) —
     /// не настоящий .docx: реальную пагинацию, сноски и разрывы страниц показывает только экспорт.</summary>
-    DocxApprox
+    DocxApprox,
+
+    /// <summary>«Живой» постраничный вид: листы размера из «Параметров страницы», текст разбивается на листы
+    /// прямо в браузере (<see cref="PagedPreview"/>) и пересчитывается при каждой правке. Для карты — обычный HTML.</summary>
+    Pages
 }
 
 /// <summary>
@@ -37,10 +42,13 @@ public sealed class PreviewPane : UserControl
     private readonly Func<string?> _commitPendingEdits;
     private readonly IPdfPrinter _pdfPrinter;
     private readonly ComboBox _format;
+    private readonly Button _external;
     private readonly TextBlock _status = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 4, 4, 4), FontSize = 12 };
     private readonly Border _host = new();
     private HostedCefBrowser? _browser;
     private int _requestId;
+    private DispatcherTimer? _liveTimer;
+    private string? _pagedFile;
 
     public PreviewPane(DitaProject project, DitaDocument document, Func<string?> commitPendingEdits, IPdfPrinter pdfPrinter)
     {
@@ -52,7 +60,7 @@ public sealed class PreviewPane : UserControl
 
         _format = new ComboBox
         {
-            ItemsSource = new[] { "HTML", "PDF", "DOCX (приближённо)" },
+            ItemsSource = new[] { "HTML", "PDF", "DOCX (приближённо)", "Страницы (живой)" },
             SelectedIndex = 0,
             Margin = new Thickness(6, 4, 4, 4),
             VerticalAlignment = VerticalAlignment.Center
@@ -62,7 +70,7 @@ public sealed class PreviewPane : UserControl
         var refresh = new Button { Content = "Обновить", Margin = new Thickness(4) };
         refresh.Click += (_, _) => _ = RefreshAsync();
 
-        var external = new Button { Content = "Открыть внешним приложением", Margin = new Thickness(0, 4, 4, 4) };
+        var external = _external = new Button { Content = "Открыть внешним приложением", Margin = new Thickness(0, 4, 4, 4) };
         external.Click += async (_, _) =>
         {
             if (await RefreshAsync() is { } file)
@@ -79,6 +87,20 @@ public sealed class PreviewPane : UserControl
 
         Content = new DockPanel { Children = { barBorder, _host } };
     }
+
+    /// <summary>Окно «рядом с текстом»: только «живые» страницы, без выбора формата и внешнего приложения.</summary>
+    public void MakeLive()
+    {
+        Format = PreviewFormat.Pages;
+        _format.IsVisible = false;
+        _external.IsVisible = false;
+    }
+
+    /// <summary>Что показывать в «живом» режиме (например, разобранный исходный код, ещё не перенесённый в модель); null — сам документ.</summary>
+    public Func<DitaDocument?>? LiveDocument { get; set; }
+
+    /// <summary>Записать несохранённый текст «Автора» в модель на время пересчёта (без закрытия правки); null — ничего.</summary>
+    public Action? LiveCommit { get; set; }
 
     private bool IsMap => _document.Root.Name is "map" or "bookmap" && _document.FilePath is not null;
 
@@ -105,6 +127,12 @@ public sealed class PreviewPane : UserControl
         var format = Format;
         _commitPendingEdits();
 
+        if (format == PreviewFormat.Pages && !IsMap)
+        {
+            return await ShowPagesAsync();
+        }
+
+        _pagedFile = null;
         string html;
         string? mapEntry = null;
         var extraCss = format == PreviewFormat.DocxApprox ? Assets.WordPreviewCss : null;
@@ -189,6 +217,113 @@ public sealed class PreviewPane : UserControl
             _status.Text = "Не удалось записать временный файл предпросмотра: " + ex.Message;
             return null;
         }
+    }
+
+    /// <summary>Интервал между правкой и пересчётом листов в «живом» режиме.</summary>
+    public static readonly TimeSpan LiveDelay = TimeSpan.FromMilliseconds(150);
+
+    /// <summary>Показать «живой» постраничный вид: страница с листами публикуется один раз, дальше текст подменяется скриптом.</summary>
+    private async Task<string?> ShowPagesAsync()
+    {
+        try
+        {
+            var (body, css) = new HtmlPublisher(_project).RenderPagedParts(_document);
+            var layout = _project.DocxLayout;
+            var header = _project.PdfShowHeaderFooter ? _project.PdfHeaderText : layout.HeaderText;
+            var footer = _project.PdfShowHeaderFooter ? _project.PdfFooterText : layout.FooterText;
+            var html = PagedPreview.Build(PageGeometry.For(layout), css, _document.Title, header ?? string.Empty, footer ?? string.Empty, body);
+
+            var dir = Path.Combine(Path.GetTempPath(), "DitaStudioPreview");
+            Directory.CreateDirectory(dir);
+            var path = Path.Combine(dir, PreviewFileBaseName(_document.FilePath) + "-pages.html");
+            await File.WriteAllTextAsync(path, html, Encoding.UTF8);
+            _status.Text = string.Empty;
+            _pagedFile = path;
+            CurrentFile = path;
+            Show(path);
+            return path;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _status.Text = "Не удалось записать временный файл предпросмотра: " + ex.Message;
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Документ изменился: в режиме «Страницы» через <see cref="LiveDelay"/> пересобирает текст и перекладывает его на листы
+    /// без перезагрузки страницы (серия нажатий клавиш даёт один пересчёт). В других режимах ничего не делает.
+    /// </summary>
+    public void NotifyChanged()
+    {
+        if (_pagedFile is null || Format != PreviewFormat.Pages)
+        {
+            return;
+        }
+
+        _liveTimer ??= new DispatcherTimer { Interval = LiveDelay };
+        _liveTimer.Tick -= OnLiveTick;
+        _liveTimer.Tick += OnLiveTick;
+        _liveTimer.Stop();
+        _liveTimer.Start();
+    }
+
+    private void OnLiveTick(object? sender, EventArgs e)
+    {
+        _liveTimer?.Stop();
+        UpdateLive();
+    }
+
+    /// <summary>Немедленный пересчёт «живого» вида (обновление текста в уже открытой странице).</summary>
+    public bool UpdateLive()
+    {
+        if (_pagedFile is null || _browser is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            LiveCommit?.Invoke();
+            var (body, _) = new HtmlPublisher(_project).RenderPagedParts(LiveDocument?.Invoke() ?? _document);
+            return _browser.RunScript(PagedPreview.SetContentCall(body));
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            _status.Text = "Не удалось обновить предпросмотр: " + ex.Message;
+            return false;
+        }
+    }
+
+    /// <summary>Подменяет текст листов готовым HTML (для проверок раскладки без модели документа).</summary>
+    public bool UpdateLiveWith(string bodyHtml) => _browser?.RunScript(PagedPreview.SetContentCall(bodyHtml)) ?? false;
+
+    /// <summary>Значение выражения JavaScript на показанной странице (для проверок); null — браузера нет.</summary>
+    public async Task<string?> EvaluateAsync(string expression)
+    {
+        if (_browser is null)
+        {
+            return null;
+        }
+
+        // Результат возвращается через заголовок страницы: EvaluateJavaScript у CefGlue.Avalonia значения не отдаёт.
+        const string marker = "@@eval:";
+        if (!_browser.RunScript("document.title = '" + marker + "' + String(" + expression + ");"))
+        {
+            return null;
+        }
+
+        for (var i = 0; i < 30; i++)
+        {
+            await Task.Delay(30);
+            Dispatcher.UIThread.RunJobs();
+            if (_browser.Title is { } title && title.StartsWith(marker, StringComparison.Ordinal))
+            {
+                return title[marker.Length..];
+            }
+        }
+
+        return null;
     }
 
     private void Show(string path)

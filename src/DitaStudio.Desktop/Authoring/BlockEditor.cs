@@ -112,7 +112,8 @@ public sealed class BlockEditor : TextEditor
         };
         TextArea.LostFocus += (_, _) =>
         {
-            var edited = _dirty;
+            var edited = _dirty || _commitPending;
+            _commitPending = false;
             Flush();
             if (edited)
             {
@@ -162,6 +163,20 @@ public sealed class BlockEditor : TextEditor
         _misspellings = null;
         _dirty = true;
         ContentChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    // Правка уже записана в модель для предпросмотра (FlushForPreview), но «закончена» она будет только с уходом фокуса.
+    private bool _commitPending;
+
+    /// <summary>Записывает правки в модель, не считая их законченными: уход фокуса всё равно сообщит <see cref="EditCommitted"/>
+    /// (вопрос о смене имени файла при правке заголовка не пропадает из-за «живого» предпросмотра).</summary>
+    public void FlushForPreview()
+    {
+        if (_dirty)
+        {
+            _commitPending = true;
+            Flush();
+        }
     }
 
     /// <summary>Записывает правки в модель, если они есть.</summary>

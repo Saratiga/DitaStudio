@@ -156,6 +156,8 @@
                           ToolTip.Tip="У блока с атрибутом product, audience, platform, props или outputclass сверху — серая пометка" />
                 <MenuItem Name="EnterSuggestionsMenu" Header="Подсказка по Enter" ToggleType="CheckBox" IsChecked="True" Click="OnToggleEnterSuggestions"
                           ToolTip.Tip="Enter в конце блока показывает, какой элемент вставить дальше (первая строка — обычное действие Enter)" />
+                <MenuItem Name="LivePreviewMenu" Header="Предпросмотр рядом с текстом (листы)" ToggleType="CheckBox" IsChecked="False" Click="OnToggleLivePreview"
+                          ToolTip.Tip="Справа от редактора — листы размера из «Параметры страницы…»; текст разбивается на листы при каждом нажатии клавиши" />
                 <Separator />
                 <MenuItem Header="Команда плагина…" Command="{Binding Insert.RunAuthorCommandPluginCommand}" />
             </MenuItem>

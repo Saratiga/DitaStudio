@@ -11,4 +11,17 @@ public sealed class HostedCefBrowser : AvaloniaCefBrowser
 
     /// <summary>Хост Chromium; null, пока браузер не создан.</summary>
     public CefBrowserHost? Host => UnderlyingBrowser?.GetHost();
+
+    /// <summary>Выполняет скрипт в главном фрейме загруженной страницы; false — браузер ещё не создан.</summary>
+    public bool RunScript(string script)
+    {
+        var frame = UnderlyingBrowser?.GetMainFrame();
+        if (frame is null)
+        {
+            return false;
+        }
+
+        frame.ExecuteJavaScript(script, "about:blank", 0);
+        return true;
+    }
 }
