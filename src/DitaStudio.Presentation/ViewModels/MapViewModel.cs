@@ -5,6 +5,7 @@ using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
+using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Services;
 
 namespace DitaStudio.Presentation.ViewModels;
@@ -56,11 +57,16 @@ public partial class MapViewModel : ObservableObject
     {
         if (value is not null)
         {
-            _main.StatusText = $"{value.Item.ElementName}: {value.Title}{(value.IsBroken ? " — файл не найден" : string.Empty)}";
+            _main.StatusText = value.IsBroken
+                ? $"{value.Item.ElementName}: {value.Title} — {value.Item.BrokenReason}"
+                : $"{value.Item.ElementName}: {value.Title}";
         }
 
         // Что доступно строке, зависит от её вида: у раздела нет файла, у корня карты нет родителя.
         OnPropertyChanged(nameof(SelectedHasFile));
+        OnPropertyChanged(nameof(SelectedIsBroken));
+        CreateMissingFileCommand.NotifyCanExecuteChanged();
+        ReplaceFileCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(SelectedPageBreakBefore));
         OnPropertyChanged(nameof(SelectedPageBreakNone));
         OnPropertyChanged(nameof(HasStructureSelection));
@@ -159,11 +165,22 @@ public partial class MapViewModel : ObservableObject
         return node;
     }
 
-    /// <summary>Двойной щелчок: открывает топик узла, а если его нет — саму карту.</summary>
+    /// <summary>Строка ссылается на файл, которого нет (красная в дереве).</summary>
+    public bool SelectedIsBroken => SelectedNode?.IsBroken == true;
+
+    /// <summary>
+    /// Двойной щелчок: открывает топик узла. У «битой» строки (файла нет) карту молча не открывает, а объясняет причину и
+    /// предлагает исправить: создать файл по ссылке, выбрать другой файл или убрать строку. Если топика нет и строка не
+    /// битая (раздел), открывается сама карта.
+    /// </summary>
     [RelayCommand]
-    private void OpenSelected()
+    private async Task OpenSelected()
     {
-        if (SelectedNode?.Item.TargetPath is { } target && File.Exists(target))
+        if (SelectedNode?.Item is { IsBroken: true })
+        {
+            await FixBrokenAsync();
+        }
+        else if (SelectedNode?.Item.TargetPath is { } target && File.Exists(target))
         {
             _main.OpenDocument?.Invoke(target);
         }
@@ -171,6 +188,101 @@ public partial class MapViewModel : ObservableObject
         {
             _main.OpenDocument?.Invoke(map.FullPath);
         }
+    }
+
+    private const string ChooseCreate = "Создать файл по ссылке";
+    private const string ChooseReplace = "Выбрать другой файл…";
+    private const string ChooseRemove = "Убрать строку из карты";
+
+    /// <summary>Диалог исправления «битой» строки: причина ошибки и три способа её убрать.</summary>
+    private async Task FixBrokenAsync()
+    {
+        if (SelectedNode?.Item is not { IsBroken: true } item)
+        {
+            return;
+        }
+
+        var options = new List<string>();
+        if (item.TargetPath is not null && !File.Exists(item.TargetPath))
+        {
+            options.Add(ChooseCreate);
+        }
+
+        options.Add(ChooseReplace);
+        options.Add(ChooseRemove);
+        var choice = await _main.Dialogs.PickOneAsync("Топик не найден", item.BrokenReason + "\n\nЧто сделать со строкой «" + item.Title + "»?", options, o => o);
+        switch (choice)
+        {
+            case ChooseCreate:
+                await CreateMissingFileAsync();
+                break;
+            case ChooseReplace:
+                await ReplaceFileAsync();
+                break;
+            case ChooseRemove:
+                await DeleteCommand.ExecuteAsync(null);
+                break;
+        }
+    }
+
+    /// <summary>Создаёт пустой топик по ссылке битой строки (файла по <c>href</c> нет) и открывает его.</summary>
+    [RelayCommand(CanExecute = nameof(SelectedIsBroken))]
+    private async Task CreateMissingFileAsync()
+    {
+        var project = _main.Project;
+        if (project is null || SelectedNode?.Item is not { IsBroken: true, TargetPath: { } target } item || File.Exists(target))
+        {
+            await _main.Dialogs.MessageAsync("Создание файла", "Файл по ссылке создать нельзя: у строки нет пути к файлу (ключ не определён). Выберите другой файл.");
+            return;
+        }
+
+        // Название строки в карте (navtitle) — заголовок нового топика; без него — имя файла словами.
+        var title = item.Node.GetAttribute("navtitle") is { Length: > 0 } navAttribute ? navAttribute
+            : item.Node.FirstElement("topicmeta")?.FirstElement("navtitle")?.InnerText.Trim() is { Length: > 0 } navtitle ? navtitle
+            : Path.GetFileNameWithoutExtension(target).Replace('_', ' ').Replace('-', ' ');
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            DocumentTemplates.Create("topic", title, DocumentTemplates.SuggestId(title, "topic")).Save(target);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            await _main.Dialogs.MessageAsync("Создание файла", $"Не удалось создать {target}: {ex.Message}");
+            return;
+        }
+
+        project.AddFile(target);
+        RebuildTree();
+        _main.RefreshProjectTree?.Invoke();
+        _main.StatusText = $"Создан файл по ссылке: {Path.GetFileName(target)}.";
+        _main.OpenDocument?.Invoke(target);
+    }
+
+    /// <summary>Заменяет ссылку битой строки на выбранный файл проекта (<c>href</c> пересчитывается от файла карты).</summary>
+    [RelayCommand(CanExecute = nameof(SelectedIsBroken))]
+    private async Task ReplaceFileAsync()
+    {
+        var project = _main.Project;
+        if (project is null || SelectedNode?.Item is not { IsBroken: true } item)
+        {
+            return;
+        }
+
+        var file = await _main.Files.OpenFileAsync("Выберите файл для строки «" + item.Title + "»",
+            new[] { new FileFilter("Топики и карты DITA", "*.dita", "*.xml", "*.ditamap"), FileFilter.All }, project.RootPath);
+        if (file is null)
+        {
+            return;
+        }
+
+        var ownerMap = item.MapPath;
+        StructureOperation(node =>
+        {
+            node.SetAttribute("href", RefResolver.MakeRelative(ownerMap, file));
+            node.RemoveAttribute("keyref");
+            return true;
+        }, "Замена файла строки карты");
+        _main.StatusText = $"Строка «{item.Title}» теперь ссылается на {Path.GetFileName(file)}.";
     }
 
     /// <param name="activate">false — карта открывается во вкладке, но вкладка не выбирается: правка

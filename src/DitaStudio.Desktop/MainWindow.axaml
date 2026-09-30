@@ -325,6 +325,12 @@
                             <TreeView.ContextMenu>
                                 <ContextMenu Name="MapContextMenu">
                                     <MenuItem Header="Открыть" Command="{Binding Map.OpenSelectedCommand}" />
+                                    <MenuItem Header="Создать файл по ссылке" Command="{Binding Map.CreateMissingFileCommand}"
+                                              IsVisible="{Binding Map.SelectedIsBroken}"
+                                              ToolTip.Tip="Файла по ссылке нет: создать пустой топик с этим именем" />
+                                    <MenuItem Header="Выбрать другой файл…" Command="{Binding Map.ReplaceFileCommand}"
+                                              IsVisible="{Binding Map.SelectedIsBroken}"
+                                              ToolTip.Tip="Ссылка указывает на несуществующий файл — заменить на другой файл проекта" />
                                     <MenuItem Header="Свойства…" Command="{Binding Map.ShowPropertiesCommand}"
                                               ToolTip.Tip="Открыть карту с выделенной строкой: её атрибуты — на панели «Атрибуты»" />
                                     <Separator />
@@ -396,7 +402,7 @@
                                                       ToolTip.Tip="Публиковать: снимите флажок, чтобы топик не попадал в HTML, PDF и DOCX" />
                                         </LayoutTransformControl>
                                         <TextBlock Text="{Binding Icon}" Margin="0,0,6,0" VerticalAlignment="Center" />
-                                        <TextBlock Text="{Binding Title}" Classes.broken="{Binding IsBroken}" Classes.excluded="{Binding IsExcluded}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Title}" Classes.broken="{Binding IsBroken}" Classes.excluded="{Binding IsExcluded}" VerticalAlignment="Center" ToolTip.Tip="{Binding ToolTip}" />
                                         <TextBlock Text="{Binding ElementName}" FontFamily="{DynamicResource MonoFont}" FontSize="10"
                                                    Foreground="{DynamicResource TagBrush}" VerticalAlignment="Center" />
                                     </StackPanel>

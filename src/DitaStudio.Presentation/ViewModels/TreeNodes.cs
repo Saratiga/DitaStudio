@@ -60,6 +60,9 @@ public sealed partial class MapTreeNode : ObservableObject
 
     public bool IsBroken => Item.IsBroken;
 
+    /// <summary>Подсказка у строки: у битой — причина и что делать, иначе пусто.</summary>
+    public string? ToolTip => Item.IsBroken ? Item.BrokenReason : null;
+
     public bool IsRoot { get; }
 
     /// <summary>Флажок «публиковать»: у строк-топиков и разделов, не у корня и keydef.</summary>

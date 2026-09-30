@@ -350,7 +350,7 @@ public static class RefResolver
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Error,
-                $"Файл по ссылке @{attribute}=\"{href}\" не найден.",
+                $"Файл по ссылке @{attribute}=\"{href}\" не найден: {reference.Path}. Создайте файл с таким именем, поправьте путь в ссылке или уберите ссылку.",
                 node,
                 baseFile));
             return;

@@ -840,6 +840,55 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Г3: двойной щелчок по красной (битой) строке карты не открывает карту молча, а объясняет причину и предлагает
+    /// создать файл, выбрать другой или убрать строку; «Создать файл по ссылке» делает строку не красной.</summary>
+    [AvaloniaFact]
+    public async Task MapBrokenRow_ExplainsReason_AndOffersFix_CreateFileFixesIt()
+    {
+        File.WriteAllText(Path.Combine(_project, "broken.ditamap"),
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<map><title>Битая</title><topicref href=\"tasks/absent-topic.dita\" navtitle=\"Нет файла\"/></map>");
+        var (window, vm) = await OpenAsync();
+        vm.Map.SelectedMap = vm.Map.Maps.First(m => Path.GetFileName(m.FullPath) == "broken.ditamap");
+        static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
+        var row = vm.Map.Tree.SelectMany(All).First(n => n.Title == "Нет файла");
+        vm.Map.SelectedNode = row;
+
+        Assert.True(row.IsBroken);
+        Assert.Contains("Файл не найден", row.ToolTip);
+        Assert.Contains("absent-topic.dita", row.ToolTip);
+        Assert.Contains("absent-topic.dita", vm.StatusText); // причина видна и в строке состояния
+        Assert.True(vm.Map.SelectedIsBroken);
+        Assert.True(vm.Map.CreateMissingFileCommand.CanExecute(null));
+
+        // Двойной щелчок: вместо молчаливого открытия карты — окно с причиной и тремя способами исправить.
+        var tabsBefore = vm.Documents.Tabs.Count;
+        var asking = vm.Map.OpenSelectedCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        var dialog = Assert.Single(window.OwnedWindows);
+        var texts = string.Join("|", dialog.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text));
+        Assert.Contains("Файл не найден", texts);
+        Assert.Contains("Создать файл по ссылке", texts);
+        Assert.Contains("Выбрать другой файл", texts);
+        Assert.Contains("Убрать строку из карты", texts);
+        Assert.Equal(tabsBefore, vm.Documents.Tabs.Count); // карта не открылась «пустой»
+        dialog.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Отмена")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        await asking;
+
+        // «Создать файл по ссылке»: файл появляется, строка больше не красная, топик открыт.
+        var target = Path.Combine(_project, "tasks", "absent-topic.dita");
+        Assert.False(File.Exists(target));
+        await vm.Map.CreateMissingFileCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(File.Exists(target));
+        Assert.Contains("Нет файла", File.ReadAllText(target));
+        var fixedRow = vm.Map.Tree.SelectMany(All).First(n => n.Title is "Нет файла");
+        Assert.False(fixedRow.IsBroken);
+        Assert.Contains(vm.Documents.Tabs, t => Path.GetFullPath(t.FullPath) == Path.GetFullPath(target));
+        window.Close();
+    }
+
     [AvaloniaFact]
     public async Task AuthorContextMenu_HasInsertSubmenu_InsertingAtCaret()
     {

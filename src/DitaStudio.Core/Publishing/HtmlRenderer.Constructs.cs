@@ -207,6 +207,12 @@ public sealed partial class HtmlRenderer
             var abs = RefResolver.ResolvePath(_document.FilePath, href!);
             if (abs is not null)
             {
+                if (_options.MarkMissingImages && !File.Exists(abs))
+                {
+                    var missing = $"<span class=\"image-missing\">Картинка не найдена: {Escape(href!)}</span>";
+                    return node.GetAttribute("placement") == "break" ? $"<div class=\"image-block\">{missing}</div>\n" : missing;
+                }
+
                 src = _options.ImageSource?.Invoke(abs) ?? href!;
             }
         }

@@ -63,6 +63,15 @@ public sealed class MapItem
     /// <summary>Узел ссылается на файл, который не найден.</summary>
     public bool IsBroken { get; internal set; }
 
+    /// <summary>
+    /// Почему строка «битая» и что делать: не найден файл или не определён ключ — с путём и способами исправления.
+    /// Пусто, если строка в порядке.
+    /// </summary>
+    public string BrokenReason { get; internal set; } = string.Empty;
+
+    /// <summary>Что можно сделать со строкой, файл которой не найден.</summary>
+    public const string BrokenAdvice = "Создайте файл по ссылке, выберите другой файл или уберите строку из карты (правая кнопка мыши по строке).";
+
     /// <summary>Глубина вложенности (0 — корень карты).</summary>
     public int Level => Parent is null ? 0 : Parent.Level + 1;
 
@@ -280,15 +289,22 @@ public sealed class MapTree
 
         if (string.IsNullOrWhiteSpace(href) && !string.IsNullOrWhiteSpace(keyref))
         {
-            var keyDef = project.ResolveKey(keyref!.Split('/')[0], item.Parent?.KeyScopeChain);
+            var keyName = keyref!.Split('/')[0];
+            var keyDef = project.ResolveKey(keyName, item.Parent?.KeyScopeChain);
             if (keyDef?.ResolvedPath is not null)
             {
                 item.TargetPath = keyDef.ResolvedPath;
                 item.IsBroken = !File.Exists(keyDef.ResolvedPath);
+                if (item.IsBroken)
+                {
+                    item.BrokenReason = $"Ключ «{keyName}» указывает на файл, которого нет: {keyDef.ResolvedPath}. {MapItem.BrokenAdvice}";
+                }
             }
             else
             {
                 item.IsBroken = true;
+                item.BrokenReason = $"Ключ «{keyName}» не определён: в карте нет keydef с таким ключом (или он вне области ключей этой строки). " +
+                                    "Определите ключ или замените ссылку на файл.";
             }
 
             return;
@@ -308,6 +324,12 @@ public sealed class MapTree
         item.TargetPath = reference.Path;
         item.TargetTopicId = reference.TopicId;
         item.IsBroken = reference.Path is null || !File.Exists(reference.Path);
+        if (item.IsBroken)
+        {
+            item.BrokenReason = reference.Path is null
+                ? $"Ссылка href=\"{href}\" не разобрана: неверный путь. {MapItem.BrokenAdvice}"
+                : $"Файл не найден: {reference.Path} (href=\"{href}\" в карте {System.IO.Path.GetFileName(mapPath)}). {MapItem.BrokenAdvice}";
+        }
     }
 
     private static string ResolveTitle(DitaProject project, MapItem item)

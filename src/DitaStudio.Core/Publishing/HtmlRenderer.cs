@@ -27,6 +27,9 @@ public sealed class RenderOptions
 
     public bool NumberFiguresAndTables { get; set; } = true;
 
+    /// <summary>Вместо картинки, которой нет на диске, выводится заметная плашка «Картинка не найдена: путь» (предпросмотр).</summary>
+    public bool MarkMissingImages { get; set; }
+
     public CaptionSeparator CaptionSeparator { get; set; } = CaptionSeparator.Period;
 
     /// <summary>Номера заголовков и нумерованных абзацев (один счётчик на издание); null — без номеров.</summary>

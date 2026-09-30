@@ -298,6 +298,7 @@ public sealed class HtmlPublisher
             ShowDraftComments = true,
             // Предпросмотр одного топика: номеров по изданию не знает — нумерованные абзацы 1, 2, 3.
             Numbering = new HeadingNumbering(numberHeadings: false, depth: 1),
+            MarkMissingImages = true,
             ImageSource = absolute => new Uri(absolute).AbsoluteUri,
             TopicLink = (path, id) => id is null ? new Uri(path).AbsoluteUri : new Uri(path).AbsoluteUri + "#" + id,
             // В отличие от Publish() — предпросмотр показывает помеченное на удаление содержимое

@@ -104,6 +104,7 @@ li { margin: .3em 0; }
 .breadcrumbs a { color: var(--muted); }
 .pager { display: flex; justify-content: space-between; margin-top: 3em; border-top: 1px solid var(--line); padding-top: 1em; font-size: .95em; }
 .chapter-heading { margin-top: 3em; padding-top: 1.5em; border-top: 3px solid var(--line); }
+.image-missing { display: inline-block; padding: 14px 18px; border: 2px dashed #c0392b; color: #c0392b; background: #fdecea; font-size: .9em; border-radius: 4px; }
 .topic-chunk.page-break-before { break-before: page; page-break-before: always; }
 .topic-chunk.page-break-none { break-before: auto; page-break-before: auto; }
 .unknown-element { border-left: 3px solid #c0392b; padding-left: 8px; }
