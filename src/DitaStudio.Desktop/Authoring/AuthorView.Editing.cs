@@ -289,7 +289,7 @@ public sealed partial class AuthorView
 
     private void OnScrollPointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
-        if (e.ClickCount != 2 || !e.GetCurrentPoint(_panel).Properties.IsLeftButtonPressed)
+        if (!e.GetCurrentPoint(_panel).Properties.IsLeftButtonPressed)
         {
             return;
         }
@@ -303,11 +303,41 @@ public sealed partial class AuthorView
             }
         }
 
-        if (ShowInsertMenuAt(e.GetPosition(_panel)))
+        // Щелчок по свободному месту снимает выделение: рамку выбранного блока и выделенный текст.
+        if (e.ClickCount == 1)
+        {
+            Deselect();
+            return;
+        }
+
+        if (e.ClickCount == 2 && ShowInsertMenuAt(e.GetPosition(_panel)))
         {
             e.Handled = true;
         }
     }
+
+    /// <summary>Снимает выделение: подсветку рамки выбранного блока и выделенный текст во всех редакторах;
+    /// текущим остаётся блок, в котором стоит курсор.</summary>
+    public void Deselect()
+    {
+        ClearHighlight();
+        foreach (var editor in _order)
+        {
+            if (!editor.TextArea.Selection.IsEmpty)
+            {
+                editor.TextArea.ClearSelection();
+            }
+        }
+
+        CurrentNode = _activeEditor is not null && _order.Contains(_activeEditor) ? _activeEditor.Node : null;
+        if (_activeEditor is not null)
+        {
+            HighlightEditor(_activeEditor);
+        }
+    }
+
+    /// <summary>Узел, чья рамка подсвечена как выбранная (для тестов).</summary>
+    public DitaNode? HighlightedNode => _currentBorder?.Tag as DitaNode;
 
     private static string Describe(string name) =>
         DitaCatalog.Default.Get(name)?.Description is { Length: > 0 } description ? description : name;

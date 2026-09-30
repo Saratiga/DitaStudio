@@ -592,6 +592,15 @@ public sealed partial class AuthorView
             : null;
         editor.Focused += (_, _) =>
         {
+            // Выделенный текст в других блоках при переходе сюда снимается — иначе выделений на экране несколько.
+            foreach (var other in _order)
+            {
+                if (!ReferenceEquals(other, editor) && !other.TextArea.Selection.IsEmpty)
+                {
+                    other.TextArea.ClearSelection();
+                }
+            }
+
             _activeEditor = editor;
             CurrentNode = node;
             HighlightEditor(editor);

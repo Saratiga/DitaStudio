@@ -136,4 +136,44 @@ internal static partial class CoreChecks
             Check(pictures.Count == 1 && pictures[0].ParagraphProperties?.Justification?.Val?.Value == JustificationValues.Center, "DOCX: абзац с рисунком по центру");
         });
     }
+
+    // Г4 (docs/REVIEW_PLAN_3.md): пустой <title/> у рисунка и таблицы — подпись только «Рисунок N» / «Таблица N»
+    // (без точки и названия, номер расходуется); элемента title нет вообще — подписи нет. Ловушка: в CoreTests пока Skip.
+    internal static void EmptyTitleCaptionTests()
+    {
+        Section("Подпись без названия: «Рисунок N» / «Таблица N»");
+
+        WithProject(new Dictionary<string, string>
+        {
+            ["t.dita"] = """
+                <topic id="t"><title>Р</title><body>
+                <fig><title>Первый</title><image href="none.png"/></fig>
+                <fig><title/><image href="none.png"/></fig>
+                <fig><image href="none.png"/></fig>
+                <fig><title>Третий</title><image href="none.png"/></fig>
+                <table><title/><tgroup cols="1"><tbody><row><entry>А</entry></row></tbody></tgroup></table>
+                <table><tgroup cols="1"><tbody><row><entry>Б</entry></row></tbody></tgroup></table>
+                <table><title>Именная</title><tgroup cols="1"><tbody><row><entry>В</entry></row></tbody></tgroup></table>
+                </body></topic>
+                """,
+            ["m.ditamap"] = "<map><title>M</title><topicref href=\"t.dita\"/></map>"
+        }, (root, project) =>
+        {
+            var map = Path.Combine(root, "m.ditamap");
+            var html = File.ReadAllText(new HtmlPublisher(project).Publish(map,
+                new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true }).EntryFile);
+            Check(html.Contains("Рисунок 1. Первый") && html.Contains(">Рисунок 2</figcaption>") && html.Contains("Рисунок 3. Третий"),
+                "HTML: пустой <title/> — «Рисунок 2» без точки, номер расходуется; рисунок без title — без подписи");
+            Check(html.Contains(">Таблица 1</") && html.Contains("Таблица 2. Именная"), "HTML: пустой <title/> таблицы — «Таблица 1»");
+
+            var docx = Path.Combine(root, "d.docx");
+            new DocxPublisher(project).Publish(map, new PublishOptions { Language = "ru" }, docx);
+            using var doc = WordprocessingDocument.Open(docx, false);
+            var captions = doc.MainDocumentPart!.Document.Body!.Descendants<Paragraph>()
+                .Where(p => p.ParagraphProperties?.ParagraphStyleId?.Val is { } id && id == "FigureCaption" || p.ParagraphProperties?.ParagraphStyleId?.Val == "TableCaption")
+                .Select(p => p.InnerText).ToList();
+            Check(captions.SequenceEqual(new[] { "Рисунок 1. Первый", "Рисунок 2", "Рисунок 3. Третий", "Таблица 1", "Таблица 2. Именная" }),
+                $"DOCX: подписи ({string.Join(" | ", captions)})");
+        });
+    }
 }

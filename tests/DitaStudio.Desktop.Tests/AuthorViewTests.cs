@@ -694,6 +694,136 @@ public sealed class AuthorViewTests
         window.Close();
     }
 
+    /// <summary>Г13: щелчок по свободному месту снимает выделение — и рамки выбранного контейнера, и выделенного текста;
+    /// переход в другой блок снимает выделение текста в прежнем.</summary>
+    [AvaloniaFact]
+    public void Click_OutsideSelection_ClearsIt()
+    {
+        var (window, author, document, _) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody>" +
+            "<note><p>Первый в заметке</p><p>Второй в заметке</p></note>" +
+            "<p>Снаружи один</p><p>Снаружи два</p></conbody></concept>");
+        var note = document.Root.DescendantsAndSelf().First(n => n.Name == "note");
+        var body = document.Root.FirstElement("conbody")!;
+        var outsideOne = body.ElementChildren().ElementAt(1);
+        var outsideTwo = body.ElementChildren().ElementAt(2);
+        var bottom = author.Editors.Max(e => e.TranslatePoint(new Point(0, e.Bounds.Height), window)?.Y ?? 0);
+        var free = new Point(80, bottom + 80);
+
+        // Рамка контейнера выбрана — щелчок по пустому месту её снимает.
+        var frame = (Avalonia.Controls.Border)author.ViewFor(note)!;
+        var onFrame = frame.TranslatePoint(new Point(1, frame.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(onFrame, Avalonia.Input.MouseButton.Left);
+        window.MouseUp(onFrame, Avalonia.Input.MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(note, author.CurrentNode);
+        window.MouseDown(free, Avalonia.Input.MouseButton.Left);
+        window.MouseUp(free, Avalonia.Input.MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.NotSame(note, author.CurrentNode);
+
+        // Выделенный текст: щелчок по пустому месту снимает.
+        var otherFree = new Point(400, bottom + 120); // другая точка: тот же щелчок подряд был бы двойным
+        var editor = Focus(window, author, outsideOne, 0);
+        editor.Select(0, 4);
+        Assert.False(editor.TextArea.Selection.IsEmpty);
+        window.MouseDown(otherFree, Avalonia.Input.MouseButton.Left);
+        window.MouseUp(otherFree, Avalonia.Input.MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(editor.TextArea.Selection.IsEmpty);
+
+        // Выделили в одном блоке и перешли в другой — прежнее выделение снято.
+        editor.Select(0, 4);
+        Focus(window, author, outsideTwo, 0);
+        Assert.True(editor.TextArea.Selection.IsEmpty);
+        window.Close();
+    }
+
+    /// <summary>Г15: полоса прокрутки «Автора» следует за курсором — и при переходе в блок далеко за экраном, и внутри длинного абзаца.</summary>
+    [AvaloniaFact]
+    public void ScrollBar_FollowsCaret_ToFarBlock_AndInsideLongParagraph()
+    {
+        var paragraphs = string.Concat(Enumerable.Range(1, 80).Select(i => $"<p>Абзац номер {i}.</p>"));
+        var longText = string.Join(" ", Enumerable.Repeat("длинный абзац с множеством слов, чтобы он занял много строк", 120));
+        var (window, author, document, _) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><p>Первый.</p><p>" + longText + "</p>" + paragraphs + "</conbody></concept>");
+        window.Height = 500;
+        Dispatcher.UIThread.RunJobs();
+        var scroll = author.GetVisualDescendants().OfType<ScrollViewer>().First(v => v.Content is Panel && v.GetVisualDescendants().OfType<BlockEditor>().Any());
+        Assert.True(scroll.Extent.Height > scroll.Viewport.Height * 3);
+        Assert.Equal(0, scroll.Offset.Y);
+
+        bool Visible(BlockEditor editor, double y)
+        {
+            var top = editor.TranslatePoint(new Point(0, y), scroll)!.Value.Y;
+            return top >= -1 && top <= scroll.Viewport.Height + 1;
+        }
+
+        // Перешли в блок далеко внизу — он в поле зрения.
+        var far = author.EditorFor(Paragraphs(document)[70])!;
+        far.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(scroll.Offset.Y > 0);
+        Assert.True(Visible(far, 0), "блок далеко внизу должен быть виден");
+
+        // Внутри длинного абзаца курсор ушёл в конец — строка с курсором видна.
+        var longEditor = author.EditorFor(Paragraphs(document)[1])!;
+        longEditor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        longEditor.FocusEditor(longEditor.Content.Length);
+        Dispatcher.UIThread.RunJobs();
+        var caret = longEditor.TextArea.Caret.CalculateCaretRectangle();
+        var caretTop = longEditor.TextArea.TextView.TranslatePoint(new Point(0, caret.Y - longEditor.TextArea.TextView.ScrollOffset.Y + caret.Height / 2), scroll)!.Value.Y;
+        Assert.True(caretTop >= 0 && caretTop <= scroll.Viewport.Height, $"курсор в конце длинного абзаца виден: {caretTop} из {scroll.Viewport.Height}");
+        window.Close();
+    }
+
+    /// <summary>Г2: окно подсказки элементов растягивается, а выбранный размер запоминается на следующий раз.</summary>
+    [AvaloniaFact]
+    public void ElementSuggestions_CanBeResized_AndRemembersSize()
+    {
+        var file = Path.Combine(Path.GetTempPath(), "DitaStudioPopup", Guid.NewGuid().ToString("N"), "suggestions-size.txt");
+        var previous = DitaStudio.Presentation.PopupSizeSettings.SettingsPath;
+        DitaStudio.Presentation.PopupSizeSettings.SettingsPath = file;
+        try
+        {
+            var (window, author, document, _) = Show();
+            var first = Paragraphs(document)[0];
+            Focus(window, author, first, InlineContent.FromNode(first).Length);
+            Press(window, Key.Enter, RawInputModifiers.None);
+            Dispatcher.UIThread.RunJobs();
+            var popup = author.Suggestions!;
+            Assert.Equal((DitaStudio.Presentation.PopupSizeSettings.DefaultWidth, DitaStudio.Presentation.PopupSizeSettings.DefaultHeight), popup.ContentSize);
+
+            popup.ResizeBy(200, 120);
+            Assert.Equal((DitaStudio.Presentation.PopupSizeSettings.DefaultWidth + 200, DitaStudio.Presentation.PopupSizeSettings.DefaultHeight + 120), popup.ContentSize);
+
+            // Границы: не меньше минимума и не больше максимума.
+            popup.ResizeBy(-5000, -5000);
+            Assert.Equal((DitaStudio.Presentation.PopupSizeSettings.MinWidth, DitaStudio.Presentation.PopupSizeSettings.MinHeight), popup.ContentSize);
+            popup.ResizeBy(9000, 9000);
+            Assert.Equal((DitaStudio.Presentation.PopupSizeSettings.MaxWidth, DitaStudio.Presentation.PopupSizeSettings.MaxHeight), popup.ContentSize);
+            popup.ResizeBy(-(DitaStudio.Presentation.PopupSizeSettings.MaxWidth - 700), -(DitaStudio.Presentation.PopupSizeSettings.MaxHeight - 400));
+            DitaStudio.Presentation.PopupSizeSettings.Save(popup.ContentSize.Width, popup.ContentSize.Height); // как по окончании перетаскивания ручки
+            popup.Cancel();
+            Dispatcher.UIThread.RunJobs();
+
+            // Следующее окно открывается таким же — и по Enter, и по Ctrl+Enter.
+            Focus(window, author, first, InlineContent.FromNode(first).Length);
+            Press(window, Key.Enter, RawInputModifiers.Control);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal((700d, 400d), author.Suggestions!.ContentSize);
+            author.Suggestions.Cancel();
+            window.Close();
+
+            Assert.Equal("700 400", File.ReadAllText(file));
+        }
+        finally
+        {
+            DitaStudio.Presentation.PopupSizeSettings.SettingsPath = previous;
+        }
+    }
+
     [AvaloniaFact]
     public void EnterAtEnd_ShowsSuggestions_DefaultSplits_FilterInserts()
     {

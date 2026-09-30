@@ -710,6 +710,33 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Г7: «ОК» в «Оформление DOCX» не сбрасывает то, чего в диалоге нет, — свой размер листа, ориентацию, поля.</summary>
+    [AvaloniaFact]
+    public async Task DocxLayoutDialog_Ok_KeepsCustomPaperSizeAndMargins()
+    {
+        var (window, vm) = await OpenAsync();
+        vm.Project!.SetDocxLayout(new Core.Publishing.DocxLayout
+        {
+            PaperWidthMm = 150, PaperHeightMm = 200, Landscape = true, MarginTopMm = 12, MarginLeftMm = 18
+        });
+
+        var asking = vm.Dialogs.DocxLayoutSettingsAsync(vm.Project);
+        Dispatcher.UIThread.RunJobs();
+        var dialog = Assert.Single(window.OwnedWindows);
+        dialog.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "ОК")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        var result = await asking;
+
+        Assert.NotNull(result);
+        Assert.Equal(150, result!.PaperWidthMm);
+        Assert.Equal(200, result.PaperHeightMm);
+        Assert.True(result.Landscape);
+        Assert.Equal(12, result.MarginTopMm);
+        Assert.Equal(18, result.MarginLeftMm);
+        window.Close();
+    }
+
     [AvaloniaFact]
     public async Task AuthorContextMenu_HasInsertSubmenu_InsertingAtCaret()
     {

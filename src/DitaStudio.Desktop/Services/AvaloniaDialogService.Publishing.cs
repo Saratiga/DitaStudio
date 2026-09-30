@@ -448,7 +448,10 @@ public sealed partial class AvaloniaDialogService
                 GutterMm = gutterMm,
                 Language = (language.Text ?? string.Empty).Trim(),
                 AutoHyphenation = hyphenation.IsChecked == true,
+                // Страница — не в этом диалоге, но принадлежит тому же объекту: переносится целиком, в том числе свой размер листа.
                 PaperSize = current.PaperSize,
+                PaperWidthMm = current.PaperWidthMm,
+                PaperHeightMm = current.PaperHeightMm,
                 Landscape = current.Landscape,
                 MarginTopMm = current.MarginTopMm,
                 MarginBottomMm = current.MarginBottomMm,

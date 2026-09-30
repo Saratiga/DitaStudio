@@ -7,6 +7,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
@@ -118,6 +119,15 @@ public sealed class BlockEditor : TextEditor
                 EditCommitted?.Invoke(this, EventArgs.Empty);
             }
         };
+        // Внешняя полоса прокрутки следует за курсором: длинный абзац (много строк) и блоки далеко за экраном.
+        TextArea.Caret.PositionChanged += (_, _) =>
+        {
+            if (TextArea.IsFocused)
+            {
+                // После раскладки: сразу после правки текста размеры строк ещё прежние.
+                Dispatcher.UIThread.Post(ScrollCaretIntoView, DispatcherPriority.Loaded);
+            }
+        };
         ActualThemeVariantChanged += (_, _) => TextArea.TextView.Redraw();
     }
 
@@ -212,6 +222,35 @@ public sealed class BlockEditor : TextEditor
     }
 
     public void PlaceCaretAtEnd() => PlaceCaretAt(Document.TextLength);
+
+    /// <summary>Прокручивает окружающую область так, чтобы строка с курсором была видна (с запасом сверху и снизу).</summary>
+    public void ScrollCaretIntoView()
+    {
+        var view = TextArea.TextView;
+        if (view.Bounds.Height <= 0 || this.FindAncestorOfType<ScrollViewer>() is not { } outer)
+        {
+            return;
+        }
+
+        // Своя прокрутка вместо BringIntoView: внутренняя область AvaloniaEdit запрос не пропускает наружу.
+        var caret = TextArea.Caret.CalculateCaretRectangle();
+        if (view.TranslatePoint(new Point(0, caret.Y - view.ScrollOffset.Y), outer) is not { } top)
+        {
+            return;
+        }
+
+        const double margin = 28;
+        var bottom = top.Y + caret.Height;
+        var offset = outer.Offset;
+        if (top.Y < margin)
+        {
+            outer.Offset = new Vector(offset.X, Math.Max(0, offset.Y + top.Y - margin));
+        }
+        else if (bottom > outer.Viewport.Height - margin)
+        {
+            outer.Offset = new Vector(offset.X, offset.Y + bottom - (outer.Viewport.Height - margin));
+        }
+    }
 
     public void FocusEditor(int? caretOffset = null)
     {

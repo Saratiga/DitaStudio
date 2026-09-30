@@ -76,6 +76,8 @@ public sealed class CoreTests
     [Fact] public void DivContentTests() => Run(CoreChecks.DivContentTests);
     [Fact] public void CaptionTests() => Run(CoreChecks.CaptionTests);
     [Fact] public void FigureCaptionFormatTests() => Run(CoreChecks.FigureCaptionFormatTests);
+    [Fact(Skip = "Г4 (этап 2 плана docs/REVIEW_PLAN_3.md): пустой <title/> пока не даёт подписи «Рисунок N» / «Таблица N»")]
+    public void EmptyTitleCaptionTests() => Run(CoreChecks.EmptyTitleCaptionTests);
     [Fact] public void PageMarginBoxTests() => Run(CoreChecks.PageMarginBoxTests);
     [Fact] public void CssSelectorTests() => Run(CoreChecks.CssSelectorTests);
     [Fact] public void CssCascadeDocxTests() => Run(CoreChecks.CssCascadeDocxTests);

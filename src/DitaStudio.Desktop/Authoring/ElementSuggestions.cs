@@ -4,6 +4,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using DitaStudio.Presentation;
 
 namespace DitaStudio.Desktop.Authoring;
 
@@ -23,8 +24,9 @@ public sealed class ElementSuggestions : Popup
     private readonly IReadOnlyList<ElementSuggestion> _all;
     private readonly Action<ElementSuggestion> _apply;
     private readonly TextBox _filter = new() { Watermark = "Фильтр…", Padding = new Thickness(4, 3, 4, 3), Margin = new Thickness(0, 0, 0, 4) };
-    private readonly ListBox _list = new() { Width = 300, Height = 220 };
-    private readonly TextBlock _description = new() { TextWrapping = TextWrapping.Wrap, Width = 240, Margin = new Thickness(10, 2, 2, 2) };
+    private readonly ListBox _list = new();
+    private readonly TextBlock _description = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(10, 2, 2, 2) };
+    private readonly Grid _grid = new();
     private bool _applied;
 
     public ElementSuggestions(Control target, Rect caret, IReadOnlyList<ElementSuggestion> items, Action<ElementSuggestion> apply)
@@ -38,9 +40,42 @@ public sealed class ElementSuggestions : Popup
 
         var left = new DockPanel { Children = { _filter, _list } };
         DockPanel.SetDock(_filter, Dock.Top);
-        var description = new ScrollViewer { Content = _description, Height = 250 };
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,Auto"), Children = { left, description } };
+        var description = new ScrollViewer { Content = _description, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
+        _grid.ColumnDefinitions = new ColumnDefinitions("1.25*,*");
+        _grid.Children.Add(left);
+        _grid.Children.Add(description);
         Grid.SetColumn(description, 1);
+
+        // Размер — тот, что пользователь выбрал в прошлый раз; ручка в правом нижнем углу растягивает окно.
+        (_grid.Width, _grid.Height) = PopupSizeSettings.Load();
+        var grip = new Avalonia.Controls.Primitives.Thumb
+        {
+            Width = 16,
+            Height = 16,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Cursor = new Cursor(StandardCursorType.BottomRightCorner),
+            Background = Brushes.Transparent
+        };
+        var gripMark = new Avalonia.Controls.Shapes.Path
+        {
+            Data = Geometry.Parse("M 14,2 L 2,14 M 14,7 L 7,14 M 14,12 L 12,14"),
+            Stroke = Brushes.Gray,
+            StrokeThickness = 1.2,
+            Width = 16,
+            Height = 16,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            IsHitTestVisible = false
+        };
+        ToolTip.SetTip(grip, "Потяните, чтобы изменить размер окна");
+        grip.DragDelta += (_, e) => ResizeBy(e.Vector.X, e.Vector.Y);
+        grip.DragCompleted += (_, _) => PopupSizeSettings.Save(_grid.Width, _grid.Height);
+        Grid.SetColumnSpan(gripMark, 2);
+        Grid.SetColumnSpan(grip, 2);
+        _grid.Children.Add(gripMark);
+        _grid.Children.Add(grip);
+        var grid = _grid;
 
         var border = new Border { Padding = new Thickness(6), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), Child = grid };
         border.Bind(Border.BackgroundProperty, border.GetResourceObservable("SurfaceAlt"));
@@ -85,6 +120,14 @@ public sealed class ElementSuggestions : Popup
         IsOpen = false;
         _apply(item);
     }
+
+    /// <summary>Размер окна подсказки (ширина, высота), px.</summary>
+    public (double Width, double Height) ContentSize => (_grid.Width, _grid.Height);
+
+    /// <summary>Растягивает окно на <paramref name="dx"/> и <paramref name="dy"/> в пределах допустимого; запоминает только по
+    /// окончании перетаскивания (см. ручку), а здесь — только меняет.</summary>
+    public void ResizeBy(double dx, double dy) =>
+        (_grid.Width, _grid.Height) = PopupSizeSettings.Clamp(_grid.Width + dx, _grid.Height + dy);
 
     /// <summary>Выбирает строку списка (для тестов).</summary>
     public void Select(ElementSuggestion item) => _list.SelectedItem = item;
