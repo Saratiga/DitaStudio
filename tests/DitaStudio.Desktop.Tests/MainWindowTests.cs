@@ -737,6 +737,42 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Г10: ПКМ по топику в карте — «Размещать на новой странице» и «Не размещать»: класс на строке карты, отметка в меню, отмена.</summary>
+    [AvaloniaFact]
+    public async Task MapMenu_PageBreakBefore_TogglesClassOnRow_AndIsUndoable()
+    {
+        var (window, vm) = await OpenAsync();
+        var map = Path.Combine(_project, "guide.ditamap");
+        static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
+        DitaNode Row() => vm.Documents.Tabs.Single(t => t.FullPath == map).Pane.Document.Root
+            .DescendantsAndSelf().First(n => n.GetAttribute("href")?.EndsWith("settings.dita") == true);
+        vm.OpenDocument!(map);
+        vm.Map.SelectedNode = vm.Map.Tree.SelectMany(All).First(n => n.Item.TargetPath?.EndsWith("settings.dita") == true);
+
+        Assert.False(vm.Map.SelectedPageBreakBefore);
+        vm.Map.TogglePageBreakBeforeCommand.Execute(null);
+        Assert.Contains("page-break-before", Row().GetAttribute("outputclass"));
+        Assert.True(vm.Map.SelectedPageBreakBefore, "отметка в меню после правки");
+        Assert.False(vm.Map.SelectedPageBreakNone);
+
+        // «Наоборот»: заменяет прежний выбор.
+        vm.Map.ToggleNoPageBreakCommand.Execute(null);
+        Assert.Equal("page-break-none", Row().GetAttribute("outputclass"));
+        Assert.True(vm.Map.SelectedPageBreakNone);
+        Assert.False(vm.Map.SelectedPageBreakBefore);
+
+        // Повторный выбор снимает; отмена возвращает предыдущий выбор одним шагом.
+        vm.Map.ToggleNoPageBreakCommand.Execute(null);
+        Assert.Null(Row().GetAttribute("outputclass"));
+        vm.Insert.UndoCommand.Execute(null);
+        Assert.Equal("page-break-none", Row().GetAttribute("outputclass"));
+
+        // У раздела без файла пункты недоступны.
+        vm.Map.AddTopicheadCommand.Execute(null);
+        Assert.False(vm.Map.TogglePageBreakBeforeCommand.CanExecute(null));
+        window.Close();
+    }
+
     [AvaloniaFact]
     public async Task AuthorContextMenu_HasInsertSubmenu_InsertingAtCaret()
     {

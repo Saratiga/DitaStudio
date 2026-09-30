@@ -144,7 +144,7 @@ public sealed class DocxPublisher
                     ? related
                     : null;
                 renderer.RenderTopic(expanded, topicNode, body, Math.Clamp(item.Level, 1, 6), bookmarkName,
-                    unnumbered: TocRules.IsHiddenInMap(item.Node));
+                    unnumbered: TocRules.IsHiddenInMap(item.Node), pageBreakBefore: TopicPageBreak.Of(item.Node));
             }
 
             var mainSection = BuildSectionProperties(mainPart, WithLayoutPage(styles.Page, layout), layout, styles.MarginBoxes, title, date, warnings);

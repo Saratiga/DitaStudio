@@ -262,6 +262,7 @@ public sealed class HtmlPublisher
             var anchor = AnchorFor(Path.GetFullPath(item.TargetPath!), item.TargetTopicId ?? doc.Root.GetAttribute("id"));
             var level = Math.Clamp(item.Level, 1, 5);
             body.Append("<div class=\"topic-chunk").Append(level == 1 ? " chapter-heading" : string.Empty)
+                .Append(TopicPageBreak.Of(item.Node) switch { true => " " + TopicPageBreak.Before, false => " " + TopicPageBreak.None, _ => string.Empty })
                 .Append("\" id=\"").Append(anchor).Append("\">\n");
             renderOptions.CurrentKeyScope = item.KeyScopeChain;
             renderOptions.TopicLevel = Math.Clamp(item.Level, 1, 9);

@@ -17,8 +17,10 @@ public sealed partial class DocxRenderer
 {
     /// <summary>Отрисовывает один топик и добавляет его содержимое в конец body.</summary>
     /// <param name="unnumbered">Заголовок без номера и вне оглавления (строка карты с toc="no").</param>
+    /// <param name="pageBreakBefore">Разрыв страницы перед топиком из карты (<see cref="TopicPageBreak"/>): true — с новой страницы,
+    /// false — не с новой (перекрывает настройку «каждый топик верхнего уровня — с новой страницы»), null — по настройке.</param>
     public void RenderTopic(DitaDocument document, DitaNode topic, W.Body body, int headingLevel, string? bookmarkName,
-        bool unnumbered = false)
+        bool unnumbered = false, bool? pageBreakBefore = null)
     {
         _document = document;
         using var topicScope = BlockScope(topic);
@@ -45,6 +47,12 @@ public sealed partial class DocxRenderer
                         bookmarkName = null;
                     }
 
+                    if (pageBreakBefore == true)
+                    {
+                        body.Append(new W.Paragraph(new W.Run(new W.Break { Type = W.BreakValues.Page }))); // заголовка нет — разрыв отдельным абзацем
+                        pageBreakBefore = null;
+                    }
+
                     break;
 
                 case "title":
@@ -60,10 +68,17 @@ public sealed partial class DocxRenderer
                         PrependBookmark(heading, bookmarkName);
                     }
 
-                    if (HasOutputClass(child, "page-break-before"))
+                    if (HasOutputClass(child, "page-break-before") || pageBreakBefore == true)
                     {
-                        EnsureParagraphProperties(heading).Append(new W.PageBreakBefore());
+                        EnsureParagraphProperties(heading).PageBreakBefore = new W.PageBreakBefore();
                     }
+                    else if (pageBreakBefore == false)
+                    {
+                        // Топик из карты помечен «не с новой страницы» — перекрывает разрыв, заданный стилем заголовка.
+                        EnsureParagraphProperties(heading).PageBreakBefore = new W.PageBreakBefore { Val = false };
+                    }
+
+                    pageBreakBefore = null;
 
                     body.Append(heading);
                     bookmarkName = null;

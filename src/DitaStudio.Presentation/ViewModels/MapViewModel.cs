@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Presentation.Services;
 
 namespace DitaStudio.Presentation.ViewModels;
@@ -60,8 +61,12 @@ public partial class MapViewModel : ObservableObject
 
         // Что доступно строке, зависит от её вида: у раздела нет файла, у корня карты нет родителя.
         OnPropertyChanged(nameof(SelectedHasFile));
+        OnPropertyChanged(nameof(SelectedPageBreakBefore));
+        OnPropertyChanged(nameof(SelectedPageBreakNone));
         OnPropertyChanged(nameof(HasStructureSelection));
         FindReferencesCommand.NotifyCanExecuteChanged();
+        TogglePageBreakBeforeCommand.NotifyCanExecuteChanged();
+        ToggleNoPageBreakCommand.NotifyCanExecuteChanged();
         RenameFileCommand.NotifyCanExecuteChanged();
         DeleteFileCommand.NotifyCanExecuteChanged();
         MoveUpCommand.NotifyCanExecuteChanged();
@@ -384,6 +389,33 @@ public partial class MapViewModel : ObservableObject
         }
 
         StructureOperation(EditCommands.Delete, "Удаление из карты");
+    }
+
+    /// <summary>Выбранный топик начинается с новой страницы (отметка в меню).</summary>
+    public bool SelectedPageBreakBefore => TopicPageBreak.Of(SelectedNode?.Item.Node) == true;
+
+    /// <summary>Выбранный топик не начинается с новой страницы, даже если так задано в оформлении DOCX.</summary>
+    public bool SelectedPageBreakNone => TopicPageBreak.Of(SelectedNode?.Item.Node) == false;
+
+    [RelayCommand(CanExecute = nameof(SelectedHasFile))]
+    private void TogglePageBreakBefore() => SetPageBreak(SelectedPageBreakBefore ? null : true);
+
+    [RelayCommand(CanExecute = nameof(SelectedHasFile))]
+    private void ToggleNoPageBreak() => SetPageBreak(SelectedPageBreakNone ? null : false);
+
+    private void SetPageBreak(bool? value)
+    {
+        StructureOperation(node =>
+        {
+            TopicPageBreak.Set(node, value);
+            return true;
+        }, "Разрыв страницы перед топиком");
+        _main.StatusText = value switch
+        {
+            true => "Топик будет начинаться с новой страницы (DOCX, PDF, единый HTML).",
+            false => "Топик не будет начинаться с новой страницы, даже если так задано в оформлении DOCX.",
+            _ => "Разрыв страницы перед топиком снят: как задано в оформлении DOCX."
+        };
     }
 
     [RelayCommand(CanExecute = nameof(HasStructureSelection))]
