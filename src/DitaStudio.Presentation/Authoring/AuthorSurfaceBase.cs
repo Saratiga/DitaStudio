@@ -188,6 +188,34 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         figure.Add(image);
     }
 
+    /// <summary>Таблица (table, simpletable…), в которой стоит курсор, или null.</summary>
+    protected DitaNode? CurrentTable()
+    {
+        for (var node = CurrentNode; node is not null; node = node.Parent)
+        {
+            if (node.Name is "table" or "simpletable" or "properties" or "choicetable")
+            {
+                return node;
+            }
+        }
+
+        return null;
+    }
+
+    public virtual bool SelectCurrentTable() => false;
+
+    /// <summary>Удаляет таблицу под курсором целиком (один шаг отмены).</summary>
+    public bool DeleteCurrentTable()
+    {
+        if (CurrentTable() is not { } table)
+        {
+            return false;
+        }
+
+        CurrentNode = table;
+        return DeleteCurrent();
+    }
+
     /// <summary>Подпись рисунка или таблицы: есть <c>title</c> — убрать, нет — добавить пустой (см. <see cref="IAuthorSurface.ToggleCaption"/>).</summary>
     public bool? ToggleCaption()
     {

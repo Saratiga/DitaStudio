@@ -593,6 +593,7 @@ public sealed partial class AuthorView
             : null;
         editor.Focused += (_, _) =>
         {
+            ClearOutline(); // курсор в тексте — выделение таблицы целиком снимается
             // Выделенный текст в других блоках при переходе сюда снимается — иначе выделений на экране несколько.
             foreach (var other in _order)
             {

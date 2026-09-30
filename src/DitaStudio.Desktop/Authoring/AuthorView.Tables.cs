@@ -39,7 +39,8 @@ public sealed partial class AuthorView
             stack.Children.Add(BuildCalsGrid(tgroup, rows, headerCount));
         }
 
-        var border = new Border { Child = stack };
+        // Прозрачный фон: щелчок по полям над и под таблицей попадает в рамку и выделяет таблицу целиком.
+        var border = new Border { Child = stack, Background = Brushes.Transparent };
         AttachSelection(border, node);
         return border;
     }

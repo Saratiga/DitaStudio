@@ -939,6 +939,83 @@ public sealed class AuthorViewTests
         window.Close();
     }
 
+    /// <summary>Г18: таблица выделяется целиком (щелчок по её рамке), удаляется клавишей Delete одним шагом отмены;
+    /// название таблицы добавляется и убирается в любой момент.</summary>
+    [AvaloniaFact]
+    public void Table_SelectWhole_DeleteWithKey_AndToggleTitleAnytime()
+    {
+        var (window, author, document, undo) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><p>До.</p>" +
+            "<table><tgroup cols=\"1\"><tbody><row><entry>Ячейка</entry></row></tbody></tgroup></table>" +
+            "<p>После.</p></conbody></concept>");
+        var body = document.Root.FirstElement("conbody")!;
+        var table = body.FirstElement("table")!;
+
+        var frame = (Avalonia.Controls.Border)author.ViewFor(table)!;
+        var point = frame.TranslatePoint(new Point(30, 2), window)!.Value;
+        window.MouseDown(point, Avalonia.Input.MouseButton.Left);
+        window.MouseUp(point, Avalonia.Input.MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(table, author.SelectedTable);
+        Assert.Same(table, author.CurrentNode);
+        Assert.Equal(2, frame.BorderThickness.Left); // контур выделения
+
+        // Название можно добавить и убрать, пока таблица выделена.
+        Assert.True(author.Surface.ToggleCaption());
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("title", table.ElementChildren().First().Name);
+        Assert.False(author.Surface.ToggleCaption());
+        Assert.Null(table.FirstElement("title"));
+
+        Dispatcher.UIThread.RunJobs(); Dispatcher.UIThread.RunJobs();
+        // Щелчок в тексте снимает выделение таблицы.
+        var cell = table.DescendantsAndSelf().First(n => n.Name == "entry");
+        Focus(window, author, cell, 0);
+        Assert.Null(author.SelectedTable);
+
+        // Выбрали заново и нажали Delete: таблицы нет, абзацы на месте, отмена возвращает.
+        frame = (Avalonia.Controls.Border)author.ViewFor(table)!;
+        point = frame.TranslatePoint(new Point(30, 2), window)!.Value;
+        window.MouseDown(point, Avalonia.Input.MouseButton.Left);
+        window.MouseUp(point, Avalonia.Input.MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(table, author.SelectedTable);
+        Press(window, Key.Delete, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new[] { "p", "p" }, body.ElementChildren().Select(n => n.Name).ToArray());
+        Assert.Contains(undo, d => d.Contains("Удаление <table>"));
+        Assert.Null(author.SelectedTable);
+        window.Close();
+    }
+
+    /// <summary>Г18: команды «Выделить таблицу» и «Удалить таблицу» работают с курсором в любой ячейке; вне таблицы — отказ.</summary>
+    [AvaloniaFact]
+    public void TableCommands_SelectAndDelete_FromCellCursor()
+    {
+        var (window, author, document, undo) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><p>До.</p>" +
+            "<table><tgroup cols=\"2\"><tbody><row><entry>А</entry><entry>Б</entry></row></tbody></tgroup></table></conbody></concept>");
+        var body = document.Root.FirstElement("conbody")!;
+        var cell = body.DescendantsAndSelf().Last(n => n.Name == "entry");
+
+        author.CurrentNode = body.ElementChildren().First();
+        Assert.False(author.Surface.SelectCurrentTable());
+        Assert.False(author.Surface.DeleteCurrentTable());
+
+        author.CurrentNode = cell;
+        Assert.True(author.Surface.SelectCurrentTable());
+        Assert.Same(body.FirstElement("table"), author.SelectedTable);
+        author.Deselect();
+        Assert.Null(author.SelectedTable);
+
+        author.CurrentNode = cell; // Deselect сбросил текущий блок
+        Assert.True(author.Surface.DeleteCurrentTable());
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(body.FirstElement("table"));
+        Assert.Contains(undo, d => d.Contains("Удаление <table>"));
+        window.Close();
+    }
+
     [AvaloniaFact]
     public void EnterAtEnd_ShowsSuggestions_DefaultSplits_FilterInserts()
     {

@@ -97,6 +97,9 @@
                 <MenuItem Header="Объединить ячейку со следующей" Command="{Binding Insert.MergeCellRightCommand}" InputGesture="Ctrl+Alt+Right" />
                 <MenuItem Header="Объединить ячейку со строкой ниже" Command="{Binding Insert.MergeCellDownCommand}" InputGesture="Ctrl+Alt+Down" />
                 <MenuItem Header="Таблица">
+                    <MenuItem Header="Выделить таблицу" Command="{Binding Insert.SelectTableCommand}" />
+                    <MenuItem Header="Удалить таблицу" Command="{Binding Insert.DeleteTableCommand}" />
+                    <Separator />
                     <MenuItem Header="Вставить строку выше" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertRowAbove}" />
                     <MenuItem Header="Вставить строку ниже" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertRowBelow}" />
                     <MenuItem Header="Удалить строку" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.DeleteRow}" />

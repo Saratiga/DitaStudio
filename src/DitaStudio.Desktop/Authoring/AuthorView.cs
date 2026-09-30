@@ -55,6 +55,7 @@ public sealed partial class AuthorView : UserControl
         _root.Children.Add(_scroll);
         _scroll.AddHandler(PointerPressedEvent, OnScrollPointerPressed, RoutingStrategies.Bubble, handledEventsToo: false);
         Content = _root;
+        Focusable = true;
         Themed(this, BackgroundProperty, "Surface");
         Surface = new AuthorViewSurface(this);
     }
@@ -443,6 +444,17 @@ public sealed partial class AuthorView : UserControl
             {
                 CurrentNode = node;
                 HighlightBorder(border);
+                // Таблица выделяется рамкой целиком и забирает клавиатуру: Delete удаляет её, Esc снимает выделение.
+                if (node.Name is "table" or "simpletable" or "properties" or "choicetable")
+                {
+                    SelectOutline(border);
+                    Focus();
+                }
+                else
+                {
+                    ClearOutline();
+                }
+
                 e.Handled = true;
             }
         });
@@ -480,8 +492,73 @@ public sealed partial class AuthorView : UserControl
         _currentBorder = border;
     }
 
+    // Выделенная целиком таблица: контур рамки вокруг неё.
+    private Border? _outlined;
+    private Thickness _outlinedThickness;
+    private IBrush? _outlinedBrush;
+    private IDisposable? _outlineBinding;
+
+    private void SelectOutline(Border border)
+    {
+        ClearOutline();
+        _outlined = border;
+        _outlinedThickness = border.BorderThickness;
+        _outlinedBrush = border.BorderBrush;
+        border.BorderThickness = new Thickness(2);
+        border.CornerRadius = new CornerRadius(3);
+        _outlineBinding = Themed(border, Border.BorderBrushProperty, "Accent");
+    }
+
+    private void ClearOutline()
+    {
+        if (_outlined is null)
+        {
+            return;
+        }
+
+        _outlineBinding?.Dispose();
+        _outlineBinding = null;
+        _outlined.BorderThickness = _outlinedThickness;
+        _outlined.BorderBrush = _outlinedBrush;
+        _outlined.CornerRadius = default;
+        _outlined = null;
+    }
+
+    internal void SelectTableOutline(Border border, DitaNode table)
+    {
+        CurrentNode = table;
+        SelectOutline(border);
+        Focus();
+    }
+
+    /// <summary>Узел выделенной целиком таблицы (контур) или null.</summary>
+    public DitaNode? SelectedTable => _outlined?.Tag as DitaNode;
+
+    protected override void OnKeyDown(Avalonia.Input.KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (e.Handled || _outlined?.Tag is not DitaNode table)
+        {
+            return;
+        }
+
+        // Выделена таблица целиком (а не текст в ячейке): Delete и Backspace удаляют её, Esc снимает выделение.
+        if (e.Key is Avalonia.Input.Key.Delete or Avalonia.Input.Key.Back)
+        {
+            e.Handled = true;
+            CurrentNode = table;
+            Surface.DeleteCurrent();
+        }
+        else if (e.Key == Avalonia.Input.Key.Escape)
+        {
+            e.Handled = true;
+            Deselect();
+        }
+    }
+
     private void ClearHighlight()
     {
+        ClearOutline();
         _currentBorderBinding?.Dispose();
         _currentBorderBinding = null;
         if (_currentBorder is not null)
@@ -508,6 +585,17 @@ public sealed partial class AuthorView : UserControl
         {
             get => _view.CurrentNode;
             protected set => _view.CurrentNode = value;
+        }
+
+        public override bool SelectCurrentTable()
+        {
+            if (CurrentTable() is not { } table || _view.ViewFor(table) is not Border border)
+            {
+                return false;
+            }
+
+            _view.SelectTableOutline(border, table);
+            return true;
         }
 
         protected override void BeforeStructuralEdit(string description) => _view.BeforeStructuralEdit?.Invoke(_view, description);

@@ -107,6 +107,12 @@ public interface IAuthorSurface
     /// </summary>
     bool? ToggleCaption() => null;
 
+    /// <summary>Выделяет целиком таблицу, в которой стоит курсор (контур; Delete удаляет). false — курсор не в таблице.</summary>
+    bool SelectCurrentTable() => false;
+
+    /// <summary>Удаляет таблицу, в которой стоит курсор, целиком. false — курсор не в таблице.</summary>
+    bool DeleteCurrentTable() => false;
+
     /// <summary>Оборачивает выделенный текст в фразовый элемент.</summary>
     bool WrapCurrentInline(string element);
 

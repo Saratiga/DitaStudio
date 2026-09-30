@@ -240,6 +240,31 @@ public partial class InsertViewModel : ObservableObject
         _main.Documents.RefreshAllTabTitles();
     }
 
+    /// <summary>Выделить целиком таблицу под курсором (контур; затем Delete удаляет её).</summary>
+    [RelayCommand]
+    private void SelectTable()
+    {
+        _main.StatusText = _main.Current?.Author.SelectCurrentTable() == true
+            ? "Таблица выделена: Delete удаляет её целиком, Esc снимает выделение."
+            : "Поставьте курсор в ячейку таблицы.";
+    }
+
+    /// <summary>Удалить таблицу под курсором целиком.</summary>
+    [RelayCommand]
+    private void DeleteTable()
+    {
+        if (_main.Current?.Author.DeleteCurrentTable() == true)
+        {
+            _main.Documents.RefreshAllTabTitles();
+            _main.RefreshOutline?.Invoke();
+            _main.StatusText = "Таблица удалена (отмена — Ctrl+Alt+Z).";
+        }
+        else
+        {
+            _main.StatusText = "Поставьте курсор в ячейку таблицы.";
+        }
+    }
+
     /// <summary>Подпись рисунка или таблицы под курсором: добавить пустую («Рисунок N») или убрать совсем.</summary>
     [RelayCommand]
     private void ToggleCaption()
