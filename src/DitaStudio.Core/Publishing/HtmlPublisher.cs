@@ -23,6 +23,9 @@ public sealed class PublishOptions
     public List<DitavalFlagRule> FlagConditions { get; } = new();
 
     public bool CopyImages { get; set; } = true;
+
+    /// <summary>Вместо картинки, которой нет на диске, — плашка «Картинка не найдена» (предпросмотр).</summary>
+    public bool MarkMissingImages { get; set; }
 }
 
 public sealed class PublishResult
@@ -131,7 +134,8 @@ public sealed class HtmlPublisher
             FlagRules = options.FlagConditions,
             Numbering = new HeadingNumbering(_project.DocxLayout.NumberHeadings, _project.DocxLayout.NumberingDepth),
             NumberFiguresAndTables = _project.DocxLayout.NumberFiguresAndTables,
-            CaptionSeparator = _project.DocxLayout.CaptionSeparator
+            CaptionSeparator = _project.DocxLayout.CaptionSeparator,
+            MarkMissingImages = options.MarkMissingImages
         };
 
         if (options.SingleFile)
@@ -295,6 +299,22 @@ public sealed class HtmlPublisher
         var outPath = Path.Combine(options.OutputDirectory, SafeFileName(tree.Root.Title) + ".html");
         File.WriteAllText(outPath, html, new UTF8Encoding(false));
         return outPath;
+    }
+
+    /// <summary>
+    /// Предпросмотр всей карты: текст всех топиков издания в одном HTML (с оглавлением, нумерацией, подписями — как «единый HTML»).
+    /// Файл и его картинки создаются в <paramref name="outputDirectory"/>; возвращается путь к HTML. Не найденные картинки —
+    /// плашками «Картинка не найдена», как в предпросмотре топика.
+    /// </summary>
+    public string RenderMapPreview(string mapPath, string outputDirectory, PublishOptions? options = null)
+    {
+        options ??= new PublishOptions();
+        options.OutputDirectory = outputDirectory;
+        options.SingleFile = true;
+        options.CopyImages = true;
+        options.MarkMissingImages = true;
+        options.ShowDraftComments = true;
+        return Publish(mapPath, options).EntryFile;
     }
 
     /// <summary>Отрисовка одного топика для панели предпросмотра.</summary>

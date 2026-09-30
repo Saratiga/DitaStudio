@@ -61,6 +61,7 @@ public partial class DocumentsViewModel : ObservableObject
         pane.DirtyChanged += (_, _) => tab.RefreshTitle();
         pane.SelectionChanged += (_, _) => _main.RefreshEditorContext?.Invoke();
         pane.RootTitleCommitted += (_, _) => _ = _main.ProjectPanel.OfferRenameByTitleAsync(pane);
+        pane.OpenFileRequested += (_, path) => _main.OpenDocument?.Invoke(path);
         pane.Saved += (_, _) =>
         {
             if (pane.FilePath is { } saved)

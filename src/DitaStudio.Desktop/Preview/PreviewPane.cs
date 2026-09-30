@@ -80,6 +80,8 @@ public sealed class PreviewPane : UserControl
         Content = new DockPanel { Children = { barBorder, _host } };
     }
 
+    private bool IsMap => _document.Root.Name is "map" or "bookmap" && _document.FilePath is not null;
+
     public PreviewFormat Format
     {
         get => (PreviewFormat)Math.Max(0, _format.SelectedIndex);
@@ -104,14 +106,43 @@ public sealed class PreviewPane : UserControl
         _commitPendingEdits();
 
         string html;
+        string? mapEntry = null;
+        var extraCss = format == PreviewFormat.DocxApprox ? Assets.WordPreviewCss : null;
         try
         {
-            html = new HtmlPublisher(_project).RenderPreview(_document, extraCss: format == PreviewFormat.DocxApprox ? Assets.WordPreviewCss : null);
+            if (IsMap)
+            {
+                // Карта: текст всего издания (а не список ссылок) — собранный так же, как единый HTML.
+                var mapDir = Path.Combine(Path.GetTempPath(), "DitaStudioPreview", PreviewFileBaseName(_document.FilePath) + "-map");
+                try
+                {
+                    if (Directory.Exists(mapDir))
+                    {
+                        Directory.Delete(mapDir, true);
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    // прежние файлы заняты просмотрщиком — новая сборка перезапишет их сверху
+                }
+
+                mapEntry = new HtmlPublisher(_project).RenderMapPreview(_document.FilePath!, mapDir);
+                html = File.ReadAllText(mapEntry);
+                if (extraCss is not null)
+                {
+                    html = html.Replace("</head>", "<style>\n" + extraCss + "\n</style>\n</head>");
+                }
+            }
+            else
+            {
+                html = new HtmlPublisher(_project).RenderPreview(_document, extraCss: extraCss);
+            }
         }
         catch (Exception ex)
         {
             html = "<html><body style='font-family:sans-serif'><p>Не удалось построить предпросмотр:</p><pre>" +
                    System.Net.WebUtility.HtmlEncode(ex.Message) + "</pre></body></html>";
+            mapEntry = null;
         }
 
         try
@@ -119,7 +150,8 @@ public sealed class PreviewPane : UserControl
             var dir = Path.Combine(Path.GetTempPath(), "DitaStudioPreview");
             Directory.CreateDirectory(dir);
             var baseName = PreviewFileBaseName(_document.FilePath);
-            var htmlPath = Path.Combine(dir, baseName + ".html");
+            // Предпросмотр карты лежит рядом со своей папкой media — картинки подхватываются относительными путями.
+            var htmlPath = mapEntry ?? Path.Combine(dir, baseName + ".html");
             await File.WriteAllTextAsync(htmlPath, html, Encoding.UTF8);
 
             var shown = htmlPath;

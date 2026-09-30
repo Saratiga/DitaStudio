@@ -929,6 +929,57 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Г5: у карты «Автор» — список топиков по иерархии, «Предпросмотр» — текст всего издания; «битая» строка красная с причиной.</summary>
+    [AvaloniaFact]
+    public async Task MapDocument_AuthorShowsTopicHierarchy_PreviewShowsWholeText()
+    {
+        File.WriteAllText(Path.Combine(_project, "outline.ditamap"),
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<map><title>Издание</title>" +
+            "<topicref href=\"concepts/about.dita\"><topicref href=\"reference/settings.dita\"/></topicref>" +
+            "<topichead navtitle=\"Раздел\"><topicref href=\"tasks/absent.dita\" navtitle=\"Нет файла\"/></topichead></map>");
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "outline.ditamap"))!;
+        Dispatcher.UIThread.RunJobs();
+
+        // «Автор» карты — список топиков: заголовки, вложенность, битая строка красным с причиной.
+        var outline = Assert.IsType<Desktop.Authoring.MapOutlineView>(pane.MapOutline);
+        pane.Mode = Presentation.Services.EditorMode.Author;
+        Dispatcher.UIThread.RunJobs();
+        var root = Assert.Single(outline.Roots);
+        static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
+        var titles = All(root).Select(n => n.Title).ToList();
+        Assert.Contains("О продукте", titles);
+        Assert.Contains("Раздел", titles);
+        var about = All(root).First(n => n.Item.TargetPath?.EndsWith("about.dita") == true);
+        Assert.Single(about.Children); // settings вложен в about
+        var broken = All(root).First(n => n.Title == "Нет файла");
+        Assert.True(broken.IsBroken);
+        Assert.Contains("Файл не найден", broken.ToolTip);
+        Assert.Contains(outline.GetLogicalDescendants().OfType<TextBlock>(), t => (t.Text ?? string.Empty).StartsWith("Топиков в карте: 3") && t.Text!.Contains("не найдено файлов: 1"));
+
+        // Двойной щелчок открывает топик; у битой строки — не открывает.
+        string? opened = null;
+        pane.OpenFileRequested += (_, path) => opened = path;
+        var tree = outline.GetLogicalDescendants().OfType<TreeView>().First();
+        tree.SelectedItem = about;
+        tree.RaiseEvent(new Avalonia.Input.TappedEventArgs(Avalonia.Input.InputElement.DoubleTappedEvent, null!) { Source = tree });
+        Assert.EndsWith("about.dita", opened);
+
+        // «Предпросмотр» — текст всего издания: оба топика в одном HTML, заголовок карты, оглавление.
+        var file = await pane.Preview.RefreshAsync();
+        Assert.NotNull(file);
+        var html = File.ReadAllText(file!);
+        Assert.Contains("Издание", html);
+        Assert.Contains("О продукте", html);
+        Assert.Contains("Синтаксис", html);
+        Assert.DoesNotContain("<ul class=\"map-list\"", html);
+
+        // У обычного топика «Автор» — прежний редактор.
+        var topicPane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Assert.Null(topicPane.MapOutline);
+        window.Close();
+    }
+
     [AvaloniaFact]
     public async Task AuthorContextMenu_HasInsertSubmenu_InsertingAtCaret()
     {

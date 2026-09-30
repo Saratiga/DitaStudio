@@ -40,6 +40,13 @@ public interface IDocumentView
     /// <summary>Сменился текущий элемент (курсор в «Авторе» или исходном коде).</summary>
     event EventHandler? SelectionChanged;
 
+    /// <summary>Просьба открыть файл (двойной щелчок по топику в списке карты). Оболочки без такого списка событие не поднимают.</summary>
+    event EventHandler<string>? OpenFileRequested
+    {
+        add { }
+        remove { }
+    }
+
     /// <summary>Фокус ушёл из изменённого заголовка топика: имя файла можно привести в соответствие с ним.
     /// Оболочки без такого редактирования событие не поднимают.</summary>
     event EventHandler? RootTitleCommitted

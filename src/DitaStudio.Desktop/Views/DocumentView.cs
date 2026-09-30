@@ -26,6 +26,7 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
     private readonly XmlSourceEditor _source = new();
     private readonly AuthorView _author = new();
     private readonly PreviewPane _preview;
+    private readonly MapOutlineView? _outline;
     private bool _syncing;
 
     public DocumentView(DitaProject project, DitaDocument document, IPdfPrinter pdfPrinter)
@@ -48,9 +49,16 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
             }
         };
 
+        // У карты (map, bookmap) «Автор» — список её топиков по иерархии, а не пустое окно без текстовых блоков.
+        if (document.Root.Name is "map" or "bookmap" && document.FilePath is not null)
+        {
+            _outline = new MapOutlineView(project, document);
+            _outline.OpenRequested += path => OpenFileRequested?.Invoke(this, path);
+        }
+
         _tabs.ItemsSource = new[]
         {
-            new TabItem { Header = "Автор", Content = _author },
+            new TabItem { Header = "Автор", Content = (Control?)_outline ?? _author },
             new TabItem { Header = "Исходный код", Content = _source },
             new TabItem { Header = "Предпросмотр", Content = _preview }
         };
@@ -80,6 +88,11 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
     public event EventHandler? SelectionChanged;
 
     public event EventHandler? RootTitleCommitted;
+
+    public event EventHandler<string>? OpenFileRequested;
+
+    /// <summary>Список топиков карты вместо «Автора» (null у обычных топиков) — для тестов.</summary>
+    public MapOutlineView? MapOutline => _outline;
 
     public EditorMode Mode
     {
@@ -119,6 +132,7 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
         else if (Mode == EditorMode.Author)
         {
             _author.Rebuild(_author.CurrentNode);
+            _outline?.Refresh();
         }
         else if (Mode == EditorMode.Preview)
         {
@@ -287,6 +301,7 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
     public void ReloadViews()
     {
         _author.Rebuild(_author.CurrentNode);
+        _outline?.Refresh();
         if (Mode == EditorMode.Source)
         {
             LoadSourceFromModel();

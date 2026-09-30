@@ -45,6 +45,9 @@ internal static partial class CoreChecks
             var html = File.ReadAllText(new HtmlPublisher(project).Publish(Path.Combine(root, "m.ditamap"),
                 new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true }).EntryFile);
             Check(!html.Contains("class=\"image-missing\">"), "публикация: плашки нет (это только предпросмотр)");
+            var mapPreview = File.ReadAllText(new HtmlPublisher(project).RenderMapPreview(Path.Combine(root, "m.ditamap"), Path.Combine(root, "mapview")));
+            Check(mapPreview.Contains("Текст.") && mapPreview.Contains("Картинка не найдена: images/none.png") && mapPreview.Contains("Моя карта") == false && mapPreview.Contains("<h1 class=\"book-title\">M</h1>"),
+                "предпросмотр карты: текст топиков целиком, плашка вместо картинки, заголовок издания");
         });
     }
 }
