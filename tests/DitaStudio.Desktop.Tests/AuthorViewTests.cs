@@ -1069,6 +1069,41 @@ public sealed class AuthorViewTests
         window.Close();
     }
 
+    /// <summary>Г11: у блока с product / audience / outputclass в «Авторе» — серая пометка; оформление текста в неё не попадает; выключается.</summary>
+    [AvaloniaFact]
+    public void AttributeNotes_ShowProductAndClass_InGray_AndCanBeSwitchedOff()
+    {
+        var (window, author, document, _) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody>" +
+            "<p product=\"Альфа Бета\">Для продуктов.</p>" +
+            "<note outputclass=\"warning-box size-18 align-center\" audience=\"admin\"><p>Внутри заметки.</p></note>" +
+            "<p outputclass=\"size-14\">Без пометки.</p><p>Обычный.</p></conbody></concept>");
+        List<string?> Notes() => window.GetVisualDescendants().OfType<TextBlock>().Where(t => Equals(t.Tag, "attribute-note")).Select(t => t.Text).ToList();
+
+        Assert.Equal(new List<string?> { "product: Альфа, Бета", "audience: admin · class: warning-box" }, Notes());
+
+        // Пометка серая и вмещает всё нужное; сами блоки остаются редактируемыми.
+        var first = Paragraphs(document)[0];
+        Assert.NotNull(author.EditorFor(first));
+
+        var previous = AuthorView.AttributeNotesEnabled;
+        try
+        {
+            AuthorView.AttributeNotesEnabled = false;
+            author.Rebuild();
+            Dispatcher.UIThread.RunJobs();
+            Assert.Empty(Notes());
+        }
+        finally
+        {
+            AuthorView.AttributeNotesEnabled = previous;
+        }
+
+        Assert.Equal("product: Альфа, Бета", AuthorView.AttributeNote(first));
+        Assert.Null(AuthorView.AttributeNote(Paragraphs(document)[^1]));
+        window.Close();
+    }
+
     [AvaloniaFact]
     public void EnterAtEnd_ShowsSuggestions_DefaultSplits_FilterInserts()
     {

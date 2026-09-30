@@ -220,6 +220,15 @@ public partial class MainWindow : Window
 
     private (MapTreeNode Node, bool Expanded)? _doubleClickExpansion;
 
+    private void OnToggleAttributeNotes(object? sender, RoutedEventArgs e)
+    {
+        Authoring.AuthorView.AttributeNotesEnabled = AttributeNotesMenu.IsChecked;
+        foreach (var pane in ViewModel.Panes.Values)
+        {
+            pane.ReloadViews(); // пометки рисуются при построении блоков — перестраиваем «Автор» открытых документов
+        }
+    }
+
     private void OnToggleEnterSuggestions(object? sender, RoutedEventArgs e) =>
         Authoring.AuthorView.EnterSuggestionsEnabled = EnterSuggestionsMenu.IsChecked;
 

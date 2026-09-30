@@ -152,6 +152,8 @@
                 <MenuItem Header="Track changes: отклонить правку" Command="{Binding Insert.RejectTrackedChangeCommand}" />
                 <Separator />
                 <MenuItem Header="Показывать имена элементов" ToggleType="CheckBox" IsChecked="{Binding Insert.ShowElementTags, Mode=TwoWay}" />
+                <MenuItem Name="AttributeNotesMenu" Header="Показывать пометки атрибутов (product, outputclass)" ToggleType="CheckBox" IsChecked="True" Click="OnToggleAttributeNotes"
+                          ToolTip.Tip="У блока с атрибутом product, audience, platform, props или outputclass сверху — серая пометка" />
                 <MenuItem Name="EnterSuggestionsMenu" Header="Подсказка по Enter" ToggleType="CheckBox" IsChecked="True" Click="OnToggleEnterSuggestions"
                           ToolTip.Tip="Enter в конце блока показывает, какой элемент вставить дальше (первая строка — обычное действие Enter)" />
                 <Separator />

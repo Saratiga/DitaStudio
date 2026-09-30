@@ -25,6 +25,11 @@ public sealed partial class AuthorView
             view = WithPlacementMark(place, view);
         }
 
+        if (view is not null && AttributeNotesEnabled && AttributeNote(node) is { } note)
+        {
+            view = WithAttributeNote(note, view);
+        }
+
         if (view is not null)
         {
             _views[node] = view;
@@ -50,7 +55,46 @@ public sealed partial class AuthorView
         Themed(mark, TextBlock.ForegroundProperty, "Accent");
         ToolTip.SetTip(mark, "В PDF и DOCX блок стоит на своей странице в выбранной области листа; на сайте — в тексте. " +
                              "Изменить: контекстное меню → Оформление → Положение на листе.");
-        return new StackPanel { Children = { mark, view } };
+        return new StackPanel { Tag = ViewWrapperTag, Children = { mark, view } };
+    }
+
+    /// <summary>Показывать у блоков серые пометки условных атрибутов (<c>product</c>, <c>audience</c>…) и <c>outputclass</c>.</summary>
+    public static bool AttributeNotesEnabled { get; set; } = true;
+
+    private static readonly string[] ConditionAttributes = { "product", "audience", "platform", "props", "otherprops", "deliveryTarget" };
+
+    // Классы, которые «Автор» показывает иначе (оформление текста, положение на листе, высота строки) — в пометку не попадают.
+    private static readonly string[] HiddenClassPrefixes = { "align-", "size-", "color-", "row-height-", "place-", "page-break-" };
+
+    /// <summary>Текст серой пометки: «product: Альфа, Бета · class: warning-box»; null — у элемента нечего показывать.</summary>
+    public static string? AttributeNote(DitaNode node)
+    {
+        var parts = new List<string>();
+        foreach (var name in ConditionAttributes)
+        {
+            if (node.GetAttribute(name) is { } value && !string.IsNullOrWhiteSpace(value))
+            {
+                parts.Add($"{name}: {string.Join(", ", value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))}");
+            }
+        }
+
+        var classes = (node.GetAttribute("outputclass") ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+            .Where(token => !HiddenClassPrefixes.Any(prefix => token.StartsWith(prefix, StringComparison.Ordinal))).ToList();
+        if (classes.Count > 0)
+        {
+            parts.Add("class: " + string.Join(" ", classes));
+        }
+
+        return parts.Count == 0 ? null : string.Join(" · ", parts);
+    }
+
+    private static Control WithAttributeNote(string text, Control view)
+    {
+        var note = new TextBlock { Text = text, FontSize = 10.5, Margin = new Thickness(4, 2, 0, 0), Tag = "attribute-note", TextWrapping = TextWrapping.Wrap };
+        Themed(note, TextBlock.ForegroundProperty, "EditorTag");
+        ToolTip.SetTip(note, "Атрибуты элемента: при условной сборке (product, audience…) он попадает в публикацию только для выбранных значений. " +
+                             "Правка — панель «Атрибуты». Показ пометок: «Структура → Показывать пометки атрибутов».");
+        return new StackPanel { Tag = ViewWrapperTag, Children = { note, view } };
     }
 
     private Control? BuildNodeCore(DitaNode node, int depth)

@@ -105,7 +105,23 @@ public sealed partial class AuthorView : UserControl
 
     /// <summary>Редактор, в котором последним был курсор, если он относится к узлу, иначе — первый редактор узла.</summary>
     /// <summary>Отрисованный блок узла (рамка, строка текста) или null.</summary>
-    public Control? ViewFor(DitaNode node) => _views.TryGetValue(node, out var view) ? view : null;
+    public Control? ViewFor(DitaNode node)
+    {
+        if (!_views.TryGetValue(node, out var view))
+        {
+            return null;
+        }
+
+        // Пометки над блоком (отдельный лист, атрибуты) — обёртка вокруг самого блока: наружу отдаётся блок.
+        while (view is StackPanel { Tag: ViewWrapperTag } wrapper && wrapper.Children.Count > 0)
+        {
+            view = wrapper.Children[^1];
+        }
+
+        return view;
+    }
+
+    private const string ViewWrapperTag = "view-wrapper";
 
     public BlockEditor? ActiveEditorFor(DitaNode node) =>
         _activeEditor is { } active && ReferenceEquals(active.Node, node) && _order.Contains(active) ? active : EditorFor(node);
@@ -589,7 +605,8 @@ public sealed partial class AuthorView : UserControl
 
         public override bool SelectCurrentTable()
         {
-            if (CurrentTable() is not { } table || _view.ViewFor(table) is not Border border)
+            if (CurrentTable() is not { } table || _view.ViewFor(table) is not { } view ||
+                (view as Border ?? view.GetLogicalDescendants().OfType<Border>().FirstOrDefault(b => ReferenceEquals(b.Tag, table))) is not { } border)
             {
                 return false;
             }
