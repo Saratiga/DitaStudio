@@ -68,7 +68,7 @@ public sealed partial class DocxRenderer
     /// элемента (HTML-публикация ставит его классом, так что «.keyword {…}» работает и тут).</summary>
     private ClassContext? ContextFor(DitaNode node)
     {
-        if (node.Kind != NodeKind.Element || Sheet.CustomClasses.Count == 0 && !Sheet.HasSelectorRules)
+        if (node.Kind != NodeKind.Element)
         {
             return null;
         }
@@ -76,7 +76,12 @@ public sealed partial class DocxRenderer
         var classes = new List<string>();
         var tokens = (node.GetAttribute("outputclass") ?? string.Empty)
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Append(node.Name);
+            .Append(node.Name).ToList();
+        foreach (var token in tokens)
+        {
+            Sheet.RegisterSizeClass(token); // свой размер шрифта — класс создаётся на лету
+        }
+
         foreach (var token in tokens)
         {
             if (Sheet.CustomClasses.Contains(token) && !classes.Contains(token))

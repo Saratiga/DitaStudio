@@ -1,3 +1,4 @@
+using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Docx;
@@ -73,6 +74,51 @@ internal static partial class CoreChecks
             var styles2 = doc2.MainDocumentPart!.StyleDefinitionsPart!.Styles!.Elements<Style>().ToDictionary(s => s.StyleId!.Value!);
             var pr = doc2.MainDocumentPart.Document.Body!.Descendants<Paragraph>().First(p => p.InnerText.Contains("ПУНКТ")).ParagraphProperties?.ParagraphStyleId?.Val?.Value;
             Check(pr is not null && styles2[pr].StyleRunProperties?.FontSize?.Val?.Value == "40", "DOCX: правило проекта .size-18 (20 pt) перекрывает встроенное");
+        });
+    }
+
+    // Г17: свой размер шрифта — класс size-13_5 (дробные через «_»), в HTML — стилем, в DOCX — классом на лету.
+    internal static void CustomFontSizeTests()
+    {
+        Section("Свой размер шрифта: size-13_5");
+
+        Check(TextFormatting.SizeToken(12) == "size-12" && TextFormatting.SizeToken(13.5) == "size-13_5" && TextFormatting.SizeToken(13.54) == "size-13_5",
+            "токен: целое — size-12, дробное — size-13_5, округление до десятых");
+        Check(TextFormatting.SizeToken(3) == "size-4" && TextFormatting.SizeToken(500) == "size-200", "границы 4–200 пт");
+        Check(TextFormatting.ParseSizeToken("size-13_5") == 13.5 && TextFormatting.ParseSizeToken("size-16") == 16 && TextFormatting.ParseSizeToken("size-x") is null &&
+              TextFormatting.ParseSizeToken("size-300") is null && TextFormatting.ParseSizeToken("color-red") is null, "разбор токена");
+        Check(!TextFormatting.IsCustomSize("size-12") && TextFormatting.IsCustomSize("size-13_5") && TextFormatting.IsCustomSize("size-15"), "«свой» — не из списка стандартных");
+        var paragraph = DitaDocument.Parse("<p outputclass=\"size-13_5\">x</p>").Root;
+        Check(TextFormatting.SizeOf(paragraph) == 13.5, "SizeOf читает дробный размер");
+
+        WithProject(new Dictionary<string, string>
+        {
+            ["t.dita"] = """
+                <topic id="t"><title>T</title><body>
+                <p outputclass="size-13_5">СВОЙ</p><p outputclass="size-18">СТАНДАРТ</p>
+                <p>Фраза <ph outputclass="size-9_5 color-red">МЕЛКО</ph></p>
+                </body></topic>
+                """,
+            ["m.ditamap"] = "<map><title>M</title><topicref href=\"t.dita\"/></map>"
+        }, (root, project) =>
+        {
+            var html = File.ReadAllText(new HtmlPublisher(project).Publish(Path.Combine(root, "m.ditamap"),
+                new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true }).EntryFile);
+            Check(html.Contains("class=\"size-13_5\" style=\"font-size: 13.5pt\">СВОЙ"), "HTML: свой размер — стиль на элементе");
+            Check(html.Contains("class=\"size-18\">СТАНДАРТ") && !html.Contains("size-18\" style"), "HTML: стандартный размер — только класс со встроенным правилом");
+            Check(html.Contains("font-size: 9.5pt\">МЕЛКО"), "HTML: свой размер у фразы");
+
+            var docx = Path.Combine(root, "d.docx");
+            new DocxPublisher(project).Publish(Path.Combine(root, "m.ditamap"), new PublishOptions { Language = "ru" }, docx);
+            CheckValidDocx(docx, "свой размер шрифта");
+            using var doc = WordprocessingDocument.Open(docx, false);
+            var styles = doc.MainDocumentPart!.StyleDefinitionsPart!.Styles!.Elements<Style>().ToDictionary(st => st.StyleId!.Value!);
+            var own = doc.MainDocumentPart.Document.Body!.Descendants<Paragraph>().First(p => p.InnerText == "СВОЙ").ParagraphProperties?.ParagraphStyleId?.Val?.Value;
+            Check(own is not null && styles[own].StyleRunProperties?.FontSize?.Val?.Value == "27", "DOCX: свой размер 13,5 пт = 27 half-points");
+            var run = doc.MainDocumentPart.Document.Body.Descendants<Run>().First(r => r.InnerText == "МЕЛКО");
+            var runStyle = run.RunProperties?.RunStyle?.Val?.Value;
+            Check(runStyle is not null && styles[runStyle].StyleRunProperties?.FontSize?.Val?.Value == "19" && styles[runStyle].StyleRunProperties?.Color?.Val?.Value == "C00000",
+                "DOCX: у фразы свой размер и цвет");
         });
     }
 }

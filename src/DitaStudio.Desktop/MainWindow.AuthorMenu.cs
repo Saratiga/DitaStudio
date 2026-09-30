@@ -101,7 +101,7 @@ public partial class MainWindow
 
         var sizes = ViewModel.Insert.FontSizes.Select(size => (Control)new MenuItem
         {
-            Header = size == InsertViewModel.NormalSize ? size : size + " пт",
+            Header = size is InsertViewModel.NormalSize or InsertViewModel.CustomSize ? size : size + " пт",
             Command = ViewModel.Insert.SetFontSizeCommand,
             CommandParameter = size
         }).ToList();

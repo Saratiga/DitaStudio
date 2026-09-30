@@ -40,7 +40,38 @@ public static class TextFormatting
         ("color-gray", "Серый", "#7F7F7F")
     };
 
-    public static string SizeToken(int points) => SizePrefix + points.ToString(CultureInfo.InvariantCulture);
+    /// <summary>Наименьший и наибольший размер шрифта, пт, который можно задать своим числом.</summary>
+    public const double MinCustomSize = 4;
+
+    public const double MaxCustomSize = 200;
+
+    /// <summary>
+    /// Класс размера: «size-12» для целого числа пунктов и «size-13_5» для дробного (точка в имени класса CSS означала бы два
+    /// класса, поэтому вместо неё подчёркивание). Числа вне 4–200 пт ограничиваются.
+    /// </summary>
+    public static string SizeToken(double points)
+    {
+        points = Math.Clamp(Math.Round(points * 10) / 10, MinCustomSize, MaxCustomSize);
+        return SizePrefix + points.ToString("0.#", CultureInfo.InvariantCulture).Replace('.', '_');
+    }
+
+    public static string SizeToken(int points) => SizeToken((double)points);
+
+    /// <summary>Размер из класса «size-…» (пт); null — это не класс размера или число вне допустимых границ.</summary>
+    public static double? ParseSizeToken(string token) =>
+        token.StartsWith(SizePrefix, StringComparison.Ordinal) &&
+        double.TryParse(token[SizePrefix.Length..].Replace('_', '.'), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var size) &&
+        size is >= MinCustomSize and <= MaxCustomSize
+            ? size
+            : null;
+
+    /// <summary>Класс размера не из списка <see cref="Sizes"/> — для него нет встроенного правила CSS, оно выводится при публикации.</summary>
+    public static bool IsCustomSize(string token) =>
+        ParseSizeToken(token) is { } size && !Sizes.Any(s => Math.Abs(s - size) < 0.001);
+
+    /// <summary>Правило CSS своего размера («font-size: 13.5pt») для HTML и DOCX; null — класс не свой размер.</summary>
+    public static string? CustomSizeCss(string token) =>
+        IsCustomSize(token) ? $"font-size: {ParseSizeToken(token)!.Value.ToString("0.#", CultureInfo.InvariantCulture)}pt" : null;
 
     /// <summary>CSS встроенных классов оформления — для HTML/PDF и DOCX.</summary>
     public static string Css { get; } = BuildCss();
@@ -95,11 +126,9 @@ public static class TextFormatting
         return node.GetAttribute("outputclass") != before;
     }
 
-    /// <summary>Размер шрифта класса size-N, пт; null — не задан.</summary>
-    public static int? SizeOf(DitaNode node) =>
-        Token(node, SizePrefix) is { } token && int.TryParse(token[SizePrefix.Length..], NumberStyles.None, CultureInfo.InvariantCulture, out var size)
-            ? size
-            : null;
+    /// <summary>Размер шрифта класса size-N (в том числе дробный size-13_5), пт; null — не задан.</summary>
+    public static double? SizeOf(DitaNode node) =>
+        Token(node, SizePrefix) is { } token ? ParseSizeToken(token) : null;
 
     /// <summary>Цвет класса color-… (#RRGGBB); null — не задан.</summary>
     public static string? ColorOf(DitaNode node) =>

@@ -37,6 +37,9 @@ public interface IDialogService
 
     Task<T?> PickOneAsync<T>(string title, string prompt, IReadOnlyList<T> items, Func<T, string> display) where T : class;
 
+    /// <summary>Запрашивает одну строку текста; null — отмена. Оболочки без такого окна возвращают null.</summary>
+    Task<string?> PromptTextAsync(string title, string label, string initial, string hint, string okText = "ОК") => Task.FromResult<string?>(null);
+
     Task AboutAsync();
 
     Task<NewDocumentResult?> NewDocumentAsync(string projectRoot, IEnumerable<string> folders, string? preselectedFolder);

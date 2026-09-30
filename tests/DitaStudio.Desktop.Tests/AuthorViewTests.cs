@@ -868,6 +868,77 @@ public sealed class AuthorViewTests
         window.Close();
     }
 
+    /// <summary>Г16: Enter в ячейке таблицы работает как вне таблицы — новый абзац внутри ячейки, ячейка не делится; меню без соседних ячеек.</summary>
+    [AvaloniaFact]
+    public void Enter_InTableCell_SplitsIntoParagraphsInsideCell_NotIntoCells()
+    {
+        var (window, author, document, _) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><table><tgroup cols=\"2\"><tbody>" +
+            "<row><entry>Первая ячейка</entry><entry>Вторая</entry></row></tbody></tgroup></table></conbody></concept>");
+        var row = document.Root.DescendantsAndSelf().First(n => n.Name == "row");
+        var cell = row.ElementChildren().First();
+
+        // Enter в середине текста: ячейка остаётся одной, текст — в двух абзацах внутри неё.
+        var editor = Focus(window, author, cell, 5);
+        Press(window, Key.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(2, row.ElementChildren().Count());
+        Assert.Equal(new[] { "p", "p" }, cell.ElementChildren().Select(n => n.Name).ToArray());
+        Assert.Equal("Перва", cell.ElementChildren().First().InnerText);
+        Assert.Equal("я ячейка", cell.ElementChildren().Last().InnerText);
+        Assert.Empty(new DitaStudio.Core.Validation.DitaValidator { CheckStyleRules = false }.Validate(document)
+            .Where(i => i.Severity == DitaStudio.Core.Validation.IssueSeverity.Error));
+
+        // Enter в конце последнего абзаца ячейки: меню как вне таблицы — «абзац как обычно», элементы после абзаца, но не «entry» и не «row».
+        var last = cell.ElementChildren().Last();
+        Focus(window, author, last, InlineContent.FromNode(last).Length);
+        Press(window, Key.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        var titles = author.Suggestions!.Visible.Select(i => i.Title).ToList();
+        Assert.Contains(titles, t => t.Contains("<p>"));
+        Assert.DoesNotContain(titles, t => t.Contains("<entry>") || t.Contains("<row>"));
+        author.Suggestions.Apply(); // первая строка — «как обычно»: новый абзац
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(3, cell.ElementChildren().Count());
+        Assert.Equal(2, row.ElementChildren().Count());
+
+        // Ячейка с текстом: Enter в конце — меню предлагает «Новый абзац в ячейке» и блоки внутрь ячейки.
+        var second = row.ElementChildren().Last();
+        Focus(window, author, second, second.InnerText.Length);
+        Press(window, Key.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        var cellMenu = author.Suggestions!.Visible.Select(i => i.Title).ToList();
+        Assert.Contains("Новый абзац в ячейке — как обычно", cellMenu);
+        Assert.Contains(cellMenu, t => t.Contains("<ul>") && t.Contains("в ячейке"));
+        Assert.DoesNotContain(cellMenu, t => t.Contains("<entry>"));
+        author.Suggestions.Filter("<ul>");
+        author.Suggestions.Apply();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains(second.ElementChildren(), c => c.Name == "ul");
+        Assert.Equal(2, row.ElementChildren().Count());
+        window.Close();
+    }
+
+    /// <summary>Г17: свой размер шрифта — класс size-13_5, в «Авторе» виден сразу; команда принимает число с запятой.</summary>
+    [AvaloniaFact]
+    public void CustomFontSize_SetsFractionalClass_AndShowsInAuthor()
+    {
+        var (window, author, document, _) = Show();
+        var second = Paragraphs(document)[1];
+        var editor = Focus(window, author, second, 0);
+        editor.Select(0, editor.Document.TextLength);
+        Assert.True(author.Surface.ApplyTextFormat(Core.Publishing.TextFormatting.SizePrefix, Core.Publishing.TextFormatting.SizeToken(13.5)));
+        author.FlushPendingEdits();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("size-13_5", second.GetAttribute("outputclass"));
+        Assert.Equal(13.5 * 4 / 3, author.EditorFor(second)!.FontSize, 3);
+        Assert.Equal(13.5, Core.Publishing.TextFormatting.SizeOf(second));
+
+        // Размер за пределами — ограничивается границей.
+        Assert.Equal("size-200", Core.Publishing.TextFormatting.SizeToken(999));
+        window.Close();
+    }
+
     [AvaloniaFact]
     public void EnterAtEnd_ShowsSuggestions_DefaultSplits_FilterInserts()
     {

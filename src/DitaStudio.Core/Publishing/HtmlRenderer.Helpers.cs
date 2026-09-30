@@ -74,7 +74,17 @@ public sealed partial class HtmlRenderer
         }
 
         var classAttr = classes.Count == 0 ? string.Empty : $" class=\"{Escape(string.Join(' ', classes))}\"";
-        return classAttr + FlagStyleAttr(flag);
+        var styleAttr = FlagStyleAttr(flag);
+
+        // Свой размер шрифта (size-13_5): встроенного CSS-класса у него нет, размер ставится стилем элемента.
+        var customSize = string.IsNullOrWhiteSpace(outputclass) ? null : outputclass!
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Select(TextFormatting.CustomSizeCss).FirstOrDefault(css => css is not null);
+        if (customSize is not null)
+        {
+            styleAttr = styleAttr.Length == 0 ? $" style=\"{customSize}\"" : styleAttr.Replace("style=\"", $"style=\"{customSize}; ");
+        }
+
+        return classAttr + styleAttr;
     }
 
     /// <summary>Первое правило подсветки .ditaval, у которого атрибут узла присутствует и (если задан

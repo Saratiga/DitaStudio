@@ -80,18 +80,38 @@ public sealed partial class AuthorView
         var anchors = new Dictionary<ElementSuggestion, DitaNode>();
         var defaultTitle = node.Name == "cmd" && node.Parent is { Name: "step" or "substep" }
             ? "Следующий шаг"
-            : Describe(node.Name);
+            : node.Name == "entry" ? "Новый абзац в ячейке" : Describe(node.Name);
         items.Add(new ElementSuggestion(null, defaultTitle + " — как обычно",
             "То, что Enter делал без подсказки: следующий блок того же вида. Двойной Enter — сразу он."));
 
-        var anchor = node;
-        for (var level = 0; level < 3 && anchor.Parent is { } parent; level++)
+        // В ячейке таблицы (текст прямо в entry) блоки вставляются внутрь ячейки — как в любом блоке вне таблицы.
+        var insideCell = new Dictionary<ElementSuggestion, DitaNode>();
+        if (node.Name == "entry")
         {
-            var where = level == 0 ? string.Empty : $" — после <{anchor.Name}>";
-            foreach (var def in catalog.InsertableAt(parent, EditCommands.ElementIndexOf(parent, anchor) + 1)
+            foreach (var def in catalog.InsertableAt(node, node.ElementChildren().Count())
                          .Where(d => d.Display is not (DisplayKind.Inline or DisplayKind.Empty))
                          .DistinctBy(d => d.Name)
                          .OrderBy(d => string.IsNullOrEmpty(d.Description) ? d.Name : d.Description, StringComparer.CurrentCulture))
+            {
+                var item = new ElementSuggestion(def.Name, $"{Describe(def.Name)}  <{def.Name}> — в ячейке",
+                    $"<{def.Name}>\n\n{def.Description}\n\nСодержимое: {def.ModelText}");
+                items.Add(item);
+                insideCell[item] = node;
+            }
+        }
+
+        var anchor = node;
+        for (var level = 0; level < 6 && anchor.Parent is { } parent; level++)
+        {
+            var where = level == 0 ? string.Empty : $" — после <{anchor.Name}>";
+            // Строки, ячейки и секции таблицы не предлагаются: «соседняя ячейка» — не то, что ждут от Enter;
+            // выйти из таблицы можно выше по цепочке (после самой таблицы) или по Ctrl+Enter.
+            foreach (var def in TablePartParents.Contains(parent.Name)
+                         ? Enumerable.Empty<ElementDef>()
+                         : catalog.InsertableAt(parent, EditCommands.ElementIndexOf(parent, anchor) + 1)
+                             .Where(d => d.Display is not (DisplayKind.Inline or DisplayKind.Empty))
+                             .DistinctBy(d => d.Name)
+                             .OrderBy(d => string.IsNullOrEmpty(d.Description) ? d.Name : d.Description, StringComparer.CurrentCulture))
             {
                 var item = new ElementSuggestion(def.Name, $"{Describe(def.Name)}  <{def.Name}>{where}",
                     $"<{def.Name}>\n\n{def.Description}\n\nСодержимое: {def.ModelText}");
@@ -116,6 +136,10 @@ public sealed partial class AuthorView
             if (chosen.Element is null)
             {
                 SplitNow(editor, editor.Content.Length);
+            }
+            else if (insideCell.TryGetValue(chosen, out var cell))
+            {
+                InsertIntoCell(cell, chosen.Element);
             }
             else
             {
@@ -356,9 +380,76 @@ public sealed partial class AuthorView
         RefreshChildren(anchor.Parent!, Array.Empty<DitaNode>(), focus);
     }
 
+    /// <summary>Блок внутрь ячейки таблицы — после её текста.</summary>
+    private void InsertIntoCell(DitaNode cell, string element)
+    {
+        BeforeStructuralEdit?.Invoke(this, $"Вставка <{element}> в ячейку");
+        if (EditCommands.Append(cell, element) is not { } created)
+        {
+            return;
+        }
+
+        Modified();
+        var focus = created.DescendantsAndSelf().FirstOrDefault(n => n.Kind == NodeKind.Element && DitaCatalog.Default.Get(n.Name) is { IsMixed: true }) ?? created;
+        RebuildAround(cell, focus);
+    }
+
+    /// <summary>
+    /// Enter в тексте ячейки: ячейка не делится на две (это сломало бы строку таблицы), а текст раскладывается по
+    /// абзацам внутри неё — до курсора и после. Дальше Enter работает в этих абзацах как обычно.
+    /// </summary>
+    private bool SplitCell(BlockEditor editor, int caretOffset)
+    {
+        var cell = editor.Node;
+        if (cell.ElementChildren().Any(child => DitaCatalog.Default.Get(child.Name) is { IsInline: false }) ||
+            !DitaCatalog.Default.CanInsert(cell, "p", 0))
+        {
+            // В ячейке уже есть блоки (абзацы, списки) — новый абзац встаёт после них.
+            BeforeStructuralEdit?.Invoke(this, "Новый абзац в ячейке");
+            if (EditCommands.Append(cell, "p") is not { } appended)
+            {
+                return true;
+            }
+
+            Modified();
+            RebuildAround(cell, appended);
+            return true;
+        }
+
+        BeforeStructuralEdit?.Invoke(this, "Новый абзац в ячейке");
+        var tail = DitaNode.Element("p");
+        if (!editor.Content.SplitInto(caretOffset, tail))
+        {
+            return true;
+        }
+
+        var head = DitaNode.Element("p");
+        foreach (var child in cell.Children.ToList())
+        {
+            cell.Remove(child);
+            head.Add(child);
+        }
+
+        cell.Add(head);
+        cell.Add(tail);
+        Modified();
+        RebuildAround(cell, tail);
+        return true;
+    }
+
     private bool SplitNow(BlockEditor editor, int caretOffset)
     {
         var node = editor.Node;
+        if (node.Name == "entry")
+        {
+            return SplitCell(editor, caretOffset);
+        }
+
+        if (node.Name == "stentry")
+        {
+            return true; // ячейка простой таблицы — только текст: Enter в ней ничего не делает
+        }
+
         // В шаге Enter создаёт следующий шаг, а не второй cmd.
         if (node.Name == "cmd" && node.Parent is { Name: "step" or "substep" } step)
         {

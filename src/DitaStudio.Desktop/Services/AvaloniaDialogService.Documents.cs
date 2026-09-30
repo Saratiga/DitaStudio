@@ -353,6 +353,32 @@ public sealed partial class AvaloniaDialogService
         return await ShowAsync(window) ? result : null;
     }
 
+    public async Task<string?> PromptTextAsync(string title, string label, string initial, string hint, string okText = "ОК")
+    {
+        var panel = new StackPanel { Margin = new Thickness(16) };
+        panel.Children.Add(Label(label));
+        var box = Input(initial);
+        panel.Children.Add(box);
+        panel.Children.Add(Muted(new TextBlock { Text = hint, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) }));
+
+        string? result = null;
+        var window = Shell(title, panel, 420, 220);
+        panel.Children.Add(Buttons(window, () =>
+        {
+            var value = (box.Text ?? string.Empty).Trim();
+            if (value.Length > 0)
+            {
+                result = value;
+            }
+        }, okText));
+        window.Opened += (_, _) =>
+        {
+            box.Focus();
+            box.SelectAll();
+        };
+        return await ShowAsync(window) ? result : null;
+    }
+
     public Task<string?> RenameIdAsync(string currentId) => RenameAsync(
         "Переименовать id", "Текущий id", currentId,
         "Ссылки на этот id (href, conref) во всём проекте будут обновлены автоматически.",

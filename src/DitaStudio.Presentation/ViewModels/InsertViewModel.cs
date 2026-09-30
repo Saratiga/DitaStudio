@@ -577,16 +577,40 @@ public partial class InsertViewModel : ObservableObject
     }
 
     /// <summary>Размеры шрифта для списка на панели: «Обычный» и размеры в пт.</summary>
-    public IReadOnlyList<string> FontSizes { get; } = new[] { NormalSize }.Concat(TextFormatting.Sizes.Select(s => s.ToString())).ToList();
+    public IReadOnlyList<string> FontSizes { get; } = new[] { NormalSize }.Concat(TextFormatting.Sizes.Select(s => s.ToString())).Append(CustomSize).ToList();
+
+    /// <summary>Пункт списка размеров: спросить число пунктов (дробные — через точку или запятую).</summary>
+    public const string CustomSize = "Другой…";
 
     public const string NormalSize = "Обычный";
 
     /// <summary>Размер шрифта выделения или дальнейшего набора: "10" (пт) или «Обычный»/null — снять.</summary>
     [RelayCommand]
-    private void SetFontSize(string? size)
+    private async Task SetFontSize(string? size)
     {
-        var token = int.TryParse(size, out var points) ? TextFormatting.SizeToken(points) : null;
-        ApplyTextFormat(TextFormatting.SizePrefix, token, token is null ? "Размер шрифта снят." : $"Размер шрифта {points} пт.");
+        if (size == CustomSize)
+        {
+            var typed = await _main.Dialogs.PromptTextAsync("Свой размер шрифта", "Размер, пт",
+                (_main.Current?.Author.CurrentNode is { } node && TextFormatting.SizeOf(node) is { } current ? current : 11).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture),
+                $"От {TextFormatting.MinCustomSize:0} до {TextFormatting.MaxCustomSize:0} пт; дробные значения — через точку или запятую (например, 13,5).");
+            if (typed is null)
+            {
+                return;
+            }
+
+            if (!double.TryParse(typed.Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var custom) ||
+                custom < TextFormatting.MinCustomSize || custom > TextFormatting.MaxCustomSize)
+            {
+                _main.StatusText = $"Размер должен быть числом от {TextFormatting.MinCustomSize:0} до {TextFormatting.MaxCustomSize:0} пт.";
+                return;
+            }
+
+            size = custom.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        var parsed = double.TryParse(size?.Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var points);
+        var token = parsed ? TextFormatting.SizeToken(points) : null;
+        ApplyTextFormat(TextFormatting.SizePrefix, token, token is null ? "Размер шрифта снят." : $"Размер шрифта {TextFormatting.ParseSizeToken(token):0.#} пт.");
     }
 
     /// <summary>Цвет выделения или дальнейшего набора: color-red… или null — снять.</summary>

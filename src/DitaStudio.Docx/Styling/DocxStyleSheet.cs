@@ -88,6 +88,27 @@ public sealed class DocxStyleSheet
     /// <summary>Все классы, упомянутые в правилах для собственных классов.</summary>
     public IReadOnlySet<string> CustomClasses { get; private set; } = new HashSet<string>();
 
+    /// <summary>
+    /// Свой размер шрифта (класс size-13_5): правила для него в CSS нет, поэтому оно создаётся при первой встрече — как
+    /// встроенные правила других размеров. false — класс не «свой размер».
+    /// </summary>
+    public bool RegisterSizeClass(string token)
+    {
+        if (CustomClasses.Contains(token))
+        {
+            return true;
+        }
+
+        if (DitaStudio.Core.Publishing.TextFormatting.CustomSizeCss(token) is not { } css)
+        {
+            return false;
+        }
+
+        _classRules.Add(new DocxClassRule(new[] { token }, new[] { new CssDeclaration("font-size", css["font-size: ".Length..]) }, 100, -1));
+        CustomClasses = new HashSet<string>(CustomClasses) { token };
+        return true;
+    }
+
     public IReadOnlyList<string> Warnings => _diag.Messages;
 
     // Маркеры списков: 9 уровней Word = вложенность ul, из правил ul, ul ul…, li и li::marker.
