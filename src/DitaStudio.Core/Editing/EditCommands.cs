@@ -37,8 +37,18 @@ public static class EditCommands
     }
 
     /// <summary>Вставляет элемент в конец родителя.</summary>
-    public static DitaNode? Append(DitaNode parent, string elementName) =>
-        InsertInto(parent, elementName, DitaCatalog.ChildNames(parent).Count);
+    public static DitaNode? Append(DitaNode parent, string elementName)
+    {
+        // Именно в конец, после текста: при нуле элементов-детей индекс «после последнего» дал бы начало (перед текстом ячейки).
+        if (!Catalog.CanInsert(parent, elementName, DitaCatalog.ChildNames(parent).Count))
+        {
+            return null;
+        }
+
+        var node = Catalog.CreateElement(elementName);
+        parent.Insert(parent.Children.Count, node);
+        return node;
+    }
 
     public static DitaNode? InsertInto(DitaNode parent, string elementName, int elementIndex)
     {

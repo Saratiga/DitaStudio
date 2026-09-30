@@ -185,6 +185,13 @@ internal static partial class CoreChecks
         Check(appended is not null && ReferenceEquals(ps()[^1], appended), "Append вставляет в конец родителя");
         appended!.RemoveSelf();
 
+        // Ячейка только с текстом: блок добавляется после текста, а не перед ним (нет элементов-детей — индекс «после последнего» был началом).
+        var textCell = DitaDocument.Parse("<concept id=\"c\"><title>T</title><conbody><table><tgroup cols=\"1\"><tbody><row><entry>Текст ячейки</entry></row></tbody></tgroup></table></conbody></concept>")
+            .Root.DescendantsAndSelf().First(n => n.Name == "entry");
+        var listInCell = EditCommands.Append(textCell, "ul");
+        Check(listInCell is not null && textCell.Children.Count == 2 && textCell.Children[0].Kind == NodeKind.Text && ReferenceEquals(textCell.Children[1], listInCell),
+            "Append в ячейку с одним текстом ставит блок после текста");
+
         var wrapped = EditCommands.Wrap(conbody, 0, 1, "note");
         Check(wrapped is not null && wrapped.Name == "note", "Wrap создаёт обёртку заданного имени");
         Check(wrapped!.ElementChildren().Select(e => e.Name == "p" ? e.InnerText : e.Name).SequenceEqual(new[] { "Первый", "Второй" }),

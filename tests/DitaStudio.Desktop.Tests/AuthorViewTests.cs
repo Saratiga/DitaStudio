@@ -1023,6 +1023,7 @@ public sealed class AuthorViewTests
         static string Table(string title, string attrs = "") =>
             "<table" + attrs + ">" + title + "<tgroup cols=\"3\"><thead><row><entry>Параметр</entry><entry>Тип</entry><entry>Описание</entry></row></thead><tbody>" +
             "<row><entry>width</entry><entry>число</entry><entry>Ширина</entry></row><row><entry>height</entry><entry>число</entry><entry>Высота</entry></row></tbody></tgroup></table>";
+        Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
         var (window, author, document, _) = Show(
             "<concept id=\"c\"><title>Таблицы</title><conbody><p>Все границы, с названием:</p>" + Table("<title>Параметры изображения</title>") +
             "<p>Без границ, название пустое:</p>" + Table("<title/>", " frame=\"none\" rowsep=\"0\" colsep=\"0\"") +
@@ -1037,7 +1038,39 @@ public sealed class AuthorViewTests
         Dispatcher.UIThread.RunJobs();
         var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
         Directory.CreateDirectory(dir);
-        window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "author-tables.png"));
+        window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "author-tables-light.png"));
+        window.Close();
+    }
+
+    /// <summary>Снимки для глаз (Г16): Enter в ячейке — абзацы внутри ячейки; меню Enter в ячейке; список внутри ячейки.</summary>
+    [AvaloniaFact]
+    public void TableCellEnter_Screenshots()
+    {
+        var (window, author, document, _) = Show(
+            "<concept id=\"c\"><title>Ячейки</title><conbody><table><title>Таблица с ячейками</title><tgroup cols=\"2\"><tbody>" +
+            "<row><entry>Первая ячейка</entry><entry>Вторая</entry></row><row><entry>Третья</entry><entry>Четвёртая</entry></row></tbody></tgroup></table></conbody></concept>");
+        window.Width = 900;
+        window.Height = 600;
+        var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+        Directory.CreateDirectory(dir);
+        var row = document.Root.DescendantsAndSelf().First(n => n.Name == "row");
+        var cell = row.ElementChildren().First();
+        Focus(window, author, cell, 5);
+        Press(window, Key.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "author-cell-enter-1-split.png"));
+
+        var second = row.ElementChildren().Last();
+        Focus(window, author, second, second.InnerText.Length);
+        Press(window, Key.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "author-cell-enter-2-menu.png"));
+
+        author.Suggestions!.Filter("<ul>");
+        author.Suggestions.Apply();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("#text,ul", string.Join(",", second.Children.Select(n => n.Kind == NodeKind.Element ? n.Name : "#text")));
+        window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "author-cell-enter-3-list.png"));
         window.Close();
     }
 

@@ -272,6 +272,42 @@ public sealed class CefPreviewTests
         window.Close();
     }
 
+    /// <summary>Образцы таблиц (подписи, границы) в опубликованных HTML, DOCX и PDF — складываются в screenshots для просмотра глазами.</summary>
+    [AvaloniaFact]
+    public async Task TableSamples_PublishedToHtmlDocxPdf()
+    {
+        if (!Enabled)
+        {
+            return;
+        }
+
+        static string Table(string title, string attrs = "", int rows = 2) =>
+            "<table" + attrs + ">" + title + "<tgroup cols=\"3\"><thead><row><entry>Параметр</entry><entry>Тип</entry><entry>Описание</entry></row></thead><tbody>" +
+            string.Concat(Enumerable.Range(1, rows).Select(i => $"<row><entry>поле{i}</entry><entry>число</entry><entry>Описание {i}</entry></row>")) + "</tbody></tgroup></table>";
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioCefTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        await File.WriteAllTextAsync(Path.Combine(root, "t.dita"),
+            "<concept id=\"t\"><title>Таблицы</title><conbody><p>Все границы, с названием:</p>" + Table("<title>Параметры изображения</title>") +
+            "<p>Без границ, пустое название:</p>" + Table("<title/>", " frame=\"none\" rowsep=\"0\" colsep=\"0\"") +
+            "<p>Только горизонтальные линии, без названия:</p>" + Table("", " frame=\"topbot\" colsep=\"0\"") +
+            "<p>Убрана линия под строкой и справа от столбца:</p>" + Table("<title>Выборочные линии</title>", " rowsep=\"0\"") +
+            "<p>Длинная таблица:</p>" + Table("<title>Длинная</title>", "", 50) + "</conbody></concept>");
+        await File.WriteAllTextAsync(Path.Combine(root, "m.ditamap"), "<map><title>Образцы</title><topicref href=\"t.dita\"/></map>");
+        var project = new DitaProject(root);
+        project.Scan();
+        var map = Path.Combine(root, "m.ditamap");
+        var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+        Directory.CreateDirectory(dir);
+
+        var html = new Core.Publishing.HtmlPublisher(project).Publish(map,
+            new Core.Publishing.PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true });
+        File.Copy(html.EntryFile, Path.Combine(dir, "tables.html"), true);
+        var docx = Path.Combine(dir, "tables.docx");
+        new Docx.DocxPublisher(project).Publish(map, new Core.Publishing.PublishOptions { Language = "ru" }, docx);
+        var error = await new CefPdfPrinter().ExportAsync(html.EntryFile, Path.Combine(dir, "tables.pdf"), showHeaderFooter: false, headerText: null, footerText: null);
+        Assert.Null(error);
+    }
+
     private static string PagedPreview_Html(int paragraphs) =>
         string.Concat(Enumerable.Range(1, paragraphs).Select(i => $"<p>Абзац {i}. " + string.Concat(Enumerable.Repeat("слово ", 30)) + "</p>"));
 
