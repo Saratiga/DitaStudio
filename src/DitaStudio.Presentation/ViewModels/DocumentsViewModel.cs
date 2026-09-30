@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Project;
 using DitaStudio.Presentation.Services;
 
 namespace DitaStudio.Presentation.ViewModels;
@@ -52,6 +53,11 @@ public partial class DocumentsViewModel : ObservableObject
 
         var pane = _main.Services.CreateDocumentView(project, document);
         var tab = new TabViewModel(this, pane, full);
+        if (IsPinnedPath(project, full))
+        {
+            tab.IsPinned = true;
+        }
+
         pane.DirtyChanged += (_, _) => tab.RefreshTitle();
         pane.SelectionChanged += (_, _) => _main.RefreshEditorContext?.Invoke();
         pane.RootTitleCommitted += (_, _) => _ = _main.ProjectPanel.OfferRenameByTitleAsync(pane);
@@ -63,7 +69,8 @@ public partial class DocumentsViewModel : ObservableObject
             }
         };
 
-        Tabs.Add(tab);
+        // Закреплённые вкладки стоят слева, после уже закреплённых.
+        Tabs.Insert(tab.IsPinned ? Tabs.TakeWhile(t => t.IsPinned).Count() : Tabs.Count, tab);
         SelectedTab = tab;
         _main.Panes[full] = pane;
 
@@ -115,6 +122,10 @@ public partial class DocumentsViewModel : ObservableObject
         _main.Recovery.Forget(tab.FullPath);
         _main.Panes.Remove(tab.FullPath);
         Tabs.Remove(tab);
+        if (tab.IsPinned)
+        {
+            SavePinned(); // закрытая вкладка больше не закреплена — при следующем открытии проекта сама не откроется
+        }
 
         // Вкладка оболочки может держать тяжёлые ресурсы (встроенный браузер предпросмотра).
         (pane as IDisposable)?.Dispose();
@@ -123,10 +134,87 @@ public partial class DocumentsViewModel : ObservableObject
     [RelayCommand]
     private async Task CloseCurrentTab()
     {
-        if (SelectedTab is { } tab)
+        // Ctrl+W и меню «Закрыть вкладку» закреплённую вкладку не закрывают — для этого есть «Закрыть все» и «Закрыть эту».
+        if (SelectedTab is { IsPinned: false } tab)
         {
             await CloseTabAsync(tab);
         }
+    }
+
+    // ------------------------------------------------------------ закрепление и групповое закрытие
+
+    private static bool IsPinnedPath(DitaProject project, string fullPath) =>
+        project.PinnedFiles.Contains(RelativeOf(project, fullPath), StringComparer.OrdinalIgnoreCase);
+
+    private static string RelativeOf(DitaProject project, string fullPath) =>
+        Path.GetRelativePath(project.RootPath, fullPath).Replace('\\', '/');
+
+    /// <summary>Закрепляет или открепляет вкладку и запоминает выбор в проекте (`.ditastudio-pinned`).</summary>
+    public void SetPinned(TabViewModel tab, bool pinned)
+    {
+        tab.IsPinned = pinned;
+        // Закреплённые — слева: вкладка перебирается в начало (или сразу после закреплённых).
+        var index = Tabs.IndexOf(tab);
+        var target = Tabs.Where(t => !ReferenceEquals(t, tab) && t.IsPinned).Count();
+        if (pinned && index != target)
+        {
+            Tabs.Move(index, target);
+        }
+
+        SavePinned();
+        SelectedTab = tab;
+    }
+
+    private void SavePinned()
+    {
+        if (_main.Project is { } project)
+        {
+            project.SetPinnedFiles(Tabs.Where(t => t.IsPinned).Select(t => RelativeOf(project, t.FullPath)));
+        }
+    }
+
+    /// <summary>Закрывает вкладки по очереди — с обычным вопросом о несохранённом; «Отмена» останавливает закрытие.
+    /// Закреплённые тоже закрываются (закрепление защищает только от «✕» и Ctrl+W).</summary>
+    private async Task CloseManyAsync(IEnumerable<TabViewModel> tabs)
+    {
+        foreach (var tab in tabs.ToList())
+        {
+            var before = Tabs.Count;
+            await CloseTabAsync(tab);
+            if (Tabs.Contains(tab) && Tabs.Count == before)
+            {
+                return; // отмена или ошибка сохранения — остальные не трогаем
+            }
+        }
+    }
+
+    public Task CloseAllAsync() => CloseManyAsync(Tabs);
+
+    public Task CloseOthersAsync(TabViewModel keep) => CloseManyAsync(Tabs.Where(t => !ReferenceEquals(t, keep)));
+
+    public Task CloseToRightAsync(TabViewModel from) => CloseManyAsync(Tabs.Skip(Tabs.IndexOf(from) + 1));
+
+    [RelayCommand]
+    private Task CloseAllTabs() => CloseAllAsync();
+
+    /// <summary>После открытия проекта открывает закреплённые вкладки (файлы, которых уже нет, пропускаются).</summary>
+    public void RestorePinnedTabs()
+    {
+        if (_main.Project is not { } project)
+        {
+            return;
+        }
+
+        foreach (var relative in project.PinnedFiles)
+        {
+            var full = Path.GetFullPath(Path.Combine(project.RootPath, relative));
+            if (File.Exists(full) && !Tabs.Any(t => string.Equals(t.FullPath, full, StringComparison.OrdinalIgnoreCase)))
+            {
+                _main.OpenDocument?.Invoke(full);
+            }
+        }
+
+        SelectedTab = Tabs.FirstOrDefault();
     }
 
     [RelayCommand]

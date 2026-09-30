@@ -34,6 +34,29 @@ public partial class TabViewModel : ObservableObject
         (pane.IsDirty ? "• " : string.Empty) +
         (pane.FilePath is null ? pane.Title : Path.GetFileName(pane.FilePath));
 
+    /// <summary>Вкладка закреплена: стоит слева, без крестика, не закрывается кнопкой «✕» и <c>Ctrl+W</c>
+    /// (но закрывается командами «Закрыть все» и «Закрыть остальные»).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanClose))]
+    private bool isPinned;
+
+    public bool CanClose => !IsPinned;
+
     [RelayCommand]
-    private Task Close() => _owner.CloseTabAsync(this);
+    private Task Close() => IsPinned ? Task.CompletedTask : _owner.CloseTabAsync(this);
+
+    [RelayCommand]
+    private void TogglePin() => _owner.SetPinned(this, !IsPinned);
+
+    [RelayCommand]
+    private Task CloseThis() => _owner.CloseTabAsync(this);
+
+    [RelayCommand]
+    private Task CloseOthers() => _owner.CloseOthersAsync(this);
+
+    [RelayCommand]
+    private Task CloseToRight() => _owner.CloseToRightAsync(this);
+
+    [RelayCommand]
+    private Task CloseAll() => _owner.CloseAllAsync();
 }

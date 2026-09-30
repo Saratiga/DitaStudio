@@ -109,6 +109,7 @@ public partial class ProjectViewModel : ObservableObject
         _main.Recovery.Attach(project);
         _main.ExternalChanges.Attach(project);
         await _main.Recovery.OfferRestoreAsync();
+        _main.Documents.RestorePinnedTabs();
     }
 
     /// <summary>Строит каталог проекта (встроенный + элементы внешнего DTD, если подключён) и делает

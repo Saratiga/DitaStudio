@@ -115,6 +115,7 @@ public sealed class DitaProject
     private const string ReferencedProjectsSettingsFile = ".ditastudio-references";
     private const string ExternalDtdSettingsFile = ".ditastudio-external-dtd";
     private const string DocxLayoutSettingsFile = ".ditastudio-docx";
+    private const string PinnedTabsSettingsFile = ".ditastudio-pinned";
 
     private readonly List<string> _settingsWarnings = new();
 
@@ -152,6 +153,7 @@ public sealed class DitaProject
         LoadDitavalSetting();
         LoadExternalDtdSetting();
         LoadDocxLayoutSetting();
+        LoadPinnedFilesSetting();
         if (_allowReferencedProjects)
         {
             LoadReferencedProjectsSetting();
@@ -626,6 +628,53 @@ public sealed class DitaProject
         }
 
         return null;
+    }
+
+    // -------------------------------------------------------- закреплённые вкладки
+
+    /// <summary>Файлы закреплённых вкладок (пути от папки проекта, через «/»): при открытии проекта они открываются сами и
+    /// стоят слева. Файл `.ditastudio-pinned`, по строке на путь.</summary>
+    public IReadOnlyList<string> PinnedFiles { get; private set; } = Array.Empty<string>();
+
+    public void SetPinnedFiles(IEnumerable<string> relativePaths)
+    {
+        PinnedFiles = relativePaths.Select(p => p.Replace('\\', '/')).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var settingsPath = System.IO.Path.Combine(RootPath, PinnedTabsSettingsFile);
+        try
+        {
+            if (PinnedFiles.Count == 0)
+            {
+                if (File.Exists(settingsPath))
+                {
+                    File.Delete(settingsPath);
+                }
+
+                return;
+            }
+
+            AtomicFile.WriteAllText(settingsPath, string.Join(Environment.NewLine, PinnedFiles) + Environment.NewLine, new UTF8Encoding(false));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ReportSettingsProblem($"Не удалось сохранить {PinnedTabsSettingsFile}: {ex.Message}. Закрепление действует до закрытия проекта.");
+        }
+    }
+
+    private void LoadPinnedFilesSetting()
+    {
+        try
+        {
+            var settingsPath = System.IO.Path.Combine(RootPath, PinnedTabsSettingsFile);
+            if (File.Exists(settingsPath))
+            {
+                PinnedFiles = File.ReadAllLines(settingsPath).Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            PinnedFiles = Array.Empty<string>();
+            ReportSettingsProblem($"Не удалось прочитать {PinnedTabsSettingsFile}: {ex.Message}. Закреплённых вкладок нет.");
+        }
     }
 
     // -------------------------------------------------------- колонтитулы PDF

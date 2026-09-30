@@ -46,6 +46,7 @@
                 <MenuItem Header="Сохранить" Command="{Binding Documents.SaveCurrentCommand}" InputGesture="Ctrl+S" />
                 <MenuItem Header="Сохранить всё" Command="{Binding Documents.SaveAllCommand}" InputGesture="Ctrl+Shift+S" />
                 <MenuItem Header="Закрыть вкладку" Command="{Binding Documents.CloseCurrentTabCommand}" InputGesture="Ctrl+W" />
+                <MenuItem Header="Закрыть все вкладки" Command="{Binding Documents.CloseAllTabsCommand}" />
                 <Separator />
                 <MenuItem Header="Выход" Click="OnExit" />
             </MenuItem>
@@ -429,9 +430,22 @@
                             SelectedItem="{Binding Documents.SelectedTab}">
                     <TabControl.ItemTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Background="Transparent">
+                                <StackPanel.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Закрепить" Command="{Binding TogglePinCommand}" IsVisible="{Binding CanClose}" />
+                                        <MenuItem Header="Открепить" Command="{Binding TogglePinCommand}" IsVisible="{Binding IsPinned}" />
+                                        <Separator />
+                                        <MenuItem Header="Закрыть" Command="{Binding CloseThisCommand}" />
+                                        <MenuItem Header="Закрыть остальные" Command="{Binding CloseOthersCommand}" />
+                                        <MenuItem Header="Закрыть справа" Command="{Binding CloseToRightCommand}" />
+                                        <MenuItem Header="Закрыть все" Command="{Binding CloseAllCommand}" />
+                                    </ContextMenu>
+                                </StackPanel.ContextMenu>
+                                <TextBlock Text="📌" FontSize="10" Margin="0,0,4,0" VerticalAlignment="Center" IsVisible="{Binding IsPinned}"
+                                           ToolTip.Tip="Вкладка закреплена" />
                                 <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
-                                <Button Classes="tabclose" Content="✕" Command="{Binding CloseCommand}" />
+                                <Button Classes="tabclose" Content="✕" Command="{Binding CloseCommand}" IsVisible="{Binding CanClose}" />
                             </StackPanel>
                         </DataTemplate>
                     </TabControl.ItemTemplate>

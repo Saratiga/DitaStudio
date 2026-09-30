@@ -773,6 +773,73 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Г1: закрепление вкладок (слева, без «✕», не закрываются Ctrl+W, запоминаются в проекте и открываются при запуске),
+    /// «Закрыть все» / «Закрыть остальные» / «Закрыть справа» — включая закреплённые.</summary>
+    [AvaloniaFact]
+    public async Task Tabs_Pin_CloseAll_CloseOthers_CloseToRight()
+    {
+        var (window, vm) = await OpenAsync();
+        var files = new[] { "concepts/about.dita", "reference/settings.dita", "tasks/install.dita", "tasks/first-run.dita" };
+        foreach (var file in files)
+        {
+            vm.OpenDocument!(Path.Combine(_project, file));
+        }
+
+        var tabs = vm.Documents.Tabs;
+        string Name(TabViewModel t) => Path.GetFileName(t.FullPath);
+        Assert.Equal(new[] { "about.dita", "settings.dita", "install.dita", "first-run.dita" }, tabs.Select(Name));
+
+        // Закрепление: вкладка уходит влево, у неё нет «✕», Ctrl+W её не закрывает; выбор запоминается в проекте.
+        var install = tabs.Single(t => Name(t) == "install.dita");
+        install.TogglePinCommand.Execute(null);
+        Assert.True(install.IsPinned);
+        Assert.False(install.CanClose);
+        Assert.Equal("install.dita", Name(tabs[0]));
+        Assert.Equal("tasks/install.dita", File.ReadAllText(Path.Combine(_project, ".ditastudio-pinned")).Trim());
+        vm.Documents.SelectedTab = install;
+        await vm.Documents.CloseCurrentTabCommand.ExecuteAsync(null);
+        install.CloseCommand.Execute(null);
+        Assert.Contains(install, tabs);
+
+        // Второе закрепление встаёт после первого закреплённого.
+        var about = tabs.Single(t => Name(t) == "about.dita");
+        about.TogglePinCommand.Execute(null);
+        Assert.Equal(new[] { "install.dita", "about.dita" }, tabs.Take(2).Select(Name));
+
+        // «Закрыть справа» от about: закрывает settings и first-run, закреплённые остаются.
+        await about.CloseToRightCommand.ExecuteAsync(null);
+        Assert.Equal(new[] { "install.dita", "about.dita" }, tabs.Select(Name));
+
+        // Проект открывается заново — закреплённые вкладки открываются сами и закреплены.
+        await window.ViewModel.ProjectPanel.LoadProjectAsync(_project);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new[] { "install.dita", "about.dita" }, tabs.Select(Name));
+        Assert.All(tabs, t => Assert.True(t.IsPinned));
+
+        // «Закрыть остальные» закрывает и закреплённые; «Закрыть все» — все.
+        vm.OpenDocument!(Path.Combine(_project, "reference/settings.dita"));
+        var keep = tabs.Single(t => Name(t) == "settings.dita");
+        await keep.CloseOthersCommand.ExecuteAsync(null);
+        Assert.Equal(new[] { "settings.dita" }, tabs.Select(Name));
+        vm.OpenDocument!(Path.Combine(_project, "tasks/install.dita"));
+        await tabs[0].CloseAllCommand.ExecuteAsync(null);
+        Assert.Empty(tabs);
+        Assert.False(File.Exists(Path.Combine(_project, ".ditastudio-pinned")), "закрытые закреплённые вкладки из проекта убраны");
+
+        // Несохранённая вкладка: «Отмена» в вопросе останавливает групповое закрытие.
+        var pane = vm.OpenDocument!(Path.Combine(_project, "concepts/about.dita"))!;
+        vm.OpenDocument!(Path.Combine(_project, "tasks/first-run.dita"));
+        pane.Document.IsDirty = true;
+        var closing = vm.Documents.CloseAllAsync();
+        Dispatcher.UIThread.RunJobs();
+        window.OwnedWindows[0].GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Отмена")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        await closing;
+        Assert.Contains(tabs, t => Name(t) == "about.dita");
+        window.Close();
+    }
+
     [AvaloniaFact]
     public async Task AuthorContextMenu_HasInsertSubmenu_InsertingAtCaret()
     {
