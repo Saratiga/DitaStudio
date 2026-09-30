@@ -109,7 +109,9 @@ public sealed class DocxPublisher
             AddSettings(wordDocument, layout);
             SetDocumentProperties(wordDocument, title, layout);
 
-            WriteFrontMatter(body, title, date, labels, layout, tocEntries);
+            var frontPage = WithLayoutPage(styles.Page, layout);
+            WriteFrontMatter(body, mainPart, title, date, labels, layout, tocEntries,
+                frontPage.WidthPt - frontPage.LeftPt - frontPage.RightPt - layout.GutterMm * DocxPageSetup.MmToPt, warnings);
 
             var renderOptions = new DocxRenderOptions
             {
@@ -184,12 +186,38 @@ public sealed class DocxPublisher
     /// <summary>Строка оглавления: уровень, текст, закладка топика.</summary>
     private sealed record TocEntry(int Level, string Text, string Bookmark);
 
-    private static void WriteFrontMatter(W.Body body, string title, string date, Labels labels, DocxLayout layout,
-        IReadOnlyList<TocEntry> tocEntries)
+    private void WriteFrontMatter(W.Body body, MainDocumentPart mainPart, string title, string date, Labels labels, DocxLayout layout,
+        IReadOnlyList<TocEntry> tocEntries, double textWidthPt, List<string> warnings)
     {
         var any = false;
         if (layout.TitlePage)
         {
+            if (layout.TitleImage.Length > 0)
+            {
+                var full = DocxLayout.ResolveImage(_project.RootPath, layout.TitleImage);
+                if (full is null || DocxPictures.AddImage(mainPart, full) is not { } relId)
+                {
+                    warnings.Add($"Картинка титульной страницы не найдена или не PNG/JPEG/GIF/BMP: {layout.TitleImage}");
+                }
+                else
+                {
+                    var (naturalWidth, naturalHeight) = ImageSize.ReadEmuSize(full, null, null);
+                    var (width, height) = DocxHeaderFooter.Fit(naturalWidth, naturalHeight, layout.TitleImageHeightMm, textWidthPt);
+                    body.Append(new W.Paragraph(
+                        new W.ParagraphProperties(new W.SpacingBetweenLines { After = "240" },
+                            new W.Justification
+                            {
+                                Val = layout.TitleImageAlignment switch
+                                {
+                                    DocxHeaderAlignment.Left => W.JustificationValues.Left,
+                                    DocxHeaderAlignment.Right => W.JustificationValues.Right,
+                                    _ => W.JustificationValues.Center
+                                }
+                            }),
+                        DocxPictures.Inline(relId, width, height, 9100, Path.GetFileName(full), "Картинка титульной страницы")));
+                }
+            }
+
             body.Append(StyledParagraph(DocxStyleCatalog.Title, title));
             if (layout.Subtitle.Length > 0)
             {

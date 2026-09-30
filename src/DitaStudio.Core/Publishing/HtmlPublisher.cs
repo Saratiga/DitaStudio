@@ -232,6 +232,21 @@ public sealed class HtmlPublisher
         var renderer = new HtmlRenderer(_project, renderOptions);
         var body = new StringBuilder();
 
+        if (_project.DocxLayout.TitlePage && _project.DocxLayout.TitleImage.Length > 0 &&
+            DocxLayout.ResolveImage(_project.RootPath, _project.DocxLayout.TitleImage) is { } titleImage)
+        {
+            var align = _project.DocxLayout.TitleImageAlignment switch
+            {
+                DocxHeaderAlignment.Left => "left",
+                DocxHeaderAlignment.Right => "right",
+                _ => "center"
+            };
+            body.Append("<div class=\"title-image\" style=\"text-align:").Append(align).Append("\"><img src=\"")
+                .Append(HtmlRenderer.Escape(renderOptions.ImageSource?.Invoke(titleImage) ?? titleImage)).Append("\" style=\"height:")
+                .Append(_project.DocxLayout.TitleImageHeightMm.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))
+                .Append("mm;max-width:100%\" alt=\"\"></div>\n");
+        }
+
         body.Append("<h1 class=\"book-title\">").Append(HtmlRenderer.Escape(tree.Root.Title)).Append("</h1>\n");
         var tocTitle = _project.DocxLayout.TocTitle.Length > 0 ? _project.DocxLayout.TocTitle : labels.Contents;
         body.Append("<nav class=\"toc-inline\">\n<h2>").Append(HtmlRenderer.Escape(tocTitle)).Append("</h2>\n<ul>\n");

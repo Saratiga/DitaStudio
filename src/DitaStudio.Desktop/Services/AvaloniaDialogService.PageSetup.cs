@@ -16,9 +16,66 @@ public sealed partial class AvaloniaDialogService
     private const string PaperFromCss = "Как в CSS проекта (обычно A4)";
     private const string PaperCustom = "Свой размер…";
 
-    public async Task<DocxLayout?> PageSetupAsync(DitaProject project)
+    public Task<DocxLayout?> PageSetupAsync(DitaProject project) => LayoutDialogAsync(project, 1);
+
+    /// <summary>Поля <see cref="DocxLayout"/>, которые задаёт вкладка «Страница», — вкладка «Оформление» их не трогает.</summary>
+    private static readonly string[] PageFieldNames =
+    {
+        nameof(DocxLayout.PaperSize), nameof(DocxLayout.PaperWidthMm), nameof(DocxLayout.PaperHeightMm), nameof(DocxLayout.Landscape),
+        nameof(DocxLayout.MarginTopMm), nameof(DocxLayout.MarginBottomMm), nameof(DocxLayout.MarginLeftMm), nameof(DocxLayout.MarginRightMm)
+    };
+
+    /// <summary>Копирует изменяемые публичные свойства <see cref="DocxLayout"/>; имена из <paramref name="skip"/> пропускает.</summary>
+    private static void CopyLayoutFields(DocxLayout from, DocxLayout to, IReadOnlyCollection<string> skip)
+    {
+        foreach (var property in typeof(DocxLayout).GetProperties().Where(p => p.CanRead && p.CanWrite && !skip.Contains(p.Name) &&
+                     p.GetCustomAttributes(typeof(System.Text.Json.Serialization.JsonIgnoreAttribute), false).Length == 0))
+        {
+            property.SetValue(to, property.GetValue(from));
+        }
+    }
+
+    /// <summary>
+    /// Общее окно «Оформление DOCX»: две вкладки — «Оформление» (титул, оглавление, нумерация, колонтитулы, печать, язык) и «Страница»
+    /// (бумага, ориентация, поля со схемой листа); один «ОК» сохраняет всё одним объектом. <paramref name="startTab"/> — с какой вкладки начать.
+    /// </summary>
+    private async Task<DocxLayout?> LayoutDialogAsync(DitaProject project, int startTab)
     {
         var current = project.DocxLayout.Clone();
+        var format = BuildFormatTab(project, current);
+        var page = BuildPageTab(current);
+
+        var tabs = new TabControl
+        {
+            SelectedIndex = Math.Clamp(startTab, 0, 1),
+            Name = "LayoutTabs",
+            ItemsSource = new[]
+            {
+                new TabItem { Header = "Оформление", Content = format.Content },
+                new TabItem { Header = "Страница", Content = page.Content }
+            }
+        };
+
+        DocxLayout? result = null;
+        var root = new DockPanel { Margin = new Thickness(8) };
+        var window = Shell("Оформление DOCX", root, 640, 700);
+        var buttons = Buttons(window, () =>
+        {
+            result = current.Clone();
+            format.Apply(result);
+            page.Apply(result);
+            result.Normalize();
+        });
+        buttons.Margin = new Thickness(12, 8, 12, 8);
+        DockPanel.SetDock(buttons, Dock.Bottom);
+        root.Children.Add(buttons);
+        root.Children.Add(tabs);
+        return await ShowAsync(window) ? result : null;
+    }
+
+    /// <summary>Вкладка «Страница» общего окна: размер бумаги, ориентация, поля, схема листа.</summary>
+    private (Control Content, Action<DocxLayout> Apply) BuildPageTab(DocxLayout current)
+    {
         var panel = new StackPanel { Margin = new Thickness(20) };
         panel.Children.Add(Muted(Wrapped(
             "Размер бумаги, ориентация и поля действуют на экспорт в DOCX и PDF. Пустое поле — значение " +
@@ -170,11 +227,8 @@ public sealed partial class AvaloniaDialogService
 
         Update();
 
-        DocxLayout? result = null;
-        var window = Shell("Параметры страницы", new ScrollViewer { Content = panel }, 460, 540);
-        panel.Children.Add(Buttons(window, () =>
+        return (new ScrollViewer { Content = panel }, result =>
         {
-            result = current.Clone();
             var selectedPaper = paper.SelectedItem as string ?? PaperFromCss;
             var customSize = selectedPaper == PaperCustom ? CustomSize() : null;
             result.PaperSize = selectedPaper is PaperFromCss or PaperCustom ? string.Empty : selectedPaper;
@@ -185,9 +239,6 @@ public sealed partial class AvaloniaDialogService
             result.MarginBottomMm = Parse(bottom);
             result.MarginLeftMm = Parse(left);
             result.MarginRightMm = Parse(right);
-            result.Normalize();
-        }));
-
-        return await ShowAsync(window) ? result : null;
+        });
     }
 }

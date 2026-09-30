@@ -24,6 +24,15 @@ public sealed class DocxLayout
     /// <summary>Отдельная титульная страница с названием карты.</summary>
     public bool TitlePage { get; set; } = true;
 
+    /// <summary>Картинка на титульной странице (путь от папки проекта; PNG, JPEG, GIF, BMP) — над названием; пусто — без картинки.</summary>
+    public string TitleImage { get; set; } = string.Empty;
+
+    /// <summary>Где по ширине страницы стоит картинка титула.</summary>
+    public DocxHeaderAlignment TitleImageAlignment { get; set; } = DocxHeaderAlignment.Center;
+
+    /// <summary>Высота картинки титула, мм (пропорции сохраняются, ширина не больше текста).</summary>
+    public double TitleImageHeightMm { get; set; } = 40;
+
     /// <summary>Подзаголовок на титульной странице.</summary>
     public string Subtitle { get; set; } = string.Empty;
 
@@ -288,6 +297,8 @@ public sealed class DocxLayout
         FooterImage = FooterImage?.Trim() ?? string.Empty;
         HeaderImageHeightMm = double.IsFinite(HeaderImageHeightMm) ? Math.Clamp(HeaderImageHeightMm, 3, 60) : 10;
         FooterImageHeightMm = double.IsFinite(FooterImageHeightMm) ? Math.Clamp(FooterImageHeightMm, 3, 60) : 10;
+        TitleImage = TitleImage?.Trim() ?? string.Empty;
+        TitleImageHeightMm = double.IsFinite(TitleImageHeightMm) ? Math.Clamp(TitleImageHeightMm, 5, 250) : 40;
         FooterText ??= string.Empty;
         Language = string.IsNullOrWhiteSpace(Language) ? "ru-RU" : Language.Trim();
 

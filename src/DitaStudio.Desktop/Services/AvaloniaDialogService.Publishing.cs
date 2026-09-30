@@ -288,9 +288,11 @@ public sealed partial class AvaloniaDialogService
 
     private static readonly string[] Languages = { "ru-RU", "en-US", "en-GB", "de-DE", "fr-FR", "es-ES", "uk-UA", "be-BY", "kk-KZ" };
 
-    public async Task<DocxLayout?> DocxLayoutSettingsAsync(DitaProject project)
+    public Task<DocxLayout?> DocxLayoutSettingsAsync(DitaProject project) => LayoutDialogAsync(project, 0);
+
+    /// <summary>Вкладка «Оформление» общего окна «Оформление DOCX»: титул, оглавление, нумерация, колонтитулы, печать, язык.</summary>
+    private (Control Content, Action<DocxLayout> Apply) BuildFormatTab(DitaProject project, DocxLayout current)
     {
-        var current = project.DocxLayout.Clone();
         var panel = new StackPanel { Margin = new Thickness(20) };
 
         panel.Children.Add(Muted(new TextBlock
@@ -304,7 +306,7 @@ public sealed partial class AvaloniaDialogService
 
         // ---- титул
         panel.Children.Add(Header("Титульная страница"));
-        var titlePage = Check("Отдельная титульная страница с названием карты", current.TitlePage);
+        var titlePage = Check("Отдельная титульная страница с названием карты (снимите флажок — титула не будет)", current.TitlePage);
         panel.Children.Add(titlePage);
         panel.Children.Add(Label("Подзаголовок"));
         var subtitle = Named(Input(current.Subtitle), "Текст подзаголовка");
@@ -314,7 +316,10 @@ public sealed partial class AvaloniaDialogService
         panel.Children.Add(author);
         var titleDate = Check("Дата публикации на титуле", current.TitlePageDate, top: 6);
         panel.Children.Add(titleDate);
-        Bind(titlePage, subtitle, titleDate);
+        panel.Children.Add(Label("Картинка на титуле (над названием): место и высота в мм"));
+        var titleImage = ImagePicker(project, current.TitleImage, current.TitleImageAlignment, current.TitleImageHeightMm, "титульной страницы");
+        panel.Children.Add(titleImage.Row);
+        Bind(titlePage, subtitle, titleDate, titleImage.Row);
 
         // ---- оглавление
         panel.Children.Add(Header("Оглавление"));
@@ -410,20 +415,21 @@ public sealed partial class AvaloniaDialogService
         var hyphenation = Check("Автоматическая расстановка переносов", current.AutoHyphenation, top: 6);
         panel.Children.Add(hyphenation);
 
-        DocxLayout? result = null;
-        var window = Shell("Оформление DOCX", new ScrollViewer { Content = panel }, 560, 640);
-        panel.Children.Add(Buttons(window, () =>
+        return (new ScrollViewer { Content = panel }, target =>
         {
             var gutterMm = double.TryParse((gutter.Text ?? string.Empty).Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var g)
                 ? g
                 : current.GutterMm;
 
-            result = new DocxLayout
+            var fresh = new DocxLayout
             {
                 TitlePage = titlePage.IsChecked == true,
                 Subtitle = (subtitle.Text ?? string.Empty).Trim(),
                 Author = (author.Text ?? string.Empty).Trim(),
                 TitlePageDate = titleDate.IsChecked == true,
+                TitleImage = titleImage.Path(),
+                TitleImageAlignment = titleImage.Alignment(),
+                TitleImageHeightMm = titleImage.HeightMm() ?? current.TitleImageHeightMm,
                 TableOfContents = toc.IsChecked == true,
                 TocDepth = tocDepth.SelectedItem as int? ?? current.TocDepth,
                 TocTitle = (tocTitle.Text ?? string.Empty).Trim() is { Length: > 0 } name && name != "Содержание" ? name : string.Empty,
@@ -458,10 +464,9 @@ public sealed partial class AvaloniaDialogService
                 MarginLeftMm = current.MarginLeftMm,
                 MarginRightMm = current.MarginRightMm
             };
-            result.Normalize();
-        }));
-
-        return await ShowAsync(window) ? result : null;
+            // Поля этой вкладки переносятся в общий объект; страница (бумага, ориентация, поля) — у вкладки «Страница».
+            CopyLayoutFields(fresh, target, PageFieldNames);
+        });
 
         static TextBlock Header(string text) => new()
         {

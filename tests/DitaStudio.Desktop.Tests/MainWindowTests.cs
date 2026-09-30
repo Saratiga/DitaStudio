@@ -889,6 +889,46 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Г8: «Параметры страницы» и «Оформление DOCX» — одно окно с двумя вкладками; один «ОК» сохраняет обе части;
+    /// каждый пункт меню открывает свою вкладку.</summary>
+    [AvaloniaFact]
+    public async Task LayoutDialog_IsOneWindowWithTwoTabs_SavesBothParts()
+    {
+        var (window, vm) = await OpenAsync();
+        vm.Project!.SetDocxLayout(new Core.Publishing.DocxLayout { PaperWidthMm = 150, PaperHeightMm = 200, TitlePage = true });
+
+        // «Параметры страницы…» открывает вкладку «Страница», «Оформление DOCX…» — «Оформление».
+        var asking = vm.Dialogs.PageSetupAsync(vm.Project);
+        Dispatcher.UIThread.RunJobs();
+        var dialog = Assert.Single(window.OwnedWindows);
+        var tabs = dialog.GetLogicalDescendants().OfType<TabControl>().First(t => t.Name == "LayoutTabs");
+        Assert.Equal(new[] { "Оформление", "Страница" }, tabs.Items.OfType<TabItem>().Select(t => t.Header as string));
+        Assert.Equal(1, tabs.SelectedIndex);
+
+        // Правка на обеих вкладках: титул выключен, высота листа 210.
+        dialog.GetLogicalDescendants().OfType<CheckBox>().First(c => (c.Content as string)!.StartsWith("Отдельная титульная страница")).IsChecked = false;
+        dialog.GetLogicalDescendants().OfType<TextBox>().First(t => Avalonia.Automation.AutomationProperties.GetName(t) == "Высота листа, мм").Text = "210";
+        dialog.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "ОК")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        var result = await asking;
+
+        Assert.NotNull(result);
+        Assert.False(result!.TitlePage);
+        Assert.Equal(150, result.PaperWidthMm);
+        Assert.Equal(210, result.PaperHeightMm);
+
+        var second = vm.Dialogs.DocxLayoutSettingsAsync(vm.Project);
+        Dispatcher.UIThread.RunJobs();
+        var other = Assert.Single(window.OwnedWindows);
+        Assert.Equal(0, other.GetLogicalDescendants().OfType<TabControl>().First(t => t.Name == "LayoutTabs").SelectedIndex);
+        other.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Отмена")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(await second);
+        window.Close();
+    }
+
     [AvaloniaFact]
     public async Task AuthorContextMenu_HasInsertSubmenu_InsertingAtCaret()
     {
