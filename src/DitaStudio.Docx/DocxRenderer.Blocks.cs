@@ -512,17 +512,25 @@ public sealed partial class DocxRenderer
             }
         }
 
-        if (CaptionRules.HasContent(title))
+        if (CaptionRules.HasCaption(title))
         {
             _figureNumber++;
+            var hasText = CaptionRules.HasContent(title);
             var captionRuns = new List<OpenXmlElement>();
             if (_options.NumberFiguresAndTables)
             {
-                captionRuns.AddRange(CaptionLabel(L.Figure, _figureNumber));
+                captionRuns.AddRange(CaptionLabel(L.Figure, _figureNumber, hasText));
             }
 
-            captionRuns.AddRange(RenderInlineRuns(title!));
-            yield return Para(DocxStyleCatalog.FigureCaption, captionRuns);
+            if (hasText)
+            {
+                captionRuns.AddRange(RenderInlineRuns(title!));
+            }
+
+            if (captionRuns.Count > 0)
+            {
+                yield return Para(DocxStyleCatalog.FigureCaption, captionRuns);
+            }
         }
 
         var desc = node.FirstElement("desc");

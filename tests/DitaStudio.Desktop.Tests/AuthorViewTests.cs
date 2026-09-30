@@ -824,6 +824,50 @@ public sealed class AuthorViewTests
         }
     }
 
+    /// <summary>Г4: подпись рисунка/таблицы в «Авторе» — «Рисунок N» при пустом названии; команда добавляет пустой title или убирает его.</summary>
+    [AvaloniaFact]
+    public void Caption_EmptyTitleShowsNumberOnly_AndToggleAddsOrRemovesTitle()
+    {
+        var (window, author, document, undo) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><p>Текст.</p>" +
+            "<fig><title>С названием</title><image href=\"a.png\"/></fig>" +
+            "<fig><image href=\"b.png\"/></fig>" +
+            "<table><title/><tgroup cols=\"1\"><tbody><row><entry>Ячейка</entry></row></tbody></tgroup></table></conbody></concept>");
+        var body = document.Root.FirstElement("conbody")!;
+        var figures = body.ElementChildren().Where(n => n.Name == "fig").ToList();
+        var table = body.FirstElement("table")!;
+        List<string?> Badges() => window.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text)
+            .Where(t => t is not null && (t.StartsWith("Рисунок ") || t.StartsWith("Таблица "))).ToList();
+
+        Assert.Equal(new List<string?> { "Рисунок 1.", "Таблица 1" }, Badges()); // у второго рисунка title нет — подписи нет
+
+        // Курсор в рисунке без title: «добавить подпись» — пустой title, подпись «Рисунок 2» (без точки).
+        author.CurrentNode = figures[1];
+        Assert.True(author.Surface.ToggleCaption());
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("title", figures[1].ElementChildren().First().Name);
+        Assert.Contains("Подпись: добавить", undo);
+        Assert.Equal(new List<string?> { "Рисунок 1.", "Рисунок 2", "Таблица 1" }, Badges());
+
+        // Убрать: title исчезает, нумерация пересчитана.
+        Assert.False(author.Surface.ToggleCaption());
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(figures[1].FirstElement("title"));
+        Assert.Equal(new List<string?> { "Рисунок 1.", "Таблица 1" }, Badges());
+
+        // В таблице (курсор в ячейке) — то же.
+        author.CurrentNode = table.DescendantsAndSelf().First(n => n.Name == "entry");
+        Assert.False(author.Surface.ToggleCaption());
+        Assert.Null(table.FirstElement("title"));
+        Assert.True(author.Surface.ToggleCaption());
+        Assert.Equal("title", table.ElementChildren().First().Name);
+
+        // Не рисунок и не таблица — команда ничего не делает.
+        author.CurrentNode = body.ElementChildren().First();
+        Assert.Null(author.Surface.ToggleCaption());
+        window.Close();
+    }
+
     [AvaloniaFact]
     public void EnterAtEnd_ShowsSuggestions_DefaultSplits_FilterInserts()
     {

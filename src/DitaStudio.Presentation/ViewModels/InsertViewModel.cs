@@ -240,6 +240,31 @@ public partial class InsertViewModel : ObservableObject
         _main.Documents.RefreshAllTabTitles();
     }
 
+    /// <summary>Подпись рисунка или таблицы под курсором: добавить пустую («Рисунок N») или убрать совсем.</summary>
+    [RelayCommand]
+    private void ToggleCaption()
+    {
+        if (_main.Current is not { } pane)
+        {
+            return;
+        }
+
+        switch (pane.Author.ToggleCaption())
+        {
+            case true:
+                _main.StatusText = "Подпись добавлена: при публикации — «Рисунок N» / «Таблица N»; впишите название в заголовок.";
+                _main.Documents.RefreshAllTabTitles();
+                break;
+            case false:
+                _main.StatusText = "Подпись убрана: у этого рисунка (таблицы) подписи и номера не будет.";
+                _main.Documents.RefreshAllTabTitles();
+                break;
+            default:
+                _main.StatusText = "Поставьте курсор в рисунок или таблицу, чтобы добавить или убрать подпись.";
+                break;
+        }
+    }
+
     /// <summary>Изображение из абзаца под курсором — в рисунок с названием и номером.</summary>
     [RelayCommand]
     private void WrapImageAsFigure()

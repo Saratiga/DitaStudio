@@ -451,10 +451,11 @@ public sealed partial class AuthorView
             root = root.Parent;
         }
 
-        var number = root.DescendantsAndSelf().Where(n => n.Name == captioned.Name && CaptionRules.HasContent(n.FirstElement("title")))
+        var number = root.DescendantsAndSelf().Where(n => n.Name == captioned.Name && n.FirstElement("title") is not null)
             .TakeWhile(n => !ReferenceEquals(n, captioned)).Count() + 1;
         var labels = Labels.For("ru");
-        return $"{(captioned.Name == "fig" ? labels.Figure : labels.Table)} {number}.";
+        // Пустое название — подпись «Рисунок N» без точки; точка появляется вместе с названием.
+        return $"{(captioned.Name == "fig" ? labels.Figure : labels.Table)} {number}" + (CaptionRules.HasContent(captioned.FirstElement("title")) ? "." : string.Empty);
     }
 
     /// <summary>Пересчитывает номера подписей после правки: добавленный или убранный рисунок сдвигает соседние.</summary>
@@ -480,7 +481,7 @@ public sealed partial class AuthorView
             return row;
         }
 
-        if (node.Name == "title" && node.Parent is { Name: "fig" or "table" } captioned && CaptionRules.HasContent(node))
+        if (node.Name == "title" && node.Parent is { Name: "fig" or "table" } captioned)
         {
             // Подпись «Рисунок N.» / «Таблица N.»: в файле её нет, она складывается при публикации.
             var mark = new TextBlock

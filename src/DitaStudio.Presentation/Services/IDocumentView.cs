@@ -101,6 +101,12 @@ public interface IAuthorSurface
     /// <summary>Выносит изображение из абзаца под курсором в рисунок <c>fig</c> с названием.</summary>
     bool WrapImageAsFigure() => false;
 
+    /// <summary>
+    /// Подпись рисунка или таблицы под курсором: есть <c>title</c> — убирает (подписи не будет), нет — добавляет пустой
+    /// (подпись «Рисунок N» / «Таблица N»). true — добавлена, false — убрана, null — здесь нет ни рисунка, ни таблицы.
+    /// </summary>
+    bool? ToggleCaption() => null;
+
     /// <summary>Оборачивает выделенный текст в фразовый элемент.</summary>
     bool WrapCurrentInline(string element);
 

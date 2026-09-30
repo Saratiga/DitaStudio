@@ -188,6 +188,41 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         figure.Add(image);
     }
 
+    /// <summary>Подпись рисунка или таблицы: есть <c>title</c> — убрать, нет — добавить пустой (см. <see cref="IAuthorSurface.ToggleCaption"/>).</summary>
+    public bool? ToggleCaption()
+    {
+        if (Document is null || CurrentNode is null)
+        {
+            return null;
+        }
+
+        var captioned = CurrentNode;
+        while (captioned is not null && captioned.Name is not ("fig" or "table"))
+        {
+            captioned = captioned.Parent;
+        }
+
+        if (captioned is null)
+        {
+            return null;
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit(captioned.FirstElement("title") is null ? "Подпись: добавить" : "Подпись: убрать");
+        if (captioned.FirstElement("title") is { } existing)
+        {
+            var focus = FirstEditable(captioned);
+            existing.RemoveSelf();
+            Changed(focus, captioned.Parent, captioned);
+            return false;
+        }
+
+        var title = DitaNode.Element("title");
+        captioned.Insert(0, title);
+        Changed(title, captioned.Parent, captioned);
+        return true;
+    }
+
     /// <summary>
     /// «Оформить как рисунок»: изображение из абзаца под курсором выносится в блок <c>fig</c> с названием,
     /// который встаёт сразу после абзаца; пустой после этого абзац убирается. false — нечего оформлять

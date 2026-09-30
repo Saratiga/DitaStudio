@@ -77,14 +77,17 @@ public sealed partial class DocxRenderer
     /// Начало подписи: «Рисунок », поле Word <c>SEQ Рисунок</c> с текущим номером (работают «Обновить поля»,
     /// список иллюстраций и перекрёстные ссылки) и разделитель перед названием.
     /// </summary>
-    private IEnumerable<OpenXmlElement> CaptionLabel(string label, int number)
+    private IEnumerable<OpenXmlElement> CaptionLabel(string label, int number, bool withSeparator = true)
     {
         yield return new W.Run(new W.Text(label + " ") { Space = SpaceProcessingModeValues.Preserve });
         yield return new W.SimpleField(new W.Run(new W.Text(number.ToString(System.Globalization.CultureInfo.InvariantCulture))))
         {
             Instruction = $" SEQ {label.Replace(' ', '_')} \\* ARABIC "
         };
-        yield return new W.Run(new W.Text(CaptionRules.Separator(_options.CaptionSeparator)) { Space = SpaceProcessingModeValues.Preserve });
+        if (withSeparator)
+        {
+            yield return new W.Run(new W.Text(CaptionRules.Separator(_options.CaptionSeparator)) { Space = SpaceProcessingModeValues.Preserve });
+        }
     }
 
     /// <summary>Абзацы рисунка по умолчанию стоят по центру; своё выравнивание (align-…) остаётся.</summary>

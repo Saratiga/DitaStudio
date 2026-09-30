@@ -7,7 +7,7 @@ using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace DitaStudio.Tests;
 
-// Подписи таблиц и рисунков: пустой <title/> — без «Таблица №» / «Рисунок №» и без расхода номера.
+// Подписи таблиц и рисунков: пустой <title/> — только «Таблица N» / «Рисунок N» (номер расходуется), элемента title нет — подписи нет (Г4).
 internal static partial class CoreChecks
 {
     private const string CaptionTopic = """
@@ -25,11 +25,11 @@ internal static partial class CoreChecks
     {
         Section("Подписи таблиц и рисунков: пустой заголовок");
 
-        Check(!CaptionRules.HasContent(null), "подпись: нет элемента title — подписи нет");
-        Check(!CaptionRules.HasContent(DitaNode.Element("title")), "подпись: пустой <title/> — подписи нет");
+        Check(!CaptionRules.HasCaption(null) && !CaptionRules.HasContent(null), "подпись: нет элемента title — подписи нет");
+        Check(CaptionRules.HasCaption(DitaNode.Element("title")) && !CaptionRules.HasContent(DitaNode.Element("title")), "подпись: пустой <title/> — подпись есть, названия нет");
         var blank = DitaNode.Element("title");
         blank.SetText("  \n ");
-        Check(!CaptionRules.HasContent(blank), "подпись: заголовок из одних пробелов — подписи нет");
+        Check(!CaptionRules.HasContent(blank), "подпись: заголовок из одних пробелов — названия нет");
         var text = DitaNode.Element("title");
         text.SetText("Название");
         Check(CaptionRules.HasContent(text), "подпись: заголовок с текстом — подпись есть");
@@ -49,12 +49,12 @@ internal static partial class CoreChecks
 
             var entry = new HtmlPublisher(project).Publish(map, new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true }).EntryFile;
             var html = File.ReadAllText(entry);
-            Check(html.Split("class=\"table-title\"").Length - 1 == 2, "HTML: подпись только у двух таблиц с названием");
-            Check(html.Contains("Таблица 1. Первая с названием") && html.Contains("Таблица 2. Вторая с названием"),
-                "HTML: пустые заголовки не занимают номера — «Таблица 1», затем «Таблица 2»");
-            Check(!html.Contains("Таблица 3") && !html.Contains("Таблица 1. <"), "HTML: лишних «Таблица №» нет");
-            Check(html.Split("class=\"fig-title\"").Length - 1 == 1 && html.Contains("Рисунок 1. Первый рисунок"),
-                "HTML: у рисунка с пустым заголовком подписи нет, у второго — «Рисунок 1»");
+            Check(html.Split("class=\"table-title\"").Length - 1 == 4, "HTML: подпись у всех четырёх таблиц с элементом title");
+            Check(html.Contains(">Таблица 1</div>") && html.Contains(">Таблица 2</div>") &&
+                  html.Contains("Таблица 3. Первая с названием") && html.Contains("Таблица 4. Вторая с названием"),
+                "HTML: пустые заголовки — «Таблица 1», «Таблица 2» без точки, номер расходуется");
+            Check(html.Split("class=\"fig-title\"").Length - 1 == 2 && html.Contains(">Рисунок 1</figcaption>") && html.Contains("Рисунок 2. Первый рисунок"),
+                "HTML: у рисунка с пустым заголовком — «Рисунок 1», у второго — «Рисунок 2. Первый рисунок»");
 
             var docx = Path.Combine(root, "d.docx");
             new DocxPublisher(project).Publish(map, new PublishOptions { Language = "ru" }, docx);
@@ -67,9 +67,9 @@ internal static partial class CoreChecks
                 figures = paragraphs.Where(p => p.ParagraphProperties?.ParagraphStyleId?.Val == "FigureCaption").Select(p => p.InnerText).ToList();
             }
 
-            Check(tables.SequenceEqual(new[] { "Таблица 1. Первая с названием", "Таблица 2. Вторая с названием" }),
+            Check(tables.SequenceEqual(new[] { "Таблица 1", "Таблица 2", "Таблица 3. Первая с названием", "Таблица 4. Вторая с названием" }),
                 $"DOCX: подписи только у таблиц с названием, нумерация подряд ({string.Join(" | ", tables)})");
-            Check(figures.SequenceEqual(new[] { "Рисунок 1. Первый рисунок" }),
+            Check(figures.SequenceEqual(new[] { "Рисунок 1", "Рисунок 2. Первый рисунок" }),
                 $"DOCX: у рисунка с пустым заголовком подписи нет ({string.Join(" | ", figures)})");
         }
         finally
@@ -107,13 +107,13 @@ internal static partial class CoreChecks
                 new PublishOptions { OutputDirectory = Path.Combine(root, dir), SingleFile = true }).EntryFile);
 
             var html = Html("h1");
-            Check(html.Contains("Рисунок 1. Первый") && html.Contains("Рисунок 2. Второй"), "HTML: по умолчанию «Рисунок N. Название»");
+            Check(html.Contains("Рисунок 1. Первый") && html.Contains(">Рисунок 2</figcaption>") && html.Contains("Рисунок 3. Второй"), "HTML: по умолчанию «Рисунок N. Название», пустой заголовок — «Рисунок N»");
             Check(html.Contains("figure { text-align: center; }") && html.Contains("figcaption.fig-title { text-align: center; }"),
                 "HTML: рисунок и подпись по умолчанию по центру");
 
             project.SetDocxLayout(new DocxLayout { CaptionSeparator = CaptionSeparator.Dash });
             html = Html("h2");
-            Check(html.Contains("Рисунок 1 — Первый") && html.Contains("Рисунок 2 — Второй"), "HTML: формат «Рисунок N — Название»");
+            Check(html.Contains("Рисунок 1 — Первый") && html.Contains("Рисунок 3 — Второй"), "HTML: формат «Рисунок N — Название»");
 
             project.SetDocxLayout(new DocxLayout { NumberFiguresAndTables = false });
             html = Html("h3");
@@ -126,8 +126,8 @@ internal static partial class CoreChecks
             using var doc = WordprocessingDocument.Open(docx, false);
             var body = doc.MainDocumentPart!.Document.Body!;
             var captions = body.Descendants<Paragraph>().Where(p => p.ParagraphProperties?.ParagraphStyleId?.Val == "FigureCaption").ToList();
-            Check(captions.Select(c => c.InnerText).SequenceEqual(new[] { "Рисунок 1 — Первый", "Рисунок 2 — Второй" }),
-                "DOCX: подписи «Рисунок N — Название», пустой заголовок номера не занимает");
+            Check(captions.Select(c => c.InnerText).SequenceEqual(new[] { "Рисунок 1 — Первый", "Рисунок 2", "Рисунок 3 — Второй" }),
+                "DOCX: подписи «Рисунок N — Название», пустой заголовок — «Рисунок N» без тире");
             Check(captions.All(c => c.Descendants<SimpleField>().Any(f => f.Instruction?.Value?.Contains("SEQ") == true)),
                 "DOCX: номер — поле Word SEQ (обновляется, попадает в список иллюстраций)");
             var style = doc.MainDocumentPart.StyleDefinitionsPart!.Styles!.Elements<Style>().First(s => s.StyleId == "FigureCaption");

@@ -154,13 +154,17 @@ public sealed partial class HtmlRenderer
     {
         var sb = new StringBuilder("<figure").Append(Attrs(node)).Append(">\n");
         var title = node.FirstElement("title");
-        if (CaptionRules.HasContent(title))
+        if (CaptionRules.HasCaption(title))
         {
             _figureNumber++;
+            var hasText = CaptionRules.HasContent(title);
             var caption = _options.NumberFiguresAndTables
-                ? $"{L.Figure} {_figureNumber}{CaptionRules.Separator(_options.CaptionSeparator)}{RenderInlineChildren(title!)}"
+                ? $"{L.Figure} {_figureNumber}" + (hasText ? CaptionRules.Separator(_options.CaptionSeparator) + RenderInlineChildren(title!) : string.Empty)
                 : RenderInlineChildren(title!);
-            sb.Append("<figcaption class=\"fig-title\">").Append(caption).Append("</figcaption>\n");
+            if (caption.Length > 0)
+            {
+                sb.Append("<figcaption class=\"fig-title\">").Append(caption).Append("</figcaption>\n");
+            }
         }
 
         foreach (var child in node.Children)

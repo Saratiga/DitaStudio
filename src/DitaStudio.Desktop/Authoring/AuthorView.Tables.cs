@@ -19,7 +19,7 @@ public sealed partial class AuthorView
             var titleEditor = CreateEditor(InlineContent.FromNode(title));
             titleEditor.FontWeight = FontWeight.SemiBold;
             titleEditor.Margin = new Thickness(0, 0, 0, 4);
-            stack.Children.Add(titleEditor);
+            stack.Children.Add(WithTitleBadge(title, titleEditor)); // слева — «Таблица N.»
         }
 
         foreach (var tgroup in node.ElementChildren().Where(e => e.Name == "tgroup"))

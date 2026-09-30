@@ -14,13 +14,17 @@ public sealed partial class HtmlRenderer
     {
         var sb = new StringBuilder();
         var title = node.FirstElement("title");
-        if (CaptionRules.HasContent(title))
+        if (CaptionRules.HasCaption(title))
         {
             _tableNumber++;
+            var hasText = CaptionRules.HasContent(title);
             var caption = _options.NumberFiguresAndTables
-                ? $"{L.Table} {_tableNumber}{CaptionRules.Separator(_options.CaptionSeparator)}{RenderInlineChildren(title!)}"
+                ? $"{L.Table} {_tableNumber}" + (hasText ? CaptionRules.Separator(_options.CaptionSeparator) + RenderInlineChildren(title!) : string.Empty)
                 : RenderInlineChildren(title!);
-            sb.Append("<div class=\"table-title\">").Append(caption).Append("</div>\n");
+            if (caption.Length > 0)
+            {
+                sb.Append("<div class=\"table-title\">").Append(caption).Append("</div>\n");
+            }
         }
 
         foreach (var tgroup in node.ElementChildren().Where(e => e.Name == "tgroup"))

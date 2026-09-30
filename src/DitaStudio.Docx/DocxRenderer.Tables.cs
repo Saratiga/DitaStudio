@@ -18,17 +18,25 @@ public sealed partial class DocxRenderer
     private IEnumerable<OpenXmlCompositeElement> RenderTable(DitaNode node)
     {
         var title = node.FirstElement("title");
-        if (CaptionRules.HasContent(title))
+        if (CaptionRules.HasCaption(title))
         {
             _tableNumber++;
+            var hasText = CaptionRules.HasContent(title);
             var captionRuns = new List<OpenXmlElement>();
             if (_options.NumberFiguresAndTables)
             {
-                captionRuns.AddRange(CaptionLabel(L.Table, _tableNumber));
+                captionRuns.AddRange(CaptionLabel(L.Table, _tableNumber, hasText));
             }
 
-            captionRuns.AddRange(RenderInlineRuns(title!));
-            yield return Para(DocxStyleCatalog.TableCaption, captionRuns);
+            if (hasText)
+            {
+                captionRuns.AddRange(RenderInlineRuns(title!));
+            }
+
+            if (captionRuns.Count > 0)
+            {
+                yield return Para(DocxStyleCatalog.TableCaption, captionRuns);
+            }
         }
 
         var allowSplit = HasOutputClass(node, "page-break-auto");
