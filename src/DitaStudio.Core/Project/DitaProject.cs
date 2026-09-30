@@ -116,6 +116,7 @@ public sealed class DitaProject
     private const string ExternalDtdSettingsFile = ".ditastudio-external-dtd";
     private const string DocxLayoutSettingsFile = ".ditastudio-docx";
     private const string PinnedTabsSettingsFile = ".ditastudio-pinned";
+    private const string ProductsSettingsFile = ".ditastudio-products";
 
     private readonly List<string> _settingsWarnings = new();
 
@@ -154,6 +155,7 @@ public sealed class DitaProject
         LoadExternalDtdSetting();
         LoadDocxLayoutSetting();
         LoadPinnedFilesSetting();
+        LoadProductsSetting();
         if (_allowReferencedProjects)
         {
             LoadReferencedProjectsSetting();
@@ -628,6 +630,52 @@ public sealed class DitaProject
         }
 
         return null;
+    }
+
+    // -------------------------------------------------------- продукты
+
+    /// <summary>Список продуктов проекта (значения атрибута <c>product</c>); файл <c>.ditastudio-products</c>.</summary>
+    public IReadOnlyList<ProductInfo> Products { get; private set; } = Array.Empty<ProductInfo>();
+
+    public void SetProducts(IEnumerable<ProductInfo> products)
+    {
+        Products = ProductList.Clean(products);
+        var settingsPath = System.IO.Path.Combine(RootPath, ProductsSettingsFile);
+        try
+        {
+            if (Products.Count == 0)
+            {
+                if (File.Exists(settingsPath))
+                {
+                    File.Delete(settingsPath);
+                }
+
+                return;
+            }
+
+            ProductList.Write(settingsPath, Products);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ReportSettingsProblem($"Не удалось сохранить {ProductsSettingsFile}: {ex.Message}. Список продуктов действует до закрытия проекта.");
+        }
+    }
+
+    private void LoadProductsSetting()
+    {
+        try
+        {
+            var settingsPath = System.IO.Path.Combine(RootPath, ProductsSettingsFile);
+            if (File.Exists(settingsPath))
+            {
+                Products = ProductList.Read(settingsPath);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Products = Array.Empty<ProductInfo>();
+            ReportSettingsProblem($"Не удалось прочитать {ProductsSettingsFile}: {ex.Message}. Список продуктов пуст.");
+        }
     }
 
     // -------------------------------------------------------- закреплённые вкладки

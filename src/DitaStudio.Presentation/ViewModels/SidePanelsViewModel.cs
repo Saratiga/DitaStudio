@@ -23,6 +23,9 @@ public partial class SidePanelsViewModel : ObservableObject
         _main = main;
     }
 
+    /// <summary>Имена продуктов проекта — для выпадающего списка значения <c>@product</c>.</summary>
+    public IReadOnlyList<string> ProductNames => _main.Project?.Products.Select(p => p.Name).ToList() ?? new List<string>();
+
     // ------------------------------------------------------------ атрибуты
 
     [ObservableProperty]
@@ -228,6 +231,51 @@ public sealed partial class AttributeRowViewModel : ObservableObject
         this.value = value;
         Values = def is { Type: AttrType.Enumeration } ? def.Values : Array.Empty<string>();
         Description = def?.Description ?? string.Empty;
+
+        // @product — значения выбираются из списка продуктов проекта (можно несколько), а не набираются руками.
+        if (name == "product")
+        {
+            foreach (var product in owner.ProductNames)
+            {
+                ProductChoices.Add(new ProductChoice(product, Tokens(value).Contains(product, StringComparer.Ordinal), OnChoiceToggled));
+            }
+        }
+    }
+
+    /// <summary>Продукты проекта с флажками (пусто — не @product или список проекта пуст).</summary>
+    public ObservableCollection<ProductChoice> ProductChoices { get; } = new();
+
+    public bool HasProductChoices => ProductChoices.Count > 0;
+
+    private bool _syncingChoices;
+
+    private static string[] Tokens(string? text) => (text ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+
+    /// <summary>Флажок продукта: значение атрибута — выбранные продукты через пробел (значения вне списка сохраняются).</summary>
+    private void OnChoiceToggled()
+    {
+        if (_syncingChoices)
+        {
+            return;
+        }
+
+        var inList = ProductChoices.Select(c => c.Name).ToHashSet(StringComparer.Ordinal);
+        var selected = ProductChoices.Where(c => c.IsSelected).Select(c => c.Name);
+        Value = string.Join(' ', Tokens(Value).Where(t => !inList.Contains(t)).Concat(selected));
+        Apply();
+    }
+
+    partial void OnValueChanged(string value)
+    {
+        // Значение изменено в текстовом поле — флажки следуют за ним.
+        _syncingChoices = true;
+        var tokens = Tokens(value);
+        foreach (var choice in ProductChoices)
+        {
+            choice.IsSelected = tokens.Contains(choice.Name, StringComparer.Ordinal);
+        }
+
+        _syncingChoices = false;
     }
 
     public string Name { get; }
@@ -269,4 +317,24 @@ public sealed partial class AttributeRowViewModel : ObservableObject
         _owner.AfterAttributeEdit(_pane);
         _owner.RefreshAttributes();
     }
+}
+
+/// <summary>Продукт проекта с флажком в панели атрибутов: отметка добавляет или убирает его из значения <c>@product</c>.</summary>
+public sealed partial class ProductChoice : ObservableObject
+{
+    private readonly Action _changed;
+
+    public ProductChoice(string name, bool selected, Action changed)
+    {
+        Name = name;
+        isSelected = selected;
+        _changed = changed;
+    }
+
+    public string Name { get; }
+
+    [ObservableProperty]
+    private bool isSelected;
+
+    partial void OnIsSelectedChanged(bool value) => _changed();
 }

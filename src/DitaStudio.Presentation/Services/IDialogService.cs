@@ -58,6 +58,9 @@ public interface IDialogService
 
     Task<ConditionsResult?> PublishConditionsAsync(DitaProject project, ConditionsResult? current);
 
+    /// <summary>Окно списка продуктов проекта (добавить, удалить, импорт, экспорт); null — отмена. Оболочки без него возвращают null.</summary>
+    Task<IReadOnlyList<ProductInfo>?> EditProductsAsync(DitaProject project) => Task.FromResult<IReadOnlyList<ProductInfo>?>(null);
+
     Task<bool> EditDitavalAsync(DitaProject project);
 
     Task<PdfHeaderFooterResult?> PdfHeaderFooterAsync(DitaProject project);

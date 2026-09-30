@@ -151,6 +151,25 @@ public partial class PublishViewModel : ObservableObject
         }
     }
 
+    /// <summary>Список продуктов проекта: значения для атрибута product; импорт из другого проекта.</summary>
+    [RelayCommand]
+    private async Task EditProducts()
+    {
+        var project = _main.Project;
+        if (project is null)
+        {
+            await _main.Dialogs.MessageAsync("Список продуктов", "Сначала откройте папку проекта.");
+            return;
+        }
+
+        if (await _main.Dialogs.EditProductsAsync(project) is { } products)
+        {
+            project.SetProducts(products);
+            _main.RefreshAttributePanel?.Invoke();
+            _main.StatusText = $"Список продуктов: {project.Products.Count}.";
+        }
+    }
+
     [RelayCommand]
     private async Task PublishConditions()
     {

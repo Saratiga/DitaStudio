@@ -170,6 +170,7 @@
                 <MenuItem Header="Оформление DOCX…" Command="{Binding Publish.DocxLayoutCommand}" />
                 <MenuItem Header="Публикация плагином…" Command="{Binding Publish.PublishWithPluginCommand}" />
                 <Separator />
+                <MenuItem Header="Список продуктов…" Command="{Binding Publish.EditProductsCommand}" />
                 <MenuItem Header="Условия сборки…" Command="{Binding Publish.PublishConditionsCommand}" />
                 <MenuItem Header="Подключить .ditaval…" Command="{Binding Publish.ImportDitavalCommand}" />
                 <MenuItem Header="Редактировать .ditaval…" Command="{Binding Publish.EditDitavalCommand}" />
@@ -558,6 +559,16 @@
                                                         <KeyBinding Gesture="Enter" Command="{Binding ApplyCommand}" />
                                                     </TextBox.KeyBindings>
                                                 </TextBox>
+                                                <!-- @product: продукты проекта флажками — можно выбрать несколько -->
+                                                <Expander IsVisible="{Binding HasProductChoices}" Header="Продукты проекта" Margin="0,4,0,0" IsExpanded="True">
+                                                    <ItemsControl ItemsSource="{Binding ProductChoices}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate DataType="vm:ProductChoice">
+                                                                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="4,0,0,0" />
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </Expander>
                                                 <TextBlock IsVisible="{Binding HasDescription}" Text="{Binding Description}" FontSize="10.5"
                                                            TextWrapping="Wrap" Foreground="{DynamicResource TagBrush}" Margin="0,2,0,0" />
                                             </StackPanel>

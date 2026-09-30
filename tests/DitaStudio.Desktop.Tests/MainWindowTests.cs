@@ -980,6 +980,73 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Г9: продукты — выбор из списка проекта (несколько значений) на панели «Атрибуты»; список правится в окне;
+    /// «Условия сборки» отмечают включаемые продукты.</summary>
+    [AvaloniaFact]
+    public async Task Products_AttributePanelChoices_ProductsDialog_AndIncludeConditions()
+    {
+        var (window, vm) = await OpenAsync();
+        vm.Project!.SetProducts(new[] { new Core.Project.ProductInfo("Альфа"), new Core.Project.ProductInfo("Бета"), new Core.Project.ProductInfo("Гамма") });
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.Length > 10);
+        p.SetAttribute("product", "Альфа");
+        pane.AuthorEditor.EditorFor(p)!.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        vm.SidePanels.Refresh();
+
+        // Панель атрибутов: флажки продуктов проекта; значение — выбранные через пробел.
+        var row = vm.SidePanels.Attributes.Single(a => a.Name == "product");
+        Assert.True(row.HasProductChoices);
+        Assert.Equal(new[] { "Альфа", "Бета", "Гамма" }, row.ProductChoices.Select(c => c.Name));
+        Assert.Equal(new[] { true, false, false }, row.ProductChoices.Select(c => c.IsSelected));
+
+        row.ProductChoices[1].IsSelected = true;
+        Assert.Equal("Альфа Бета", p.GetAttribute("product"));
+        row.ProductChoices[0].IsSelected = false;
+        Assert.Equal("Бета", p.GetAttribute("product"));
+
+        // Значение вне списка сохраняется, флажки следуют за текстом.
+        row.Value = "Бета Чужой";
+        Assert.Equal(new[] { false, true, false }, row.ProductChoices.Select(c => c.IsSelected));
+        row.ProductChoices[2].IsSelected = true;
+        Assert.Equal("Чужой Бета Гамма", p.GetAttribute("product"));
+
+        // Окно «Список продуктов»: добавить, удалить.
+        var editing = vm.Dialogs.EditProductsAsync(vm.Project);
+        Dispatcher.UIThread.RunJobs();
+        var dialog = Assert.Single(window.OwnedWindows);
+        dialog.GetLogicalDescendants().OfType<TextBox>().First(t => Avalonia.Automation.AutomationProperties.GetName(t) == "Имя нового продукта").Text = "Дельта плюс";
+        dialog.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Добавить")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        var list = dialog.GetLogicalDescendants().OfType<ListBox>().First();
+        Assert.Contains("Дельта_плюс", list.ItemsSource!.Cast<string>());
+        list.SelectedIndex = 0;
+        dialog.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Удалить выбранный")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        dialog.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "ОК")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        var edited = await editing;
+        Assert.Equal(new[] { "Бета", "Гамма", "Дельта_плюс" }, edited!.Select(x => x.Name));
+        vm.Project.SetProducts(edited);
+
+        // «Условия сборки»: продукты отмечены (входят); снимаем «Гамма» — она исключается.
+        var asking = vm.Dialogs.PublishConditionsAsync(vm.Project, null);
+        Dispatcher.UIThread.RunJobs();
+        var conditions = Assert.Single(window.OwnedWindows);
+        var boxes = conditions.GetLogicalDescendants().OfType<CheckBox>().Where(c => Avalonia.Automation.AutomationProperties.GetName(c)?.StartsWith("Продукт ") == true).ToList();
+        Assert.Equal(new[] { "Бета", "Гамма", "Дельта_плюс", "Чужой" }.OrderBy(x => x), boxes.Select(c => (string)c.Content!).OrderBy(x => x)); // список проекта + найденные в топиках
+        Assert.All(boxes, b => Assert.True(b.IsChecked));
+        boxes.First(b => (string)b.Content! == "Гамма").IsChecked = false;
+        conditions.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "ОК")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        var result = await asking;
+        Assert.Equal(new[] { "Гамма" }, result!.Exclude["product"]);
+        window.Close();
+    }
+
     [AvaloniaFact]
     public async Task AuthorContextMenu_HasInsertSubmenu_InsertingAtCaret()
     {

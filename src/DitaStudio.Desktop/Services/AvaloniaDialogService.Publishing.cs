@@ -56,10 +56,10 @@ public sealed partial class AvaloniaDialogService
 
     /// <summary>Флажки «исключить значение» по условным атрибутам проекта.</summary>
     private static List<(string Attribute, string Value, CheckBox Box)> ConditionChecks(
-        StackPanel panel, DitaProject project, Func<string, string, bool> isExcluded)
+        StackPanel panel, DitaProject project, Func<string, string, bool> isExcluded, string? skipAttribute = null)
     {
         var checks = new List<(string, string, CheckBox)>();
-        foreach (var (attribute, set) in CollectConditionValues(project).OrderBy(v => v.Key, StringComparer.Ordinal))
+        foreach (var (attribute, set) in CollectConditionValues(project).Where(v => v.Key != skipAttribute).OrderBy(v => v.Key, StringComparer.Ordinal))
         {
             panel.Children.Add(Label($"@{attribute}"));
             foreach (var value in set.OrderBy(v => v, StringComparer.Ordinal))
@@ -93,27 +93,6 @@ public sealed partial class AvaloniaDialogService
         }
 
         return exclude;
-    }
-
-    public async Task<ConditionsResult?> PublishConditionsAsync(DitaProject project, ConditionsResult? current)
-    {
-        var panel = new StackPanel { Margin = new Thickness(16) };
-        panel.Children.Add(Wrapped("Отметьте значения, которые нужно исключить из сборки."));
-        var checks = ConditionChecks(panel, project, (attribute, value) =>
-            current is not null && current.Exclude.TryGetValue(attribute, out var excluded) && excluded.Contains(value));
-
-        var drafts = new CheckBox
-        {
-            Content = "Включать черновые комментарии (draft-comment)",
-            Margin = new Thickness(0, 14, 0, 0),
-            IsChecked = current?.ShowDraftComments ?? false
-        };
-        panel.Children.Add(drafts);
-
-        ConditionsResult? result = null;
-        var window = Shell("Условия сборки", new ScrollViewer { Content = panel }, 460, 560);
-        panel.Children.Add(Buttons(window, () => result = new ConditionsResult(CheckedExclusions(checks), drafts.IsChecked == true)));
-        return await ShowAsync(window) ? result : null;
     }
 
     /// <summary>Правит правила исключения связанного .ditaval; правила подсветки (flag) пишет
