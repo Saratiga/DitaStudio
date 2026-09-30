@@ -123,9 +123,9 @@ public sealed class ParityTests : IDisposable
         var dialog = Assert.Single(window.OwnedWindows);
         Assert.Contains("Размер бумаги", AllText(dialog));
 
-        dialog.GetLogicalDescendants().OfType<ComboBox>().Single().SelectedItem = "A5";
-        dialog.GetLogicalDescendants().OfType<RadioButton>().Single(r => r.Content as string == "Альбомная").IsChecked = true;
-        dialog.GetLogicalDescendants().OfType<TextBox>().Single(t => Avalonia.Automation.AutomationProperties.GetName(t) == "Поле сверху, мм").Text = "12,5";
+        dialog.GetLogicalDescendants().OfType<ComboBox>().First(c => Avalonia.Automation.AutomationProperties.GetName(c) == "Размер бумаги").SelectedItem = "A5";
+        dialog.GetLogicalDescendants().OfType<RadioButton>().First(r => r.Content as string == "Альбомная").IsChecked = true;
+        dialog.GetLogicalDescendants().OfType<TextBox>().First(t => Avalonia.Automation.AutomationProperties.GetName(t) == "Поле сверху, мм").Text = "12,5";
         Dispatcher.UIThread.RunJobs();
         Assert.Contains("A5, альбомная: 210 × 148 мм", AllText(dialog));
 
@@ -150,12 +150,12 @@ public sealed class ParityTests : IDisposable
         var window = await OpenViaRecentProjectsAsync();
         ClickMenu(window, "Публикация", "Параметры страницы…");
         var dialog = Assert.Single(window.OwnedWindows);
-        TextBox Box(string name) => dialog.GetLogicalDescendants().OfType<TextBox>().Single(t => Avalonia.Automation.AutomationProperties.GetName(t) == name);
+        TextBox Box(string name) => dialog.GetLogicalDescendants().OfType<TextBox>().First(t => Avalonia.Automation.AutomationProperties.GetName(t) == name);
         var width = Box("Ширина листа, мм");
         var height = Box("Высота листа, мм");
         Assert.False(((Control)width.Parent!).IsVisible, "поля своего размера скрыты, пока не выбран пункт");
 
-        dialog.GetLogicalDescendants().OfType<ComboBox>().Single().SelectedItem = "Свой размер…";
+        dialog.GetLogicalDescendants().OfType<ComboBox>().First(c => Avalonia.Automation.AutomationProperties.GetName(c) == "Размер бумаги").SelectedItem = "Свой размер…";
         Dispatcher.UIThread.RunJobs();
         Assert.True(((Control)width.Parent!).IsVisible);
         Assert.Contains("Укажите ширину и высоту листа", AllText(dialog));
@@ -181,8 +181,8 @@ public sealed class ParityTests : IDisposable
         // Повторное открытие показывает сохранённый размер, а выбор A4 снимает свой.
         ClickMenu(window, "Публикация", "Параметры страницы…");
         dialog = Assert.Single(window.OwnedWindows);
-        Assert.Equal("Свой размер…", dialog.GetLogicalDescendants().OfType<ComboBox>().Single().SelectedItem);
-        dialog.GetLogicalDescendants().OfType<ComboBox>().Single().SelectedItem = "A4";
+        Assert.Equal("Свой размер…", dialog.GetLogicalDescendants().OfType<ComboBox>().First(c => Avalonia.Automation.AutomationProperties.GetName(c) == "Размер бумаги").SelectedItem);
+        dialog.GetLogicalDescendants().OfType<ComboBox>().First(c => Avalonia.Automation.AutomationProperties.GetName(c) == "Размер бумаги").SelectedItem = "A4";
         Dispatcher.UIThread.RunJobs();
         ClickButton(dialog, "ОК");
         Dispatcher.UIThread.RunJobs();
