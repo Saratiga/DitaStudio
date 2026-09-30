@@ -52,6 +52,7 @@ public static class PagedPreview
           .Append(".sheet .content{position:absolute;overflow:hidden;left:").Append(Mm(page.LeftMm)).Append(";top:").Append(Mm(page.TopMm))
           .Append(";width:").Append(Mm(page.ContentWidthMm)).Append(";height:").Append(Mm(page.ContentHeightMm)).Append(";}\n")
           .Append(".sheet .content>main{display:block;max-width:none;margin:0;padding:0;}\n")
+          .Append(".sheet .content>main>:first-child,.sheet .content>main>:first-child>:first-child{margin-top:0;}\n")
           .Append(".sheet .head,.sheet .foot{position:absolute;left:").Append(Mm(page.LeftMm)).Append(";right:").Append(Mm(page.RightMm))
           .Append(";font:9px 'Segoe UI',Arial,sans-serif;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}\n")
           .Append(".sheet .head{top:").Append(Mm(Math.Max(3, page.TopMm / 3))).Append(";}\n")
@@ -212,15 +213,27 @@ public static class PagedPreview
             document.documentElement.setAttribute('data-pages', String(total));
           }
 
+          // Лист шире окна (узкая панель рядом с текстом) — масштаб по ширине, чтобы не было горизонтальной прокрутки.
+          function fit() {
+            pagesEl.style.zoom = 1;
+            var w = sheets.length ? sheets[0].offsetWidth : 0;
+            var k = w > 0 ? Math.min(1, (document.documentElement.clientWidth - 24) / w) : 1;
+            pagesEl.style.zoom = k > 0.1 ? k : 0.1;
+          }
+
           function paginate() {
             var y = window.pageYOffset;
+            pagesEl.style.zoom = 1; // измерения — в натуральную величину
             pagesEl.innerHTML = '';
             sheets = []; stack = [];
             startSheet();
             placeWithHeadings(srcMain);
             fill();
+            fit();
             window.scrollTo(0, y);
           }
+
+          window.addEventListener('resize', fit);
 
           window.ditaSetContent = function (html) { srcMain.innerHTML = html; paginate(); };
           window.ditaPaginate = paginate;

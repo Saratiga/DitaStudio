@@ -223,6 +223,53 @@ public sealed class CefPreviewTests
         window.Close();
     }
 
+    /// <summary>Г6: «Предпросмотр рядом с текстом» в окне — редактор слева, листы справа; набор в «Авторе» доходит до листов.</summary>
+    [AvaloniaFact]
+    public async Task LivePagedPreview_SideBySide_TypingReachesSheets()
+    {
+        if (!Enabled)
+        {
+            return;
+        }
+
+        var root = Path.Combine(RepositoryRoot(), "samples", "GuideSample");
+        var project = new DitaProject(root);
+        project.Scan();
+        var document = DitaDocument.Load(Path.Combine(root, "concepts", "about.dita"));
+        var view = new Desktop.Views.DocumentView(project, document, new CefPdfPrinter());
+        var window = new Window { Width = 1400, Height = 850, Content = view };
+        window.Show();
+        view.ShowLivePreview = true;
+        var live = view.LivePreview!;
+        for (var i = 0; i < 30; i++)
+        {
+            await Task.Delay(100);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        // Правка текста абзаца в «Авторе» → через задержку новый текст в листах.
+        var paragraph = document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.Length > 10);
+        var editor = view.AuthorEditor.EditorFor(paragraph)!;
+        editor.FocusEditor(0);
+        editor.Text = "НАБРАННЫЙ_ТЕКСТ " + editor.Text;
+        for (var i = 0; i < 30; i++)
+        {
+            await Task.Delay(100);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        var found = await live.EvaluateAsync("document.getElementById('pages').innerText.indexOf('НАБРАННЫЙ_ТЕКСТ') >= 0");
+        Assert.Equal("true", found);
+
+        var frame = window.CaptureRenderedFrame();
+        Assert.NotNull(frame);
+        var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+        Directory.CreateDirectory(dir);
+        frame!.Save(Path.Combine(dir, "live-preview-side-by-side.png"));
+        view.Dispose();
+        window.Close();
+    }
+
     private static string PagedPreview_Html(int paragraphs) =>
         string.Concat(Enumerable.Range(1, paragraphs).Select(i => $"<p>Абзац {i}. " + string.Concat(Enumerable.Repeat("слово ", 30)) + "</p>"));
 
