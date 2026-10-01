@@ -43,6 +43,7 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
         _author.DocumentModified += (_, _) => RaiseDirty();
         _author.SelectionChanged += (_, _) => SelectionChanged?.Invoke(this, EventArgs.Empty);
         _author.RootTitleCommitted += (_, _) => RootTitleCommitted?.Invoke(this, EventArgs.Empty);
+        _author.StatusRequested += (_, message) => StatusRequested?.Invoke(this, message);
         _author.BeforeStructuralEdit += (_, description) => Undo.Push(Document, description);
 
         _source.TextEdited += (_, _) =>
@@ -170,6 +171,8 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
     public event EventHandler? RootTitleCommitted;
 
     public event EventHandler<string>? OpenFileRequested;
+
+    public event EventHandler<string>? StatusRequested;
 
     /// <summary>Список топиков карты вместо «Автора» (null у обычных топиков) — для тестов.</summary>
     public MapOutlineView? MapOutline => _outline;

@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.VisualTree;
@@ -367,15 +368,102 @@ public sealed partial class AuthorView
     /// <summary>Оборачивает выделенные блоки (или блок под курсором) в <paramref name="element"/> — без окна выбора (для клавиш и тестов).</summary>
     public bool WrapSelection(string element) => WrapSpan() is { } span && WrapSelection(span, element);
 
+    // ---------------------------------------------------------------- копирование, вырезание, вставка блоков
+
+    private IClipboard? SystemClipboard => TopLevel.GetTopLevel(this)?.Clipboard;
+
+    /// <summary>Копирует выделенные блоки в буфер обмена (текст XML); выделение остаётся.</summary>
+    public async Task<bool> CopySelectedBlocksAsync()
+    {
+        var nodes = SelectedBlocks;
+        if (nodes.Count == 0)
+        {
+            return false;
+        }
+
+        var text = BlockClipboard.Serialize(nodes);
+        BlockClipboard.LastCopiedText = text;
+        if (SystemClipboard is { } clipboard)
+        {
+            await clipboard.SetTextAsync(text);
+        }
+
+        StatusRequested?.Invoke(this, $"Скопировано блоков: {nodes.Count}. Вставка — Ctrl+V у выделенного блока или в абзаце: блоки встанут после него.");
+        return true;
+    }
+
+    /// <summary>Вырезает выделенные блоки: копирует и удаляет одним шагом отмены.</summary>
+    public async Task<bool> CutSelectedBlocksAsync()
+    {
+        var count = SelectedBlocks.Count;
+        if (!await CopySelectedBlocksAsync())
+        {
+            return false;
+        }
+
+        var deleted = DeleteSelectedBlocks();
+        if (deleted)
+        {
+            StatusRequested?.Invoke(this, $"Вырезано блоков: {count}.");
+        }
+
+        return deleted;
+    }
+
+    /// <summary>
+    /// Вставляет блоки из буфера обмена после выделенных блоков (или после блока <paramref name="after"/> / блока под курсором). Место
+    /// проверяется по контент-модели: если за этим блоком вставка недопустима, блоки встают выше по цепочке родителей; одинаковые
+    /// <c>id</c> переименовываются. Вставленные блоки выделяются.
+    /// </summary>
+    public async Task<bool> PasteBlocksAsync(DitaNode? after = null)
+    {
+        string? text = null;
+        if (SystemClipboard is { } clipboard)
+        {
+            text = await clipboard.TryGetTextAsync();
+        }
+
+        text ??= BlockClipboard.LastCopiedText;
+        if (BlockClipboard.Parse(text) is not { } blocks)
+        {
+            StatusRequested?.Invoke(this, "В буфере обмена нет блоков DITA: выделите блоки и скопируйте их (Ctrl+C).");
+            return false;
+        }
+
+        var anchor = after ?? (_outlines.Count > 0 ? SelectedBlocks.LastOrDefault() : CurrentNode);
+        if (Document is null || anchor is null || BlockClipboard.FindInsertion(anchor, blocks) is not { } place)
+        {
+            StatusRequested?.Invoke(this, "Сюда эти блоки вставить нельзя: контент-модель родителя их не допускает ни здесь, ни выше. Выберите другое место.");
+            return false;
+        }
+
+        var renamed = BlockClipboard.MakeIdsUnique(Document, blocks);
+        ClearOutline();
+        if (!Surface.InsertBlocks(place.Parent, place.Index, blocks))
+        {
+            return false;
+        }
+
+        SelectSpan(new BlockSpan(place.Parent, place.Index, place.Index + blocks.Count - 1), focus: true);
+        StatusRequested?.Invoke(this, $"Вставлено блоков: {blocks.Count}" + (renamed > 0 ? $"; повторяющихся id заменено: {renamed}." : "."));
+        return true;
+    }
+
     private void ShowSelectionMenu()
     {
         var wrap = new MenuItem { Header = "Обернуть в…", InputGesture = new KeyGesture(Key.Enter), IsEnabled = WrapOptions().Count > 0 };
         wrap.Click += (_, _) => ShowWrapMenu();
+        var copy = new MenuItem { Header = "Копировать", InputGesture = new KeyGesture(Key.C, KeyModifiers.Control) };
+        copy.Click += (_, _) => _ = CopySelectedBlocksAsync();
+        var cut = new MenuItem { Header = "Вырезать", InputGesture = new KeyGesture(Key.X, KeyModifiers.Control) };
+        cut.Click += (_, _) => _ = CutSelectedBlocksAsync();
+        var paste = new MenuItem { Header = "Вставить после", InputGesture = new KeyGesture(Key.V, KeyModifiers.Control) };
+        paste.Click += (_, _) => _ = PasteBlocksAsync();
         var delete = new MenuItem { Header = "Удалить выделенное", InputGesture = new KeyGesture(Key.Delete) };
         delete.Click += (_, _) => DeleteSelectedBlocks();
         var clear = new MenuItem { Header = "Снять выделение", InputGesture = new KeyGesture(Key.Escape) };
         clear.Click += (_, _) => Deselect();
-        new ContextMenu { ItemsSource = new List<Control> { wrap, delete, new Separator(), clear } }.Open(this);
+        new ContextMenu { ItemsSource = new List<Control> { wrap, new Separator(), copy, cut, paste, new Separator(), delete, clear } }.Open(this);
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
@@ -395,6 +483,18 @@ public sealed partial class AuthorView
                 break;
             case Key.Enter when e.KeyModifiers == KeyModifiers.None:
                 e.Handled = ShowWrapMenu();
+                break;
+            case Key.C when e.KeyModifiers == KeyModifiers.Control:
+                e.Handled = true;
+                _ = CopySelectedBlocksAsync();
+                break;
+            case Key.X when e.KeyModifiers == KeyModifiers.Control:
+                e.Handled = true;
+                _ = CutSelectedBlocksAsync();
+                break;
+            case Key.V when e.KeyModifiers == KeyModifiers.Control:
+                e.Handled = true;
+                _ = PasteBlocksAsync();
                 break;
             case Key.Escape:
                 e.Handled = true;

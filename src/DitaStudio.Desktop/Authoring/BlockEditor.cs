@@ -166,6 +166,9 @@ public sealed class BlockEditor : TextEditor
 
     public event EventHandler<StructureRequestEventArgs>? StructureRequested;
 
+    /// <summary>В буфере обмена блоки, скопированные «Автором»: вставка в этот блок — вставка блоков после него.</summary>
+    public event EventHandler? BlocksPasteRequested;
+
     /// <summary>Выделение мышью закончено: кнопку отпустили, выделенный текст не пуст.</summary>
     public event EventHandler? MouseSelectionFinished;
 
@@ -571,14 +574,18 @@ public sealed class BlockEditor : TextEditor
     /// <summary>Вставка — только простой текст одной строкой, чтобы в документ не попадала чужая разметка.</summary>
     private async Task PastePlainTextAsync()
     {
-        if (TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard)
+        // Без системного буфера (окно без него) — последнее, что редактор сам копировал блоками.
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+        var text = clipboard is null ? DitaStudio.Core.Editing.BlockClipboard.LastCopiedText : await clipboard.TryGetTextAsync();
+        if (string.IsNullOrEmpty(text))
         {
             return;
         }
 
-        var text = await clipboard.TryGetTextAsync();
-        if (string.IsNullOrEmpty(text))
+        // В буфере блоки, скопированные «Автором» (Ctrl+C у выделенных блоков): вставляются блоками после этого, а не текстом разметки.
+        if (DitaStudio.Core.Editing.BlockClipboard.LastCopiedText is { } blocks && text == blocks)
         {
+            BlocksPasteRequested?.Invoke(this, EventArgs.Empty);
             return;
         }
 

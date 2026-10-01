@@ -690,6 +690,7 @@ public sealed partial class AuthorView
             HighlightEditor(editor);
         };
         editor.MouseSelectionFinished += (_, _) => OnMouseSelectionFinished(editor);
+        editor.BlocksPasteRequested += (_, _) => _ = PasteBlocksAsync(editor.Node);
         editor.WrapRequested += (_, element) => Surface.WrapCurrentInline(element);
         editor.StructureRequested += OnStructureRequested;
 

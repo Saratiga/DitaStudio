@@ -40,6 +40,13 @@ public interface IDocumentView
     /// <summary>Сменился текущий элемент (курсор в «Авторе» или исходном коде).</summary>
     event EventHandler? SelectionChanged;
 
+    /// <summary>Сообщение для строки состояния от самого редактора (например, «блоки сюда вставить нельзя»). Оболочки без такого не поднимают.</summary>
+    event EventHandler<string>? StatusRequested
+    {
+        add { }
+        remove { }
+    }
+
     /// <summary>Просьба открыть файл (двойной щелчок по топику в списке карты). Оболочки без такого списка событие не поднимают.</summary>
     event EventHandler<string>? OpenFileRequested
     {

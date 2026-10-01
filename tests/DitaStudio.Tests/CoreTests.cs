@@ -89,6 +89,7 @@ public sealed class CoreTests
     [Fact] public void PagedPreviewTests() => Run(CoreChecks.PagedPreviewTests);
     [Fact] public void MarkerTests() => Run(CoreChecks.MarkerTests);
     [Fact] public void BlockRangeTests() => Run(CoreChecks.BlockRangeTests);
+    [Fact] public void BlockClipboardTests() => Run(CoreChecks.BlockClipboardTests);
     [Fact]
     public void CellParagraphsDocxTests() => Run(CoreChecks.CellParagraphsDocxTests);
     [Fact] public void CssCascadeDocxTests() => Run(CoreChecks.CssCascadeDocxTests);

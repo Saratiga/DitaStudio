@@ -426,6 +426,25 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         return true;
     }
 
+    /// <summary>Вставляет блоки (копии из буфера) в <paramref name="parent"/> на позицию <paramref name="index"/> среди всех детей одним шагом отмены.</summary>
+    public bool InsertBlocks(DitaNode parent, int index, IReadOnlyList<DitaNode> blocks)
+    {
+        if (Document is null || blocks.Count == 0)
+        {
+            return false;
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit($"Вставка блоков: {blocks.Count}");
+        for (var i = 0; i < blocks.Count; i++)
+        {
+            parent.Insert(Math.Min(index + i, parent.Children.Count), blocks[i]);
+        }
+
+        Changed(FirstEditable(blocks.FirstOrDefault(b => b.Kind == NodeKind.Element) ?? parent), parent, blocks.ToArray());
+        return true;
+    }
+
     /// <summary>
     /// Оборачивает диапазон детей <paramref name="parent"/> (индексы <paramref name="first"/>…<paramref name="last"/>) в новый элемент
     /// <paramref name="name"/> одним шагом отмены. Null — обернуть нельзя.

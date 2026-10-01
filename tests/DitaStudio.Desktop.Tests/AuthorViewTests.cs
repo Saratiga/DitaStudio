@@ -62,6 +62,9 @@ public sealed class AuthorViewTests
             Key.Back => PhysicalKey.Backspace,
             Key.Delete => PhysicalKey.Delete,
             Key.Escape => PhysicalKey.Escape,
+            Key.C => PhysicalKey.C,
+            Key.X => PhysicalKey.X,
+            Key.V => PhysicalKey.V,
             Key.Tab => PhysicalKey.Tab,
             Key.Up => PhysicalKey.ArrowUp,
             Key.Down => PhysicalKey.ArrowDown,
@@ -1262,6 +1265,7 @@ public sealed class AuthorViewTests
         Assert.Equal("note", popup.Visible[0].Element);
         popup.Apply();
         Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs(DispatcherPriority.Background); // отложенный перенос фокуса в текст не должен снимать выделение обёртки
 
         var note = body.FirstElement("note")!;
         Assert.Equal(new[] { "Второй.", "Третий." }, note.ElementChildren().Select(n => n.InnerText).ToArray());
@@ -1283,6 +1287,110 @@ public sealed class AuthorViewTests
         author.SelectBlocks(body.FirstElement("ul")!.ElementChildren().First(), body.FirstElement("ul")!.ElementChildren().Last());
         Assert.DoesNotContain("note", author.WrapOptions());
         Assert.DoesNotContain("div", author.WrapOptions());
+        window.Close();
+    }
+
+    /// <summary>Копирование, вырезание и вставка выделенных блоков: Ctrl+C копирует (текст XML в буфер), Ctrl+X вырезает одним шагом
+    /// отмены, Ctrl+V вставляет копии после выделенных блоков; одинаковые id заменяются, вставленное выделяется; вставка в абзаце, если в
+    /// буфере блоки, — тоже вставка блоков; недопустимое место отклоняется с пояснением.</summary>
+    [AvaloniaFact]
+    public async Task Blocks_CopyCutPaste_WithKeys_ValidPlace_UniqueIds_AndStatus()
+    {
+        var (window, author, document, undo) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><p id=\"p1\">Первый.</p><p id=\"p2\">Второй.</p><note id=\"n1\"><p>В заметке.</p></note>" +
+            "<p id=\"p4\">Четвёртый.</p><ul><li>Один</li><li>Два</li></ul></conbody></concept>");
+        var body = document.Root.FirstElement("conbody")!;
+        var status = new List<string>();
+        author.StatusRequested += (_, message) => status.Add(message);
+        List<string> Names() => body.ElementChildren().Select(n => n.Name + ":" + n.InnerText).ToList();
+        DitaStudio.Core.Editing.BlockClipboard.LastCopiedText = null;
+
+        // Ctrl+C: два блока (абзац и заметка) копируются; документ не меняется, выделение остаётся.
+        var ps = Paragraphs(document);
+        var note = body.FirstElement("note")!;
+        Assert.True(author.SelectBlocks(ps[1], note));
+        Press(window, Key.C, RawInputModifiers.Control);
+        await Task.Delay(50);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(2, author.SelectedBlocks.Count);
+        Assert.Contains("Скопировано блоков: 2", status[^1]);
+        Assert.Contains("<note id=\"n1\">", DitaStudio.Core.Editing.BlockClipboard.LastCopiedText);
+        Assert.Equal(5, body.ElementChildren().Count());
+
+        // Ctrl+V после четвёртого абзаца: копии встают за ним, id уникальны, вставленные выделены, один шаг отмены.
+        Assert.True(author.SelectBlock(ps[2]));
+        Press(window, Key.V, RawInputModifiers.Control);
+        await Task.Delay(50);
+        Dispatcher.UIThread.RunJobs();
+        Dispatcher.UIThread.RunJobs(DispatcherPriority.Background); // отложенный перенос фокуса не должен снять выделение
+        Assert.Equal(new[] { "p:Первый.", "p:Второй.", "note:В заметке.", "p:Четвёртый.", "p:Второй.", "note:В заметке.", "ul:ОдинДва" }, Names());
+        var ids = document.Root.DescendantsAndSelf().Where(n => n.Kind == NodeKind.Element).Select(n => n.GetAttribute("id")).Where(i => i is not null).ToList();
+        Assert.Equal(ids.Count, ids.Distinct().Count());
+        Assert.Contains("p2-копия", ids);
+        Assert.Contains("n1-копия", ids);
+        Assert.True(author.SelectedBlocks.Count == 2, "выделение после вставки");
+        Assert.Equal(1, undo.Count(u => u == "Вставка блоков: 2"));
+        Assert.Contains("Вставлено блоков: 2", status[^1]);
+        Assert.Contains("id заменено", status[^1]);
+
+        // Ctrl+X: блоки вырезаются (в буфере, из документа ушли, одна отмена), и вставляются обратно в другое место.
+        var pasted = author.SelectedBlocks.ToList();
+        Press(window, Key.X, RawInputModifiers.Control);
+        await Task.Delay(50);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(5, body.ElementChildren().Count());
+        Assert.All(pasted, n => Assert.Null(n.Parent));
+        Assert.Equal(1, undo.Count(u => u == "Удаление блоков: 2"));
+        Assert.Contains("Вырезано блоков: 2", status[^1]);
+        var first = Paragraphs(document)[0];
+        Assert.True(author.SelectBlock(first));
+        Press(window, Key.V, RawInputModifiers.Control);
+        await Task.Delay(50);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new[] { "p:Первый.", "p:Второй.", "note:В заметке.", "p:Второй.", "note:В заметке.", "p:Четвёртый.", "ul:ОдинДва" }.Length, body.ElementChildren().Count());
+        Assert.Equal("p:Первый.", Names()[0]);
+        Assert.Equal("note", body.ElementChildren().ElementAt(2).Name);
+
+        // Вставка в абзаце: курсор в тексте, в буфере блоки — блоки встают после абзаца, а не текстом разметки.
+        var before = body.ElementChildren().Count();
+        var target = Paragraphs(document)[0];
+        Focus(window, author, target, 3);
+        Press(window, Key.V, RawInputModifiers.Control);
+        await Task.Delay(50);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(before + 2, body.ElementChildren().Count());
+        Assert.Equal("Первый.", target.InnerText); // текст абзаца не тронут
+        Assert.Equal("p", body.ElementChildren().ElementAt(body.IndexOf(target) + 1).Name);
+
+        // Недопустимое место: пункты списка вставляются в список, но не после абзаца в теле.
+        var ul = body.FirstElement("ul")!;
+        Assert.True(author.SelectBlocks(ul.ElementChildren().First(), ul.ElementChildren().Last()));
+        Press(window, Key.C, RawInputModifiers.Control);
+        await Task.Delay(50);
+        Assert.True(author.SelectBlock(Paragraphs(document)[0]));
+        var count = body.ElementChildren().Count();
+        Press(window, Key.V, RawInputModifiers.Control);
+        await Task.Delay(50);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(count, body.ElementChildren().Count());
+        Assert.Contains("вставить нельзя", status[^1]);
+
+        // …а после пункта списка — тот же список: два пункта добавились.
+        Assert.True(author.SelectBlock(ul.ElementChildren().First()));
+        Press(window, Key.V, RawInputModifiers.Control);
+        await Task.Delay(50);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(4, ul.ElementChildren().Count());
+
+        // Обычный текст в буфере — не блоки: ничего не вставляется, сообщение.
+        DitaStudio.Core.Editing.BlockClipboard.LastCopiedText = "просто слова";
+        if (TopLevel.GetTopLevel(author)?.Clipboard is { } systemClipboard)
+        {
+            await systemClipboard.SetTextAsync("просто слова");
+        }
+
+        Assert.False(await author.PasteBlocksAsync());
+        Assert.Contains("нет блоков DITA", status[^1]);
         window.Close();
     }
 

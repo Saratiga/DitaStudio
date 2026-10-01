@@ -101,6 +101,9 @@ public sealed partial class AuthorView : UserControl
     /// <summary>Фокус ушёл из заголовка (title) корневого топика, и текст заголовка был изменён.</summary>
     public event EventHandler? RootTitleCommitted;
 
+    /// <summary>Сообщение для строки состояния (скопировано, вставлено, вставить нельзя).</summary>
+    public event EventHandler<string>? StatusRequested;
+
     /// <summary>Просьба сохранить состояние для отмены перед структурной операцией.</summary>
     public event EventHandler<string>? BeforeStructuralEdit;
 
@@ -176,7 +179,14 @@ public sealed partial class AuthorView : UserControl
         if (focusNode is not null && _editors.TryGetValue(focusNode, out var editor))
         {
             CurrentNode = focusNode;
-            Dispatcher.UIThread.Post(() => editor.FocusEditor(caretOffset), DispatcherPriority.Background);
+            // Если за это время выделили блоки целиком (вставка, «Обернуть в…»), фокус в текст не забирается — иначе выделение сразу бы снялось.
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_outlines.Count == 0)
+                {
+                    editor.FocusEditor(caretOffset);
+                }
+            }, DispatcherPriority.Background);
         }
     }
 
