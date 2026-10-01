@@ -84,8 +84,12 @@ src/DitaStudio.Core/     ядро, не знает про интерфейс —
   Editing/               структурные операции и история отмены
   Templates/             заготовки новых документов
 src/DitaStudio.Docx/     экспорт в DOCX (DocxPublisher/DocxRenderer, Styling — CSS → стили Word); зависит от Core
-src/DitaStudio.Presentation/ общие ViewModel'и и сервисы оболочки, модель блока «Автора»,
-                         орфография, автодополнение, плагины команд «Автора»
+src/DitaStudio.Presentation/ ViewModel'и и сервисы оболочки, модель блока «Автора», орфография,
+                         автодополнение, плагины команд «Автора». ViewModel'и друг о друге и о
+                         MainViewModel не знают: получают в конструкторе ShellContext (IShellState,
+                         IWorkspace, UiServices, ShellHooks), IDocumentHost и нужных соседей
+                         (ViewModels/ShellContracts.cs); MainViewModel — только сборка и IShellState;
+                         открытые проекты — Workspace; три петли замыкаются через Link()
 src/DitaStudio.Desktop/  интерфейс на Avalonia (Authoring, Preview, Views, Services, Themes)
 tests/DitaStudio.Tests/  проверки ядра (xUnit)
 tests/DitaStudio.Desktop.Tests/ headless-тесты интерфейса (+ CefPreviewTests, MultiProjectTests)

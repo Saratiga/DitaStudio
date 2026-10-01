@@ -1,3 +1,4 @@
+using DitaStudio.Presentation.Services;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -8,7 +9,10 @@ namespace DitaStudio.Presentation.ViewModels;
 // Поиск по проекту (текст/regex/имена элементов) и замена всех вхождений.
 public partial class SearchViewModel : ObservableObject
 {
-    private readonly MainViewModel _main;
+    private readonly IShellState _shell;
+    private readonly IWorkspace _workspace;
+    private readonly UiServices _ui;
+    private readonly IDocumentHost _docs;
 
     [ObservableProperty]
     private string searchText = string.Empty;
@@ -27,9 +31,12 @@ public partial class SearchViewModel : ObservableObject
 
     public ObservableCollection<DitaProject.SearchHit> Results { get; } = new();
 
-    public SearchViewModel(MainViewModel main)
+    public SearchViewModel(ShellContext context, IDocumentHost docs)
     {
-        _main = main;
+        _shell = context.Shell;
+        _workspace = context.Workspace;
+        _ui = context.Ui;
+        _docs = docs;
     }
 
     /// <summary>Показывает готовый список (например, ссылки на файл) вместо результатов поиска.</summary>
@@ -45,13 +52,13 @@ public partial class SearchViewModel : ObservableObject
     [RelayCommand]
     private void Run()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null)
         {
             return;
         }
 
-        foreach (var pane in _main.Panes.Values)
+        foreach (var pane in _docs.Panes.Values)
         {
             pane.CommitPendingEdits();
         }
@@ -63,13 +70,13 @@ public partial class SearchViewModel : ObservableObject
             Results.Add(hit);
         }
 
-        _main.StatusText = $"Найдено совпадений: {hits.Count}";
+        _shell.StatusText = $"Найдено совпадений: {hits.Count}";
     }
 
     [RelayCommand]
     private async Task ReplaceAll()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null)
         {
             return;
@@ -77,7 +84,7 @@ public partial class SearchViewModel : ObservableObject
 
         if (SearchElements)
         {
-            await _main.Dialogs.MessageAsync("Замена", "Замена работает только для текстового поиска, не для поиска по именам элементов.");
+            await _ui.Dialogs.MessageAsync("Замена", "Замена работает только для текстового поиска, не для поиска по именам элементов.");
             return;
         }
 
@@ -86,12 +93,12 @@ public partial class SearchViewModel : ObservableObject
             return;
         }
 
-        foreach (var pane in _main.Panes.Values)
+        foreach (var pane in _docs.Panes.Values)
         {
             pane.CommitPendingEdits();
         }
 
-        var confirmed = await _main.Dialogs.ConfirmAsync("Замена",
+        var confirmed = await _ui.Dialogs.ConfirmAsync("Замена",
             $"Заменить все вхождения «{SearchText}» на «{ReplaceText}» по всему проекту?\n" +
             "Изменённые документы будут помечены как несохранённые.");
         if (!confirmed)
@@ -102,15 +109,15 @@ public partial class SearchViewModel : ObservableObject
         var result = project.ReplaceAll(SearchText, ReplaceText, false, SearchRegex);
         foreach (var file in result.ChangedFiles)
         {
-            if (_main.Panes.TryGetValue(file.FullPath, out var pane))
+            if (_docs.Panes.TryGetValue(file.FullPath, out var pane))
             {
                 pane.ReloadViews();
             }
         }
 
-        _main.UpdateTabHeaders?.Invoke();
+        _docs.RefreshAllTabTitles();
         Run();
-        _main.StatusText = $"Заменено вхождений: {result.ReplacementCount} в файлах: {result.ChangedFiles.Count}. Не забудьте сохранить (Ctrl+Shift+S).";
+        _shell.StatusText = $"Заменено вхождений: {result.ReplacementCount} в файлах: {result.ChangedFiles.Count}. Не забудьте сохранить (Ctrl+Shift+S).";
     }
 
     [RelayCommand]
@@ -121,7 +128,7 @@ public partial class SearchViewModel : ObservableObject
             return;
         }
 
-        var pane = _main.OpenDocument?.Invoke(hit.File.FullPath);
+        var pane = _docs.OpenDocument(hit.File.FullPath);
         pane?.FocusNode(hit.Node);
     }
 }

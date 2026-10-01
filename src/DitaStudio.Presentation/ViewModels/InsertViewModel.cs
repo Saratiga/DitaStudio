@@ -18,14 +18,22 @@ namespace DitaStudio.Presentation.ViewModels;
 // модель, не визуальное дерево) — риск ниже, чем размер файла намекает.
 public partial class InsertViewModel : ObservableObject
 {
-    private readonly MainViewModel _main;
+    private readonly IShellState _shell;
+    private readonly IWorkspace _workspace;
+    private readonly UiServices _ui;
+    private readonly ShellHooks _hooks;
+    private readonly IDocumentHost _docs;
 
     [ObservableProperty]
     private bool showElementTags = true;
 
-    public InsertViewModel(MainViewModel main)
+    public InsertViewModel(ShellContext context, IDocumentHost docs)
     {
-        _main = main;
+        _shell = context.Shell;
+        _workspace = context.Workspace;
+        _ui = context.Ui;
+        _hooks = context.Hooks;
+        _docs = docs;
     }
 
     // [RelayCommand] — не только для InsertParagraph/InsertUl/и т.п. ниже,
@@ -34,7 +42,7 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void InsertElement(string name)
     {
-        var pane = _main.Current;
+        var pane = _docs.Current;
         if (pane is null)
         {
             return;
@@ -43,13 +51,13 @@ public partial class InsertViewModel : ObservableObject
         pane.Mode = EditorMode.Author;
         if (!pane.Author.InsertElement(name))
         {
-            _main.StatusText = $"Элемент <{name}> здесь недопустим.";
+            _shell.StatusText = $"Элемент <{name}> здесь недопустим.";
             return;
         }
 
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshOutline?.Invoke();
-        _main.StatusText = $"Вставлен <{name}>";
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshOutline?.Invoke();
+        _shell.StatusText = $"Вставлен <{name}>";
     }
 
     /// <summary>
@@ -58,7 +66,7 @@ public partial class InsertViewModel : ObservableObject
     /// </summary>
     public (IReadOnlyList<ElementDef> Inline, IReadOnlyList<ElementDef> After) InsertCandidates()
     {
-        var node = _main.Current?.Author.CurrentNode;
+        var node = _docs.Current?.Author.CurrentNode;
         if (node is null)
         {
             return (Array.Empty<ElementDef>(), Array.Empty<ElementDef>());
@@ -109,14 +117,14 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private async Task InsertTable()
     {
-        var pane = _main.Current;
+        var pane = _docs.Current;
         var node = pane?.Author.CurrentNode;
         if (pane is null || node?.Parent is null)
         {
             return;
         }
 
-        var options = await _main.Dialogs.InsertTableAsync();
+        var options = await _ui.Dialogs.InsertTableAsync();
         if (options is null)
         {
             return;
@@ -129,15 +137,15 @@ public partial class InsertViewModel : ObservableObject
         var index = EditCommands.ElementIndexOf(parent, node) + 1;
         if (!DitaCatalog.Default.CanInsert(parent, "table", index))
         {
-            _main.StatusText = "Таблицу здесь вставить нельзя.";
+            _shell.StatusText = "Таблицу здесь вставить нельзя.";
             return;
         }
 
         parent.Insert(EditCommands.ChildIndexForElementIndex(parent, index), table);
         pane.Document.IsDirty = true;
         pane.Author.Rebuild();
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshOutline?.Invoke();
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshOutline?.Invoke();
     }
 
     private static DitaNode BuildTableNode(TableResult options)
@@ -199,13 +207,13 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private async Task InsertImage()
     {
-        var pane = _main.Current;
+        var pane = _docs.Current;
         if (pane is null || pane.FilePath is null)
         {
             return;
         }
 
-        var file = await _main.Files.OpenFileAsync("Выберите изображение",
+        var file = await _ui.Files.OpenFileAsync("Выберите изображение",
             new[] { new FileFilter("Изображения", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.svg", "*.bmp"), FileFilter.All },
             Path.GetDirectoryName(pane.FilePath));
         if (file is null)
@@ -225,32 +233,32 @@ public partial class InsertViewModel : ObservableObject
         // Там, где fig недопустим (например, в середине заголовка), изображение идёт в строку.
         if (pane.Author.InsertFigure(image))
         {
-            _main.StatusText = "Рисунок вставлен: замените название под ним. Подпись «Рисунок N» появится при публикации.";
-            _main.Documents.RefreshAllTabTitles();
+            _shell.StatusText = "Рисунок вставлен: замените название под ним. Подпись «Рисунок N» появится при публикации.";
+            _docs.RefreshAllTabTitles();
             return;
         }
 
         image.SetAttribute("placement", "break");
         if (!pane.Author.InsertInlineNode(image))
         {
-            _main.StatusText = "Поставьте курсор в абзац, куда вставить изображение.";
+            _shell.StatusText = "Поставьте курсор в абзац, куда вставить изображение.";
             return;
         }
 
-        _main.Documents.RefreshAllTabTitles();
+        _docs.RefreshAllTabTitles();
     }
 
     /// <summary>Границы таблицы под курсором: все, внешняя рамка, горизонтальные, без границ.</summary>
     [RelayCommand]
     private void SetTableBorders(TableBorderMode mode)
     {
-        var ok = _main.Current?.Author.SetTableBorders(mode) == true;
+        var ok = _docs.Current?.Author.SetTableBorders(mode) == true;
         if (ok)
         {
-            _main.Documents.RefreshAllTabTitles();
+            _docs.RefreshAllTabTitles();
         }
 
-        _main.StatusText = ok
+        _shell.StatusText = ok
             ? mode switch
             {
                 TableBorderMode.All => "Границы таблицы: все линии.",
@@ -265,33 +273,33 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void SetRowBorder(bool visible)
     {
-        var ok = _main.Current?.Author.SetRowBorder(visible) == true;
+        var ok = _docs.Current?.Author.SetRowBorder(visible) == true;
         if (ok)
         {
-            _main.Documents.RefreshAllTabTitles();
+            _docs.RefreshAllTabTitles();
         }
 
-        _main.StatusText = ok ? (visible ? "Линия под строкой показана." : "Линия под строкой убрана.") : "Поставьте курсор в ячейку таблицы.";
+        _shell.StatusText = ok ? (visible ? "Линия под строкой показана." : "Линия под строкой убрана.") : "Поставьте курсор в ячейку таблицы.";
     }
 
     /// <summary>Линия справа от столбца, в котором стоит курсор: true — показать, false — убрать.</summary>
     [RelayCommand]
     private void SetColumnBorder(bool visible)
     {
-        var ok = _main.Current?.Author.SetColumnBorder(visible) == true;
+        var ok = _docs.Current?.Author.SetColumnBorder(visible) == true;
         if (ok)
         {
-            _main.Documents.RefreshAllTabTitles();
+            _docs.RefreshAllTabTitles();
         }
 
-        _main.StatusText = ok ? (visible ? "Линия справа от столбца показана." : "Линия справа от столбца убрана.") : "Поставьте курсор в ячейку таблицы.";
+        _shell.StatusText = ok ? (visible ? "Линия справа от столбца показана." : "Линия справа от столбца убрана.") : "Поставьте курсор в ячейку таблицы.";
     }
 
     /// <summary>Выделить целиком таблицу под курсором (контур; затем Delete удаляет её).</summary>
     [RelayCommand]
     private void SelectTable()
     {
-        _main.StatusText = _main.Current?.Author.SelectCurrentTable() == true
+        _shell.StatusText = _docs.Current?.Author.SelectCurrentTable() == true
             ? "Таблица выделена: Delete удаляет её целиком, Esc снимает выделение."
             : "Поставьте курсор в ячейку таблицы.";
     }
@@ -300,15 +308,15 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void DeleteTable()
     {
-        if (_main.Current?.Author.DeleteCurrentTable() == true)
+        if (_docs.Current?.Author.DeleteCurrentTable() == true)
         {
-            _main.Documents.RefreshAllTabTitles();
-            _main.RefreshOutline?.Invoke();
-            _main.StatusText = "Таблица удалена (отмена — Ctrl+Alt+Z).";
+            _docs.RefreshAllTabTitles();
+            _hooks.RefreshOutline?.Invoke();
+            _shell.StatusText = "Таблица удалена (отмена — Ctrl+Alt+Z).";
         }
         else
         {
-            _main.StatusText = "Поставьте курсор в ячейку таблицы.";
+            _shell.StatusText = "Поставьте курсор в ячейку таблицы.";
         }
     }
 
@@ -316,7 +324,7 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void ToggleCaption()
     {
-        if (_main.Current is not { } pane)
+        if (_docs.Current is not { } pane)
         {
             return;
         }
@@ -324,15 +332,15 @@ public partial class InsertViewModel : ObservableObject
         switch (pane.Author.ToggleCaption())
         {
             case true:
-                _main.StatusText = "Подпись добавлена: при публикации — «Рисунок N» / «Таблица N»; впишите название в заголовок.";
-                _main.Documents.RefreshAllTabTitles();
+                _shell.StatusText = "Подпись добавлена: при публикации — «Рисунок N» / «Таблица N»; впишите название в заголовок.";
+                _docs.RefreshAllTabTitles();
                 break;
             case false:
-                _main.StatusText = "Подпись убрана: у этого рисунка (таблицы) подписи и номера не будет.";
-                _main.Documents.RefreshAllTabTitles();
+                _shell.StatusText = "Подпись убрана: у этого рисунка (таблицы) подписи и номера не будет.";
+                _docs.RefreshAllTabTitles();
                 break;
             default:
-                _main.StatusText = "Поставьте курсор в рисунок или таблицу, чтобы добавить или убрать подпись.";
+                _shell.StatusText = "Поставьте курсор в рисунок или таблицу, чтобы добавить или убрать подпись.";
                 break;
         }
     }
@@ -341,32 +349,32 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void WrapImageAsFigure()
     {
-        if (_main.Current is not { } pane)
+        if (_docs.Current is not { } pane)
         {
             return;
         }
 
         if (!pane.Author.WrapImageAsFigure())
         {
-            _main.StatusText = "Поставьте курсор в абзац с изображением (вне рисунка), чтобы оформить его как рисунок.";
+            _shell.StatusText = "Поставьте курсор в абзац с изображением (вне рисунка), чтобы оформить его как рисунок.";
             return;
         }
 
-        _main.StatusText = "Изображение оформлено как рисунок: замените название под ним.";
-        _main.Documents.RefreshAllTabTitles();
+        _shell.StatusText = "Изображение оформлено как рисунок: замените название под ним.";
+        _docs.RefreshAllTabTitles();
     }
 
     [RelayCommand]
     private async Task InsertXref()
     {
-        var pane = _main.Current;
-        var project = _main.Project;
+        var pane = _docs.Current;
+        var project = _workspace.Project;
         if (project is null || pane is null || pane.FilePath is null)
         {
             return;
         }
 
-        var result = await _main.Dialogs.InsertXrefAsync(project, pane.FilePath);
+        var result = await _ui.Dialogs.InsertXrefAsync(project, pane.FilePath);
         if (result is null)
         {
             return;
@@ -388,16 +396,16 @@ public partial class InsertViewModel : ObservableObject
 
         if (!pane.Author.InsertInlineNode(xref))
         {
-            _main.StatusText = "Поставьте курсор в текст, куда вставить ссылку.";
+            _shell.StatusText = "Поставьте курсор в текст, куда вставить ссылку.";
             return;
         }
 
-        _main.Documents.RefreshAllTabTitles();
+        _docs.RefreshAllTabTitles();
     }
 
     private void Format(string element)
     {
-        var pane = _main.Current;
+        var pane = _docs.Current;
         if (pane is null)
         {
             return;
@@ -405,11 +413,11 @@ public partial class InsertViewModel : ObservableObject
 
         if (!pane.Author.WrapCurrentInline(element))
         {
-            _main.StatusText = "Выделите текст в режиме «Автор».";
+            _shell.StatusText = "Выделите текст в режиме «Автор».";
             return;
         }
 
-        _main.Documents.RefreshAllTabTitles();
+        _docs.RefreshAllTabTitles();
     }
 
     [RelayCommand]
@@ -435,78 +443,78 @@ public partial class InsertViewModel : ObservableObject
 
     private void MoveElement(bool up)
     {
-        if (_main.Current?.Author.MoveCurrent(up) == true)
+        if (_docs.Current?.Author.MoveCurrent(up) == true)
         {
-            _main.Documents.RefreshAllTabTitles();
-            _main.RefreshOutline?.Invoke();
+            _docs.RefreshAllTabTitles();
+            _hooks.RefreshOutline?.Invoke();
         }
     }
 
     [RelayCommand]
     private async Task DeleteElement()
     {
-        var node = _main.Current?.Author.CurrentNode;
+        var node = _docs.Current?.Author.CurrentNode;
         if (node is null)
         {
             return;
         }
 
-        if (!await _main.Dialogs.ConfirmAsync("Удаление", $"Удалить элемент <{node.Name}> вместе с содержимым?"))
+        if (!await _ui.Dialogs.ConfirmAsync("Удаление", $"Удалить элемент <{node.Name}> вместе с содержимым?"))
         {
             return;
         }
 
-        if (_main.Current?.Author.DeleteCurrent() == true)
+        if (_docs.Current?.Author.DeleteCurrent() == true)
         {
-            _main.Documents.RefreshAllTabTitles();
-            _main.RefreshOutline?.Invoke();
+            _docs.RefreshAllTabTitles();
+            _hooks.RefreshOutline?.Invoke();
         }
     }
 
     [RelayCommand]
     private async Task RenameId()
     {
-        var pane = _main.Current;
+        var pane = _docs.Current;
         var node = pane?.Author.CurrentNode;
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null || pane?.FilePath is null || node is null)
         {
-            _main.StatusText = "Поставьте курсор в элемент.";
+            _shell.StatusText = "Поставьте курсор в элемент.";
             return;
         }
 
         var oldId = node.GetAttribute("id");
         if (string.IsNullOrWhiteSpace(oldId))
         {
-            _main.StatusText = "У элемента нет id — задайте его в панели «Атрибуты», затем переименовывайте.";
+            _shell.StatusText = "У элемента нет id — задайте его в панели «Атрибуты», затем переименовывайте.";
             return;
         }
 
-        var newId = await _main.Dialogs.RenameIdAsync(oldId!);
+        var newId = await _ui.Dialogs.RenameIdAsync(oldId!);
         if (string.IsNullOrWhiteSpace(newId) || newId == oldId)
         {
             return;
         }
 
-        foreach (var p in _main.Panes.Values)
+        foreach (var p in _docs.Panes.Values)
         {
             p.CommitPendingEdits();
         }
 
         var result = RefactorService.RenameId(project, pane.FilePath, oldId!, newId!);
-        _main.ApplyRefactorResult?.Invoke(result);
-        _main.StatusText = $"id «{oldId}» переименован в «{newId}». Обновлено ссылок: {result.UpdatedReferences}.";
+        _docs.ApplyRefactorResult(result);
+        _shell.StatusText = $"id «{oldId}» переименован в «{newId}». Обновлено ссылок: {result.UpdatedReferences}.";
     }
 
     [RelayCommand]
     private async Task ExtractToConref()
     {
-        var pane = _main.Current;
+        var pane = _docs.Current;
         var node = pane?.Author.CurrentNode;
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null || pane?.FilePath is null || node is null || node.Parent is null)
         {
-            _main.StatusText = "Поставьте курсор в элемент.";
+            _shell.StatusText = "Поставьте курсор в элемент.";
             return;
         }
 
@@ -516,13 +524,13 @@ public partial class InsertViewModel : ObservableObject
             suggestedId = DocumentTemplates.SuggestId(node.InnerText, node.Name);
         }
 
-        var dialogResult = await _main.Dialogs.ExtractToConrefAsync(project, suggestedId!);
+        var dialogResult = await _ui.Dialogs.ExtractToConrefAsync(project, suggestedId!);
         if (dialogResult is null)
         {
             return;
         }
 
-        foreach (var p in _main.Panes.Values)
+        foreach (var p in _docs.Panes.Values)
         {
             p.CommitPendingEdits();
         }
@@ -536,40 +544,40 @@ public partial class InsertViewModel : ObservableObject
         }
         catch (IOException ex)
         {
-            await _main.Dialogs.MessageAsync("Вынесение в conref", ex.Message);
+            await _ui.Dialogs.MessageAsync("Вынесение в conref", ex.Message);
             return;
         }
 
         if (result.UpdatedReferences == 0)
         {
-            await _main.Dialogs.MessageAsync("Вынесение в conref", "Не удалось перенести элемент — проверьте цель.");
+            await _ui.Dialogs.MessageAsync("Вынесение в conref", "Не удалось перенести элемент — проверьте цель.");
             return;
         }
 
-        _main.ApplyRefactorResult?.Invoke(result);
+        _docs.ApplyRefactorResult(result);
         if (dialogResult.TargetFile is null)
         {
             project.Scan();
-            _main.RefreshProjectTree?.Invoke();
+            _hooks.RefreshProjectTree?.Invoke();
         }
 
-        _main.StatusText = $"Элемент вынесен в conref (id «{dialogResult.ElementId}»).";
+        _shell.StatusText = $"Элемент вынесен в conref (id «{dialogResult.ElementId}»).";
     }
 
     /// <summary>Строки и столбцы таблицы под курсором (меню ячейки, панель инструментов).</summary>
     [RelayCommand]
     private void EditTable(TableOperation operation)
     {
-        if (_main.Current?.Author.EditCurrentTable(operation) == true)
+        if (_docs.Current?.Author.EditCurrentTable(operation) == true)
         {
-            _main.Documents.RefreshAllTabTitles();
-            _main.RefreshAttributePanel?.Invoke();
-            _main.RefreshOutline?.Invoke();
-            _main.StatusText = TableCommands.Describe(operation) + " — выполнено.";
+            _docs.RefreshAllTabTitles();
+            _hooks.RefreshAttributePanel?.Invoke();
+            _hooks.RefreshOutline?.Invoke();
+            _shell.StatusText = TableCommands.Describe(operation) + " — выполнено.";
         }
         else
         {
-            _main.StatusText = operation switch
+            _shell.StatusText = operation switch
             {
                 TableOperation.DeleteRow => "Строку удалить нельзя: в таблице должна остаться хотя бы одна строка.",
                 TableOperation.DeleteColumn => "Столбец удалить нельзя: он последний или число столбцов задано типом таблицы.",
@@ -587,30 +595,30 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void SetCellBorders(DitaStudio.Core.Publishing.BorderEdges edges)
     {
-        switch (_main.Current?.Author.SetCellBorders(edges))
+        switch (_docs.Current?.Author.SetCellBorders(edges))
         {
             case null:
-                _main.StatusText = "Границы: поставьте курсор в ячейку или выделите ячейки обычной таблицы (CALS).";
+                _shell.StatusText = "Границы: поставьте курсор в ячейку или выделите ячейки обычной таблицы (CALS).";
                 return;
             case false:
-                _main.StatusText = "Края таблицы заданы для всей стороны сразу: выделите всю строку или весь столбец. Линии между ячейками применены.";
+                _shell.StatusText = "Края таблицы заданы для всей стороны сразу: выделите всю строку или весь столбец. Линии между ячейками применены.";
                 break;
             default:
-                _main.StatusText = "Границы ячеек изменены.";
+                _shell.StatusText = "Границы ячеек изменены.";
                 break;
         }
 
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshAttributePanel?.Invoke();
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshAttributePanel?.Invoke();
     }
 
     /// <summary>Выделяет строку таблицы, в которой курсор (прямоугольник ячеек).</summary>
     [RelayCommand]
     private void SelectTableRow()
     {
-        if (_main.Current?.Author.SelectCurrentRow() != true)
+        if (_docs.Current?.Author.SelectCurrentRow() != true)
         {
-            _main.StatusText = "Поставьте курсор в ячейку обычной таблицы.";
+            _shell.StatusText = "Поставьте курсор в ячейку обычной таблицы.";
         }
     }
 
@@ -618,56 +626,56 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void SelectTableColumn()
     {
-        if (_main.Current?.Author.SelectCurrentColumn() != true)
+        if (_docs.Current?.Author.SelectCurrentColumn() != true)
         {
-            _main.StatusText = "Поставьте курсор в ячейку обычной таблицы.";
+            _shell.StatusText = "Поставьте курсор в ячейку обычной таблицы.";
         }
     }
 
     [RelayCommand]
     private void MergeCellRight()
     {
-        if (_main.Current?.Author.MergeCurrentCellRight() == true)
+        if (_docs.Current?.Author.MergeCurrentCellRight() == true)
         {
-            _main.Documents.RefreshAllTabTitles();
-            _main.RefreshAttributePanel?.Invoke();
-            _main.StatusText = "Ячейки объединены по горизонтали.";
+            _docs.RefreshAllTabTitles();
+            _hooks.RefreshAttributePanel?.Invoke();
+            _shell.StatusText = "Ячейки объединены по горизонтали.";
         }
         else
         {
-            _main.StatusText = "Выделите ячейку таблицы, у которой есть соседняя справа.";
+            _shell.StatusText = "Выделите ячейку таблицы, у которой есть соседняя справа.";
         }
     }
 
     [RelayCommand]
     private void MergeCellDown()
     {
-        if (_main.Current?.Author.MergeCurrentCellDown() == true)
+        if (_docs.Current?.Author.MergeCurrentCellDown() == true)
         {
-            _main.Documents.RefreshAllTabTitles();
-            _main.RefreshAttributePanel?.Invoke();
-            _main.StatusText = "Ячейки объединены по вертикали.";
+            _docs.RefreshAllTabTitles();
+            _hooks.RefreshAttributePanel?.Invoke();
+            _shell.StatusText = "Ячейки объединены по вертикали.";
         }
         else
         {
-            _main.StatusText = "Выделите ячейку таблицы, у которой есть соседняя снизу.";
+            _shell.StatusText = "Выделите ячейку таблицы, у которой есть соседняя снизу.";
         }
     }
 
     [RelayCommand]
     private void TogglePageBreakBeforeTitle()
     {
-        var node = _main.Current?.Author.CurrentNode;
+        var node = _docs.Current?.Author.CurrentNode;
         if (node is null || node.Name != "title")
         {
-            _main.StatusText = "Выделите заголовок (title) — например, заголовок раздела или топика.";
+            _shell.StatusText = "Выделите заголовок (title) — например, заголовок раздела или топика.";
             return;
         }
 
-        var enabled = _main.Current!.Author.ToggleCurrentOutputClass("page-break-before");
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshAttributePanel?.Invoke();
-        _main.StatusText = enabled == true
+        var enabled = _docs.Current!.Author.ToggleCurrentOutputClass("page-break-before");
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshAttributePanel?.Invoke();
+        _shell.StatusText = enabled == true
             ? "Разрыв страницы перед заголовком включён."
             : "Разрыв страницы перед заголовком выключен.";
     }
@@ -676,19 +684,19 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void SetAlignment(string? token)
     {
-        var author = _main.Current?.Author;
+        var author = _docs.Current?.Author;
         if (author?.CurrentNode is null)
         {
-            _main.StatusText = "Поставьте курсор в абзац, заголовок или ячейку.";
+            _shell.StatusText = "Поставьте курсор в абзац, заголовок или ячейку.";
             return;
         }
 
         var value = token is null or "align-left" ? null : token;
         if (author.SetCurrentBlockFormat(TextFormatting.AlignPrefix, value))
         {
-            _main.Documents.RefreshAllTabTitles();
-            _main.RefreshAttributePanel?.Invoke();
-            _main.StatusText = "Выравнивание: " + TextFormatting.Alignments.First(a => a.Token == (value ?? "align-left")).Label.ToLowerInvariant() + ".";
+            _docs.RefreshAllTabTitles();
+            _hooks.RefreshAttributePanel?.Invoke();
+            _shell.StatusText = "Выравнивание: " + TextFormatting.Alignments.First(a => a.Token == (value ?? "align-left")).Label.ToLowerInvariant() + ".";
         }
     }
 
@@ -706,8 +714,8 @@ public partial class InsertViewModel : ObservableObject
     {
         if (size == CustomSize)
         {
-            var typed = await _main.Dialogs.PromptTextAsync("Свой размер шрифта", "Размер, пт",
-                (_main.Current?.Author.CurrentNode is { } node && TextFormatting.SizeOf(node) is { } current ? current : 11).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture),
+            var typed = await _ui.Dialogs.PromptTextAsync("Свой размер шрифта", "Размер, пт",
+                (_docs.Current?.Author.CurrentNode is { } node && TextFormatting.SizeOf(node) is { } current ? current : 11).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture),
                 $"От {TextFormatting.MinCustomSize:0} до {TextFormatting.MaxCustomSize:0} пт; дробные значения — через точку или запятую (например, 13,5).");
             if (typed is null)
             {
@@ -717,7 +725,7 @@ public partial class InsertViewModel : ObservableObject
             if (!double.TryParse(typed.Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var custom) ||
                 custom < TextFormatting.MinCustomSize || custom > TextFormatting.MaxCustomSize)
             {
-                _main.StatusText = $"Размер должен быть числом от {TextFormatting.MinCustomSize:0} до {TextFormatting.MaxCustomSize:0} пт.";
+                _shell.StatusText = $"Размер должен быть числом от {TextFormatting.MinCustomSize:0} до {TextFormatting.MaxCustomSize:0} пт.";
                 return;
             }
 
@@ -746,17 +754,17 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private async Task SetMarker(string? token)
     {
-        var author = _main.Current?.Author;
+        var author = _docs.Current?.Author;
         if (author is null)
         {
-            _main.StatusText = "Откройте документ и выделите текст.";
+            _shell.StatusText = "Откройте документ и выделите текст.";
             return;
         }
 
         if (token == CustomMarker)
         {
             var current = author.MarkerPenToken is { } pen ? TextFormatting.ParseMarkToken(pen) : null;
-            var picked = await _main.Dialogs.PickColorAsync("Цвет маркера", current);
+            var picked = await _ui.Dialogs.PickColorAsync("Цвет маркера", current);
             if (picked is null || TextFormatting.MarkToken(picked) is not { } custom)
             {
                 return;
@@ -775,19 +783,19 @@ public partial class InsertViewModel : ObservableObject
         if (author.MarkerPenActive && author.MarkerPenToken == token)
         {
             author.StopMarkerPen();
-            _main.StatusText = "Маркер выключен.";
+            _shell.StatusText = "Маркер выключен.";
             return;
         }
 
         if (author.StartMarkerPen(token))
         {
-            _main.StatusText = token is null
+            _shell.StatusText = token is null
                 ? "Режим маркера: ластик — выделите текст мышью, чтобы снять маркер. Esc — выключить."
                 : $"Режим маркера: {MarkerLabel(token)} — выделяйте текст мышью, он закрашивается. Esc — выключить.";
         }
         else
         {
-            _main.StatusText = "Здесь маркер недоступен.";
+            _shell.StatusText = "Здесь маркер недоступен.";
         }
     }
 
@@ -801,22 +809,22 @@ public partial class InsertViewModel : ObservableObject
 
     private void ApplyTextFormat(string prefix, string? token, string done)
     {
-        var author = _main.Current?.Author;
+        var author = _docs.Current?.Author;
         if (author?.CurrentNode is null)
         {
-            _main.StatusText = "Поставьте курсор в текст или выделите его.";
+            _shell.StatusText = "Поставьте курсор в текст или выделите его.";
             return;
         }
 
         if (author.ApplyTextFormat(prefix, token))
         {
-            _main.Documents.RefreshAllTabTitles();
-            _main.RefreshAttributePanel?.Invoke();
-            _main.StatusText = done;
+            _docs.RefreshAllTabTitles();
+            _hooks.RefreshAttributePanel?.Invoke();
+            _shell.StatusText = done;
         }
         else
         {
-            _main.StatusText = "Здесь оформление текста недоступно.";
+            _shell.StatusText = "Здесь оформление текста недоступно.";
         }
     }
 
@@ -827,18 +835,18 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void SetPagePlacement(string? token)
     {
-        var author = _main.Current?.Author;
+        var author = _docs.Current?.Author;
         if (author?.CurrentNode is null || PagePlacement.PlaceableFor(author.CurrentNode) is null)
         {
-            _main.StatusText = "Поставьте курсор в абзац, рисунок, таблицу или заметку прямо в тексте топика (не в списке).";
+            _shell.StatusText = "Поставьте курсор в абзац, рисунок, таблицу или заметку прямо в тексте топика (не в списке).";
             return;
         }
 
         if (author.SetCurrentBlockFormat(PagePlacement.Prefix, token))
         {
-            _main.Documents.RefreshAllTabTitles();
-            _main.RefreshAttributePanel?.Invoke();
-            _main.StatusText = PagePlacement.LabelOf(token) is { } label
+            _docs.RefreshAllTabTitles();
+            _hooks.RefreshAttributePanel?.Invoke();
+            _shell.StatusText = PagePlacement.LabelOf(token) is { } label
                 ? $"Блок на отдельном листе PDF и DOCX: {label.ToLowerInvariant()}."
                 : "Блок снова идёт в тексте.";
         }
@@ -848,17 +856,17 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void ToggleNumberedParagraph()
     {
-        var node = _main.Current?.Author.CurrentNode;
+        var node = _docs.Current?.Author.CurrentNode;
         if (node is null || node.Name != "p")
         {
-            _main.StatusText = "Поставьте курсор в абзац.";
+            _shell.StatusText = "Поставьте курсор в абзац.";
             return;
         }
 
-        var enabled = _main.Current!.Author.ToggleCurrentOutputClass(HeadingNumbering.NumberedClass);
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshAttributePanel?.Invoke();
-        _main.StatusText = enabled == true
+        var enabled = _docs.Current!.Author.ToggleCurrentOutputClass(HeadingNumbering.NumberedClass);
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshAttributePanel?.Invoke();
+        _shell.StatusText = enabled == true
             ? "Абзац нумерованный: при публикации получит номер по заголовкам (например, 2.3.1)."
             : "Абзац больше не нумеруется.";
     }
@@ -867,17 +875,17 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void ToggleUnnumberedTitle()
     {
-        var node = _main.Current?.Author.CurrentNode;
+        var node = _docs.Current?.Author.CurrentNode;
         if (node is null || node.Name != "title")
         {
-            _main.StatusText = "Поставьте курсор в заголовок топика или раздела.";
+            _shell.StatusText = "Поставьте курсор в заголовок топика или раздела.";
             return;
         }
 
-        var enabled = _main.Current!.Author.ToggleCurrentOutputClass(TocRules.NoNumberClass);
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshAttributePanel?.Invoke();
-        _main.StatusText = enabled == true
+        var enabled = _docs.Current!.Author.ToggleCurrentOutputClass(TocRules.NoNumberClass);
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshAttributePanel?.Invoke();
+        _shell.StatusText = enabled == true
             ? "Заголовок без номера: при публикации не нумеруется и не попадает в оглавление."
             : "Заголовок снова нумеруется и попадает в оглавление.";
     }
@@ -885,17 +893,17 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void ToggleTablePageBreakAuto()
     {
-        var node = _main.Current?.Author.CurrentNode;
+        var node = _docs.Current?.Author.CurrentNode;
         if (node is null || node.Name != "table")
         {
-            _main.StatusText = "Выделите таблицу целиком (не отдельную ячейку).";
+            _shell.StatusText = "Выделите таблицу целиком (не отдельную ячейку).";
             return;
         }
 
-        var enabled = _main.Current!.Author.ToggleCurrentOutputClass("page-break-auto");
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshAttributePanel?.Invoke();
-        _main.StatusText = enabled == true
+        var enabled = _docs.Current!.Author.ToggleCurrentOutputClass("page-break-auto");
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshAttributePanel?.Invoke();
+        _shell.StatusText = enabled == true
             ? "Таблица теперь может переноситься на страницы с повтором шапки."
             : "Таблица снова печатается как единый блок.";
     }
@@ -903,17 +911,17 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void ToggleRevChanged()
     {
-        var node = _main.Current?.Author.CurrentNode;
+        var node = _docs.Current?.Author.CurrentNode;
         if (node is null)
         {
-            _main.StatusText = "Поставьте курсор в элемент, который нужно отметить как изменённый.";
+            _shell.StatusText = "Поставьте курсор в элемент, который нужно отметить как изменённый.";
             return;
         }
 
-        var enabled = _main.Current!.Author.ToggleCurrentRev();
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshAttributePanel?.Invoke();
-        _main.StatusText = enabled == true
+        var enabled = _docs.Current!.Author.ToggleCurrentRev();
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshAttributePanel?.Invoke();
+        _shell.StatusText = enabled == true
             ? "Элемент отмечен как изменённый (rev) — при публикации появится полоса на полях."
             : "Отметка об изменении снята.";
     }
@@ -921,65 +929,65 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void MarkTrackedInserted()
     {
-        var node = _main.Current?.Author.CurrentNode;
+        var node = _docs.Current?.Author.CurrentNode;
         if (node is null)
         {
-            _main.StatusText = "Поставьте курсор в элемент, который нужно пометить как вставленный.";
+            _shell.StatusText = "Поставьте курсор в элемент, который нужно пометить как вставленный.";
             return;
         }
 
-        _main.Current!.Author.MarkCurrentInserted();
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshAttributePanel?.Invoke();
-        _main.StatusText = "Элемент помечен как вставленный (track changes).";
+        _docs.Current!.Author.MarkCurrentInserted();
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshAttributePanel?.Invoke();
+        _shell.StatusText = "Элемент помечен как вставленный (track changes).";
     }
 
     [RelayCommand]
     private void MarkTrackedDeleted()
     {
-        var node = _main.Current?.Author.CurrentNode;
+        var node = _docs.Current?.Author.CurrentNode;
         if (node is null)
         {
-            _main.StatusText = "Поставьте курсор в элемент, который нужно пометить как удалённый.";
+            _shell.StatusText = "Поставьте курсор в элемент, который нужно пометить как удалённый.";
             return;
         }
 
-        _main.Current!.Author.MarkCurrentDeleted();
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshAttributePanel?.Invoke();
-        _main.StatusText = "Элемент помечен как удалённый (track changes) — скрыт из публикации, виден зачёркнутым в предпросмотре.";
+        _docs.Current!.Author.MarkCurrentDeleted();
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshAttributePanel?.Invoke();
+        _shell.StatusText = "Элемент помечен как удалённый (track changes) — скрыт из публикации, виден зачёркнутым в предпросмотре.";
     }
 
     [RelayCommand]
     private void AcceptTrackedChange()
     {
-        var node = _main.Current?.Author.CurrentNode;
+        var node = _docs.Current?.Author.CurrentNode;
         if (node is null || !TrackChanges.IsTracked(node))
         {
-            _main.StatusText = "Поставьте курсор в элемент с отслеживаемой правкой.";
+            _shell.StatusText = "Поставьте курсор в элемент с отслеживаемой правкой.";
             return;
         }
 
-        _main.Current!.Author.AcceptCurrentTrackedChange();
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshAttributePanel?.Invoke();
-        _main.StatusText = "Правка принята.";
+        _docs.Current!.Author.AcceptCurrentTrackedChange();
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshAttributePanel?.Invoke();
+        _shell.StatusText = "Правка принята.";
     }
 
     [RelayCommand]
     private void RejectTrackedChange()
     {
-        var node = _main.Current?.Author.CurrentNode;
+        var node = _docs.Current?.Author.CurrentNode;
         if (node is null || !TrackChanges.IsTracked(node))
         {
-            _main.StatusText = "Поставьте курсор в элемент с отслеживаемой правкой.";
+            _shell.StatusText = "Поставьте курсор в элемент с отслеживаемой правкой.";
             return;
         }
 
-        _main.Current!.Author.RejectCurrentTrackedChange();
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshAttributePanel?.Invoke();
-        _main.StatusText = "Правка отклонена.";
+        _docs.Current!.Author.RejectCurrentTrackedChange();
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshAttributePanel?.Invoke();
+        _shell.StatusText = "Правка отклонена.";
     }
 
     /// <summary>Выполняет выбранную команду плагина (см. IAuthorCommandPlugin) на открытом
@@ -987,14 +995,14 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private async Task RunAuthorCommandPlugin()
     {
-        var pane = _main.Current;
+        var pane = _docs.Current;
         if (pane is null)
         {
-            await _main.Dialogs.MessageAsync("Команда плагина", "Откройте документ.");
+            await _ui.Dialogs.MessageAsync("Команда плагина", "Откройте документ.");
             return;
         }
 
-        var command = await _main.Dialogs.PickOneAsync("Команда плагина", "Выберите команду:", PluginRegistry.AuthorCommands, c => c.Name);
+        var command = await _ui.Dialogs.PickOneAsync("Команда плагина", "Выберите команду:", PluginRegistry.AuthorCommands, c => c.Name);
         if (command is null)
         {
             return;
@@ -1008,20 +1016,20 @@ public partial class InsertViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            await _main.Dialogs.MessageAsync("Команда плагина", $"Плагин «{command.Name}» упал: {ex.Message}");
+            await _ui.Dialogs.MessageAsync("Команда плагина", $"Плагин «{command.Name}» упал: {ex.Message}");
             return;
         }
 
         pane.Document.IsDirty = true;
         pane.Author.Rebuild();
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshAttributePanel?.Invoke();
-        _main.StatusText = $"Выполнена команда плагина «{command.Name}».";
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshAttributePanel?.Invoke();
+        _shell.StatusText = $"Выполнена команда плагина «{command.Name}».";
     }
 
     partial void OnShowElementTagsChanged(bool value)
     {
-        foreach (var pane in _main.Panes.Values)
+        foreach (var pane in _docs.Panes.Values)
         {
             pane.Author.ShowElementTags = value;
             pane.Author.Rebuild();
@@ -1031,24 +1039,24 @@ public partial class InsertViewModel : ObservableObject
     [RelayCommand]
     private void Undo()
     {
-        _main.Current?.PerformUndo();
-        _main.StatusText = "Отменено.";
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshOutline?.Invoke();
+        _docs.Current?.PerformUndo();
+        _shell.StatusText = "Отменено.";
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshOutline?.Invoke();
         // Отмена правки карты заменяет её узлы новыми — строки дерева карты ссылались бы на старые
         // и команды меню действовали бы на узлы, которых уже нет в документе.
-        _main.RefreshMapTree?.Invoke();
+        _hooks.RefreshMapTree?.Invoke();
     }
 
     [RelayCommand]
     private void Redo()
     {
-        _main.Current?.PerformRedo();
-        _main.StatusText = "Повторено.";
-        _main.Documents.RefreshAllTabTitles();
-        _main.RefreshOutline?.Invoke();
+        _docs.Current?.PerformRedo();
+        _shell.StatusText = "Повторено.";
+        _docs.RefreshAllTabTitles();
+        _hooks.RefreshOutline?.Invoke();
         // Отмена правки карты заменяет её узлы новыми — строки дерева карты ссылались бы на старые
         // и команды меню действовали бы на узлы, которых уже нет в документе.
-        _main.RefreshMapTree?.Invoke();
+        _hooks.RefreshMapTree?.Invoke();
     }
 }

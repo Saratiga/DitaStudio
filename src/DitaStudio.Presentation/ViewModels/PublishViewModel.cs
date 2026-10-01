@@ -16,15 +16,25 @@ namespace DitaStudio.Presentation.ViewModels;
 // пользовательский CSS.
 public partial class PublishViewModel : ObservableObject
 {
-    private readonly MainViewModel _main;
+    private readonly IShellState _shell;
+    private readonly IWorkspace _workspace;
+    private readonly UiServices _ui;
+    private readonly ShellHooks _hooks;
+    private readonly IDocumentHost _docs;
+    private readonly MapViewModel _map;
     private string? _lastOutputDirectory;
 
     [ObservableProperty]
     private string buildLogText = string.Empty;
 
-    public PublishViewModel(MainViewModel main)
+    public PublishViewModel(ShellContext context, IDocumentHost docs, MapViewModel map)
     {
-        _main = main;
+        _shell = context.Shell;
+        _workspace = context.Workspace;
+        _ui = context.Ui;
+        _hooks = context.Hooks;
+        _docs = docs;
+        _map = map;
     }
 
     [RelayCommand]
@@ -39,17 +49,17 @@ public partial class PublishViewModel : ObservableObject
     [RelayCommand]
     private async Task ExportDocx()
     {
-        var project = _main.Project;
-        var map = _main.Map.SelectedMap;
+        var project = _workspace.Project;
+        var map = _map.SelectedMap;
         if (project is null || map is null)
         {
-            await _main.Dialogs.MessageAsync("Экспорт в DOCX", "Выберите карту на вкладке «Карта».");
+            await _ui.Dialogs.MessageAsync("Экспорт в DOCX", "Выберите карту на вкладке «Карта».");
             return;
         }
 
         SaveAllPanesAndRebuildKeySpace();
 
-        var outputFile = await _main.Files.SaveFileAsync("Экспорт в DOCX",
+        var outputFile = await _ui.Files.SaveFileAsync("Экспорт в DOCX",
             new[] { new FileFilter("Документ Word", "*.docx") },
             Path.GetFileNameWithoutExtension(map.FullPath) + ".docx",
             _lastOutputDirectory ?? project.RootPath);
@@ -60,13 +70,13 @@ public partial class PublishViewModel : ObservableObject
 
         var options = new PublishOptions
         {
-            ShowDraftComments = _main.Conditions?.ShowDraftComments ?? false,
+            ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false,
             Language = "ru"
         };
 
         var conditionsWarning = ApplyConditions(options);
 
-        _main.BottomTabIndex = 2;
+        _shell.BottomTabIndex = 2;
         BuildLogText = $"Сборка DOCX по карте {map.RelativePath}…\n";
 
         if (conditionsWarning is not null)
@@ -85,13 +95,13 @@ public partial class PublishViewModel : ObservableObject
             }
 
             BuildLogText += "Результат: " + result.OutputFile + "\n";
-            _main.StatusText = "DOCX собран: " + result.OutputFile;
+            _shell.StatusText = "DOCX собран: " + result.OutputFile;
             OpenInShell(result.OutputFile);
         }
         catch (Exception ex)
         {
             BuildLogText += "Ошибка: " + ex.Message + "\n";
-            await _main.Dialogs.MessageAsync("Экспорт в DOCX", ex.Message);
+            await _ui.Dialogs.MessageAsync("Экспорт в DOCX", ex.Message);
         }
     }
 
@@ -100,15 +110,15 @@ public partial class PublishViewModel : ObservableObject
     [RelayCommand]
     private async Task PublishWithPlugin()
     {
-        var project = _main.Project;
-        var map = _main.Map.SelectedMap;
+        var project = _workspace.Project;
+        var map = _map.SelectedMap;
         if (project is null || map is null)
         {
-            await _main.Dialogs.MessageAsync("Публикация плагином", "Выберите карту на вкладке «Карта».");
+            await _ui.Dialogs.MessageAsync("Публикация плагином", "Выберите карту на вкладке «Карта».");
             return;
         }
 
-        var format = await _main.Dialogs.PickOneAsync("Публикация плагином", "Выберите формат публикации:",
+        var format = await _ui.Dialogs.PickOneAsync("Публикация плагином", "Выберите формат публикации:",
             PluginRegistry.PublishFormats, f => f.Name);
         if (format is null)
         {
@@ -117,7 +127,7 @@ public partial class PublishViewModel : ObservableObject
 
         SaveAllPanesAndRebuildKeySpace();
 
-        var outputFile = await _main.Files.SaveFileAsync($"Публикация: {format.Name}",
+        var outputFile = await _ui.Files.SaveFileAsync($"Публикация: {format.Name}",
             new[] { new FileFilter(format.Name, "*." + format.FileExtension) },
             Path.GetFileNameWithoutExtension(map.FullPath) + "." + format.FileExtension,
             _lastOutputDirectory ?? project.RootPath);
@@ -126,10 +136,10 @@ public partial class PublishViewModel : ObservableObject
             return;
         }
 
-        var options = new PublishOptions { ShowDraftComments = _main.Conditions?.ShowDraftComments ?? false, Language = "ru" };
+        var options = new PublishOptions { ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false, Language = "ru" };
         var conditionsWarning = ApplyConditions(options);
 
-        _main.BottomTabIndex = 2;
+        _shell.BottomTabIndex = 2;
         BuildLogText = $"Публикация плагином «{format.Name}» по карте {map.RelativePath}…\n";
 
         if (conditionsWarning is not null)
@@ -141,13 +151,13 @@ public partial class PublishViewModel : ObservableObject
         {
             format.Publish(project, map.FullPath, options, outputFile);
             BuildLogText += "Результат: " + outputFile + "\n";
-            _main.StatusText = $"Опубликовано плагином «{format.Name}»: {outputFile}";
+            _shell.StatusText = $"Опубликовано плагином «{format.Name}»: {outputFile}";
             OpenInShell(outputFile);
         }
         catch (Exception ex)
         {
             BuildLogText += "Ошибка: " + ex.Message + "\n";
-            await _main.Dialogs.MessageAsync("Публикация плагином", $"Плагин «{format.Name}» упал: {ex.Message}");
+            await _ui.Dialogs.MessageAsync("Публикация плагином", $"Плагин «{format.Name}» упал: {ex.Message}");
         }
     }
 
@@ -155,36 +165,36 @@ public partial class PublishViewModel : ObservableObject
     [RelayCommand]
     private async Task EditProducts()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null)
         {
-            await _main.Dialogs.MessageAsync("Список продуктов", "Сначала откройте папку проекта.");
+            await _ui.Dialogs.MessageAsync("Список продуктов", "Сначала откройте папку проекта.");
             return;
         }
 
-        if (await _main.Dialogs.EditProductsAsync(project) is { } products)
+        if (await _ui.Dialogs.EditProductsAsync(project) is { } products)
         {
             project.SetProducts(products);
-            _main.RefreshAttributePanel?.Invoke();
-            _main.StatusText = $"Список продуктов: {project.Products.Count}.";
+            _hooks.RefreshAttributePanel?.Invoke();
+            _shell.StatusText = $"Список продуктов: {project.Products.Count}.";
         }
     }
 
     [RelayCommand]
     private async Task PublishConditions()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null)
         {
             return;
         }
 
-        var result = await _main.Dialogs.PublishConditionsAsync(project, _main.Conditions);
+        var result = await _ui.Dialogs.PublishConditionsAsync(project, _workspace.Conditions);
         if (result is not null)
         {
-            _main.Conditions = result;
+            _workspace.Conditions = result;
             project.SetConditions(result.Exclude, result.ShowDraftComments);
-            _main.StatusText = $"Условия сборки обновлены: исключено значений {_main.Conditions.Exclude.Sum(x => x.Value.Count)}.";
+            _shell.StatusText = $"Условия сборки обновлены: исключено значений {_workspace.Conditions.Exclude.Sum(x => x.Value.Count)}.";
         }
     }
 
@@ -193,14 +203,14 @@ public partial class PublishViewModel : ObservableObject
     [RelayCommand]
     private async Task ImportDitaval()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null)
         {
-            await _main.Dialogs.MessageAsync("Условия сборки", "Сначала откройте папку проекта.");
+            await _ui.Dialogs.MessageAsync("Условия сборки", "Сначала откройте папку проекта.");
             return;
         }
 
-        var ditavalFile = await _main.Files.OpenFileAsync("Подключить файл условий (.ditaval)",
+        var ditavalFile = await _ui.Files.OpenFileAsync("Подключить файл условий (.ditaval)",
             new[] { new FileFilter("Файлы DITAVAL", "*.ditaval"), FileFilter.All },
             project.DitavalPath is null ? project.RootPath : Path.GetDirectoryName(Path.Combine(project.RootPath, project.DitavalPath)));
         if (ditavalFile is null)
@@ -217,13 +227,13 @@ public partial class PublishViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            await _main.Dialogs.MessageAsync("Условия сборки", $"Не удалось прочитать файл: {ex.Message}");
+            await _ui.Dialogs.MessageAsync("Условия сборки", $"Не удалось прочитать файл: {ex.Message}");
             return;
         }
 
         project.SetDitavalPath(relativePath);
         var excludedCount = rules.Exclude.Sum(x => x.Value.Count);
-        _main.StatusText = $"Подключён .ditaval: {relativePath} (исключений: {excludedCount}, правил подсветки: {rules.Flags.Count}). Изменения файла подхватываются автоматически.";
+        _shell.StatusText = $"Подключён .ditaval: {relativePath} (исключений: {excludedCount}, правил подсветки: {rules.Flags.Count}). Изменения файла подхватываются автоматически.";
     }
 
     /// <summary>Правит правила исключения СВЯЗАННОГО .ditaval прямо в приложении, не выходя в
@@ -231,16 +241,16 @@ public partial class PublishViewModel : ObservableObject
     [RelayCommand]
     private async Task EditDitaval()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null)
         {
-            await _main.Dialogs.MessageAsync("Редактирование .ditaval", "Сначала откройте папку проекта.");
+            await _ui.Dialogs.MessageAsync("Редактирование .ditaval", "Сначала откройте папку проекта.");
             return;
         }
 
-        if (await _main.Dialogs.EditDitavalAsync(project))
+        if (await _ui.Dialogs.EditDitavalAsync(project))
         {
-            _main.StatusText = $"Файл .ditaval обновлён: {project.DitavalPath}.";
+            _shell.StatusText = $"Файл .ditaval обновлён: {project.DitavalPath}.";
         }
     }
 
@@ -249,16 +259,16 @@ public partial class PublishViewModel : ObservableObject
     /// <returns>Предупреждение для журнала сборки, если подключённый .ditaval не прочитан.</returns>
     private string? ApplyConditions(PublishOptions options)
     {
-        if (_main.Conditions is not null)
+        if (_workspace.Conditions is not null)
         {
-            foreach (var (attribute, values) in _main.Conditions.Exclude)
+            foreach (var (attribute, values) in _workspace.Conditions.Exclude)
             {
                 options.ExcludeConditions[attribute] = values;
             }
         }
 
         string? error = null;
-        var linked = _main.Project?.ResolveLinkedDitaval(out error);
+        var linked = _workspace.Project?.ResolveLinkedDitaval(out error);
         if (linked is null)
         {
             return error;
@@ -272,21 +282,21 @@ public partial class PublishViewModel : ObservableObject
     [RelayCommand]
     private async Task PdfHeaderFooter()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null)
         {
-            await _main.Dialogs.MessageAsync("Колонтитулы PDF", "Сначала откройте папку проекта.");
+            await _ui.Dialogs.MessageAsync("Колонтитулы PDF", "Сначала откройте папку проекта.");
             return;
         }
 
-        var result = await _main.Dialogs.PdfHeaderFooterAsync(project);
+        var result = await _ui.Dialogs.PdfHeaderFooterAsync(project);
         if (result is null)
         {
             return;
         }
 
         project.SetPdfHeaderFooter(result.Show, result.HeaderText, result.FooterText);
-        _main.StatusText = result.Show ? "Колонтитулы PDF включены." : "Колонтитулы PDF отключены.";
+        _shell.StatusText = result.Show ? "Колонтитулы PDF включены." : "Колонтитулы PDF отключены.";
     }
 
     /// <summary>«Оформление DOCX» — титул, оглавление, нумерация заголовков, колонтитулы и прочее,
@@ -294,14 +304,14 @@ public partial class PublishViewModel : ObservableObject
     [RelayCommand]
     private async Task DocxLayout()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null)
         {
-            await _main.Dialogs.MessageAsync("Оформление DOCX", "Сначала откройте папку проекта.");
+            await _ui.Dialogs.MessageAsync("Оформление DOCX", "Сначала откройте папку проекта.");
             return;
         }
 
-        var result = await _main.Dialogs.DocxLayoutSettingsAsync(project);
+        var result = await _ui.Dialogs.DocxLayoutSettingsAsync(project);
         if (result is null)
         {
             return;
@@ -310,25 +320,25 @@ public partial class PublishViewModel : ObservableObject
         try
         {
             project.SetDocxLayout(result);
-            _main.StatusText = "Оформление DOCX сохранено — применится при следующем экспорте в DOCX.";
+            _shell.StatusText = "Оформление DOCX сохранено — применится при следующем экспорте в DOCX.";
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            await _main.Dialogs.MessageAsync("Оформление DOCX", $"Не удалось сохранить настройки: {ex.Message}");
+            await _ui.Dialogs.MessageAsync("Оформление DOCX", $"Не удалось сохранить настройки: {ex.Message}");
         }
     }
 
     [RelayCommand]
     private async Task PageSetup()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null)
         {
-            await _main.Dialogs.MessageAsync("Параметры страницы", "Сначала откройте папку проекта.");
+            await _ui.Dialogs.MessageAsync("Параметры страницы", "Сначала откройте папку проекта.");
             return;
         }
 
-        var result = await _main.Dialogs.PageSetupAsync(project);
+        var result = await _ui.Dialogs.PageSetupAsync(project);
         if (result is null)
         {
             return;
@@ -337,26 +347,26 @@ public partial class PublishViewModel : ObservableObject
         try
         {
             project.SetDocxLayout(result);
-            _main.StatusText = "Параметры страницы сохранены — применятся при следующем экспорте в DOCX и PDF.";
+            _shell.StatusText = "Параметры страницы сохранены — применятся при следующем экспорте в DOCX и PDF.";
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            await _main.Dialogs.MessageAsync("Параметры страницы", $"Не удалось сохранить настройки: {ex.Message}");
+            await _ui.Dialogs.MessageAsync("Параметры страницы", $"Не удалось сохранить настройки: {ex.Message}");
         }
     }
 
     [RelayCommand]
     private async Task CustomCss()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null)
         {
-            await _main.Dialogs.MessageAsync("Пользовательский CSS", "Сначала откройте папку проекта.");
+            await _ui.Dialogs.MessageAsync("Пользовательский CSS", "Сначала откройте папку проекта.");
             return;
         }
 
-        await _main.Dialogs.CustomCssAsync(project);
-        _main.StatusText = project.CustomCssPath is null
+        await _ui.Dialogs.CustomCssAsync(project);
+        _shell.StatusText = project.CustomCssPath is null
             ? "Пользовательский CSS отключён."
             : $"Пользовательский CSS: {project.CustomCssPath}";
     }
@@ -366,21 +376,21 @@ public partial class PublishViewModel : ObservableObject
     [RelayCommand]
     private async Task ExportXliff()
     {
-        var pane = _main.Current;
+        var pane = _docs.Current;
         if (pane is null)
         {
-            await _main.Dialogs.MessageAsync("Экспорт в XLIFF", "Откройте документ.");
+            await _ui.Dialogs.MessageAsync("Экспорт в XLIFF", "Откройте документ.");
             return;
         }
 
         var error = pane.CommitPendingEdits();
         if (error is not null)
         {
-            await _main.Dialogs.MessageAsync("Экспорт в XLIFF", $"Документ не разбирается как XML:\n\n{error}");
+            await _ui.Dialogs.MessageAsync("Экспорт в XLIFF", $"Документ не разбирается как XML:\n\n{error}");
             return;
         }
 
-        var xliffFile = await _main.Files.SaveFileAsync("Экспорт в XLIFF",
+        var xliffFile = await _ui.Files.SaveFileAsync("Экспорт в XLIFF",
             new[] { new FileFilter("Файлы XLIFF", "*.xliff"), FileFilter.All },
             Path.GetFileNameWithoutExtension(pane.FilePath ?? "document") + ".xliff",
             pane.FilePath is null ? null : Path.GetDirectoryName(pane.FilePath));
@@ -396,11 +406,11 @@ public partial class PublishViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            await _main.Dialogs.MessageAsync("Экспорт в XLIFF", $"Не удалось записать файл: {ex.Message}");
+            await _ui.Dialogs.MessageAsync("Экспорт в XLIFF", $"Не удалось записать файл: {ex.Message}");
             return;
         }
 
-        _main.StatusText = $"Экспортировано в XLIFF: {xliffFile}";
+        _shell.StatusText = $"Экспортировано в XLIFF: {xliffFile}";
     }
 
     /// <summary>Подставляет перевод из &lt;target&gt; каждого сегмента XLIFF обратно в открытый
@@ -409,14 +419,14 @@ public partial class PublishViewModel : ObservableObject
     [RelayCommand]
     private async Task ImportXliff()
     {
-        var pane = _main.Current;
+        var pane = _docs.Current;
         if (pane is null)
         {
-            await _main.Dialogs.MessageAsync("Импорт из XLIFF", "Откройте документ, в который нужно подставить перевод.");
+            await _ui.Dialogs.MessageAsync("Импорт из XLIFF", "Откройте документ, в который нужно подставить перевод.");
             return;
         }
 
-        var xliffFile = await _main.Files.OpenFileAsync("Импортировать перевод из XLIFF",
+        var xliffFile = await _ui.Files.OpenFileAsync("Импортировать перевод из XLIFF",
             new[] { new FileFilter("Файлы XLIFF", "*.xliff"), FileFilter.All },
             pane.FilePath is null ? null : Path.GetDirectoryName(pane.FilePath));
         if (xliffFile is null)
@@ -431,14 +441,14 @@ public partial class PublishViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            await _main.Dialogs.MessageAsync("Импорт из XLIFF", $"Не удалось прочитать файл: {ex.Message}");
+            await _ui.Dialogs.MessageAsync("Импорт из XLIFF", $"Не удалось прочитать файл: {ex.Message}");
             return;
         }
 
         var error = pane.CommitPendingEdits();
         if (error is not null)
         {
-            await _main.Dialogs.MessageAsync("Импорт из XLIFF", $"Документ не разбирается как XML:\n\n{error}");
+            await _ui.Dialogs.MessageAsync("Импорт из XLIFF", $"Документ не разбирается как XML:\n\n{error}");
             return;
         }
 
@@ -446,13 +456,13 @@ public partial class PublishViewModel : ObservableObject
         var applied = XliffConverter.Import(pane.Document, xliff, warnings);
         pane.Document.IsDirty = true;
         pane.Author.Rebuild();
-        _main.Documents.RefreshAllTabTitles();
+        _docs.RefreshAllTabTitles();
 
-        _main.StatusText = $"Перевод импортирован: применено сегментов {applied}" +
+        _shell.StatusText = $"Перевод импортирован: применено сегментов {applied}" +
                             (warnings.Count > 0 ? $", предупреждений {warnings.Count}." : ".");
         if (warnings.Count > 0)
         {
-            await _main.Dialogs.MessageAsync("Импорт из XLIFF — предупреждения", string.Join("\n", warnings));
+            await _ui.Dialogs.MessageAsync("Импорт из XLIFF — предупреждения", string.Join("\n", warnings));
         }
     }
 
@@ -460,7 +470,7 @@ public partial class PublishViewModel : ObservableObject
     /// пространство ключей — общий первый шаг перед любой публикацией (HTML/PDF/DOCX).</summary>
     private void SaveAllPanesAndRebuildKeySpace()
     {
-        foreach (var pane in _main.Panes.Values)
+        foreach (var pane in _docs.Panes.Values)
         {
             pane.CommitPendingEdits();
             if (pane.IsDirty)
@@ -469,22 +479,22 @@ public partial class PublishViewModel : ObservableObject
             }
         }
 
-        _main.Project!.RebuildKeySpace();
+        _workspace.Project!.RebuildKeySpace();
     }
 
     private async Task PublishAsync(bool singleFile, bool exportPdf)
     {
-        var project = _main.Project;
-        var map = _main.Map.SelectedMap;
+        var project = _workspace.Project;
+        var map = _map.SelectedMap;
         if (project is null || map is null)
         {
-            await _main.Dialogs.MessageAsync("Публикация", "Выберите карту на вкладке «Карта».");
+            await _ui.Dialogs.MessageAsync("Публикация", "Выберите карту на вкладке «Карта».");
             return;
         }
 
         SaveAllPanesAndRebuildKeySpace();
 
-        var outputDirectory = await _main.Files.OpenFolderAsync("Куда сохранить публикацию",
+        var outputDirectory = await _ui.Files.OpenFolderAsync("Куда сохранить публикацию",
             _lastOutputDirectory ?? Path.Combine(project.RootPath, "out"));
         if (outputDirectory is null)
         {
@@ -497,13 +507,13 @@ public partial class PublishViewModel : ObservableObject
         {
             OutputDirectory = outputDirectory,
             SingleFile = singleFile,
-            ShowDraftComments = _main.Conditions?.ShowDraftComments ?? false,
+            ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false,
             Language = "ru"
         };
 
         var conditionsWarning = ApplyConditions(options);
 
-        _main.BottomTabIndex = 2;
+        _shell.BottomTabIndex = 2;
         BuildLogText = $"Сборка карты {map.RelativePath}…\n";
 
         if (conditionsWarning is not null)
@@ -532,22 +542,22 @@ public partial class PublishViewModel : ObservableObject
                 if (error is null)
                 {
                     BuildLogText += "PDF готов: " + pdfPath + "\n";
-                    _main.StatusText = "PDF собран: " + pdfPath;
+                    _shell.StatusText = "PDF собран: " + pdfPath;
                     OpenInShell(pdfPath);
                     return;
                 }
 
                 BuildLogText += "PDF: " + error + "\n";
-                await _main.Dialogs.MessageAsync("Экспорт в PDF", error);
+                await _ui.Dialogs.MessageAsync("Экспорт в PDF", error);
             }
 
-            _main.StatusText = "Публикация готова: " + result.EntryFile;
+            _shell.StatusText = "Публикация готова: " + result.EntryFile;
             OpenInShell(result.EntryFile);
         }
         catch (Exception ex)
         {
             BuildLogText += "Ошибка: " + ex.Message + "\n";
-            await _main.Dialogs.MessageAsync("Публикация", ex.Message);
+            await _ui.Dialogs.MessageAsync("Публикация", ex.Message);
         }
     }
 
@@ -561,7 +571,7 @@ public partial class PublishViewModel : ObservableObject
 
         if (showHeaderFooter || !browserAvailable)
         {
-            var error = await _main.Services.PdfPrinter.ExportAsync(htmlPath, pdfPath, PdfPageDecoration.For(project));
+            var error = await _ui.PdfPrinter.ExportAsync(htmlPath, pdfPath, PdfPageDecoration.For(project));
             if (error is null || !browserAvailable)
             {
                 return error;

@@ -19,18 +19,32 @@ public sealed class ExternalChangeWatcher : IDisposable
 {
     private static readonly string[] WatchedExtensions = { ".dita", ".ditamap", ".xml", ".ditaval" };
 
-    private readonly MainViewModel _main;
+    private readonly IShellState _shell;
+    private readonly IWorkspace _workspace;
+    private readonly UiServices _ui;
+    private readonly ShellHooks _hooks;
+    private readonly IDocumentHost _docs;
+    private ProjectViewModel _projectPanel = null!; // задаётся Link после создания (петля зависимостей)
     private readonly IUiTimer _debounce;
     // По наблюдателю на папку каждого открытого проекта.
     private readonly Dictionary<DitaProject, FileSystemWatcher> _watchers = new();
     private bool _checking;
 
-    public ExternalChangeWatcher(MainViewModel main)
+    public ExternalChangeWatcher(ShellContext context, IDocumentHost docs)
     {
-        _main = main;
-
+        _shell = context.Shell;
+        _workspace = context.Workspace;
+        _ui = context.Ui;
+        _hooks = context.Hooks;
+        _docs = docs;
         // Одна запись файла порождает серию событий — проверяем один раз, когда серия утихла.
-        _debounce = main.Services.Platform.CreateTimer(TimeSpan.FromMilliseconds(400), OnDebounceTick);
+        _debounce = context.Ui.Platform.CreateTimer(TimeSpan.FromMilliseconds(400), OnDebounceTick);
+    }
+
+    /// <summary>Замыкает петлю зависимостей: вызывается один раз из MainViewModel после создания всех VM.</summary>
+    internal void Link(ProjectViewModel projectPanel)
+    {
+        _projectPanel = projectPanel;
     }
 
     private void OnDebounceTick()
@@ -102,7 +116,7 @@ public sealed class ExternalChangeWatcher : IDisposable
         WatchedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase);
 
     // События FileSystemWatcher приходят из пула потоков.
-    private void Schedule() => _main.Services.Platform.Post(() =>
+    private void Schedule() => _ui.Platform.Post(() =>
     {
         _debounce.Stop();
         _debounce.Start();
@@ -111,7 +125,7 @@ public sealed class ExternalChangeWatcher : IDisposable
     /// <summary>Сверяет открытые документы с диском и реагирует на изменения.</summary>
     public async Task CheckNowAsync()
     {
-        if (_checking || _main.Projects.Count == 0)
+        if (_checking || _workspace.Projects.Count == 0)
         {
             return;
         }
@@ -121,7 +135,7 @@ public sealed class ExternalChangeWatcher : IDisposable
         try
         {
             var changed = false;
-            foreach (var pane in _main.Panes.Values.ToList())
+            foreach (var pane in _docs.Panes.Values.ToList())
             {
                 if (pane.Document.HasChangedOnDisk())
                 {
@@ -131,8 +145,8 @@ public sealed class ExternalChangeWatcher : IDisposable
 
             // Документы, прочитанные проектом для ссылок и ключей, но не открытые во вкладках:
             // выбрасываем из кэша, следующее обращение перечитает свежую версию.
-            var openDocuments = _main.Panes.Values.Select(p => p.Document).ToHashSet();
-            foreach (var project in _main.Projects.ToList())
+            var openDocuments = _docs.Panes.Values.Select(p => p.Document).ToHashSet();
+            foreach (var project in _workspace.Projects.ToList())
             {
                 foreach (var doc in project.OpenDocuments.ToList())
                 {
@@ -146,14 +160,14 @@ public sealed class ExternalChangeWatcher : IDisposable
 
             if (changed)
             {
-                foreach (var project in _main.Projects)
+                foreach (var project in _workspace.Projects)
                 {
                     project.RebuildKeySpace();
                 }
 
-                _main.ProjectPanel.RefreshKeysList();
-                _main.Documents.RefreshAllTabTitles();
-                _main.RefreshEditorContext?.Invoke();
+                _projectPanel.RefreshKeysList();
+                _docs.RefreshAllTabTitles();
+                _hooks.RefreshEditorContext?.Invoke();
             }
         }
         finally
@@ -170,7 +184,7 @@ public sealed class ExternalChangeWatcher : IDisposable
         if (!File.Exists(path))
         {
             pane.MarkMissingOnDisk();
-            _main.StatusText = $"Файл {name} удалён или переименован другой программой. Сохраните вкладку, чтобы записать его заново.";
+            _shell.StatusText = $"Файл {name} удалён или переименован другой программой. Сохраните вкладку, чтобы записать его заново.";
             return true;
         }
 
@@ -179,7 +193,7 @@ public sealed class ExternalChangeWatcher : IDisposable
             return TryReload(pane, name, $"Файл {name} изменён другой программой — перечитан с диска.");
         }
 
-        var answer = await _main.Dialogs.AskAsync(
+        var answer = await _ui.Dialogs.AskAsync(
             "Файл изменён извне",
             $"Файл «{name}» изменён другой программой, а во вкладке есть несохранённые правки.\n\n" +
             "Да — загрузить версию с диска (ваши правки можно вернуть через «Правка → Отменить структурное изменение», Ctrl+Alt+Z).\n" +
@@ -201,7 +215,7 @@ public sealed class ExternalChangeWatcher : IDisposable
 
         // Свою версию оставили — считаем текущее состояние диска «увиденным».
         pane.Document.DiskStamp = FileStamp.Of(path);
-        _main.StatusText = $"Оставлена своя версия {name}; при сохранении она заменит файл на диске.";
+        _shell.StatusText = $"Оставлена своя версия {name}; при сохранении она заменит файл на диске.";
         return false;
     }
 
@@ -210,14 +224,14 @@ public sealed class ExternalChangeWatcher : IDisposable
         try
         {
             pane.ReloadFromDisk();
-            _main.StatusText = status;
+            _shell.StatusText = status;
             return true;
         }
         catch (Exception ex)
         {
             // Чаще всего файл ещё дописывается или временно невалиден (конфликт слияния).
             // Отпечаток не обновляем — следующая запись файла вызовет новую попытку.
-            _main.StatusText = $"Не удалось перечитать {name}: {ex.Message}";
+            _shell.StatusText = $"Не удалось перечитать {name}: {ex.Message}";
             return false;
         }
     }

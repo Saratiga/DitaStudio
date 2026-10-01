@@ -12,43 +12,49 @@ namespace DitaStudio.Presentation.ViewModels;
 // Проверка проекта/документа, список найденных замечаний, сравнение файлов.
 public partial class ValidationViewModel : ObservableObject
 {
-    private readonly MainViewModel _main;
+    private readonly IShellState _shell;
+    private readonly IWorkspace _workspace;
+    private readonly UiServices _ui;
+    private readonly IDocumentHost _docs;
 
     [ObservableProperty]
     private ValidationIssue? selectedIssue;
 
     public ObservableCollection<ValidationIssue> Issues { get; } = new();
 
-    public ValidationViewModel(MainViewModel main)
+    public ValidationViewModel(ShellContext context, IDocumentHost docs)
     {
-        _main = main;
+        _shell = context.Shell;
+        _workspace = context.Workspace;
+        _ui = context.Ui;
+        _docs = docs;
     }
 
     [RelayCommand]
     private void ValidateProject()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null)
         {
             return;
         }
 
-        foreach (var pane in _main.Panes.Values)
+        foreach (var pane in _docs.Panes.Values)
         {
             pane.CommitPendingEdits();
         }
 
         var issues = project.ValidateAll(PluginRegistry.ValidationRules);
         ShowIssues(issues);
-        _main.StatusText = $"Проверка проекта: ошибок {issues.Count(i => i.Severity == IssueSeverity.Error)}, " +
+        _shell.StatusText = $"Проверка проекта: ошибок {issues.Count(i => i.Severity == IssueSeverity.Error)}, " +
                             $"предупреждений {issues.Count(i => i.Severity == IssueSeverity.Warning)}.";
     }
 
     [RelayCommand]
     private async Task ValidateDocument()
     {
-        var pane = _main.Current;
-        var project = _main.Project;
+        var pane = _docs.Current;
+        var project = _workspace.Project;
         if (pane is null || project is null)
         {
             return;
@@ -57,7 +63,7 @@ public partial class ValidationViewModel : ObservableObject
         var error = pane.CommitPendingEdits();
         if (error is not null)
         {
-            await _main.Dialogs.MessageAsync("Проверка", $"Документ не разбирается как XML:\n\n{error}");
+            await _ui.Dialogs.MessageAsync("Проверка", $"Документ не разбирается как XML:\n\n{error}");
             return;
         }
 
@@ -78,27 +84,27 @@ public partial class ValidationViewModel : ObservableObject
         }
 
         ShowIssues(issues);
-        _main.StatusText = $"Проверка документа: {issues.Count} замечаний.";
+        _shell.StatusText = $"Проверка документа: {issues.Count} замечаний.";
     }
 
     [RelayCommand]
     private async Task CompareFiles()
     {
         var filters = new[] { new FileFilter("Файлы DITA", "*.dita", "*.ditamap", "*.xml"), FileFilter.All };
-        var left = await _main.Files.OpenFileAsync("Сравнить — первый файл", filters);
+        var left = await _ui.Files.OpenFileAsync("Сравнить — первый файл", filters);
         if (left is null)
         {
             return;
         }
 
-        var right = await _main.Files.OpenFileAsync("Сравнить — второй файл", filters, Path.GetDirectoryName(left));
+        var right = await _ui.Files.OpenFileAsync("Сравнить — второй файл", filters, Path.GetDirectoryName(left));
         if (right is null)
         {
             return;
         }
 
         // Сравнение читает файлы с диска — несохранённые правки в открытых вкладках не видны.
-        await _main.Dialogs.ShowDiffAsync(left, right);
+        await _ui.Dialogs.ShowDiffAsync(left, right);
     }
 
     /// <summary>Сравнивает открытый документ с версией из последнего коммита git — через `git show`,
@@ -122,19 +128,19 @@ public partial class ValidationViewModel : ObservableObject
     private async Task CompareWithHistoryAsync(string client, string title, string tempPrefix,
         Func<string, string?> readRevision, string notFoundMessage)
     {
-        var path = _main.Current?.FilePath;
+        var path = _docs.Current?.FilePath;
         if (path is null)
         {
-            await _main.Dialogs.MessageAsync(title, "Откройте документ.");
+            await _ui.Dialogs.MessageAsync(title, "Откройте документ.");
             return;
         }
 
-        _main.StatusText = $"Чтение версии из {client}…";
+        _shell.StatusText = $"Чтение версии из {client}…";
         var content = await Task.Run(() => readRevision(path));
         if (content is null)
         {
-            _main.StatusText = string.Empty;
-            await _main.Dialogs.MessageAsync(title, notFoundMessage);
+            _shell.StatusText = string.Empty;
+            await _ui.Dialogs.MessageAsync(title, notFoundMessage);
             return;
         }
 
@@ -146,13 +152,13 @@ public partial class ValidationViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _main.StatusText = string.Empty;
-            await _main.Dialogs.MessageAsync(title, $"Не удалось записать временный файл: {ex.Message}");
+            _shell.StatusText = string.Empty;
+            await _ui.Dialogs.MessageAsync(title, $"Не удалось записать временный файл: {ex.Message}");
             return;
         }
 
-        _main.StatusText = string.Empty;
-        await _main.Dialogs.ShowDiffAsync(tempPath, path);
+        _shell.StatusText = string.Empty;
+        await _ui.Dialogs.ShowDiffAsync(tempPath, path);
     }
 
     private void ShowIssues(IReadOnlyList<ValidationIssue> issues)
@@ -163,7 +169,7 @@ public partial class ValidationViewModel : ObservableObject
             Issues.Add(issue);
         }
 
-        _main.BottomTabIndex = 0;
+        _shell.BottomTabIndex = 0;
     }
 
     [RelayCommand]
@@ -176,7 +182,7 @@ public partial class ValidationViewModel : ObservableObject
 
         if (issue.FilePath is not null && File.Exists(issue.FilePath))
         {
-            var pane = _main.OpenDocument?.Invoke(issue.FilePath);
+            var pane = _docs.OpenDocument(issue.FilePath);
             if (pane is not null && issue.Node is not null && !pane.FocusNode(issue.Node))
             {
                 // Узла нет среди блоков «Автора» (атрибут, служебный элемент) — показываем исходник.
@@ -188,6 +194,6 @@ public partial class ValidationViewModel : ObservableObject
             }
         }
 
-        _main.StatusText = issue.ToString();
+        _shell.StatusText = issue.ToString();
     }
 }

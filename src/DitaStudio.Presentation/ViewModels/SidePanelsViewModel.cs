@@ -15,15 +15,21 @@ namespace DitaStudio.Presentation.ViewModels;
 /// </summary>
 public partial class SidePanelsViewModel : ObservableObject
 {
-    private readonly MainViewModel _main;
+    private readonly IShellState _shell;
+    private readonly IWorkspace _workspace;
+    private readonly IDocumentHost _docs;
+    private readonly InsertViewModel _insert;
 
-    public SidePanelsViewModel(MainViewModel main)
+    public SidePanelsViewModel(ShellContext context, IDocumentHost docs, InsertViewModel insert)
     {
-        _main = main;
+        _shell = context.Shell;
+        _workspace = context.Workspace;
+        _docs = docs;
+        _insert = insert;
     }
 
     /// <summary>Имена продуктов проекта — для выпадающего списка значения <c>@product</c>.</summary>
-    public IReadOnlyList<string> ProductNames => _main.Project?.Products.Select(p => p.Name).ToList() ?? new List<string>();
+    public IReadOnlyList<string> ProductNames => _workspace.Project?.Products.Select(p => p.Name).ToList() ?? new List<string>();
 
     // ------------------------------------------------------------ атрибуты
 
@@ -63,14 +69,14 @@ public partial class SidePanelsViewModel : ObservableObject
     {
         RefreshAttributes();
         RefreshPalette();
-        _main.ContextText = _main.Current?.Author.CurrentNode?.Path ?? string.Empty;
+        _shell.ContextText = _docs.Current?.Author.CurrentNode?.Path ?? string.Empty;
     }
 
     public void RefreshAttributes()
     {
         Attributes.Clear();
         MissingAttributes.Clear();
-        var pane = _main.Current;
+        var pane = _docs.Current;
         var node = pane?.Author.CurrentNode;
         if (pane is null || node is null)
         {
@@ -101,7 +107,7 @@ public partial class SidePanelsViewModel : ObservableObject
 
     partial void OnAttributeToAddChanged(string? value)
     {
-        var pane = _main.Current;
+        var pane = _docs.Current;
         var node = pane?.Author.CurrentNode;
         if (value is null || pane is null || node is null || DitaCatalog.Default.Get(node.Name) is not { } def ||
             !def.Attributes.TryGetValue(value, out var attributeDef))
@@ -118,10 +124,10 @@ public partial class SidePanelsViewModel : ObservableObject
     internal void AfterAttributeEdit(IDocumentView pane)
     {
         pane.Document.IsDirty = true;
-        _main.Documents.RefreshAllTabTitles();
+        _docs.RefreshAllTabTitles();
     }
 
-    internal void SetStatus(string text) => _main.StatusText = text;
+    internal void SetStatus(string text) => _shell.StatusText = text;
 
     // ------------------------------------------------------------ палитра
 
@@ -130,7 +136,7 @@ public partial class SidePanelsViewModel : ObservableObject
     public void RefreshPalette()
     {
         Palette.Clear();
-        var node = _main.Current?.Author.CurrentNode;
+        var node = _docs.Current?.Author.CurrentNode;
         if (node is null)
         {
             PaletteHint = "Поставьте курсор в текст, чтобы увидеть допустимые элементы.";
@@ -174,7 +180,7 @@ public partial class SidePanelsViewModel : ObservableObject
     {
         if (SelectedPaletteEntry is { } entry)
         {
-            _main.Insert.InsertElementCommand.Execute(entry.Name);
+            _insert.InsertElementCommand.Execute(entry.Name);
         }
     }
 
@@ -183,7 +189,7 @@ public partial class SidePanelsViewModel : ObservableObject
     public void RefreshOutline()
     {
         Outline.Clear();
-        if (_main.Current?.Document is { } document)
+        if (_docs.Current?.Document is { } document)
         {
             Outline.Add(BuildOutline(document.Root, 0));
         }
@@ -204,8 +210,8 @@ public partial class SidePanelsViewModel : ObservableObject
     {
         if (value is not null)
         {
-            _main.Current?.FocusNode(value.Node);
-            _main.StatusText = value.Node.Path;
+            _docs.Current?.FocusNode(value.Node);
+            _shell.StatusText = value.Node.Path;
         }
     }
 }

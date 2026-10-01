@@ -16,7 +16,10 @@ public sealed class AutoRecovery
 {
     public static readonly TimeSpan Interval = TimeSpan.FromSeconds(30);
 
-    private readonly MainViewModel _main;
+    private readonly IShellState _shell;
+    private readonly IWorkspace _workspace;
+    private readonly UiServices _ui;
+    private readonly IDocumentHost _docs;
     private readonly IUiTimer _timer;
 
     // Последняя записанная копия по пути (текст + отпечаток оригинала) — чтобы не
@@ -26,12 +29,15 @@ public sealed class AutoRecovery
     private readonly Dictionary<DitaProject, RecoveryStore> _stores = new();
     private bool _reportedFailure;
 
-    private RecoveryStore? StoreFor(string path) => _main.ProjectOf(path) is { } project && _stores.TryGetValue(project, out var store) ? store : null;
+    private RecoveryStore? StoreFor(string path) => _workspace.ProjectOf(path) is { } project && _stores.TryGetValue(project, out var store) ? store : null;
 
-    public AutoRecovery(MainViewModel main)
+    public AutoRecovery(ShellContext context, IDocumentHost docs)
     {
-        _main = main;
-        _timer = main.Services.Platform.CreateTimer(Interval, SnapshotAll);
+        _shell = context.Shell;
+        _workspace = context.Workspace;
+        _ui = context.Ui;
+        _docs = docs;
+        _timer = context.Ui.Platform.CreateTimer(Interval, SnapshotAll);
     }
 
     /// <summary>Берёт проект под защиту: копии его несохранённых документов пишутся по таймеру. Другие проекты остаются под защитой.</summary>
@@ -45,7 +51,7 @@ public sealed class AutoRecovery
     public void Detach(DitaProject project)
     {
         _stores.Remove(project);
-        foreach (var path in _written.Keys.Where(p => _main.ProjectOf(p) is null || ReferenceEquals(_main.ProjectOf(p), project)).ToList())
+        foreach (var path in _written.Keys.Where(p => _workspace.ProjectOf(p) is null || ReferenceEquals(_workspace.ProjectOf(p), project)).ToList())
         {
             _written.Remove(path);
         }
@@ -74,7 +80,7 @@ public sealed class AutoRecovery
             return;
         }
 
-        foreach (var pane in _main.Panes.Values.ToList())
+        foreach (var pane in _docs.Panes.Values.ToList())
         {
             var path = pane.FilePath;
             if (path is null || StoreFor(path) is not { } store)
@@ -111,7 +117,7 @@ public sealed class AutoRecovery
                 if (!_reportedFailure)
                 {
                     _reportedFailure = true;
-                    _main.StatusText = $"Не удалось записать копию для восстановления ({Path.GetFileName(path)}): {ex.Message}";
+                    _shell.StatusText = $"Не удалось записать копию для восстановления ({Path.GetFileName(path)}): {ex.Message}";
                 }
             }
         }
@@ -150,7 +156,7 @@ public sealed class AutoRecovery
     /// <summary>То же для одного проекта (закрытие проекта с отказом сохранять правки).</summary>
     public void ForgetAll(DitaProject project)
     {
-        foreach (var path in _written.Keys.Where(p => ReferenceEquals(_main.ProjectOf(p), project)).ToList())
+        foreach (var path in _written.Keys.Where(p => ReferenceEquals(_workspace.ProjectOf(p), project)).ToList())
         {
             _written.Remove(path);
         }
@@ -171,7 +177,7 @@ public sealed class AutoRecovery
     /// Вызывать сразу после открытия проекта.</summary>
     public async Task OfferRestoreAsync(DitaProject? target = null)
     {
-        var project = target ?? _main.Project;
+        var project = target ?? _workspace.Project;
         if (project is null || !_stores.TryGetValue(project, out var store))
         {
             return;
@@ -211,7 +217,7 @@ public sealed class AutoRecovery
         text.AppendLine("Нет — удалить копии.");
         text.Append("Отмена — решить позже (копии останутся до следующего открытия проекта).");
 
-        var answer = await _main.Dialogs.AskAsync("Восстановление после сбоя", text.ToString(),
+        var answer = await _ui.Dialogs.AskAsync("Восстановление после сбоя", text.ToString(),
             AskButtons.YesNoCancel, AskIcon.Warning);
 
         if (answer == AskResult.No)
@@ -229,7 +235,7 @@ public sealed class AutoRecovery
         var skipped = new List<string>();
         foreach (var entry in entries)
         {
-            IDocumentView? pane = File.Exists(entry.OriginalPath) ? _main.Documents.OpenDocument(entry.OriginalPath) : null;
+            IDocumentView? pane = File.Exists(entry.OriginalPath) ? _docs.OpenDocument(entry.OriginalPath) : null;
             if (pane is null)
             {
                 skipped.Add(Path.GetFileName(entry.OriginalPath));
@@ -241,12 +247,12 @@ public sealed class AutoRecovery
             restored++;
         }
 
-        _main.Documents.RefreshAllTabTitles();
-        _main.StatusText = $"Восстановлено документов: {restored}. Сохраните их, чтобы записать правки в файлы.";
+        _docs.RefreshAllTabTitles();
+        _shell.StatusText = $"Восстановлено документов: {restored}. Сохраните их, чтобы записать правки в файлы.";
 
         if (skipped.Count > 0)
         {
-            await _main.Dialogs.MessageAsync("Восстановление после сбоя",
+            await _ui.Dialogs.MessageAsync("Восстановление после сбоя",
                 "Не удалось открыть (файла нет или он не разбирается): " + string.Join(", ", skipped) +
                 $".\n\nКопии оставлены в папке:\n{store.Directory}");
         }

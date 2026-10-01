@@ -43,21 +43,19 @@ public partial class MainWindow : Window
             pdfPrinter,
             (project, document) => CreateDocumentView(project, document, pdfPrinter)));
 
-        ViewModel.OpenDocument = path => ViewModel.Documents.OpenDocument(path);
-        ViewModel.UpdateTabHeaders = ViewModel.Documents.RefreshAllTabTitles;
-        ViewModel.RefreshEditorContext = () =>
+        var hooks = ViewModel.Hooks;
+        hooks.RefreshEditorContext = () =>
         {
             ViewModel.SidePanels.Refresh();
             ViewModel.SidePanels.RefreshOutline();
             RefreshMarkerButton();
         };
-        ViewModel.RefreshProjectTree = ViewModel.ProjectPanel.RebuildTree;
-        ViewModel.RefreshMapSelector = ViewModel.Map.RefreshMaps;
-        ViewModel.RefreshMapTree = ViewModel.Map.RebuildTree;
-        ViewModel.RefreshRecentProjectsMenu = RefreshRecentProjectsMenu;
-        ViewModel.RefreshOutline = ViewModel.SidePanels.RefreshOutline;
-        ViewModel.RefreshAttributePanel = ViewModel.SidePanels.RefreshAttributes;
-        ViewModel.ApplyRefactorResult = ViewModel.ApplyRefactorResultToDocuments;
+        hooks.RefreshProjectTree = ViewModel.ProjectPanel.RebuildTree;
+        hooks.RefreshMapSelector = ViewModel.Map.RefreshMaps;
+        hooks.RefreshMapTree = ViewModel.Map.RebuildTree;
+        hooks.RefreshRecentProjectsMenu = RefreshRecentProjectsMenu;
+        hooks.RefreshOutline = ViewModel.SidePanels.RefreshOutline;
+        hooks.RefreshAttributePanel = ViewModel.SidePanels.RefreshAttributes;
 
         DataContext = ViewModel;
         InitializeComponent();

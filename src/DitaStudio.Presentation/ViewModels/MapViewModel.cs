@@ -15,7 +15,13 @@ namespace DitaStudio.Presentation.ViewModels;
 // перетаскиванием), удаление, таблица соответствий.
 public partial class MapViewModel : ObservableObject
 {
-    private readonly MainViewModel _main;
+    private readonly IShellState _shell;
+    private readonly IWorkspace _workspace;
+    private readonly UiServices _ui;
+    private readonly ShellHooks _hooks;
+    private readonly DocumentsViewModel _documents;
+    private readonly SearchViewModel _search;
+    private ProjectViewModel _projectPanel = null!; // задаётся Link после создания (петля зависимостей)
 
     /// <summary>Карты активного проекта — из них открывается новая вкладка карты.</summary>
     public ObservableCollection<ProjectFile> Maps { get; } = new();
@@ -39,9 +45,20 @@ public partial class MapViewModel : ObservableObject
     [ObservableProperty]
     private MapTreeNode? selectedNode;
 
-    public MapViewModel(MainViewModel main)
+    public MapViewModel(ShellContext context, DocumentsViewModel documents, SearchViewModel search)
     {
-        _main = main;
+        _shell = context.Shell;
+        _workspace = context.Workspace;
+        _ui = context.Ui;
+        _hooks = context.Hooks;
+        _documents = documents;
+        _search = search;
+    }
+
+    /// <summary>Замыкает петлю зависимостей: вызывается один раз из MainViewModel после создания всех VM.</summary>
+    internal void Link(ProjectViewModel projectPanel)
+    {
+        _projectPanel = projectPanel;
     }
 
     /// <summary>
@@ -50,7 +67,7 @@ public partial class MapViewModel : ObservableObject
     /// </summary>
     public void RefreshMaps()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         Maps.Clear();
         if (project is null)
         {
@@ -86,7 +103,7 @@ public partial class MapViewModel : ObservableObject
             ? last
             : OpenMaps.FirstOrDefault(t => ReferenceEquals(t.Project, project));
         SetSelection(target);
-        _main.RefreshMapTree?.Invoke();
+        _hooks.RefreshMapTree?.Invoke();
     }
 
     // Выбор вкладки и карты одним действием, без обратной реакции обработчиков.
@@ -110,7 +127,7 @@ public partial class MapViewModel : ObservableObject
 
     private void RefreshMapTitles()
     {
-        var several = _main.Projects.Count > 1;
+        var several = _workspace.Projects.Count > 1;
         foreach (var tab in OpenMaps)
         {
             tab.Title = several ? $"{tab.File.FileName} · {tab.Project.Name}" : tab.File.FileName;
@@ -120,7 +137,7 @@ public partial class MapViewModel : ObservableObject
     partial void OnSelectedMapChanged(ProjectFile? value)
     {
         // Карту выбрали напрямую (список «Открыть карту», команды, тесты): для неё есть вкладка.
-        if (!_syncingTabs && value is not null && (_main.ProjectOf(value.FullPath) ?? _main.Project) is { } owner)
+        if (!_syncingTabs && value is not null && (_workspace.ProjectOf(value.FullPath) ?? _workspace.Project) is { } owner)
         {
             var tab = OpenMaps.FirstOrDefault(t => ReferenceEquals(t.Project, owner) && string.Equals(t.File.FullPath, value.FullPath, StringComparison.OrdinalIgnoreCase));
             if (tab is null)
@@ -142,7 +159,7 @@ public partial class MapViewModel : ObservableObject
             }
         }
 
-        _main.RefreshMapTree?.Invoke();
+        _hooks.RefreshMapTree?.Invoke();
     }
 
     partial void OnSelectedMapTabChanged(OpenMapTab? value)
@@ -153,9 +170,9 @@ public partial class MapViewModel : ObservableObject
         }
 
         _lastTab[value.Project] = value;
-        if (!ReferenceEquals(_main.Project, value.Project))
+        if (!ReferenceEquals(_workspace.Project, value.Project))
         {
-            _main.ActivateProject(value.Project); // RefreshMaps выберет эту вкладку
+            _workspace.ActivateProject(value.Project); // RefreshMaps выберет эту вкладку
             return;
         }
 
@@ -169,7 +186,7 @@ public partial class MapViewModel : ObservableObject
             _syncingTabs = false;
         }
 
-        _main.RefreshMapTree?.Invoke();
+        _hooks.RefreshMapTree?.Invoke();
     }
 
     /// <summary>Закрывает вкладку карты (сам файл карты остаётся в проекте); выбирается соседняя вкладка или ничего.</summary>
@@ -198,20 +215,20 @@ public partial class MapViewModel : ObservableObject
         if (next is null)
         {
             SetSelection(null);
-            _main.RefreshMapTree?.Invoke();
-            _main.StatusText = $"Карта {tab.File.FileName} закрыта.";
+            _hooks.RefreshMapTree?.Invoke();
+            _shell.StatusText = $"Карта {tab.File.FileName} закрыта.";
             return;
         }
 
-        if (!ReferenceEquals(next.Project, _main.Project))
+        if (!ReferenceEquals(next.Project, _workspace.Project))
         {
             _lastTab[next.Project] = next;
-            _main.ActivateProject(next.Project);
+            _workspace.ActivateProject(next.Project);
             return;
         }
 
         SetSelection(next);
-        _main.RefreshMapTree?.Invoke();
+        _hooks.RefreshMapTree?.Invoke();
     }
 
     /// <summary>Закрывает все вкладки карт, кроме выбранной в меню.</summary>
@@ -229,15 +246,15 @@ public partial class MapViewModel : ObservableObject
 
         if (keep is not null)
         {
-            if (!ReferenceEquals(keep.Project, _main.Project))
+            if (!ReferenceEquals(keep.Project, _workspace.Project))
             {
                 _lastTab[keep.Project] = keep;
-                _main.ActivateProject(keep.Project);
+                _workspace.ActivateProject(keep.Project);
             }
             else
             {
                 SetSelection(keep);
-                _main.RefreshMapTree?.Invoke();
+                _hooks.RefreshMapTree?.Invoke();
             }
         }
     }
@@ -262,7 +279,7 @@ public partial class MapViewModel : ObservableObject
     {
         if (value is not null)
         {
-            _main.StatusText = value.IsBroken
+            _shell.StatusText = value.IsBroken
                 ? $"{value.Item.ElementName}: {value.Title} — {value.Item.BrokenReason}"
                 : $"{value.Item.ElementName}: {value.Title}";
         }
@@ -330,7 +347,7 @@ public partial class MapViewModel : ObservableObject
 
         var selected = SelectedNode?.Item.Node;
         Tree.Clear();
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null || SelectedMap is not { } map)
         {
             return;
@@ -343,7 +360,7 @@ public partial class MapViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            _main.StatusText = $"Карта не читается: {ex.Message}";
+            _shell.StatusText = $"Карта не читается: {ex.Message}";
             return;
         }
 
@@ -387,11 +404,11 @@ public partial class MapViewModel : ObservableObject
         }
         else if (SelectedNode?.Item.TargetPath is { } target && File.Exists(target))
         {
-            _main.OpenDocument?.Invoke(target);
+            _documents.OpenDocument(target);
         }
         else if (SelectedMap is { } map)
         {
-            _main.OpenDocument?.Invoke(map.FullPath);
+            _documents.OpenDocument(map.FullPath);
         }
     }
 
@@ -415,7 +432,7 @@ public partial class MapViewModel : ObservableObject
 
         options.Add(ChooseReplace);
         options.Add(ChooseRemove);
-        var choice = await _main.Dialogs.PickOneAsync("Топик не найден", item.BrokenReason + "\n\nЧто сделать со строкой «" + item.Title + "»?", options, o => o);
+        var choice = await _ui.Dialogs.PickOneAsync("Топик не найден", item.BrokenReason + "\n\nЧто сделать со строкой «" + item.Title + "»?", options, o => o);
         switch (choice)
         {
             case ChooseCreate:
@@ -434,10 +451,10 @@ public partial class MapViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(SelectedIsBroken))]
     private async Task CreateMissingFileAsync()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null || SelectedNode?.Item is not { IsBroken: true, TargetPath: { } target } item || File.Exists(target))
         {
-            await _main.Dialogs.MessageAsync("Создание файла", "Файл по ссылке создать нельзя: у строки нет пути к файлу (ключ не определён). Выберите другой файл.");
+            await _ui.Dialogs.MessageAsync("Создание файла", "Файл по ссылке создать нельзя: у строки нет пути к файлу (ключ не определён). Выберите другой файл.");
             return;
         }
 
@@ -452,28 +469,28 @@ public partial class MapViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            await _main.Dialogs.MessageAsync("Создание файла", $"Не удалось создать {target}: {ex.Message}");
+            await _ui.Dialogs.MessageAsync("Создание файла", $"Не удалось создать {target}: {ex.Message}");
             return;
         }
 
         project.AddFile(target);
         RebuildTree();
-        _main.RefreshProjectTree?.Invoke();
-        _main.StatusText = $"Создан файл по ссылке: {Path.GetFileName(target)}.";
-        _main.OpenDocument?.Invoke(target);
+        _hooks.RefreshProjectTree?.Invoke();
+        _shell.StatusText = $"Создан файл по ссылке: {Path.GetFileName(target)}.";
+        _documents.OpenDocument(target);
     }
 
     /// <summary>Заменяет ссылку битой строки на выбранный файл проекта (<c>href</c> пересчитывается от файла карты).</summary>
     [RelayCommand(CanExecute = nameof(SelectedIsBroken))]
     private async Task ReplaceFileAsync()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null || SelectedNode?.Item is not { IsBroken: true } item)
         {
             return;
         }
 
-        var file = await _main.Files.OpenFileAsync("Выберите файл для строки «" + item.Title + "»",
+        var file = await _ui.Files.OpenFileAsync("Выберите файл для строки «" + item.Title + "»",
             new[] { new FileFilter("Топики и карты DITA", "*.dita", "*.xml", "*.ditamap"), FileFilter.All }, project.RootPath);
         if (file is null)
         {
@@ -487,7 +504,7 @@ public partial class MapViewModel : ObservableObject
             node.RemoveAttribute("keyref");
             return true;
         }, "Замена файла строки карты");
-        _main.StatusText = $"Строка «{item.Title}» теперь ссылается на {Path.GetFileName(file)}.";
+        _shell.StatusText = $"Строка «{item.Title}» теперь ссылается на {Path.GetFileName(file)}.";
     }
 
     /// <param name="activate">false — карта открывается во вкладке, но вкладка не выбирается: правка
@@ -502,11 +519,11 @@ public partial class MapViewModel : ObservableObject
             return null;
         }
 
-        var previous = _main.Documents.SelectedTab;
-        var pane = _main.OpenDocument?.Invoke(mapPath ?? map.FullPath);
+        var previous = _documents.SelectedTab;
+        var pane = _documents.OpenDocument(mapPath ?? map.FullPath);
         if (!activate && previous is not null)
         {
-            _main.Documents.SelectedTab = previous;
+            _documents.SelectedTab = previous;
         }
 
         return pane;
@@ -518,7 +535,7 @@ public partial class MapViewModel : ObservableObject
     {
         pane.Document.IsDirty = true;
         pane.ReloadViews();
-        _main.Documents.RefreshAllTabTitles();
+        _documents.RefreshAllTabTitles();
         RebuildTree();
     }
 
@@ -543,13 +560,13 @@ public partial class MapViewModel : ObservableObject
 
     private async Task AddTopicrefAsync(Place place)
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null || SelectedMap is not { } map)
         {
             return;
         }
 
-        var result = await _main.Dialogs.InsertXrefAsync(project, map.FullPath);
+        var result = await _ui.Dialogs.InsertXrefAsync(project, map.FullPath);
         if (result is null)
         {
             return;
@@ -564,7 +581,7 @@ public partial class MapViewModel : ObservableObject
 
         if (!CanInsertAtSelection(pane, "topicref", place, out var reason))
         {
-            _main.StatusText = reason;
+            _shell.StatusText = reason;
             return;
         }
 
@@ -582,7 +599,7 @@ public partial class MapViewModel : ObservableObject
     /// </summary>
     public bool AddCreatedTopic(string path)
     {
-        if (_main.Project is null || SelectedMap is not { } map)
+        if (_workspace.Project is null || SelectedMap is not { } map)
         {
             return false;
         }
@@ -618,7 +635,7 @@ public partial class MapViewModel : ObservableObject
 
         if (!CanInsertAtSelection(pane, "topichead", Place.After, out var reason))
         {
-            _main.StatusText = reason;
+            _shell.StatusText = reason;
             return;
         }
 
@@ -675,7 +692,7 @@ public partial class MapViewModel : ObservableObject
 
         if (!MapMoves.Try(item.Node, operation, out var reason))
         {
-            _main.StatusText = reason;
+            _shell.StatusText = reason;
             return;
         }
 
@@ -700,7 +717,7 @@ public partial class MapViewModel : ObservableObject
     private async Task Delete()
     {
         if (SelectedNode?.Item is not { } item ||
-            !await _main.Dialogs.ConfirmAsync("Карта", $"Убрать «{item.Title}» из карты?"))
+            !await _ui.Dialogs.ConfirmAsync("Карта", $"Убрать «{item.Title}» из карты?"))
         {
             return;
         }
@@ -727,7 +744,7 @@ public partial class MapViewModel : ObservableObject
             TopicPageBreak.Set(node, value);
             return true;
         }, "Разрыв страницы перед топиком");
-        _main.StatusText = value switch
+        _shell.StatusText = value switch
         {
             true => "Топик будет начинаться с новой страницы (DOCX, PDF, единый HTML).",
             false => "Топик не будет начинаться с новой страницы, даже если так задано в оформлении DOCX.",
@@ -785,7 +802,7 @@ public partial class MapViewModel : ObservableObject
     public bool CanPaste => _clipboard is not null;
 
     private ProjectFile? SelectedFile =>
-        SelectedNode?.Item.TargetPath is { } target ? _main.Project?.FindFile(target) : null;
+        SelectedNode?.Item.TargetPath is { } target ? _workspace.Project?.FindFile(target) : null;
 
     /// <summary>«Свойства»: карта открывается с выделенной строкой — её атрибуты на панели «Атрибуты».</summary>
     [RelayCommand]
@@ -807,7 +824,7 @@ public partial class MapViewModel : ObservableObject
 
         _clipboard = (node.CloneDeep(), map.FullPath);
         OnPropertyChanged(nameof(CanPaste));
-        _main.StatusText = $"Скопировано: {SelectedNode.Title}";
+        _shell.StatusText = $"Скопировано: {SelectedNode.Title}";
     }
 
     [RelayCommand(CanExecute = nameof(HasStructureSelection))]
@@ -839,7 +856,7 @@ public partial class MapViewModel : ObservableObject
 
         if (!CanInsertAtSelection(pane, clip.Node.Name, place, out var reason))
         {
-            _main.StatusText = reason;
+            _shell.StatusText = reason;
             return;
         }
 
@@ -882,27 +899,27 @@ public partial class MapViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(SelectedHasFile))]
     private void FindReferences()
     {
-        if (_main.Project is not { } project || SelectedNode?.Item.TargetPath is not { } target)
+        if (_workspace.Project is not { } project || SelectedNode?.Item.TargetPath is not { } target)
         {
             NoFileMessage();
             return;
         }
 
-        foreach (var pane in _main.Panes.Values)
+        foreach (var pane in _documents.Panes.Values)
         {
             pane.CommitPendingEdits();
         }
 
         var hits = project.FindReferencesTo(target);
-        _main.Search.ShowResults(hits);
-        _main.BottomTabIndex = 1;
-        _main.StatusText = $"Ссылок на {Path.GetFileName(target)}: {hits.Count}";
+        _search.ShowResults(hits);
+        _shell.BottomTabIndex = 1;
+        _shell.StatusText = $"Ссылок на {Path.GetFileName(target)}: {hits.Count}";
     }
 
     /// <summary>Команда, которой нужен файл, запущена на строке без файла (не из меню — там она
     /// недоступна): объясняем, а не молчим.</summary>
     private void NoFileMessage() =>
-        _main.StatusText = SelectedNode is null
+        _shell.StatusText = SelectedNode is null
             ? "Выберите строку карты."
             : $"У строки «{SelectedNode.Title}» нет файла. Чтобы убрать её из карты, выберите «Убрать из карты».";
 
@@ -911,7 +928,7 @@ public partial class MapViewModel : ObservableObject
     {
         if (SelectedFile is { } file)
         {
-            await _main.ProjectPanel.MoveFileAsync(file);
+            await _projectPanel.MoveFileAsync(file);
             RebuildTree();
         }
     }
@@ -924,7 +941,7 @@ public partial class MapViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(SelectedHasFile))]
     private async Task DeleteFile()
     {
-        if (_main.Project is not { } project || SelectedFile is not { } file || SelectedMap is not { } map)
+        if (_workspace.Project is not { } project || SelectedFile is not { } file || SelectedMap is not { } map)
         {
             NoFileMessage();
             return;
@@ -950,7 +967,7 @@ public partial class MapViewModel : ObservableObject
         if (remaining > 0)
         {
             // Дубликат или несколько строк на один файл: убираем только выбранную, файл остаётся.
-            if (!await _main.Dialogs.ConfirmAsync("Убрать строку из карты",
+            if (!await _ui.Dialogs.ConfirmAsync("Убрать строку из карты",
                     $"Строка «{rowTitle}» будет убрана из карты. Файл {file.RelativePath} остаётся на диске: ссылок на него из карт — ещё {remaining}. " +
                     "Файл будет удалён, когда вы уберёте последнюю ссылку на него командой «Удалить файл…»."))
             {
@@ -965,7 +982,7 @@ public partial class MapViewModel : ObservableObject
             }
 
             RebuildTree();
-            _main.StatusText = $"Строка «{rowTitle}» убрана из карты; файл {file.RelativePath} оставлен — ссылок на него из карт — ещё {remaining}.";
+            _shell.StatusText = $"Строка «{rowTitle}» убрана из карты; файл {file.RelativePath} оставлен — ссылок на него из карт — ещё {remaining}.";
             return;
         }
 
@@ -975,7 +992,7 @@ public partial class MapViewModel : ObservableObject
         var warning = elsewhere.Count == 0
             ? string.Empty
             : $"\n\nЕщё {elsewhere.Count} ссыл. в других файлах ({string.Join(", ", elsewhere.Select(h => h.File.RelativePath).Distinct().Take(5))}) станут битыми.";
-        if (!await _main.Dialogs.ConfirmAsync("Удаление файла",
+        if (!await _ui.Dialogs.ConfirmAsync("Удаление файла",
                 $"Удалить файл {file.RelativePath} с диска? Отменить это будет нельзя. Строки этой карты, которые на него ссылаются, будут убраны.{warning}"))
         {
             return;
@@ -988,14 +1005,14 @@ public partial class MapViewModel : ObservableObject
             AfterMapEdit(pane);
         }
 
-        if (_main.ProjectPanel.DeleteFile(file) is { } error)
+        if (_projectPanel.DeleteFile(file) is { } error)
         {
-            await _main.Dialogs.MessageAsync("Удаление файла", error);
+            await _ui.Dialogs.MessageAsync("Удаление файла", error);
             return;
         }
 
         RebuildTree();
-        _main.StatusText = $"Файл {file.RelativePath} удалён.";
+        _shell.StatusText = $"Файл {file.RelativePath} удалён.";
     }
 
     /// <summary>Убирает строки карты; дочерние строки удаляемой не теряются — поднимаются на её место.</summary>
@@ -1045,7 +1062,7 @@ public partial class MapViewModel : ObservableObject
         }
 
         AfterMapEdit(pane);
-        _main.StatusText = publish
+        _shell.StatusText = publish
             ? $"«{node.Title}» снова публикуется."
             : $"«{node.Title}» не публикуется (ни в HTML, ни в PDF, ни в DOCX); ссылки и ключи из него работают.";
     }
@@ -1088,7 +1105,7 @@ public partial class MapViewModel : ObservableObject
 
         if (!CanDrop(dragged, target, position, out var reason))
         {
-            _main.StatusText = reason;
+            _shell.StatusText = reason;
             return;
         }
 
@@ -1109,7 +1126,7 @@ public partial class MapViewModel : ObservableObject
         }
 
         Select(moved);
-        _main.StatusText = position == DropPosition.Child
+        _shell.StatusText = position == DropPosition.Child
             ? $"«{dragged.Title}» теперь вложен в «{target.Title}»."
             : $"«{dragged.Title}» перенесён.";
     }
@@ -1119,7 +1136,7 @@ public partial class MapViewModel : ObservableObject
     [RelayCommand]
     private async Task EditRelTable()
     {
-        var project = _main.Project;
+        var project = _workspace.Project;
         if (project is null || SelectedMap is not { } map)
         {
             return;
@@ -1132,7 +1149,7 @@ public partial class MapViewModel : ObservableObject
         }
 
         var existing = pane.Document.Root.FirstElement("reltable");
-        var rows = await _main.Dialogs.EditRelTableAsync(project, ParseRelTable(project, existing, map.FullPath));
+        var rows = await _ui.Dialogs.EditRelTableAsync(project, ParseRelTable(project, existing, map.FullPath));
         if (rows is null)
         {
             return;
@@ -1151,8 +1168,8 @@ public partial class MapViewModel : ObservableObject
 
         pane.Document.IsDirty = true;
         pane.ReloadViews();
-        _main.Documents.RefreshAllTabTitles();
-        _main.StatusText = "Таблица соответствий обновлена.";
+        _documents.RefreshAllTabTitles();
+        _shell.StatusText = "Таблица соответствий обновлена.";
     }
 
     public static List<List<RelTableCell>> ParseRelTable(DitaProject project, DitaNode? reltable, string mapPath)

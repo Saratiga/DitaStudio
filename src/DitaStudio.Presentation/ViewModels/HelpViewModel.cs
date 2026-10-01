@@ -1,3 +1,4 @@
+using DitaStudio.Presentation.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DitaStudio.Core.Schema;
@@ -6,34 +7,38 @@ namespace DitaStudio.Presentation.ViewModels;
 
 public partial class HelpViewModel : ObservableObject
 {
-    private readonly MainViewModel _main;
+    private readonly IShellState _shell;
+    private readonly UiServices _ui;
+    private readonly IDocumentHost _docs;
 
-    public HelpViewModel(MainViewModel main)
+    public HelpViewModel(ShellContext context, IDocumentHost docs)
     {
-        _main = main;
+        _shell = context.Shell;
+        _ui = context.Ui;
+        _docs = docs;
     }
 
     [RelayCommand]
     private async Task ShowElementHelp()
     {
-        var node = _main.Current?.Author.CurrentNode;
+        var node = _docs.Current?.Author.CurrentNode;
         if (node is null)
         {
-            _main.StatusText = "Поставьте курсор в элемент.";
+            _shell.StatusText = "Поставьте курсор в элемент.";
             return;
         }
 
         var def = DitaCatalog.Default.Get(node.Name);
         if (def is null)
         {
-            await _main.Dialogs.MessageAsync("Справка", $"Элемент <{node.Name}> отсутствует в словаре DITA 1.3.");
+            await _ui.Dialogs.MessageAsync("Справка", $"Элемент <{node.Name}> отсутствует в словаре DITA 1.3.");
             return;
         }
 
         var allowed = def.Automaton.AllowedNames;
         var attributes = def.Attributes.Keys.OrderBy(a => a, StringComparer.Ordinal);
 
-        await _main.Dialogs.MessageAsync($"<{def.Name}>",
+        await _ui.Dialogs.MessageAsync($"<{def.Name}>",
             $"{def.Description}\n\n" +
             $"Модуль: {def.Domain}\n" +
             $"@class: {def.ClassAttr}\n\n" +
@@ -44,5 +49,5 @@ public partial class HelpViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private Task About() => _main.Dialogs.AboutAsync();
+    private Task About() => _ui.Dialogs.AboutAsync();
 }
