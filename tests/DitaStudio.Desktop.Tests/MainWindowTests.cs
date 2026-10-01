@@ -278,6 +278,48 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Д13: две строки карты на один файл (после «Дублировать») — «Удалить файл» на одной не убирает вторую и не удаляет файл;
+    /// файл уходит с диска, только когда ссылка на него последняя.</summary>
+    [AvaloniaFact(Skip = "Д13: ловушка, воспроизводится — удаляются обе строки и файл; включить после исправления (этап 2)")]
+    public async Task MapDeleteFile_WithDuplicatedRows_RemovesOnlySelectedRow_UntilLastReference()
+    {
+        var (window, vm) = await OpenAsync();
+        var map = Path.Combine(_project, "guide.ditamap");
+        static IEnumerable<MapTreeNode> All(MapTreeNode n) => n.Children.SelectMany(All).Prepend(n);
+        List<MapTreeNode> Rows() => vm.Map.Tree.SelectMany(All).Where(n => n.Item.TargetPath?.EndsWith("settings.dita") == true).ToList();
+        DitaNode MapRoot() => vm.Documents.Tabs.Single(t => t.FullPath == map).Pane.Document.Root;
+        int Refs() => MapRoot().DescendantsAndSelf().Count(n => n.GetAttribute("href") == "reference/settings.dita");
+        var file = Path.Combine(_project, "reference", "settings.dita");
+
+        async Task DeleteSelectedAsync()
+        {
+            var deleting = vm.Map.DeleteFileCommand.ExecuteAsync(null);
+            Dispatcher.UIThread.RunJobs();
+            var confirm = window.OwnedWindows.FirstOrDefault();
+            confirm?.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Да")
+                .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+            await deleting;
+        }
+
+        vm.Map.SelectedNode = Rows().Single();
+        vm.Map.DuplicateCommand.Execute(null);
+        Assert.Equal(2, Refs());
+
+        // Первая из двух строк: уходит она одна, файл и вторая строка остаются.
+        vm.Map.SelectedNode = Rows()[0];
+        await DeleteSelectedAsync();
+        Assert.Equal(1, Refs());
+        Assert.True(File.Exists(file));
+
+        // Последняя ссылка: файл удаляется с диска.
+        vm.Map.SelectedNode = Rows().Single();
+        await DeleteSelectedAsync();
+        Assert.Equal(0, Refs());
+        Assert.False(File.Exists(file));
+        window.Close();
+    }
+
     /// <summary>Сценарий из замечания: «+ Раздел», правый щелчок по «Новый раздел», пункты контекстного меню.</summary>
     [AvaloniaFact]
     public async Task MapMenu_NewSection_RightClick_ShowsOnlyApplicableItems_AndRemovesFromMap()

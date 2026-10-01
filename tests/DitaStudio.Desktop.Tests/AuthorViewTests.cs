@@ -778,6 +778,53 @@ public sealed class AuthorViewTests
         window.Close();
     }
 
+    /// <summary>Д8: щелчок мышью в видимый текст внутри таблицы не прокручивает полосу «Автора»: курсор ставится куда указали,
+    /// полоса остаётся на месте.</summary>
+    [AvaloniaFact(Skip = "Д8: ловушка, воспроизводится — полоса уезжает на ~170 px; включить после исправления (этап 2)")]
+    public void ScrollBar_StaysPut_WhenClickingTextInsideTable()
+    {
+        var paragraphs = string.Concat(Enumerable.Range(1, 40).Select(i => $"<p>Абзац номер {i}.</p>"));
+        var longCell = string.Join(" ", Enumerable.Repeat("текст ячейки таблицы со множеством слов", 12));
+        var rows = string.Concat(Enumerable.Range(1, 8).Select(i => $"<row><entry>Строка {i}</entry><entry>{longCell}</entry></row>"));
+        var (window, author, document, _) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody>" + paragraphs +
+            "<table><tgroup cols=\"2\"><tbody>" + rows + "</tbody></tgroup></table>" + paragraphs + "</conbody></concept>");
+        window.Height = 500;
+        Dispatcher.UIThread.RunJobs();
+        var scroll = author.GetVisualDescendants().OfType<ScrollViewer>().First(v => v.Content is Panel && v.GetVisualDescendants().OfType<BlockEditor>().Any());
+        var table = document.Root.DescendantsAndSelf().First(n => n.Name == "table");
+        var frame = (Avalonia.Controls.Border)author.ViewFor(table)!;
+
+        // Прокрутили так, что таблица занимает окно; щелчки — по тексту разных ячеек и строк, в том числе у нижнего края.
+        scroll.Offset = new Vector(0, frame.TranslatePoint(new Point(0, 0), scroll)!.Value.Y + scroll.Offset.Y - 20);
+        Dispatcher.UIThread.RunJobs();
+        var before = scroll.Offset.Y;
+        Assert.True(before > 0);
+
+        var entries = table.DescendantsAndSelf().Where(n => n.Name == "entry").ToList();
+        foreach (var entry in new[] { entries[1], entries[3], entries[5], entries[7] })
+        {
+            var editor = author.EditorFor(entry)!;
+            var visibleHeight = Math.Min(editor.Bounds.Height, scroll.Viewport.Height);
+            foreach (var y in new[] { 8d, visibleHeight / 2, visibleHeight - 8 })
+            {
+                var topLeft = editor.TranslatePoint(new Point(60, y), scroll)!.Value;
+                if (topLeft.Y < 0 || topLeft.Y > scroll.Viewport.Height)
+                {
+                    continue; // вне поля зрения — щелчка по нему не будет
+                }
+
+                var point = editor.TranslatePoint(new Point(60, y), window)!.Value;
+                window.MouseDown(point, Avalonia.Input.MouseButton.Left);
+                window.MouseUp(point, Avalonia.Input.MouseButton.Left);
+                Dispatcher.UIThread.RunJobs();
+                Assert.Equal(before, scroll.Offset.Y);
+            }
+        }
+
+        window.Close();
+    }
+
     /// <summary>Г2: окно подсказки элементов растягивается, а выбранный размер запоминается на следующий раз.</summary>
     [AvaloniaFact]
     public void ElementSuggestions_CanBeResized_AndRemembersSize()

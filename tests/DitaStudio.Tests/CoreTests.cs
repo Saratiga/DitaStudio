@@ -87,6 +87,8 @@ public sealed class CoreTests
     [Fact] public void TitleImageTests() => Run(CoreChecks.TitleImageTests);
     [Fact] public void ProductListTests() => Run(CoreChecks.ProductListTests);
     [Fact] public void PagedPreviewTests() => Run(CoreChecks.PagedPreviewTests);
+    [Fact(Skip = "Д9: ловушка, воспроизводится — блоки ячейки склеиваются в один абзац; включить после исправления (этап 2)")]
+    public void CellParagraphsDocxTests() => Run(CoreChecks.CellParagraphsDocxTests);
     [Fact] public void CssCascadeDocxTests() => Run(CoreChecks.CssCascadeDocxTests);
     [Fact] public void HeaderFooterCssDocxTests() => Run(CoreChecks.HeaderFooterCssDocxTests);
     [Fact] public void MapMoveTests() => Run(CoreChecks.MapMoveTests);
