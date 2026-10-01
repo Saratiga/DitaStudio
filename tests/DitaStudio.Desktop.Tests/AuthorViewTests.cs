@@ -8,6 +8,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Schema;
 using DitaStudio.Desktop.Authoring;
 using DitaStudio.Presentation.Authoring;
 using Xunit;
@@ -60,6 +61,7 @@ public sealed class AuthorViewTests
             Key.Enter => PhysicalKey.Enter,
             Key.Back => PhysicalKey.Backspace,
             Key.Delete => PhysicalKey.Delete,
+            Key.Escape => PhysicalKey.Escape,
             Key.Tab => PhysicalKey.Tab,
             Key.Up => PhysicalKey.ArrowUp,
             Key.Down => PhysicalKey.ArrowDown,
@@ -778,9 +780,259 @@ public sealed class AuthorViewTests
         window.Close();
     }
 
+    // Граф «что можно вставить в что» по каталогу (поиск в ширину от корней топиков), считается один раз: имя → его предок на кратчайшем пути.
+    private static readonly Lazy<Dictionary<string, string?>> ShortestPaths = new(() =>
+    {
+        var catalog = DitaCatalog.Default;
+        var previous = new Dictionary<string, string?>();
+        var queue = new Queue<string>();
+        foreach (var root in catalog.TopicTypes.Select(t => t.Name).Where(n => n is "concept" or "task" or "reference" or "topic" or "troubleshooting" or "glossentry"))
+        {
+            previous[root] = null;
+            queue.Enqueue(root);
+        }
+
+        while (queue.Count > 0)
+        {
+            var name = queue.Dequeue();
+            var node = catalog.CreateElement(name);
+            var count = DitaCatalog.ChildNames(node).Count;
+            for (var index = 0; index <= count; index++)
+            {
+                foreach (var candidate in catalog.InsertableAt(node, index))
+                {
+                    if (!previous.ContainsKey(candidate.Name))
+                    {
+                        previous[candidate.Name] = name;
+                        queue.Enqueue(candidate.Name);
+                    }
+                }
+            }
+        }
+
+        return previous;
+    });
+
+    // Путь от корня топика до элемента: корень → … → родитель → элемент; null — до него из корня не добраться.
+    private static List<string>? PathTo(string target)
+    {
+        var previous = ShortestPaths.Value;
+        if (!previous.ContainsKey(target))
+        {
+            return null;
+        }
+
+        var path = new List<string>();
+        for (var at = (string?)target; at is not null; at = previous[at])
+        {
+            path.Insert(0, at);
+        }
+
+        return path;
+    }
+
+    // Минимальный допустимый топик, в котором есть элемент target; null — до него из корня не добраться.
+    private static (DitaDocument Document, DitaNode Target)? DocumentWith(string target, string? parent = null)
+    {
+        var path = parent is null ? PathTo(target) : PathTo(parent) is { } toParent ? toParent.Append(target).ToList() : null;
+        if (path is null)
+        {
+            return null;
+        }
+
+        var root = DitaCatalog.Default.CreateElement(path[0]);
+        var current = root;
+        foreach (var name in path.Skip(1))
+        {
+            var child = current.ElementChildren().FirstOrDefault(c => c.Name == name);
+            if (child is null)
+            {
+                var count = DitaCatalog.ChildNames(current).Count;
+                for (var index = 0; index <= count && child is null; index++)
+                {
+                    child = EditCommands.InsertInto(current, name, index);
+                }
+
+                if (child is null)
+                {
+                    return null;
+                }
+            }
+
+            current = child;
+        }
+
+        return (new DitaDocument(root), current);
+    }
+
+    // Элементы, которых «Автор» не рисует отдельным блоком ни в каком из допустимых мест: раскладка таблицы (ею управляют команды таблицы,
+    // а ячейки выделяются сами), метаданные заголовка и части изображения/кода/фразовых элементов. Список закрытый: появление
+    // нового неотображаемого или неудаляемого блока ломает тест.
+    private static readonly string[] BlocksNotShownInAuthor =
+    {
+        "tgroup", "colspec", "thead", "row", "strow", "sthead", "chrow", "chhead", "property", "prophead",
+        "alt", "longdescref", "coderef", "navtitle", "searchtitle", "subtitle", "boolean", "state"
+    };
+
+    /// <summary>Д4: выделенный целиком блок удаляется клавишей Delete или Backspace — для каждого блочного элемента каталога, а не для
+    /// нескольких избранных. Ячейка таблицы очищается, но остаётся; Esc снимает выделение. Блок проверяется в первом допустимом
+    /// контексте, где «Автор» его рисует (по кратчайшему пути от корня, затем внутри каждого контейнера каталога).</summary>
+    [AvaloniaFact]
+    public void SelectedBlock_DeletedWithKey_ForEveryBlockElementOfCatalog()
+    {
+        var catalog = DitaCatalog.Default;
+        var checkedCount = 0;
+        var problems = new List<string>();
+        var notShown = new List<string>();
+        // Контексты, где блок может быть виден, если в кратчайшем (по пути от корня) он не рисуется.
+        var containers = new[] { "conbody", "refbody", "taskbody", "body", "section", "fig", "note", "li", "dd", "example", "p", "entry", "context", "info", "stepxmp" }
+            .Where(n => catalog.Get(n) is not null).ToList();
+        var names = catalog.Elements.Values.Where(e => e.Display is DisplayKind.Block or DisplayKind.Container or DisplayKind.Table or DisplayKind.Empty)
+            .Select(e => e.Name).Where(n => !catalog.TopicTypes.Any(t => t.Name == n)).OrderBy(n => n, StringComparer.Ordinal).ToList();
+        foreach (var name in names)
+        {
+            // Первый контекст, где блок виден: сначала кратчайший путь, потом внутри каждого контейнера.
+            AuthorView? author = null;
+            (DitaDocument Document, DitaNode Target)? built = null;
+            var anyContext = false;
+            foreach (var parent in new string?[] { null }.Concat(containers))
+            {
+                if (DocumentWith(name, parent) is not { } candidate)
+                {
+                    continue;
+                }
+
+                anyContext = true;
+                var view = new AuthorView();
+                view.Load(candidate.Document);
+                if (view.CanSelectBlock(candidate.Target))
+                {
+                    author = view;
+                    built = candidate;
+                    break;
+                }
+            }
+
+            if (!anyContext)
+            {
+                continue; // элемент не вставляется в топик (только в карту, метаданные, подсхему…)
+            }
+
+            if (built is null)
+            {
+                notShown.Add(name);
+                continue;
+            }
+
+            var (document, target) = built.Value;
+            var undo = new List<string>();
+            author!.BeforeStructuralEdit += (_, description) => undo.Add(description);
+            try
+            {
+                if (!author.SelectBlock(target))
+                {
+                    problems.Add($"<{name}>: показан, но рамки выделения нет");
+                    continue;
+                }
+
+                if (!ReferenceEquals(author.SelectedBlock, target))
+                {
+                    problems.Add($"<{name}>: после выделения SelectedBlock другой");
+                    continue;
+                }
+
+                var isCell = name is "entry" or "stentry";
+                // Клавиша — прямо в «Авторе» (без окна: раскладка для проверки не нужна).
+                author.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = name.Length % 2 == 0 ? Key.Delete : Key.Back });
+                checkedCount++;
+                if (isCell)
+                {
+                    if (target.Parent is null || target.Children.Count != 0)
+                    {
+                        problems.Add($"<{name}>: ячейка должна остаться пустой");
+                    }
+                }
+                else if (target.Parent is not null)
+                {
+                    problems.Add($"<{name}>: блок остался в документе");
+                }
+                else if (!undo.Any(u => u.Contains($"<{name}>")))
+                {
+                    problems.Add($"<{name}>: нет шага отмены «Удаление <{name}>» ({string.Join(", ", undo)})");
+                }
+
+                if (author.SelectedBlock is not null)
+                {
+                    problems.Add($"<{name}>: после удаления выделение не снято");
+                }
+            }
+            finally
+            {
+                author.Load(new DitaDocument(DitaCatalog.Default.CreateElement("concept"))); // освободить представления
+            }
+        }
+
+        Assert.True(checkedCount > 100, $"проверено блоков: {checkedCount}");
+        Assert.True(problems.Count == 0, "Не удаляются: " + string.Join("; ", problems));
+        Assert.True(notShown.Except(BlocksNotShownInAuthor).Count() == 0,
+            "Не показываются в «Авторе» и не внесены в список исключений: " + string.Join(", ", notShown.Except(BlocksNotShownInAuthor)));
+    }
+
+    /// <summary>Д4, как у пользователя: щелчок мышью по рамке или подписи блока выделяет его целиком (контур), Backspace или Delete
+    /// удаляют одним шагом отмены, Esc снимает выделение. Абзац, примечание, рисунок и XML-комментарий.</summary>
+    [AvaloniaFact]
+    public void ClickOnBlockFrame_ThenBackspace_DeletesBlock_EscCancels()
+    {
+        var (window, author, document, undo) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><p>Первый.</p><!-- служебный комментарий --><note><p>Внутри заметки.</p></note>" +
+            "<fig><title>Рис</title><image href=\"none.png\"/></fig><p>Последний.</p></conbody></concept>");
+        var body = document.Root.FirstElement("conbody")!;
+
+        void Click(Control control, double x, double y)
+        {
+            var point = control.TranslatePoint(new Point(x, y), window)!.Value;
+            window.MouseDown(point, Avalonia.Input.MouseButton.Left);
+            window.MouseUp(point, Avalonia.Input.MouseButton.Left);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        // Комментарий: щелчок по нему выделяет, Backspace удаляет.
+        var comment = body.Children.First(n => n.Kind == NodeKind.Comment);
+        var commentView = (Control)author.ViewFor(comment)!;
+        Click(commentView, 4, 4);
+        Assert.Same(comment, author.SelectedBlock);
+        Press(window, Key.Back, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.DoesNotContain(body.Children, n => n.Kind == NodeKind.Comment);
+        Assert.Null(author.SelectedBlock);
+
+        // Примечание: щелчок по рамке (не по тексту внутри) выделяет его целиком; Esc снимает выделение, блок цел.
+        var note = body.FirstElement("note")!;
+        var noteFrame = (Control)author.ViewFor(note)!;
+        Click(noteFrame, 2, 2);
+        Assert.Same(note, author.SelectedBlock);
+        Press(window, Key.Escape, RawInputModifiers.None);
+        Assert.Null(author.SelectedBlock);
+        Assert.NotNull(note.Parent);
+
+        // Рисунок: выделить и удалить клавишей Delete.
+        var fig = body.FirstElement("fig")!;
+        Assert.True(author.SelectBlock(fig));
+        Press(window, Key.Delete, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(fig.Parent);
+        Assert.Contains("Удаление <fig>", undo);
+
+        // Абзац после удалений остался и редактируется как прежде.
+        var last = body.ElementChildren().Last(n => n.Name == "p");
+        Assert.Equal("Последний.", last.InnerText);
+        Assert.NotNull(author.EditorFor(last));
+        window.Close();
+    }
+
     /// <summary>Д8: щелчок мышью в видимый текст внутри таблицы не прокручивает полосу «Автора»: курсор ставится куда указали,
     /// полоса остаётся на месте.</summary>
-    [AvaloniaFact(Skip = "Д8: ловушка, воспроизводится — полоса уезжает на ~170 px; включить после исправления (этап 2)")]
+    [AvaloniaFact]
     public void ScrollBar_StaysPut_WhenClickingTextInsideTable()
     {
         var paragraphs = string.Concat(Enumerable.Range(1, 40).Select(i => $"<p>Абзац номер {i}.</p>"));

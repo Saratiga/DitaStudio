@@ -291,6 +291,11 @@ public sealed class CefPreviewTests
             "<p>Без границ, пустое название:</p>" + Table("<title/>", " frame=\"none\" rowsep=\"0\" colsep=\"0\"") +
             "<p>Только горизонтальные линии, без названия:</p>" + Table("", " frame=\"topbot\" colsep=\"0\"") +
             "<p>Убрана линия под строкой и справа от столбца:</p>" + Table("<title>Выборочные линии</title>", " rowsep=\"0\"") +
+            "<p>Блоки внутри ячеек (Д9):</p><table><tgroup cols=\"2\"><thead><row><entry>Что</entry><entry>Подробно</entry></row></thead><tbody>" +
+            "<row><entry>Два абзаца</entry><entry><p>Первый абзац ячейки.</p><p>Второй абзац ячейки.</p></entry></row>" +
+            "<row><entry>Абзац и список</entry><entry><p>Вводная фраза.</p><ul><li>Пункт один</li><li>Пункт два</li></ul></entry></row>" +
+            "<row><entry>Текст и абзац</entry><entry>Текст прямо в ячейке<p>Абзац после текста.</p></entry></row>" +
+            "<row><entry>Примечание</entry><entry><note>Заметка внутри ячейки.</note></entry></row></tbody></tgroup></table>" +
             "<p>Длинная таблица:</p>" + Table("<title>Длинная</title>", "", 50) + "</conbody></concept>");
         await File.WriteAllTextAsync(Path.Combine(root, "m.ditamap"), "<map><title>Образцы</title><topicref href=\"t.dita\"/></map>");
         var project = new DitaProject(root);

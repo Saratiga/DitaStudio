@@ -350,7 +350,7 @@ public sealed class MainWindowTests : IDisposable
 
     /// <summary>Д13: две строки карты на один файл (после «Дублировать») — «Удалить файл» на одной не убирает вторую и не удаляет файл;
     /// файл уходит с диска, только когда ссылка на него последняя.</summary>
-    [AvaloniaFact(Skip = "Д13: ловушка, воспроизводится — удаляются обе строки и файл; включить после исправления (этап 2)")]
+    [AvaloniaFact]
     public async Task MapDeleteFile_WithDuplicatedRows_RemovesOnlySelectedRow_UntilLastReference()
     {
         var (window, vm) = await OpenAsync();
@@ -730,16 +730,29 @@ public sealed class MainWindowTests : IDisposable
         vm.Map.ExpandAllCommand.Execute(null);
         Assert.All(vm.Map.Tree[0].Children, n => Assert.True(n.IsExpanded));
 
-        // Удалить файл — с подтверждением; строки карты уходят, файл — с диска и из проекта.
+        // Удалить файл — с подтверждением. На no-start.dita две строки (оригинал и вставленная копия): первое удаление убирает одну
+        // выбранную строку, файл остаётся; последнее — и строку, и файл с диска, и из проекта.
         var file = Path.Combine(_project, "troubleshooting", "no-start.dita");
+        async Task DeleteSelectedAsync()
+        {
+            var deleting = vm.Map.DeleteFileCommand.ExecuteAsync(null);
+            Dispatcher.UIThread.RunJobs();
+            var confirm = Assert.Single(window.OwnedWindows);
+            confirm.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Да")
+                .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+            await deleting;
+        }
+
+        int NoStartRows() => MapRoot().DescendantsAndSelf().Count(n => n.GetAttribute("href")?.Contains("no-start") == true);
+        Assert.Equal(2, NoStartRows());
         vm.Map.SelectedNode = Row("no-start.dita");
-        var deleting = vm.Map.DeleteFileCommand.ExecuteAsync(null);
-        Dispatcher.UIThread.RunJobs();
-        var confirm = Assert.Single(window.OwnedWindows);
-        confirm.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Да")
-            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-        Dispatcher.UIThread.RunJobs();
-        await deleting;
+        await DeleteSelectedAsync();
+        Assert.Equal(1, NoStartRows());
+        Assert.True(File.Exists(file));
+        vm.Map.SelectedNode = Row("no-start.dita");
+        await DeleteSelectedAsync();
+        Assert.Equal(0, NoStartRows());
         Assert.False(File.Exists(file));
         Assert.Null(vm.Project!.FindFile(file));
         Assert.DoesNotContain(MapRoot().DescendantsAndSelf(), n => n.GetAttribute("href")?.Contains("no-start") == true);

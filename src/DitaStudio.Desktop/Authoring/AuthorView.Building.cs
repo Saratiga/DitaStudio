@@ -877,7 +877,7 @@ public sealed partial class AuthorView
     private static string FormatAttributes(DitaNode node) =>
         node.Attributes.Count == 0 ? string.Empty : " " + string.Join(" ", node.Attributes.Select(a => $"{a.Name}=\"{a.Value}\""));
 
-    private static Control BuildComment(DitaNode node)
+    private Control BuildComment(DitaNode node)
     {
         var text = new TextBlock { Text = "// " + node.Value.Trim(), FontSize = 11.5, TextWrapping = TextWrapping.Wrap };
         Themed(text, TextBlock.FontFamilyProperty, "MonoFont");
@@ -885,6 +885,7 @@ public sealed partial class AuthorView
 
         var border = new Border { Child = text, Margin = new Thickness(0, 3, 0, 3), Padding = new Thickness(6, 3, 6, 3) };
         Themed(border, Border.BackgroundProperty, "SurfaceAlt");
+        AttachSelection(border, node); // комментарий выделяется щелчком и удаляется клавишей, как любой блок
         return border;
     }
 

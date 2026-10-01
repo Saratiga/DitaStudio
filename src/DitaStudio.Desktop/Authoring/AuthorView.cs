@@ -469,17 +469,9 @@ public sealed partial class AuthorView : UserControl
             {
                 CurrentNode = node;
                 HighlightBorder(border);
-                // Таблица выделяется рамкой целиком и забирает клавиатуру: Delete удаляет её, Esc снимает выделение.
-                if (node.Name is "table" or "simpletable" or "properties" or "choicetable")
-                {
-                    SelectOutline(border);
-                    Focus();
-                }
-                else
-                {
-                    ClearOutline();
-                }
-
+                // Блок выделяется рамкой целиком и забирает клавиатуру: Delete и Backspace удаляют его, Esc снимает выделение.
+                SelectOutline(border);
+                Focus();
                 e.Handled = true;
             }
         });
@@ -557,22 +549,62 @@ public sealed partial class AuthorView : UserControl
     }
 
     /// <summary>Узел выделенной целиком таблицы (контур) или null.</summary>
-    public DitaNode? SelectedTable => _outlined?.Tag as DitaNode;
+    public DitaNode? SelectedTable => _outlined?.Tag is DitaNode { Name: "table" or "simpletable" or "properties" or "choicetable" } table ? table : null;
+
+    /// <summary>Узел выделенного целиком блока (контур вокруг него) или null: рисунок, примечание, абзац, таблица, список…</summary>
+    public DitaNode? SelectedBlock => _outlined?.Tag as DitaNode;
+
+    /// <summary>Выделяет блок целиком (контур, фокус на «Авторе»): дальше Delete и Backspace удаляют его, Esc снимает выделение.
+    /// false — у узла нет собственной рамки в «Авторе».</summary>
+    public bool SelectBlock(DitaNode node)
+    {
+        if (FindBlockBorder(node) is not { } border)
+        {
+            return false;
+        }
+
+        CurrentNode = node;
+        HighlightBorder(border);
+        SelectOutline(border);
+        Focus();
+        return true;
+    }
+
+    /// <summary>Есть ли у узла рамка, за которую его можно выделить целиком.</summary>
+    public bool CanSelectBlock(DitaNode node) => FindBlockBorder(node) is not null;
+
+    private Border? FindBlockBorder(DitaNode node)
+    {
+        var border = ViewFor(node) is { } view
+            ? (view as Border ?? view.GetLogicalDescendants().OfType<Border>().FirstOrDefault(b => ReferenceEquals(b.Tag, node)))
+            : null;
+        border ??= this.GetLogicalDescendants().OfType<Border>().FirstOrDefault(b => ReferenceEquals(b.Tag, node));
+        return border is not null && ReferenceEquals(border.Tag, node) ? border : null;
+    }
 
     protected override void OnKeyDown(Avalonia.Input.KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (e.Handled || _outlined?.Tag is not DitaNode table)
+        if (e.Handled || _outlined?.Tag is not DitaNode block)
         {
             return;
         }
 
-        // Выделена таблица целиком (а не текст в ячейке): Delete и Backspace удаляют её, Esc снимает выделение.
+        // Выделен блок целиком (а не текст в нём): Delete и Backspace удаляют его, Esc снимает выделение. У ячейки таблицы удаление
+        // очищает содержимое — сама ячейка остаётся, иначе строка потеряла бы столбец.
         if (e.Key is Avalonia.Input.Key.Delete or Avalonia.Input.Key.Back)
         {
             e.Handled = true;
-            CurrentNode = table;
-            Surface.DeleteCurrent();
+            CurrentNode = block;
+            ClearOutline(); // рамка осталась бы на уже удалённом блоке
+            if (block.Name is "entry" or "stentry")
+            {
+                ClearCell(block);
+            }
+            else
+            {
+                Surface.DeleteCurrent();
+            }
         }
         else if (e.Key == Avalonia.Input.Key.Escape)
         {

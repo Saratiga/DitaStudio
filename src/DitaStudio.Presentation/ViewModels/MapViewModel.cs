@@ -711,7 +711,11 @@ public partial class MapViewModel : ObservableObject
         }
     }
 
-    /// <summary>Удаляет файл топика с диска и все строки этой карты, которые на него ссылаются.</summary>
+    /// <summary>
+    /// «Удалить файл»: убирает **выбранную** строку карты, а файл топика удаляет с диска, только когда эта строка была последней
+    /// ссылкой на него (в этой карте и в других). Если на файл ссылаются другие строки (например, после «Дублировать»), уходит одна
+    /// выбранная — остальные строки и файл остаются.
+    /// </summary>
     [RelayCommand(CanExecute = nameof(SelectedHasFile))]
     private async Task DeleteFile()
     {
@@ -722,7 +726,45 @@ public partial class MapViewModel : ObservableObject
         }
 
         var target = Path.GetFullPath(file.FullPath);
-        var elsewhere = project.FindReferencesTo(target)
+        var pane = OpenMapPane();
+        var selectedRow = SelectedNode?.Item.Node;
+        var rows = pane is null
+            ? new List<DitaNode>()
+            : pane.Document.Root.DescendantsAndSelf()
+                .Where(n => n.Kind == NodeKind.Element && n.GetAttribute("href") is { } href && !RefResolver.IsExternal(href) &&
+                            RefResolver.Parse(map.FullPath, href).Path is { } path &&
+                            string.Equals(Path.GetFullPath(path), target, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        var references = project.FindReferencesTo(target);
+        var otherMapRows = references.Count(h => h.File.Kind == DitaDocumentKind.Map && h.Node.GetAttribute("href") is not null &&
+                                                 !string.Equals(h.File.FullPath, map.FullPath, StringComparison.OrdinalIgnoreCase));
+        var otherRowsHere = rows.Count(r => !ReferenceEquals(r, selectedRow));
+        var remaining = otherRowsHere + otherMapRows;
+        var rowTitle = SelectedNode?.Title ?? file.RelativePath;
+
+        if (remaining > 0)
+        {
+            // Дубликат или несколько строк на один файл: убираем только выбранную, файл остаётся.
+            if (!await _main.Dialogs.ConfirmAsync("Убрать строку из карты",
+                    $"Строка «{rowTitle}» будет убрана из карты. Файл {file.RelativePath} остаётся на диске: ссылок на него из карт — ещё {remaining}. " +
+                    "Файл будет удалён, когда вы уберёте последнюю ссылку на него командой «Удалить файл…»."))
+            {
+                return;
+            }
+
+            if (pane is not null && selectedRow is not null && rows.Contains(selectedRow))
+            {
+                pane.PushUndo("Удаление строки из карты");
+                RemoveMapRows(new[] { selectedRow });
+                AfterMapEdit(pane);
+            }
+
+            RebuildTree();
+            _main.StatusText = $"Строка «{rowTitle}» убрана из карты; файл {file.RelativePath} оставлен — ссылок на него из карт — ещё {remaining}.";
+            return;
+        }
+
+        var elsewhere = references
             .Where(h => !string.Equals(h.File.FullPath, map.FullPath, StringComparison.OrdinalIgnoreCase))
             .ToList();
         var warning = elsewhere.Count == 0
@@ -734,32 +776,11 @@ public partial class MapViewModel : ObservableObject
             return;
         }
 
-        if (OpenMapPane() is { } pane)
+        if (pane is not null && rows.Count > 0)
         {
-            var rows = pane.Document.Root.DescendantsAndSelf()
-                .Where(n => n.Kind == NodeKind.Element && n.GetAttribute("href") is { } href && !RefResolver.IsExternal(href) &&
-                            RefResolver.Parse(map.FullPath, href).Path is { } path &&
-                            string.Equals(Path.GetFullPath(path), target, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-            if (rows.Count > 0)
-            {
-                pane.PushUndo("Удаление файла из карты");
-                foreach (var row in rows)
-                {
-                    // Дочерние строки удаляемой не теряются — поднимаются на её место.
-                    var parent = row.Parent!;
-                    var index = parent.IndexOf(row);
-                    foreach (var child in row.ElementChildren().Where(c => c.Name is not "topicmeta").ToList())
-                    {
-                        child.RemoveSelf();
-                        parent.Insert(++index, child);
-                    }
-
-                    row.RemoveSelf();
-                }
-
-                AfterMapEdit(pane);
-            }
+            pane.PushUndo("Удаление файла из карты");
+            RemoveMapRows(rows);
+            AfterMapEdit(pane);
         }
 
         if (_main.ProjectPanel.DeleteFile(file) is { } error)
@@ -770,6 +791,23 @@ public partial class MapViewModel : ObservableObject
 
         RebuildTree();
         _main.StatusText = $"Файл {file.RelativePath} удалён.";
+    }
+
+    /// <summary>Убирает строки карты; дочерние строки удаляемой не теряются — поднимаются на её место.</summary>
+    private static void RemoveMapRows(IEnumerable<DitaNode> rows)
+    {
+        foreach (var row in rows)
+        {
+            var parent = row.Parent!;
+            var index = parent.IndexOf(row);
+            foreach (var child in row.ElementChildren().Where(c => c.Name is not "topicmeta").ToList())
+            {
+                child.RemoveSelf();
+                parent.Insert(++index, child);
+            }
+
+            row.RemoveSelf();
+        }
     }
 
     /// <summary>

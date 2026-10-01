@@ -380,6 +380,19 @@ public sealed partial class AuthorView
         RefreshChildren(anchor.Parent!, Array.Empty<DitaNode>(), focus);
     }
 
+    /// <summary>Очищает ячейку таблицы (Delete у выделенной ячейки): текст и блоки уходят, сама ячейка остаётся.</summary>
+    private void ClearCell(DitaNode cell)
+    {
+        BeforeStructuralEdit?.Invoke(this, "Очистка ячейки");
+        foreach (var child in cell.Children.ToList())
+        {
+            child.RemoveSelf();
+        }
+
+        Modified();
+        RebuildAround(cell, cell);
+    }
+
     /// <summary>Блок внутрь ячейки таблицы — после её текста.</summary>
     private void InsertIntoCell(DitaNode cell, string element)
     {

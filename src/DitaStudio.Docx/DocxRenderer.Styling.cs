@@ -340,10 +340,13 @@ public sealed partial class DocxRenderer
         return properties;
     }
 
-    /// <summary>Ячейка простой таблицы (simpletable, properties, choicetable).</summary>
-    private W.TableCell Cell(IEnumerable<OpenXmlElement> runs, bool isHeader, int column = -1)
+    /// <summary>Ячейка простой таблицы (simpletable, properties, choicetable) из готовых знаков — один абзац.</summary>
+    private W.TableCell Cell(IEnumerable<OpenXmlElement> runs, bool isHeader, int column = -1) =>
+        Cell(new OpenXmlCompositeElement[] { Para(isHeader ? DocxStyleCatalog.TableHeading : DocxStyleCatalog.TableText, runs) }, isHeader, column);
+
+    /// <summary>Ячейка простой таблицы из блоков (<see cref="CellBlocks"/>): абзацы, списки, примечания — каждый отдельно.</summary>
+    private W.TableCell Cell(IReadOnlyList<OpenXmlCompositeElement> blocks, bool isHeader, int column = -1)
     {
-        var paragraph = Para(isHeader ? DocxStyleCatalog.TableHeading : DocxStyleCatalog.TableText, runs);
         var properties = new W.TableCellProperties();
         if (CellWidth(column, 1) is { } width)
         {
@@ -355,7 +358,14 @@ public sealed partial class DocxRenderer
             properties.Append(shading);
         }
 
-        return properties.HasChildren ? new W.TableCell(properties, paragraph) : new W.TableCell(paragraph);
+        var cell = new W.TableCell();
+        if (properties.HasChildren)
+        {
+            cell.Append(properties);
+        }
+
+        cell.Append(blocks);
+        return cell;
     }
 
     /// <summary>Копии знаков для гиперссылки: знакам без своего стиля — стиль «Hyperlink».</summary>

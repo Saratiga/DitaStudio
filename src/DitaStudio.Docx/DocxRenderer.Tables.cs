@@ -261,32 +261,62 @@ public sealed partial class DocxRenderer
             props.Append(new W.TableCellVerticalAlignment { Val = W.TableVerticalAlignmentValues.Center });
         }
 
-        var runs = RenderInlineRuns(entry);
-        var paragraphProps = new List<OpenXmlElement>();
-        var align = entry.GetAttribute("align");
-        if (align is not null)
+        var blocks = CellBlocks(entry, isHeader);
+        if (entry.GetAttribute("align") is { } align)
         {
-            paragraphProps.Add(new W.Justification { Val = align switch
+            var justification = align switch
             {
                 "center" => W.JustificationValues.Center,
                 "right" => W.JustificationValues.Right,
                 "justify" => W.JustificationValues.Both,
                 _ => W.JustificationValues.Left
-            }});
+            };
+            foreach (var paragraph in blocks.OfType<W.Paragraph>())
+            {
+                EnsureParagraphProperties(paragraph).Justification = new W.Justification { Val = justification };
+            }
         }
 
-        W.Paragraph paragraph;
-        using (BlockScope(entry))
+        var cell = new W.TableCell(props);
+        cell.Append(blocks);
+        return cell;
+    }
+
+    /// <summary>
+    /// Содержимое ячейки таблицы. Только текст и фразовые элементы — один абзац стиля «текст таблицы» (или «заголовок таблицы» в
+    /// шапке). Если внутри есть блоки (<c>p</c>, <c>ul</c>, <c>note</c>…), каждый становится своим абзацем или списком, как вне таблицы:
+    /// текст, идущий до блока и между блоками, — абзацем стиля ячейки. Раньше всё вливалось в один абзац сплошным текстом. Последним
+    /// в ячейке по схеме OOXML всегда стоит абзац.
+    /// </summary>
+    private List<OpenXmlCompositeElement> CellBlocks(DitaNode cell, bool isHeader)
+    {
+        var textStyle = isHeader ? DocxStyleCatalog.TableHeading : DocxStyleCatalog.TableText;
+        var result = new List<OpenXmlCompositeElement>();
+        using (BlockScope(cell))
         {
-            paragraph = Para(isHeader ? DocxStyleCatalog.TableHeading : DocxStyleCatalog.TableText, runs);
+            if (!cell.ElementChildren().Any(c => Include(c) && !IsInlineElement(c)))
+            {
+                result.Add(Para(textStyle, RenderInlineRuns(cell)));
+                return result;
+            }
+
+            result.AddRange(RenderMixedChildren(cell, 5));
         }
 
-        foreach (var property in paragraphProps)
+        foreach (var paragraph in result.OfType<W.Paragraph>())
         {
-            EnsureParagraphProperties(paragraph).Append(property);
+            if (paragraph.ParagraphProperties?.ParagraphStyleId?.Val?.Value == DocxStyleCatalog.BodyText)
+            {
+                paragraph.ParagraphProperties.ParagraphStyleId.Val = textStyle;
+            }
         }
 
-        return new W.TableCell(props, paragraph);
+        if (result.Count == 0 || result[^1] is not W.Paragraph)
+        {
+            result.Add(new W.Paragraph());
+        }
+
+        return result;
     }
 
     private W.TableCell ContinuationCell(int col, int span)
@@ -346,10 +376,7 @@ public sealed partial class DocxRenderer
             var column = 0;
             foreach (var cell in head.ElementChildren().Where(c => headNames.Contains(c.Name)))
             {
-                using (BlockScope(cell))
-                {
-                    tr.Append(Cell(RenderInlineRuns(cell), isHeader: true, column++));
-                }
+                tr.Append(Cell(CellBlocks(cell, isHeader: true), isHeader: true, column++));
             }
 
             table.Append(tr);
@@ -377,10 +404,7 @@ public sealed partial class DocxRenderer
             var column = 0;
             foreach (var cell in row.ElementChildren().Where(c => rowNames.Contains(c.Name)))
             {
-                using (BlockScope(cell))
-                {
-                    tr.Append(Cell(RenderInlineRuns(cell), isHeader: false, column++));
-                }
+                tr.Append(Cell(CellBlocks(cell, isHeader: false), isHeader: false, column++));
             }
 
             table.Append(tr);

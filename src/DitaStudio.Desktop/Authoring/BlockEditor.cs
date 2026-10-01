@@ -120,10 +120,26 @@ public sealed class BlockEditor : TextEditor
                 EditCommitted?.Invoke(this, EventArgs.Empty);
             }
         };
-        // Внешняя полоса прокрутки следует за курсором: длинный абзац (много строк) и блоки далеко за экраном.
+        // Курсор, поставленный мышью, полосу прокрутки не двигает: место, куда щёлкнули, и так на экране, а прыжок из-за отступа
+        // от края (особенно в таблице, где блоки идут вплотную) мешает ставить курсор. Флаг держится, пока кнопка нажата.
+        TextArea.AddHandler(PointerPressedEvent, (_, _) => _pointerPlacesCaret = true, RoutingStrategies.Tunnel, handledEventsToo: true);
+        void EndPointerCaret() => Dispatcher.UIThread.Post(() => _pointerPlacesCaret = false, DispatcherPriority.Background);
+        TextArea.AddHandler(PointerReleasedEvent, (_, _) => EndPointerCaret(), RoutingStrategies.Tunnel, handledEventsToo: true);
+        TextArea.PointerCaptureLost += (_, _) => EndPointerCaret();
+        // При получении фокуса TextArea просит внешнюю область показать её целиком (весь блок, иногда выше экрана) — щелчок мышью
+        // из-за этого прокручивал полосу. Когда курсор ставят мышью, запрос гасится; с клавиатуры (Tab, стрелки) работает как раньше.
+        TextArea.AddHandler(RequestBringIntoViewEvent, (_, e) =>
+        {
+            if (_pointerPlacesCaret)
+            {
+                e.Handled = true;
+            }
+        }, RoutingStrategies.Bubble);
+
+        // Внешняя полоса прокрутки следует за курсором (клавиши, правка, переход в блок): длинный абзац и блоки далеко за экраном.
         TextArea.Caret.PositionChanged += (_, _) =>
         {
-            if (TextArea.IsFocused)
+            if (TextArea.IsFocused && !_pointerPlacesCaret)
             {
                 // После раскладки: сразу после правки текста размеры строк ещё прежние.
                 Dispatcher.UIThread.Post(ScrollCaretIntoView, DispatcherPriority.Loaded);
@@ -131,6 +147,8 @@ public sealed class BlockEditor : TextEditor
         };
         ActualThemeVariantChanged += (_, _) => TextArea.TextView.Redraw();
     }
+
+    private bool _pointerPlacesCaret;
 
     /// <summary>Элемент DITA, который редактируется (участок его содержимого — <see cref="Content"/>).</summary>
     public DitaNode Node => _content.Node;
