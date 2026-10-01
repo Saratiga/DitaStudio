@@ -9,7 +9,7 @@ Windows, Linux, macOS). Прежняя WPF-версия удалена (оста
 
 ```powershell
 dotnet build DitaStudio.sln -c Debug          # сборка
-dotnet test tests\DitaStudio.Tests          # ~860 проверок ядра (xUnit, 50 разделов)
+dotnet test tests\DitaStudio.Tests          # ~860 проверок ядра (xUnit, 51 раздел)
 dotnet run --project src/DitaStudio.Desktop    # запуск редактора (Avalonia, любая ОС)
 dotnet test tests/DitaStudio.Desktop.Tests     # интерфейс Avalonia (headless, работает и на Linux)
 ```
@@ -76,7 +76,10 @@ src/DitaStudio.Core/     ядро, не знает про интерфейс —
   IO/                    AtomicFile, FileStamp, RecoveryStore — защита от потери данных
   Schema/                каталог DITA 1.3, контент-модели, конечный автомат допустимости
   Validation/            проверка структуры, атрибутов, редакторского стиля
-  Project/               папка проекта, ditamap, ключи, conref/keyref, поиск
+  Project/               папка проекта, ditamap, ключи, conref/keyref, поиск. DitaProject — partial:
+                         DitaProject.cs (файлы, кэш документов, каталог), .Keys/.Search/.Validation;
+                         служебные .ditastudio-* — ProjectSettings (project.Settings; одноимённые члены
+                         DitaProject переадресуют туда)
   Publishing/            HTML-генератор, подписи, стили, печать в PDF
   Editing/               структурные операции и история отмены
   Templates/             заготовки новых документов
