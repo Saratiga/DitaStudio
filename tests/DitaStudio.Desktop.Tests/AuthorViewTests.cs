@@ -1139,6 +1139,177 @@ public sealed class AuthorViewTests
         }
     }
 
+    // Точка внутри блока (для протяжки и щелчков): левее центра, на середине высоты редактора.
+    private static Point InsideBlock(Window window, AuthorView author, DitaNode node) =>
+        author.EditorFor(node)!.TranslatePoint(new Point(60, author.EditorFor(node)!.Bounds.Height / 2), window)!.Value;
+
+    private static void DragMouse(Window window, Point from, params Point[] through)
+    {
+        window.MouseDown(from, Avalonia.Input.MouseButton.Left);
+        foreach (var point in through)
+        {
+            window.MouseMove(point, RawInputModifiers.LeftMouseButton);
+        }
+
+        window.MouseUp(through[^1], Avalonia.Input.MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>Д5а: протяжка мыши от текста одного блока к тексту другого (вниз и вверх) выделяет блоки целиком — рамками, а не текст;
+    /// Delete удаляет все одним шагом отмены, Esc снимает; протяжка внутри одного блока остаётся выделением текста.</summary>
+    [AvaloniaFact]
+    public void DragAcrossBlocks_SelectsWholeBlocks_DeleteRemovesAll_EscClears()
+    {
+        var (window, author, document, undo) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><p>Первый абзац.</p><p>Второй абзац.</p><p>Третий абзац.</p>" +
+            "<p>Четвёртый абзац.</p><p>Пятый абзац.</p></conbody></concept>");
+        var ps = Paragraphs(document);
+
+        // Вниз: со 2-го на 4-й.
+        DragMouse(window, InsideBlock(window, author, ps[1]), InsideBlock(window, author, ps[2]), InsideBlock(window, author, ps[3]));
+        Assert.Equal(new[] { ps[1], ps[2], ps[3] }, author.SelectedBlocks);
+        Assert.Null(author.SelectedBlock); // несколько блоков
+        Assert.All(author.Editors, e => Assert.True(e.TextArea.Selection.IsEmpty)); // текст не выделен — выделены блоки
+
+        // Вверх от другого блока: выделение заменяется, направление не важно.
+        DragMouse(window, InsideBlock(window, author, ps[4]), InsideBlock(window, author, ps[3]), InsideBlock(window, author, ps[2]));
+        Assert.Equal(new[] { ps[2], ps[3], ps[4] }, author.SelectedBlocks);
+
+        // Esc снимает; блоки на месте.
+        Press(window, Key.Escape, RawInputModifiers.None);
+        Assert.Empty(author.SelectedBlocks);
+        Assert.Equal(5, Paragraphs(document).Count);
+
+        // Протяжка внутри одного блока — выделение текста, блоки не выделяются.
+        var editor = author.EditorFor(ps[0])!;
+        var start = editor.TranslatePoint(new Point(40, editor.Bounds.Height / 2), window)!.Value;
+        DragMouse(window, start, new Point(start.X + 40, start.Y), new Point(start.X + 90, start.Y));
+        Assert.Empty(author.SelectedBlocks);
+        Assert.False(editor.TextArea.Selection.IsEmpty);
+
+        // Выделили 2–4 и удалили клавишей: один шаг отмены, остались 1-й и 5-й.
+        DragMouse(window, InsideBlock(window, author, ps[1]), InsideBlock(window, author, ps[2]), InsideBlock(window, author, ps[3]));
+        Assert.Equal(3, author.SelectedBlocks.Count);
+        Press(window, Key.Delete, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new[] { "Первый абзац.", "Пятый абзац." }, Paragraphs(document).Select(n => n.InnerText).ToArray());
+        Assert.Equal(1, undo.Count(u => u == "Удаление блоков: 3"));
+        Assert.Empty(author.SelectedBlocks);
+        window.Close();
+    }
+
+    /// <summary>Д5а: Shift+щелчок в другом блоке продолжает диапазон от текущего; протяжка от абзаца внутри заметки наружу берёт заметку
+    /// целиком; через границу ячеек таблицы блоки не выделяются (это выделение ячеек).</summary>
+    [AvaloniaFact]
+    public void ShiftClick_ExtendsRange_NestedBlocksTakeContainer_CellsAreNotBlocks()
+    {
+        var (window, author, document, _) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><p>Раз.</p><p>Два.</p><note><p>Внутри заметки.</p></note><p>Четыре.</p>" +
+            "<table><tgroup cols=\"2\"><tbody><row><entry>Левая</entry><entry>Правая</entry></row></tbody></tgroup></table></conbody></concept>");
+        var body = document.Root.FirstElement("conbody")!;
+        var ps = body.ElementChildren().Where(n => n.Name == "p").ToList(); // Раз, Два, Четыре
+        var note = body.FirstElement("note")!;
+        var inNote = note.FirstElement("p")!;
+
+        // Курсор в «Раз», Shift+щелчок в «Четыре» — диапазон из четырёх блоков (заметка целиком).
+        Focus(window, author, ps[0], 0);
+        var click = InsideBlock(window, author, ps[2]);
+        window.MouseDown(click, Avalonia.Input.MouseButton.Left, RawInputModifiers.Shift);
+        window.MouseUp(click, Avalonia.Input.MouseButton.Left, RawInputModifiers.Shift);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new DitaNode[] { ps[0], ps[1], note, ps[2] }, author.SelectedBlocks);
+        Press(window, Key.Escape, RawInputModifiers.None);
+
+        // Протяжка от абзаца внутри заметки к абзацу после неё: заметка (внешний блок) и «Четыре».
+        DragMouse(window, InsideBlock(window, author, inNote), InsideBlock(window, author, ps[2]));
+        Assert.Equal(new DitaNode[] { note, ps[2] }, author.SelectedBlocks);
+        Press(window, Key.Escape, RawInputModifiers.None);
+
+        // Из ячейки в соседнюю ячейку — блоки не выделяются.
+        var cells = body.FirstElement("table")!.DescendantsAndSelf().Where(n => n.Name == "entry").ToList();
+        DragMouse(window, InsideBlock(window, author, cells[0]), InsideBlock(window, author, cells[1]));
+        Assert.Empty(author.SelectedBlocks);
+        window.Close();
+    }
+
+    /// <summary>Д5б: «Обернуть в…» — те же окно и список, что у Enter, но только допустимые обёртки для выделенных блоков; результат — один шаг
+    /// отмены, блоки внутри нового элемента, он выделен. Enter у выделенных блоков открывает то же окно; без выделения — блок под курсором.</summary>
+    [AvaloniaFact]
+    public void WrapIn_OffersOnlyValidElements_WrapsSelectedBlocks_ViaPopupAndEnter()
+    {
+        var (window, author, document, undo) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><p>Первый.</p><p>Второй.</p><p>Третий.</p><ul><li>Один</li><li>Два</li></ul></conbody></concept>");
+        var body = document.Root.FirstElement("conbody")!;
+        var ps = Paragraphs(document);
+
+        // Выделили 2 и 3 абзацы; список вариантов — допустимые обёртки.
+        DragMouse(window, InsideBlock(window, author, ps[1]), InsideBlock(window, author, ps[2]));
+        Assert.Equal(2, author.SelectedBlocks.Count);
+        var options = author.WrapOptions();
+        Assert.Contains("note", options);
+        Assert.Contains("div", options);
+        Assert.Contains("section", options);
+        Assert.DoesNotContain("ul", options);
+        Assert.DoesNotContain("table", options);
+
+        // Enter открывает окно с тем же списком: фильтр, выбор, применение.
+        Press(window, Key.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        var popup = Assert.IsType<ElementSuggestions>(author.Suggestions);
+        Assert.True(popup.IsOpen);
+        Assert.Equal(options.OrderBy(n => n).ToList(), popup.Visible.Select(i => i.Element!).OrderBy(n => n).ToList());
+        popup.Filter("<note>");
+        Assert.Equal("note", popup.Visible[0].Element);
+        popup.Apply();
+        Dispatcher.UIThread.RunJobs();
+
+        var note = body.FirstElement("note")!;
+        Assert.Equal(new[] { "Второй.", "Третий." }, note.ElementChildren().Select(n => n.InnerText).ToArray());
+        Assert.Equal(new[] { "p", "note", "ul" }, body.ElementChildren().Select(n => n.Name).ToArray());
+        Assert.Equal(1, undo.Count(u => u == "Обернуть в <note>"));
+        Assert.Same(note, author.SelectedBlock); // обёртка выделена
+        Assert.Empty(new DitaStudio.Core.Validation.DitaValidator { CheckStyleRules = false }.Validate(document)
+            .Where(i => i.Severity == DitaStudio.Core.Validation.IssueSeverity.Error));
+
+        // Без выделения — блок под курсором: один абзац в div.
+        Press(window, Key.Escape, RawInputModifiers.None);
+        Focus(window, author, ps[0], 3);
+        Assert.True(author.WrapSelection("div"));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("div", body.ElementChildren().First().Name);
+        Assert.Equal("Первый.", body.ElementChildren().First().InnerText);
+
+        // Пункты списка: ни note, ни div — у списка другая модель.
+        author.SelectBlocks(body.FirstElement("ul")!.ElementChildren().First(), body.FirstElement("ul")!.ElementChildren().Last());
+        Assert.DoesNotContain("note", author.WrapOptions());
+        Assert.DoesNotContain("div", author.WrapOptions());
+        window.Close();
+    }
+
+    /// <summary>Снимки для глаз: выделенные протяжкой блоки, окно «Обернуть в…», результат.</summary>
+    [AvaloniaFact]
+    public void BlockSelection_Screenshots()
+    {
+        var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+        Directory.CreateDirectory(dir);
+        var (window, author, document, _) = Show(
+            "<concept id=\"c\"><title>Выделение блоков</title><conbody><p>Первый абзац остаётся как есть.</p>" +
+            "<p>Второй абзац попадёт в выделение.</p><ul><li>Пункт списка</li><li>Ещё пункт</li></ul>" +
+            "<p>Четвёртый абзац — тоже в выделении.</p><p>Последний абзац снаружи.</p></conbody></concept>");
+        var ps = Paragraphs(document);
+        DragMouse(window, InsideBlock(window, author, ps[1]), InsideBlock(window, author, ps[1]), InsideBlock(window, author, ps[2]));
+        window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "author-blocks-selected.png"));
+
+        Press(window, Key.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        author.Suggestions!.Filter("<note>");
+        window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "author-blocks-wrap-popup.png"));
+        author.Suggestions.Apply();
+        Dispatcher.UIThread.RunJobs();
+        window.CaptureRenderedFrame()!.Save(Path.Combine(dir, "author-blocks-wrapped.png"));
+        window.Close();
+    }
+
     /// <summary>Д4, как у пользователя: щелчок мышью по рамке или подписи блока выделяет его целиком (контур), Backspace или Delete
     /// удаляют одним шагом отмены, Esc снимает выделение. Абзац, примечание, рисунок и XML-комментарий.</summary>
     [AvaloniaFact]

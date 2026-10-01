@@ -90,6 +90,8 @@
                 <MenuItem Header="Переместить вверх" Command="{Binding Insert.MoveUpCommand}" InputGesture="Ctrl+Shift+Up" />
                 <MenuItem Header="Переместить вниз" Command="{Binding Insert.MoveDownCommand}" InputGesture="Ctrl+Shift+Down" />
                 <MenuItem Header="Удалить элемент" Command="{Binding Insert.DeleteElementCommand}" />
+                <MenuItem Name="WrapInMenu" Header="Обернуть в…" Click="OnWrapIn"
+                          ToolTip.Tip="Вложить выделенные блоки (или блок под курсором) в другой элемент: примечание, раздел, div… Список — только допустимые обёртки" />
                 <MenuItem Header="Переименовать id…" Command="{Binding Insert.RenameIdCommand}"
                           ToolTip.Tip="Обновляет ссылки (href, conref) на этот id по всему проекту" />
                 <MenuItem Header="Вынести в conref…" Command="{Binding Insert.ExtractToConrefCommand}"

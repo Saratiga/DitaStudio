@@ -405,6 +405,49 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         return true;
     }
 
+    /// <summary>Удаляет выделенные блоки (соседи одного родителя) одним шагом отмены.</summary>
+    public bool DeleteBlocks(IReadOnlyList<DitaNode> nodes)
+    {
+        if (Document is null || nodes.Count == 0 || nodes[0].Parent is not { } parent)
+        {
+            return false;
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit($"Удаление блоков: {nodes.Count}");
+        var focus = EditCommands.PreviousElement(nodes[0]) ?? parent;
+        foreach (var node in nodes)
+        {
+            EditCommands.Delete(node);
+        }
+
+        CurrentNode = null;
+        Changed(FirstEditable(focus), parent);
+        return true;
+    }
+
+    /// <summary>
+    /// Оборачивает диапазон детей <paramref name="parent"/> (индексы <paramref name="first"/>…<paramref name="last"/>) в новый элемент
+    /// <paramref name="name"/> одним шагом отмены. Null — обернуть нельзя.
+    /// </summary>
+    public DitaNode? WrapBlocks(DitaNode parent, int first, int last, string name)
+    {
+        if (Document is null)
+        {
+            return null;
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit($"Обернуть в <{name}>");
+        if (EditCommands.Wrap(parent, first, last, name) is not { } wrapper)
+        {
+            return null;
+        }
+
+        Changed(FirstEditable(wrapper), parent, wrapper);
+        return wrapper;
+    }
+
     public bool MoveCurrent(bool up)
     {
         if (Document is null || CurrentNode is null)

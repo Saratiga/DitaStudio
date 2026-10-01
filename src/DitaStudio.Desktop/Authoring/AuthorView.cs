@@ -46,6 +46,7 @@ public sealed partial class AuthorView : UserControl
 
     public AuthorView()
     {
+        InitializeBlockSelection();
         // Esc выключает кисть маркера раньше редактора блока (тот ловит Esc сам).
         AddHandler(Avalonia.Input.InputElement.KeyDownEvent, (_, e) =>
         {
@@ -518,48 +519,6 @@ public sealed partial class AuthorView : UserControl
         _currentBorder = border;
     }
 
-    // Выделенная целиком таблица: контур рамки вокруг неё.
-    private Border? _outlined;
-    private Thickness _outlinedThickness;
-    private IBrush? _outlinedBrush;
-    private IDisposable? _outlineBinding;
-
-    private void SelectOutline(Border border)
-    {
-        ClearOutline();
-        _outlined = border;
-        _outlinedThickness = border.BorderThickness;
-        _outlinedBrush = border.BorderBrush;
-        border.BorderThickness = new Thickness(2);
-        border.CornerRadius = new CornerRadius(3);
-        _outlineBinding = Themed(border, Border.BorderBrushProperty, "Accent");
-    }
-
-    private void ClearOutline()
-    {
-        if (_outlined is null)
-        {
-            return;
-        }
-
-        _outlineBinding?.Dispose();
-        _outlineBinding = null;
-        _outlined.BorderThickness = _outlinedThickness;
-        _outlined.BorderBrush = _outlinedBrush;
-        _outlined.CornerRadius = default;
-        _outlined = null;
-    }
-
-    internal void SelectTableOutline(Border border, DitaNode table)
-    {
-        CurrentNode = table;
-        SelectOutline(border);
-        Focus();
-    }
-
-    /// <summary>Узел выделенной целиком таблицы (контур) или null.</summary>
-    public DitaNode? SelectedTable => _outlined?.Tag is DitaNode { Name: "table" or "simpletable" or "properties" or "choicetable" } table ? table : null;
-
     // ---------------------------------------------------------------- кисть маркера
 
     private bool _markerPen;
@@ -603,68 +562,6 @@ public sealed partial class AuthorView : UserControl
         _activeEditor = editor;
         CurrentNode = editor.Node;
         Surface.ApplyTextFormat(TextFormatting.MarkPrefix, _markerPenToken);
-    }
-
-    /// <summary>Узел выделенного целиком блока (контур вокруг него) или null: рисунок, примечание, абзац, таблица, список…</summary>
-    public DitaNode? SelectedBlock => _outlined?.Tag as DitaNode;
-
-    /// <summary>Выделяет блок целиком (контур, фокус на «Авторе»): дальше Delete и Backspace удаляют его, Esc снимает выделение.
-    /// false — у узла нет собственной рамки в «Авторе».</summary>
-    public bool SelectBlock(DitaNode node)
-    {
-        if (FindBlockBorder(node) is not { } border)
-        {
-            return false;
-        }
-
-        CurrentNode = node;
-        HighlightBorder(border);
-        SelectOutline(border);
-        Focus();
-        return true;
-    }
-
-    /// <summary>Есть ли у узла рамка, за которую его можно выделить целиком.</summary>
-    public bool CanSelectBlock(DitaNode node) => FindBlockBorder(node) is not null;
-
-    private Border? FindBlockBorder(DitaNode node)
-    {
-        var border = ViewFor(node) is { } view
-            ? (view as Border ?? view.GetLogicalDescendants().OfType<Border>().FirstOrDefault(b => ReferenceEquals(b.Tag, node)))
-            : null;
-        border ??= this.GetLogicalDescendants().OfType<Border>().FirstOrDefault(b => ReferenceEquals(b.Tag, node));
-        return border is not null && ReferenceEquals(border.Tag, node) ? border : null;
-    }
-
-    protected override void OnKeyDown(Avalonia.Input.KeyEventArgs e)
-    {
-        base.OnKeyDown(e);
-        if (e.Handled || _outlined?.Tag is not DitaNode block)
-        {
-            return;
-        }
-
-        // Выделен блок целиком (а не текст в нём): Delete и Backspace удаляют его, Esc снимает выделение. У ячейки таблицы удаление
-        // очищает содержимое — сама ячейка остаётся, иначе строка потеряла бы столбец.
-        if (e.Key is Avalonia.Input.Key.Delete or Avalonia.Input.Key.Back)
-        {
-            e.Handled = true;
-            CurrentNode = block;
-            ClearOutline(); // рамка осталась бы на уже удалённом блоке
-            if (block.Name is "entry" or "stentry")
-            {
-                ClearCell(block);
-            }
-            else
-            {
-                Surface.DeleteCurrent();
-            }
-        }
-        else if (e.Key == Avalonia.Input.Key.Escape)
-        {
-            e.Handled = true;
-            Deselect();
-        }
     }
 
     private void ClearHighlight()

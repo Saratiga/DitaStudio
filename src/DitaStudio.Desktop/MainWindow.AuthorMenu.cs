@@ -44,6 +44,9 @@ public partial class MainWindow
                 items.Add(new Separator());
             }
 
+            var wrap = new MenuItem { Header = "Обернуть в…", IsEnabled = view.AuthorEditor.WrapOptions().Count > 0 };
+            wrap.Click += (_, _) => view.AuthorEditor.ShowWrapMenu();
+            items.Add(wrap);
             items.Add(BuildFormatMenu());
             items.Add(BuildInsertMenu());
         };

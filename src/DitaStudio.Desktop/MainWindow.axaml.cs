@@ -231,6 +231,16 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>«Структура → Обернуть в…»: окно допустимых обёрток для выделенных блоков или блока под курсором.</summary>
+    private void OnWrapIn(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel.Panes.Values.OfType<DocumentView>().FirstOrDefault(p => ReferenceEquals(p.Author, ViewModel.Current?.Author)) is not { } pane ||
+            !pane.AuthorEditor.ShowWrapMenu())
+        {
+            ViewModel.StatusText = "Выделите блоки (протяжкой мыши от блока к блоку) или поставьте курсор в блок — обернуть нечего или нет допустимых обёрток.";
+        }
+    }
+
     private bool _livePreview;
 
     /// <summary>Включён ли «Предпросмотр рядом с текстом»: относится ко всем документам окна, открытым и новым.</summary>

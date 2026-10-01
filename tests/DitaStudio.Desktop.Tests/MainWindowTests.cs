@@ -278,6 +278,31 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Д5б: пункт «Структура → Обернуть в…» открывает окно допустимых обёрток для выделенных блоков, а без блоков и без курсора
+    /// говорит, что обернуть нечего.</summary>
+    [AvaloniaFact]
+    public async Task WrapInMenu_OpensWrapPopup_ForSelectedBlocks()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var menu = window.GetLogicalDescendants().OfType<MenuItem>().First(i => i.Name == "WrapInMenu");
+        var body = pane.Document.Root.FirstElement("conbody")!;
+        var ps = body.ElementChildren().Where(n => n.Name == "p").Take(2).ToList();
+        Assert.True(pane.AuthorEditor.SelectBlocks(ps[0], ps[1]));
+        Dispatcher.UIThread.RunJobs();
+
+        menu.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        var popup = Assert.IsType<Desktop.Authoring.ElementSuggestions>(pane.AuthorEditor.Suggestions);
+        Assert.Contains(popup.Visible, i => i.Element == "note");
+        popup.Filter("<note>");
+        popup.Apply();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains(body.ElementChildren(), n => n.Name == "note" && n.ElementChildren().Count(c => c.Name == "p") == 2);
+        window.Close();
+    }
+
     /// <summary>Д3: команда «Маркер» — с выделением закрашивает, без — включает кисть (повтор выключает); «Другой цвет…» открывает окно
     /// выбора цвета; кнопка на панели подсвечена, пока кисть включена.</summary>
     [AvaloniaFact]
