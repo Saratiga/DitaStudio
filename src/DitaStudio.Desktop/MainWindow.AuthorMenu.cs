@@ -89,6 +89,10 @@ public partial class MainWindow
             new MenuItem { Header = "Объединить с ячейкой снизу", Command = insert.MergeCellDownCommand, InputGesture = new KeyGesture(Key.Down, KeyModifiers.Control | KeyModifiers.Alt) },
             Table("Разделить ячейку", TableOperation.SplitCell),
             new Separator(),
+            new MenuItem { Header = "Выделить строку", Command = insert.SelectTableRowCommand },
+            new MenuItem { Header = "Выделить столбец", Command = insert.SelectTableColumnCommand },
+            new MenuItem { Header = "Границы", ItemsSource = Authoring.AuthorView.BorderMenuItems((edges, _) => insert.SetCellBordersCommand.Execute(edges)) },
+            new Separator(),
             tableProperties
         };
     }
@@ -191,6 +195,14 @@ public partial class MainWindow
         items.Add(new Separator());
         items.Add(new MenuItem { Header = "Нет цвета", Command = ViewModel.Insert.SetMarkerCommand, CommandParameter = null });
         return items;
+    }
+
+    /// <summary>Меню «Границы» как в Word: у кнопки на панели и в «Структура → Таблица → Границы выделенных ячеек».</summary>
+    private void BuildCellBordersMenus()
+    {
+        List<Control> Items() => Authoring.AuthorView.BorderMenuItems((edges, _) => ViewModel.Insert.SetCellBordersCommand.Execute(edges));
+        CellBordersMenu.ItemsSource = Items();
+        CellBordersButton.Flyout = new MenuFlyout { ItemsSource = Items() };
     }
 
     /// <summary>Палитра кнопки «Маркер» на панели: цвета, «Другой цвет…», «Нет цвета» (с выделением снимает маркер, без — ластик).</summary>

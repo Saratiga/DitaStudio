@@ -182,7 +182,7 @@ public sealed partial class AuthorView : UserControl
             // Если за это время выделили блоки целиком (вставка, «Обернуть в…»), фокус в текст не забирается — иначе выделение сразу бы снялось.
             Dispatcher.UIThread.Post(() =>
             {
-                if (_outlines.Count == 0)
+                if (_outlines.Count == 0 && _cellTable is null)
                 {
                     editor.FocusEditor(caretOffset);
                 }
@@ -577,6 +577,7 @@ public sealed partial class AuthorView : UserControl
     private void ClearHighlight()
     {
         ClearOutline();
+        ClearCellSelection();
         _currentBorderBinding?.Dispose();
         _currentBorderBinding = null;
         if (_currentBorder is not null)
@@ -697,6 +698,20 @@ public sealed partial class AuthorView : UserControl
             editor.ApplyInlineClass(prefix, token);
             editor.TextArea.Focus();
             return true;
+        }
+
+        public override (DitaNode Table, DitaStudio.Core.Editing.CellRange Range)? CellSelection => _view.SelectedCells;
+
+        protected override void ReselectCells(DitaNode table, DitaStudio.Core.Editing.CellRange? range)
+        {
+            if (range is null)
+            {
+                _view.ClearCellSelection();
+            }
+            else
+            {
+                _view.SelectCellRange(table, range.Value, focus: true);
+            }
         }
 
         public override bool HasTextSelection => _view.HasTextSelection;

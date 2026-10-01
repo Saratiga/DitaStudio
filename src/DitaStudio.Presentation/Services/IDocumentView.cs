@@ -154,6 +154,23 @@ public interface IAuthorSurface
     /// <summary>Есть ли выделенный текст (в «Авторе» — внутри одного блока).</summary>
     bool HasTextSelection => false;
 
+    /// <summary>Выделены ли ячейки таблицы (прямоугольник, выбранный мышью): строки, столбцы, объединение, границы действуют на них.</summary>
+    bool HasCellSelection => false;
+
+    /// <summary>
+    /// Границы выделенных ячеек (или ячейки под курсором) как в меню «Границы» Word: выбранные стороны показываются, а если уже все есть —
+    /// убираются. Null — курсор не в CALS-таблице; true — применено; false — применено не полностью (край таблицы — только для всей длины).
+    /// </summary>
+    bool? SetCellBorders(DitaStudio.Core.Publishing.BorderEdges edges) => null;
+
+    /// <summary>Выделяет строку (столбец) таблицы, в которой курсор. false — курсор не в CALS-таблице.</summary>
+    bool SelectCurrentRow() => false;
+
+    bool SelectCurrentColumn() => false;
+
+    /// <summary>Очищает выделенные ячейки (содержимое уходит, ячейки остаются). false — ячейки не выделены.</summary>
+    bool ClearSelectedCells() => false;
+
     /// <summary>Включён ли режим «кисти» маркера: выделение текста мышью сразу закрашивается выбранным цветом (как в Word).</summary>
     bool MarkerPenActive => false;
 

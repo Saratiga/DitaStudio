@@ -101,6 +101,11 @@
                 <MenuItem Header="Объединить ячейку со строкой ниже" Command="{Binding Insert.MergeCellDownCommand}" InputGesture="Ctrl+Alt+Down" />
                 <MenuItem Header="Таблица">
                     <MenuItem Header="Выделить таблицу" Command="{Binding Insert.SelectTableCommand}" />
+                    <MenuItem Header="Выделить строку" Command="{Binding Insert.SelectTableRowCommand}"
+                              ToolTip.Tip="Ячейки строки выделяются прямоугольником: дальше строки, столбцы, объединение и границы действуют на них (то же — протяжкой мыши по ячейкам)" />
+                    <MenuItem Header="Выделить столбец" Command="{Binding Insert.SelectTableColumnCommand}" />
+                    <MenuItem Name="CellBordersMenu" Header="Границы выделенных ячеек (как в Word)"
+                              ToolTip.Tip="Границы выделенных ячеек или ячейки под курсором: нижняя, верхняя, левая, правая, внешние, внутренние…" />
                     <MenuItem Header="Удалить таблицу" Command="{Binding Insert.DeleteTableCommand}" />
                     <MenuItem Header="Границы">
                         <MenuItem Header="Все границы" Command="{Binding Insert.SetTableBordersCommand}" CommandParameter="{x:Static pub:TableBorderMode.All}" />
@@ -254,6 +259,9 @@
                 </Button>
                 <Button Classes="tool" Content="№" Command="{Binding Insert.ToggleNumberedParagraphCommand}" ToolTip.Tip="Нумерованный абзац: номер по заголовкам (2.3.1)" />
                 <Rectangle Classes="separator" />
+                <Button Classes="tool" Name="CellBordersButton" ToolTip.Tip="Границы выделенных ячеек (как в Word): нижняя, верхняя, левая, правая, внешние, внутренние…">
+                    <Path Classes="icon" Data="M1,2 H15 V14 H1 Z M8,2 V14 M1,8 H15" StrokeDashArray="2,1.5" />
+                </Button>
                 <Button Classes="tool" Command="{Binding Insert.InsertTableCommand}" ToolTip.Tip="Таблица…">
                     <Path Classes="icon" Data="M1,2 H15 V14 H1 Z M1,6 H15 M1,10 H15 M6,2 V14 M11,2 V14" />
                 </Button>

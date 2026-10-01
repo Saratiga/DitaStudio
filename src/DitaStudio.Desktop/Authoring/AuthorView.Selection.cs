@@ -161,7 +161,21 @@ public sealed partial class AuthorView
     {
         _dragEditor = null;
         _rangeDragging = false;
+        _cellDragging = false;
         var point = e.GetCurrentPoint(this);
+
+        // Правая кнопка на выделенных ячейках — меню действий над ними; на другой ячейке выделение снимается и работает обычное меню.
+        if (point.Properties.IsRightButtonPressed && _cellTable is not null)
+        {
+            if (IsOverSelectedCell(e.GetPosition(this)))
+            {
+                e.Handled = true;
+                ShowCellMenu();
+                return;
+            }
+
+            ClearCellSelection();
+        }
 
         // Правая кнопка внутри выделенных блоков — меню выделения (а не меню текста одного блока: оно сняло бы выделение).
         if (point.Properties.IsRightButtonPressed && _outlines.Count > 0 && IsOverOutlined(e.GetPosition(this)))
@@ -174,6 +188,18 @@ public sealed partial class AuthorView
         if (!point.Properties.IsLeftButtonPressed || (e.Source as Visual)?.FindAncestorOfType<BlockEditor>(includeSelf: true) is not { } editor)
         {
             return;
+        }
+
+        // Shift+щелчок в другой ячейке той же таблицы: прямоугольник от текущей (или выделенной) ячейки до этой.
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Shift) && CalsCellOf(editor.Node) is { } clicked && clicked.Closest("table") is { } clickedTable)
+        {
+            var from = _cellTable is not null ? SelectedCellEntries.FirstOrDefault() : CurrentNode is { } current ? CalsCellOf(current) : null;
+            if (from is not null && !ReferenceEquals(from, clicked) && ReferenceEquals(from.Closest("table"), clickedTable) &&
+                CellGrid.Of(clickedTable)?.RangeBetween(from, clicked) is { } cellRange && SelectCellRange(clickedTable, cellRange, focus: true))
+            {
+                e.Handled = true;
+                return;
+            }
         }
 
         // Shift+щелчок в другом блоке: диапазон от выделенного (или текущего) блока до этого.
@@ -196,6 +222,16 @@ public sealed partial class AuthorView
         }
 
         AutoScrollWhileDragging(e);
+
+        // Сначала ячейки таблицы: протяжка от ячейки к ячейке выделяет прямоугольник ячеек, а не блоки.
+        if (TryDragCells(e, start))
+        {
+            _rangeDragging = false;
+            ClearOutline();
+            e.Handled = true;
+            return;
+        }
+
         var target = EditorNear(e.GetPosition(this));
         var span = target is null || ReferenceEquals(target.Node, start.Node) ? null : BlockRanges.Between(start.Node, target.Node);
         if (span is null)
@@ -226,10 +262,11 @@ public sealed partial class AuthorView
 
     private void OnPointerReleasedForBlocks(object? sender, PointerReleasedEventArgs e)
     {
-        var finished = _rangeDragging;
+        var finished = _rangeDragging || _cellDragging;
         _dragEditor = null;
         _rangeDragging = false;
-        if (finished && _outlines.Count > 0)
+        _cellDragging = false;
+        if (finished && (_outlines.Count > 0 || _cellTable is not null))
         {
             Focus(); // клавиши (Delete, Esc, Enter) теперь относятся к выделенным блокам
         }
@@ -469,6 +506,24 @@ public sealed partial class AuthorView
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
+
+        // Выделены ячейки: Delete и Backspace очищают их, Esc снимает выделение.
+        if (!e.Handled && _cellTable is not null)
+        {
+            if (e.Key is Key.Delete or Key.Back)
+            {
+                e.Handled = true;
+                Surface.ClearSelectedCells();
+            }
+            else if (e.Key == Key.Escape)
+            {
+                e.Handled = true;
+                Deselect();
+            }
+
+            return;
+        }
+
         if (e.Handled || _outlines.Count == 0)
         {
             return;

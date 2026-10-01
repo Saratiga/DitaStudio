@@ -395,7 +395,7 @@ public static class EditCommands
     }
 
     /// <summary>Переносит содержимое одной ячейки в другую, разделяя пробелом, если обе непусты.</summary>
-    private static void MergeEntryContent(DitaNode target, DitaNode source)
+    internal static void MergeEntryContent(DitaNode target, DitaNode source)
     {
         var hasContent = target.Children.Any(c => c.Kind != NodeKind.Text || !string.IsNullOrWhiteSpace(c.Value));
         if (hasContent && source.Children.Count > 0)

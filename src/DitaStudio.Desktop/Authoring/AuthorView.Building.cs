@@ -64,7 +64,7 @@ public sealed partial class AuthorView
     private static readonly string[] ConditionAttributes = { "product", "audience", "platform", "props", "otherprops", "deliveryTarget" };
 
     // Классы, которые «Автор» показывает иначе (оформление текста, положение на листе, высота строки) — в пометку не попадают.
-    private static readonly string[] HiddenClassPrefixes = { "align-", "size-", "color-", "mark-", "row-height-", "place-", "page-break-" };
+    private static readonly string[] HiddenClassPrefixes = { "align-", "size-", "color-", "mark-", "frame-", "row-height-", "place-", "page-break-" };
 
     // Служебные атрибуты: идентификатор, пространства имён и «технический» class каталога — пользователю не интересны.
     private static readonly string[] ServiceAttributes = { "id", "class", "domains", "xtrf", "xtrc" };
@@ -676,6 +676,7 @@ public sealed partial class AuthorView
         editor.Focused += (_, _) =>
         {
             ClearOutline(); // курсор в тексте — выделение таблицы целиком снимается
+            ClearCellSelection();
             // Выделенный текст в других блоках при переходе сюда снимается — иначе выделений на экране несколько.
             foreach (var other in _order)
             {

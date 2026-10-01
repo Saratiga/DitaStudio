@@ -1394,6 +1394,183 @@ public sealed class AuthorViewTests
         window.Close();
     }
 
+    private const string CellTopic =
+        "<concept id=\"c\"><title>Т</title><conbody><p>До таблицы.</p><table><tgroup cols=\"3\">" +
+        "<colspec colname=\"c1\" colnum=\"1\"/><colspec colname=\"c2\" colnum=\"2\"/><colspec colname=\"c3\" colnum=\"3\"/>" +
+        "<thead><row><entry>Ш1</entry><entry>Ш2</entry><entry>Ш3</entry></row></thead><tbody>" +
+        "<row><entry>а1</entry><entry>б1</entry><entry>в1</entry></row><row><entry>а2</entry><entry>б2</entry><entry>в2</entry></row>" +
+        "<row><entry>а3</entry><entry>б3</entry><entry>в3</entry></row></tbody></tgroup></table><p>После таблицы.</p></conbody></concept>";
+
+    private static DitaNode CellAt(DitaDocument document, int row, int column) =>
+        document.Root.DescendantsAndSelf().First(n => n.Name == "table").DescendantsAndSelf().Where(n => n.Name == "row")
+            .ElementAt(row).ElementChildren().ElementAt(column);
+
+    /// <summary>Д10: протяжка мышью от ячейки к ячейке выделяет прямоугольник ячеек (подсветка, а не текст), Shift+щелчок продолжает,
+    /// возврат в начальную ячейку — снова текст; Delete очищает, Esc снимает.</summary>
+    [AvaloniaFact]
+    public void DragAcrossCells_SelectsRectangle_ShiftClickExtends_DeleteClears_EscCancels()
+    {
+        var (window, author, document, undo) = Show(CellTopic);
+        var table = document.Root.DescendantsAndSelf().First(n => n.Name == "table");
+
+        // От «а1» к «б2»: прямоугольник 2×2 (строки 1–2, столбцы 0–1 сетки: шапка — строка 0).
+        DragMouse(window, InsideBlock(window, author, CellAt(document, 1, 0)), InsideBlock(window, author, CellAt(document, 1, 1)), InsideBlock(window, author, CellAt(document, 2, 1)));
+        Assert.Equal(new DitaStudio.Core.Editing.CellRange(1, 2, 0, 1), author.SelectedCells!.Value.Range);
+        Assert.Same(table, author.SelectedCells!.Value.Table);
+        Assert.Equal(new[] { "а1", "б1", "а2", "б2" }, author.SelectedCellEntries.Select(c => c.InnerText).ToArray());
+        Assert.True(author.Surface.HasCellSelection);
+        Assert.All(author.Editors, e => Assert.True(e.TextArea.Selection.IsEmpty)); // текст не выделен
+        Assert.Empty(author.SelectedBlocks); // это не выделение блоков
+
+        // Протяжка вернулась в начальную ячейку — выделение ячеек снято, дальше выделяется текст.
+        author.ClearCellSelection();
+        var editor = author.EditorFor(CellAt(document, 1, 0))!;
+        var start = editor.TranslatePoint(new Point(10, editor.Bounds.Height / 2), window)!.Value;
+        DragMouse(window, start, new Point(start.X + 6, start.Y), new Point(start.X + 12, start.Y));
+        Assert.Null(author.SelectedCells);
+
+        // Shift+щелчок в другой ячейке: прямоугольник от текущей до неё.
+        Focus(window, author, CellAt(document, 1, 0), 0);
+        var click = InsideBlock(window, author, CellAt(document, 3, 2));
+        window.MouseDown(click, Avalonia.Input.MouseButton.Left, RawInputModifiers.Shift);
+        window.MouseUp(click, Avalonia.Input.MouseButton.Left, RawInputModifiers.Shift);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new DitaStudio.Core.Editing.CellRange(1, 3, 0, 2), author.SelectedCells!.Value.Range);
+        Assert.Equal(9, author.SelectedCellEntries.Count);
+
+        // Esc снимает выделение, ячейки целы.
+        Press(window, Key.Escape, RawInputModifiers.None);
+        Assert.Null(author.SelectedCells);
+        Assert.Equal("а1", CellAt(document, 1, 0).InnerText);
+
+        // Delete очищает выделенные ячейки (одна отмена), сами ячейки остаются.
+        DragMouse(window, InsideBlock(window, author, CellAt(document, 2, 1)), InsideBlock(window, author, CellAt(document, 3, 2)));
+        Assert.Equal(4, author.SelectedCellEntries.Count);
+        Press(window, Key.Delete, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new[] { "", "", "", "" }, new[] { CellAt(document, 2, 1), CellAt(document, 2, 2), CellAt(document, 3, 1), CellAt(document, 3, 2) }.Select(c => c.InnerText).ToArray());
+        Assert.Equal("а2", CellAt(document, 2, 0).InnerText);
+        Assert.Equal(1, undo.Count(u => u == "Очистка ячеек"));
+        Assert.NotNull(author.SelectedCells); // выделение остаётся на очищенных ячейках
+        window.Close();
+    }
+
+    /// <summary>Д10: действия над выделенными ячейками: строки и столбцы столько, сколько выделено; объединение; выравнивание — у всех;
+    /// меню по правой кнопке; выделение строки и столбца.</summary>
+    [AvaloniaFact]
+    public void SelectedCells_RowsColumnsMergeAlign_Menu()
+    {
+        var (window, author, document, undo) = Show(CellTopic);
+        var table = document.Root.DescendantsAndSelf().First(n => n.Name == "table");
+        int Rows() => table.DescendantsAndSelf().Count(n => n.Name == "row");
+        int Columns() => table.FirstElement("tgroup")!.ElementChildren().Count(n => n.Name == "colspec");
+
+        // Две строки выделены (а1…в2) — «вставить строку выше» даёт две.
+        Assert.True(author.SelectCellRange(table, new DitaStudio.Core.Editing.CellRange(1, 2, 0, 2)));
+        Assert.True(author.Surface.EditCurrentTable(DitaStudio.Core.Editing.TableOperation.InsertRowAbove));
+        Assert.Equal(6, Rows());
+        Assert.Equal("а1", CellAt(document, 3, 0).InnerText);
+        Assert.Null(author.SelectedCells); // строки сдвинулись — выделение снято
+
+        // Два столбца → два столбца слева.
+        Assert.True(author.SelectCellRange(table, new DitaStudio.Core.Editing.CellRange(0, 5, 1, 2)));
+        Assert.True(author.Surface.EditCurrentTable(DitaStudio.Core.Editing.TableOperation.InsertColumnLeft));
+        Assert.Equal(5, Columns());
+
+        // Удаление выделенных строк: две строки уходят.
+        Assert.True(author.SelectCellRange(table, new DitaStudio.Core.Editing.CellRange(1, 2, 0, 0)));
+        Assert.True(author.Surface.EditCurrentTable(DitaStudio.Core.Editing.TableOperation.DeleteRow));
+        Assert.Equal(4, Rows());
+        Assert.Equal("а1", CellAt(document, 1, 0).InnerText);
+
+        // Объединение 2×2 и выравнивание всех выбранных; шапка и тело — по отдельности.
+        var d2 = DitaStudio.Core.Model.DitaDocument.Parse(CellTopic);
+        var (w2, a2, doc2, undo2) = Show(CellTopic);
+        var t2 = doc2.Root.DescendantsAndSelf().First(n => n.Name == "table");
+        Assert.True(a2.SelectCellRange(t2, new DitaStudio.Core.Editing.CellRange(1, 2, 1, 2)));
+        Assert.True(a2.Surface.MergeCurrentCellRight());
+        Dispatcher.UIThread.RunJobs();
+        var merged = CellAt(doc2, 1, 1);
+        Assert.Equal("c2", merged.GetAttribute("namest"));
+        Assert.Equal("c3", merged.GetAttribute("nameend"));
+        Assert.Equal("1", merged.GetAttribute("morerows"));
+        Assert.Contains("б1", merged.InnerText);
+        Assert.Contains("в2", merged.InnerText);
+        Assert.Equal(1, undo2.Count(u => u == "Объединение выделенных ячеек"));
+        Assert.Single(a2.SelectedCellEntries); // выделена объединённая ячейка
+
+        Assert.True(a2.SelectCellRange(t2, new DitaStudio.Core.Editing.CellRange(3, 3, 0, 2)));
+        Assert.True(a2.Surface.SetCurrentBlockFormat(DitaStudio.Core.Publishing.TextFormatting.AlignPrefix, "align-center"));
+        Assert.All(new[] { CellAt(doc2, 3, 0), CellAt(doc2, 3, 1), CellAt(doc2, 3, 2) }, c => Assert.Equal("center", c.GetAttribute("align")));
+        Assert.True(a2.Surface.ClearSelectedCells());
+        Assert.All(new[] { CellAt(doc2, 3, 0), CellAt(doc2, 3, 1), CellAt(doc2, 3, 2) }, c => Assert.Equal(string.Empty, c.InnerText));
+
+        // Строка и столбец целиком.
+        a2.FocusNode(CellAt(doc2, 2, 0));
+        Assert.True(a2.Surface.SelectCurrentRow());
+        Assert.Equal(new DitaStudio.Core.Editing.CellRange(1, 2, 0, 2), a2.SelectedCells!.Value.Range); // объединённая ячейка 2×2 входит целиком
+        a2.FocusNode(CellAt(doc2, 3, 0));
+        Assert.True(a2.Surface.SelectCurrentRow());
+        Assert.Equal(new DitaStudio.Core.Editing.CellRange(3, 3, 0, 2), a2.SelectedCells!.Value.Range);
+        a2.FocusNode(CellAt(doc2, 3, 0));
+        Assert.True(a2.Surface.SelectCurrentColumn());
+        Assert.Equal(0, a2.SelectedCells!.Value.Range.Col0);
+        Assert.Equal(0, a2.SelectedCells!.Value.Range.Col1);
+
+        // Меню по правой кнопке: все пункты на месте, «Объединить» доступно только когда можно.
+        Assert.True(a2.SelectCellRange(t2, new DitaStudio.Core.Editing.CellRange(0, 0, 0, 1))); // две ячейки шапки
+        var menu = a2.BuildCellMenu();
+        var headers = menu.Items.OfType<MenuItem>().Select(i => i.Header as string).ToList();
+        foreach (var expected in new[] { "Вставить строку выше", "Вставить строку ниже", "Вставить столбец слева", "Вставить столбец справа", "Удалить строку", "Удалить столбцы: 2",
+                     "Объединить ячейки", "Разделить ячейку", "Очистить содержимое", "Выровнять", "Границы", "Выделить строку", "Выделить столбец", "Снять выделение" })
+        {
+            Assert.Contains(expected, headers);
+        }
+
+        Assert.True(menu.Items.OfType<MenuItem>().First(i => (string?)i.Header == "Объединить ячейки").IsEnabled);
+        Assert.False(menu.Items.OfType<MenuItem>().First(i => (string?)i.Header == "Разделить ячейку").IsEnabled);
+        var borders = menu.Items.OfType<MenuItem>().First(i => (string?)i.Header == "Границы").Items.OfType<MenuItem>().Select(i => i.Header as string).ToList();
+        Assert.Equal(new[] { "Нижняя граница", "Верхняя граница", "Левая граница", "Правая граница", "Нет границы", "Все границы", "Внешние границы", "Внутренние границы",
+            "Внутренняя горизонтальная граница", "Внутренняя вертикальная граница" }, borders);
+        w2.Close();
+        window.Close();
+        _ = d2;
+        _ = undo;
+    }
+
+    /// <summary>Снимки для глаз: выделенные ячейки (светлая и тёмная тема) и таблица с границами по сторонам.</summary>
+    [AvaloniaFact]
+    public void CellSelection_Screenshots()
+    {
+        var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+        Directory.CreateDirectory(dir);
+        foreach (var (theme, variant) in new[] { ("light", ThemeVariant.Light), ("dark", ThemeVariant.Dark) })
+        {
+            Application.Current!.RequestedThemeVariant = variant;
+            try
+            {
+                var (window, author, document, _) = Show(CellTopic);
+                window.Height = 420;
+                var table = document.Root.DescendantsAndSelf().First(n => n.Name == "table");
+                DragMouse(window, InsideBlock(window, author, CellAt(document, 1, 0)), InsideBlock(window, author, CellAt(document, 1, 1)), InsideBlock(window, author, CellAt(document, 2, 1)));
+                window.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"author-cells-selected-{theme}.png"));
+
+                // Границы как в Word: внешние линии выделения убраны, внутренние остались; верх таблицы целиком снят.
+                Assert.NotNull(author.Surface.SetCellBorders(DitaStudio.Core.Publishing.BorderEdges.Outer)); // левый край таблицы у части строк не снимается — false
+                author.SelectCellRange(table, new DitaStudio.Core.Editing.CellRange(0, 0, 0, 2));
+                author.Surface.SetCellBorders(DitaStudio.Core.Publishing.BorderEdges.Top);
+                author.ClearCellSelection();
+                Dispatcher.UIThread.RunJobs();
+                window.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"author-cells-borders-{theme}.png"));
+                window.Close();
+            }
+            finally
+            {
+                Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
+            }
+        }
+    }
+
     /// <summary>Снимки для глаз: выделенные протяжкой блоки, окно «Обернуть в…», результат.</summary>
     [AvaloniaFact]
     public void BlockSelection_Screenshots()

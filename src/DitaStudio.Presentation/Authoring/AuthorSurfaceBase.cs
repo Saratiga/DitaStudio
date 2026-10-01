@@ -13,7 +13,7 @@ namespace DitaStudio.Presentation.Authoring;
 /// текстом (<see cref="WrapCurrentInline"/>, <see cref="InsertInlineNode"/>) — его забота.
 /// Логика перенесена из WPF AuthorView.Commands без изменений.
 /// </summary>
-public abstract class AuthorSurfaceBase : IAuthorSurface
+public abstract partial class AuthorSurfaceBase : IAuthorSurface
 {
     public abstract DitaDocument? Document { get; }
 
@@ -484,12 +484,17 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         return true;
     }
 
-    public bool MergeCurrentCellRight() => MergeCell(EditCommands.MergeTableCellRight, "Объединение ячеек по горизонтали");
+    public bool MergeCurrentCellRight() => MergeSelectedCells() ?? MergeCell(EditCommands.MergeTableCellRight, "Объединение ячеек по горизонтали");
 
-    public bool MergeCurrentCellDown() => MergeCell(EditCommands.MergeTableCellDown, "Объединение ячеек по вертикали");
+    public bool MergeCurrentCellDown() => MergeSelectedCells() ?? MergeCell(EditCommands.MergeTableCellDown, "Объединение ячеек по вертикали");
 
     public bool EditCurrentTable(TableOperation operation)
     {
+        if (EditSelectedCells(operation) is { } handled)
+        {
+            return handled;
+        }
+
         if (Document is null || CurrentNode is null || TableCommands.CellOf(CurrentNode) is not { } cell ||
             TableCommands.TableOf(cell) is not { Parent: { } holder } table)
         {
@@ -549,6 +554,18 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
         if (Document is null || CurrentNode is null)
         {
             return false;
+        }
+
+        // Выделены ячейки (прямоугольник): выравнивание — у всех сразу.
+        if (prefix == TextFormatting.AlignPrefix && CellSelection is { } selected && CellGrid.Of(selected.Table) is { } selectedGrid)
+        {
+            var cells = selectedGrid.CellsIn(selected.Range).Select(c => c.Entry).ToList();
+            FlushPendingEdits();
+            BeforeStructuralEdit("Выравнивание ячеек");
+            TableRanges.SetAlign(cells, TextFormatting.Alignments.FirstOrDefault(a => a.Token == token).Css);
+            Changed(FirstEditable(cells[0]), selected.Table.Parent, selected.Table);
+            ReselectCells(selected.Table, selected.Range);
+            return true;
         }
 
         var node = CurrentNode;

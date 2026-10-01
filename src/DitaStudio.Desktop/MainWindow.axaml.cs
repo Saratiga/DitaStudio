@@ -78,6 +78,7 @@ public partial class MainWindow : Window
         ViewModel.Map.RevealRequested += OnMapRevealRequested;
         BuildColorPalette();
         BuildMarkerPalette();
+        BuildCellBordersMenus();
     }
 
     public MainViewModel ViewModel { get; }

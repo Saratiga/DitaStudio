@@ -90,6 +90,8 @@ public sealed class CoreTests
     [Fact] public void MarkerTests() => Run(CoreChecks.MarkerTests);
     [Fact] public void BlockRangeTests() => Run(CoreChecks.BlockRangeTests);
     [Fact] public void BlockClipboardTests() => Run(CoreChecks.BlockClipboardTests);
+    [Fact] public void TableRangeTests() => Run(CoreChecks.TableRangeTests);
+    [Fact] public void TableEdgesTests() => Run(CoreChecks.TableEdgesTests);
     [Fact]
     public void CellParagraphsDocxTests() => Run(CoreChecks.CellParagraphsDocxTests);
     [Fact] public void CssCascadeDocxTests() => Run(CoreChecks.CssCascadeDocxTests);

@@ -278,6 +278,100 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Д10/Д11: значки панели и меню окна действуют на выделенные ячейки; «Границы» как в Word — кнопка с меню, команда по стороне,
+    /// переключение (повтор убирает), края таблицы только для всей длины, а таблица без ячейки в фокусе сообщает об этом.</summary>
+    [AvaloniaFact]
+    public async Task CellSelection_Toolbar_EditTable_Merge_AndWordLikeBorders()
+    {
+        var (window, vm) = await OpenAsync();
+        File.WriteAllText(Path.Combine(_project, "cells.dita"),
+            "<concept id=\"cells\"><title>Ячейки</title><conbody><table><tgroup cols=\"4\">" +
+            string.Concat(Enumerable.Range(1, 4).Select(c => $"<colspec colname=\"c{c}\" colnum=\"{c}\"/>")) +
+            "<tbody>" + string.Concat(Enumerable.Range(1, 4).Select(r => "<row>" + string.Concat(Enumerable.Range(1, 4).Select(c => $"<entry>r{r}c{c}</entry>")) + "</row>")) +
+            "</tbody></tgroup></table></conbody></concept>");
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "cells.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var table = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "table");
+        DitaNode Cell(int r, int c) => table.DescendantsAndSelf().Where(n => n.Name == "row").ElementAt(r).ElementChildren().ElementAt(c);
+        Core.Publishing.CellBorders Of(int r, int c) => Core.Publishing.CalsBorders.Compute(table)[Cell(r, c)];
+
+        // Кнопка «Границы» на панели и пункт меню — меню как в Word.
+        var button = window.GetLogicalDescendants().OfType<Button>().First(b => b.Name == "CellBordersButton");
+        var flyout = Assert.IsType<MenuFlyout>(button.Flyout);
+        Assert.Equal(new[] { "Нижняя граница", "Верхняя граница", "Левая граница", "Правая граница", "Нет границы", "Все границы", "Внешние границы", "Внутренние границы",
+            "Внутренняя горизонтальная граница", "Внутренняя вертикальная граница" }, flyout.Items.OfType<MenuItem>().Select(i => i.Header as string).ToArray());
+        Assert.NotEmpty(window.GetLogicalDescendants().OfType<MenuItem>().First(i => i.Name == "CellBordersMenu").Items);
+
+        // Выделили две средние ячейки (строки 1–2, столбцы 1–2); «Внутренняя вертикальная граница» убирает линию между ними, повтор — возвращает.
+        Assert.True(pane.AuthorEditor.SelectCellRange(table, new Core.Editing.CellRange(1, 2, 1, 2)));
+        vm.Insert.SetCellBordersCommand.Execute(Core.Publishing.BorderEdges.InnerVertical);
+        Assert.False(Of(1, 1).Right);
+        Assert.False(Of(2, 1).Right);
+        Assert.True(Of(1, 2).Bottom); // горизонтальные не тронуты
+        Assert.Equal("Границы ячеек изменены.", vm.StatusText);
+        vm.Insert.SetCellBordersCommand.Execute(Core.Publishing.BorderEdges.InnerVertical);
+        Assert.True(Of(1, 1).Right);
+        Assert.NotNull(pane.AuthorEditor.SelectedCells); // выделение осталось
+
+        // Внешние границы выделения: убрать, потом вернуть; соседние линии согласованы.
+        vm.Insert.SetCellBordersCommand.Execute(Core.Publishing.BorderEdges.Outer);
+        Assert.False(Of(1, 1).Top);
+        Assert.False(Of(1, 1).Left);
+        Assert.False(Of(2, 2).Bottom);
+        Assert.False(Of(2, 2).Right);
+        Assert.False(Of(0, 1).Bottom);
+        Assert.True(Of(1, 1).Right); // внутренние линии остались
+        vm.Insert.SetCellBordersCommand.Execute(Core.Publishing.BorderEdges.Outer);
+        Assert.True(Of(1, 1).Top);
+        Assert.True(Of(2, 2).Bottom);
+
+        // Край таблицы — только для всей длины: верх двух ячеек не снять, о чём говорит строка состояния; весь верх — снимается.
+        Assert.True(pane.AuthorEditor.SelectCellRange(table, new Core.Editing.CellRange(0, 0, 0, 1)));
+        vm.Insert.SetCellBordersCommand.Execute(Core.Publishing.BorderEdges.Top);
+        Assert.Contains("всей стороны", vm.StatusText);
+        Assert.True(Of(0, 0).Top);
+        Assert.True(pane.AuthorEditor.SelectCellRange(table, new Core.Editing.CellRange(0, 0, 0, 3)));
+        vm.Insert.SetCellBordersCommand.Execute(Core.Publishing.BorderEdges.Top);
+        Assert.False(Of(0, 0).Top);
+        Assert.False(Of(0, 3).Top);
+        Assert.True(Of(0, 0).Left);
+        Assert.Equal("frame-bottom frame-left frame-right", table.GetAttribute("outputclass"));
+
+        // «Нет границы» убирает всё у ячеек выделения.
+        Assert.True(pane.AuthorEditor.SelectCellRange(table, new Core.Editing.CellRange(3, 3, 0, 1)));
+        vm.Insert.SetCellBordersCommand.Execute(Core.Publishing.BorderEdges.None);
+        // Внутренние линии (верх, право) убраны; край таблицы (низ, лево) у части стороны не снимается — об этом сказано.
+        Assert.False(Of(3, 0).Top);
+        Assert.False(Of(3, 0).Right);
+        Assert.True(Of(3, 0).Bottom);
+        Assert.True(Of(3, 0).Left);
+        Assert.Contains("всей стороны", vm.StatusText);
+
+        // Значки строк и столбцов действуют на выделенные ячейки: две выделенные строки — две новые выше; объединение прямоугольника.
+        Assert.True(pane.AuthorEditor.SelectCellRange(table, new Core.Editing.CellRange(1, 2, 0, 3)));
+        vm.Insert.EditTableCommand.Execute(Core.Editing.TableOperation.InsertRowAbove);
+        Assert.Equal(6, table.DescendantsAndSelf().Count(n => n.Name == "row"));
+        Assert.True(pane.AuthorEditor.SelectCellRange(table, new Core.Editing.CellRange(3, 4, 0, 1)));
+        vm.Insert.MergeCellRightCommand.Execute(null);
+        Assert.Equal("1", Cell(3, 0).GetAttribute("morerows"));
+        Assert.Equal("c2", Cell(3, 0).GetAttribute("nameend"));
+
+        // Выделить строку/столбец из меню.
+        pane.AuthorEditor.FocusNode(Cell(5, 3));
+        vm.Insert.SelectTableRowCommand.Execute(null);
+        Assert.Equal(5, pane.AuthorEditor.SelectedCells!.Value.Range.Row0);
+        pane.AuthorEditor.FocusNode(Cell(5, 3));
+        vm.Insert.SelectTableColumnCommand.Execute(null);
+        Assert.Equal(3, pane.AuthorEditor.SelectedCells!.Value.Range.Col0);
+
+        // Курсор не в таблице — сообщение, документ цел.
+        pane.AuthorEditor.ClearCellSelection();
+        pane.AuthorEditor.FocusNode(pane.Document.Root.FirstElement("title")!);
+        vm.Insert.SetCellBordersCommand.Execute(Core.Publishing.BorderEdges.All);
+        Assert.Contains("поставьте курсор в ячейку", vm.StatusText);
+        window.Close();
+    }
+
     /// <summary>Д5б: пункт «Структура → Обернуть в…» открывает окно допустимых обёрток для выделенных блоков, а без блоков и без курсора
     /// говорит, что обернуть нечего.</summary>
     [AvaloniaFact]

@@ -580,6 +580,50 @@ public partial class InsertViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Границы выделенных ячеек (или ячейки под курсором) как в меню «Границы» Word: выбранные стороны показываются, а если все уже есть —
+    /// убираются; «Нет границы» убирает все.
+    /// </summary>
+    [RelayCommand]
+    private void SetCellBorders(DitaStudio.Core.Publishing.BorderEdges edges)
+    {
+        switch (_main.Current?.Author.SetCellBorders(edges))
+        {
+            case null:
+                _main.StatusText = "Границы: поставьте курсор в ячейку или выделите ячейки обычной таблицы (CALS).";
+                return;
+            case false:
+                _main.StatusText = "Края таблицы заданы для всей стороны сразу: выделите всю строку или весь столбец. Линии между ячейками применены.";
+                break;
+            default:
+                _main.StatusText = "Границы ячеек изменены.";
+                break;
+        }
+
+        _main.Documents.RefreshAllTabTitles();
+        _main.RefreshAttributePanel?.Invoke();
+    }
+
+    /// <summary>Выделяет строку таблицы, в которой курсор (прямоугольник ячеек).</summary>
+    [RelayCommand]
+    private void SelectTableRow()
+    {
+        if (_main.Current?.Author.SelectCurrentRow() != true)
+        {
+            _main.StatusText = "Поставьте курсор в ячейку обычной таблицы.";
+        }
+    }
+
+    /// <summary>Выделяет столбец таблицы, в котором курсор.</summary>
+    [RelayCommand]
+    private void SelectTableColumn()
+    {
+        if (_main.Current?.Author.SelectCurrentColumn() != true)
+        {
+            _main.StatusText = "Поставьте курсор в ячейку обычной таблицы.";
+        }
+    }
+
     [RelayCommand]
     private void MergeCellRight()
     {
