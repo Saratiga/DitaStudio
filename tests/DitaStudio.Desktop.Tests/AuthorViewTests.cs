@@ -825,6 +825,61 @@ public sealed class AuthorViewTests
         window.Close();
     }
 
+    /// <summary>Д6: окно подсказки растягивается за любой из четырёх углов; за левый и верхний окно сдвигается так, чтобы
+    /// противоположный угол остался на месте; размер ограничен.</summary>
+    [AvaloniaFact]
+    public void ElementSuggestions_ResizesFromAnyCorner_KeepingOppositeCornerFixed()
+    {
+        var file = Path.Combine(Path.GetTempPath(), "DitaStudioPopup", Guid.NewGuid().ToString("N"), "suggestions-size.txt");
+        var previous = DitaStudio.Presentation.PopupSizeSettings.SettingsPath;
+        DitaStudio.Presentation.PopupSizeSettings.SettingsPath = file;
+        try
+        {
+            var (window, author, document, _) = Show();
+            var first = Paragraphs(document)[0];
+            Focus(window, author, first, InlineContent.FromNode(first).Length);
+            Press(window, Key.Enter, RawInputModifiers.None);
+            Dispatcher.UIThread.RunJobs();
+            var popup = author.Suggestions!;
+            var (w0, h0) = popup.ContentSize;
+
+            // Четыре ручки — по одной на угол.
+            var grips = Avalonia.LogicalTree.LogicalExtensions.GetLogicalDescendants(popup.Child!).OfType<Avalonia.Controls.Border>().Where(b => b.Tag is ElementSuggestions.PopupCorner).Select(b => (ElementSuggestions.PopupCorner)b.Tag!).ToList();
+            Assert.Equal(4, grips.Distinct().Count());
+
+            // Правый нижний: растёт вправо и вниз, окно не двигается.
+            var (offX, offY) = (popup.HorizontalOffset, popup.VerticalOffset);
+            popup.ResizeFromCorner(ElementSuggestions.PopupCorner.BottomRight, 40, 30);
+            Assert.Equal((w0 + 40, h0 + 30), popup.ContentSize);
+            Assert.Equal((offX, offY), (popup.HorizontalOffset, popup.VerticalOffset));
+
+            // Левый верхний: тянем угол влево и вверх — окно растёт и едет за углом.
+            popup.ResizeFromCorner(ElementSuggestions.PopupCorner.TopLeft, -50, -20);
+            Assert.Equal((w0 + 90, h0 + 50), popup.ContentSize);
+            Assert.Equal((offX - 50, offY - 20), (popup.HorizontalOffset, popup.VerticalOffset));
+
+            // Правый верхний: вправо растёт, вверх — растёт и едет вверх; левый нижний — наоборот.
+            popup.ResizeFromCorner(ElementSuggestions.PopupCorner.TopRight, 10, -10);
+            Assert.Equal((w0 + 100, h0 + 60), popup.ContentSize);
+            Assert.Equal((offX - 50, offY - 30), (popup.HorizontalOffset, popup.VerticalOffset));
+            popup.ResizeFromCorner(ElementSuggestions.PopupCorner.BottomLeft, -15, 5);
+            Assert.Equal((w0 + 115, h0 + 65), popup.ContentSize);
+            Assert.Equal((offX - 65, offY - 30), (popup.HorizontalOffset, popup.VerticalOffset));
+
+            // Предел размера: сжатие за левый верхний угол до минимума двигает окно только на фактическое изменение.
+            var before = (popup.HorizontalOffset, popup.VerticalOffset);
+            var applied = popup.ResizeFromCorner(ElementSuggestions.PopupCorner.TopLeft, 5000, 5000);
+            Assert.Equal(DitaStudio.Presentation.PopupSizeSettings.Clamp(0, 0), popup.ContentSize);
+            Assert.Equal((before.HorizontalOffset - applied.Width, before.VerticalOffset - applied.Height), (popup.HorizontalOffset, popup.VerticalOffset));
+            Assert.True(applied.Width < 0 && applied.Height < 0);
+            window.Close();
+        }
+        finally
+        {
+            DitaStudio.Presentation.PopupSizeSettings.SettingsPath = previous;
+        }
+    }
+
     /// <summary>Г2: окно подсказки элементов растягивается, а выбранный размер запоминается на следующий раз.</summary>
     [AvaloniaFact]
     public void ElementSuggestions_CanBeResized_AndRemembersSize()
@@ -1206,6 +1261,38 @@ public sealed class AuthorViewTests
 
         Assert.Equal("product: Альфа, Бета", AuthorView.AttributeNote(first));
         Assert.Null(AuthorView.AttributeNote(Paragraphs(document)[^1]));
+        window.Close();
+    }
+
+    /// <summary>Д12: серая пометка — у блока с любыми атрибутами (rev, status, conref…), кроме служебных, раскладки таблицы и классов оформления;
+    /// условные атрибуты — первыми, остальные по алфавиту, длинное значение обрезается.</summary>
+    [AvaloniaFact]
+    public void AttributeNotes_ShowAnyAttribute_ExceptServiceAndTableLayout()
+    {
+        var longValue = new string('в', 80);
+        var (window, author, document, _) = Show(
+            "<concept id=\"c\" xml:lang=\"ru\"><title>Т</title><conbody>" +
+            "<p id=\"x1\" xml:lang=\"en\" status=\"new\" rev=\"2\" importance=\"high\" product=\"A\" conref=\"other.dita#o/x\" outputclass=\"size-14 fancy\">Много атрибутов.</p>" +
+            "<p id=\"x2\">Только id.</p>" +
+            "<p translate=\"" + longValue + "\">Длинное значение.</p>" +
+            "<table frame=\"all\" colsep=\"1\"><tgroup cols=\"1\" align=\"left\"><tbody><row rowsep=\"0\"><entry colsep=\"0\" valign=\"top\">Ячейка</entry></row></tbody></tgroup></table>" +
+            "</conbody></concept>");
+        var ps = Paragraphs(document);
+        Assert.Equal("product: A · conref: other.dita#o/x · importance: high · rev: 2 · status: new · class: fancy", AuthorView.AttributeNote(ps[0]));
+        Assert.Null(AuthorView.AttributeNote(ps[1])); // id — служебный
+        var truncated = AuthorView.AttributeNote(ps[2])!;
+        Assert.Equal("translate: " + new string('в', 59) + "…", truncated);
+
+        // Раскладка таблицы (frame, colsep, rowsep, valign, align) пометок не даёт — ею управляют рамка и команды таблицы.
+        var table = document.Root.DescendantsAndSelf().First(n => n.Name == "table");
+        foreach (var node in table.DescendantsAndSelf().Where(n => n.Kind == NodeKind.Element))
+        {
+            Assert.Null(AuthorView.AttributeNote(node));
+        }
+
+        var notes = window.GetVisualDescendants().OfType<TextBlock>().Where(t => Equals(t.Tag, "attribute-note")).Select(t => t.Text).ToList();
+        Assert.Equal(2, notes.Count);
+        Assert.StartsWith("product: A", notes[0]);
         window.Close();
     }
 

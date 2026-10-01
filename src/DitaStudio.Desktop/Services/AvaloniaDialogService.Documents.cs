@@ -155,7 +155,7 @@ public sealed partial class AvaloniaDialogService
 
         XrefResult? result = null;
         var root = new DockPanel { Margin = new Thickness(16) };
-        var window = Shell("Вставить ссылку", root, 560, 520);
+        var window = Shell("Вставить ссылку", root, 560, 520, autoHeight: false);
         var buttons = Buttons(window, () =>
         {
             if (list.SelectedItem is ProjectFile file)
@@ -164,6 +164,7 @@ public sealed partial class AvaloniaDialogService
                 result = new XrefResult(file, doc?.Id, (text.Text ?? string.Empty).Trim());
             }
         }, "Вставить");
+        AcceptOnDoubleTap(list, buttons);
 
         DockPanel.SetDock(filter, Dock.Top);
         DockPanel.SetDock(buttons, Dock.Bottom);
@@ -317,7 +318,7 @@ public sealed partial class AvaloniaDialogService
         panel.Children.Add(scroller);
 
         List<List<RelTableCell>>? result = null;
-        var window = Shell("Таблица соответствий", panel, 640, 560);
+        var window = Shell("Таблица соответствий", panel, 640, 560, autoHeight: false);
         panel.Children.Add(Buttons(window, () => result = rows));
         return await ShowAsync(window) ? result : null;
     }
@@ -424,7 +425,7 @@ public sealed partial class AvaloniaDialogService
         }
 
         ExtractToConrefResult? result = null;
-        var window = Shell("Вынести в conref", root, 520, 560);
+        var window = Shell("Вынести в conref", root, 520, 560, autoHeight: false);
         var buttons = Buttons(window, () =>
         {
             var id = (idBox.Text ?? string.Empty).Trim();

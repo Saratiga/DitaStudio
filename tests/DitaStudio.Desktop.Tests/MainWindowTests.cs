@@ -278,6 +278,76 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Д2: в окне-списке двойной щелчок по строке сразу выбирает её (без «ОК»); щелчок мимо строки и один щелчок — нет.</summary>
+    [AvaloniaFact]
+    public async Task PickOneDialog_DoubleTapOnRow_ChoosesItWithoutOk()
+    {
+        var (window, vm) = await OpenAsync();
+        var picking = vm.Dialogs.PickOneAsync("Выбор", "Что сделать?", new[] { "Создать файл", "Выбрать другой файл", "Убрать строку" }, s => s);
+        Dispatcher.UIThread.RunJobs();
+        var dialog = Assert.Single(window.OwnedWindows);
+        var list = dialog.GetLogicalDescendants().OfType<ListBox>().First();
+        var rows = list.GetLogicalDescendants().OfType<ListBoxItem>().ToList();
+        Assert.Equal(3, rows.Count);
+
+        // Мимо строки — окно остаётся.
+        list.RaiseEvent(new Avalonia.Input.TappedEventArgs(Avalonia.Input.InputElement.DoubleTappedEvent, null!) { Source = list });
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(picking.IsCompleted);
+
+        // По второй строке — она и выбрана, окно закрыто.
+        list.SelectedIndex = 1;
+        rows[1].RaiseEvent(new Avalonia.Input.TappedEventArgs(Avalonia.Input.InputElement.DoubleTappedEvent, null!) { Source = rows[1] });
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("Выбрать другой файл", await picking);
+        window.Close();
+    }
+
+    /// <summary>Д1: высота окон-диалогов подбирается под содержимое — кнопки целиком в окне, даже когда текст длинный (окно «Топик не найден»).</summary>
+    [AvaloniaFact]
+    public async Task Dialogs_FitHeightToContent_ButtonsAlwaysVisible()
+    {
+        var (window, vm) = await OpenAsync();
+        var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+        Directory.CreateDirectory(dir);
+
+        void CheckFits(string name, Window dialog)
+        {
+            Dispatcher.UIThread.RunJobs();
+            var ok = dialog.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string is "ОК" or "Вставить" or "Закрыть");
+            var bottom = ok.TranslatePoint(new Point(ok.Bounds.Width, ok.Bounds.Height), dialog)!.Value.Y;
+            var client = dialog.Bounds.Height;
+            Assert.True(bottom <= client + 0.5, $"{name}: кнопка «{ok.Content}» ниже окна ({bottom:0} > {client:0})");
+            dialog.CaptureRenderedFrame()?.Save(Path.Combine(dir, $"dialog-fit-{name}.png"));
+            dialog.Close(false);
+        }
+
+        // Как на снимке из замечания: длинный путь в сообщении и список вариантов.
+        var longPath = @"C:\Users\Пользователь\Desktop\otp\DITA\РП_208_308_DITA\3_Описание_счетчика_и_принципы_его_работы\3_opisanie_schetchika_i_principi_ego_raboti.dita";
+        _ = vm.Dialogs.PickOneAsync("Топик не найден",
+            $"Файл не найден: {longPath} (href=\"3_Описание/3_opisanie_schetchika.dita\" в карте rykovodstvo.ditamap). Создайте файл по ссылке, выберите другой файл или уберите строку из карты (правая кнопка мыши по строке).\n\nЧто сделать со строкой «3_Описание_счетчика_и_принципы_его_работы/3_opisanie_schetchika_i_principi_ego_raboti.dita»?",
+            new[] { "Создать файл по ссылке", "Выбрать другой файл…", "Убрать строку из карты" }, x => x);
+        Dispatcher.UIThread.RunJobs();
+        CheckFits("pick-one-long", Assert.Single(window.OwnedWindows));
+
+        _ = vm.Dialogs.PublishConditionsAsync(vm.Project!, null);
+        Dispatcher.UIThread.RunJobs();
+        CheckFits("conditions", Assert.Single(window.OwnedWindows));
+
+        _ = vm.Dialogs.EditProductsAsync(vm.Project!);
+        Dispatcher.UIThread.RunJobs();
+        CheckFits("products", Assert.Single(window.OwnedWindows));
+
+        _ = vm.Dialogs.InsertTableAsync();
+        Dispatcher.UIThread.RunJobs();
+        CheckFits("insert-table", Assert.Single(window.OwnedWindows));
+
+        _ = vm.Dialogs.AboutAsync();
+        Dispatcher.UIThread.RunJobs();
+        CheckFits("about", Assert.Single(window.OwnedWindows));
+        window.Close();
+    }
+
     /// <summary>Д13: две строки карты на один файл (после «Дублировать») — «Удалить файл» на одной не убирает вторую и не удаляет файл;
     /// файл уходит с диска, только когда ссылка на него последняя.</summary>
     [AvaloniaFact(Skip = "Д13: ловушка, воспроизводится — удаляются обе строки и файл; включить после исправления (этап 2)")]

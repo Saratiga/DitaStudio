@@ -66,23 +66,61 @@ public sealed partial class AuthorView
     // Классы, которые «Автор» показывает иначе (оформление текста, положение на листе, высота строки) — в пометку не попадают.
     private static readonly string[] HiddenClassPrefixes = { "align-", "size-", "color-", "row-height-", "place-", "page-break-" };
 
-    /// <summary>Текст серой пометки: «product: Альфа, Бета · class: warning-box»; null — у элемента нечего показывать.</summary>
+    // Служебные атрибуты: идентификатор, пространства имён и «технический» class каталога — пользователю не интересны.
+    private static readonly string[] ServiceAttributes = { "id", "class", "domains", "xtrf", "xtrc" };
+
+    // Раскладка таблицы (CALS) и простой таблицы: ею управляют команды и рамка таблицы в «Авторе», в пометки она не попадает.
+    private static readonly string[] TableLayoutAttributes =
+    {
+        "cols", "colname", "colnum", "colwidth", "colsep", "rowsep", "frame", "namest", "nameend", "spanname", "morerows",
+        "align", "valign", "char", "charoff", "scale", "pgwide", "rowheader", "keycol", "relcolwidth", "orient", "tabstyle", "tocentry", "shortdesc"
+    };
+
+    private const int NoteValueLimit = 60;
+
+    /// <summary>
+    /// Текст серой пометки у блока с атрибутами: «product: Альфа, Бета · rev: 2 · class: warning-box». Условные атрибуты — первыми,
+    /// остальные по алфавиту, классы оформления (<c>outputclass</c>) — в конце. Не показываются служебные атрибуты, раскладка
+    /// таблицы и классы, которые «Автор» рисует иначе. null — у элемента нечего показывать.
+    /// </summary>
     public static string? AttributeNote(DitaNode node)
     {
         var parts = new List<string>();
+        void Add(string name, string value)
+        {
+            var tokens = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            if (tokens.Length == 0)
+            {
+                return;
+            }
+
+            var text = ConditionAttributes.Contains(name) ? string.Join(", ", tokens) : string.Join(" ", tokens);
+            parts.Add($"{name}: {(text.Length > NoteValueLimit ? text[..(NoteValueLimit - 1)] + "…" : text)}");
+        }
+
         foreach (var name in ConditionAttributes)
         {
-            if (node.GetAttribute(name) is { } value && !string.IsNullOrWhiteSpace(value))
+            if (node.GetAttribute(name) is { } value)
             {
-                parts.Add($"{name}: {string.Join(", ", value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))}");
+                Add(name, value);
             }
+        }
+
+        var others = node.Attributes
+            .Where(a => !ConditionAttributes.Contains(a.Name) && a.Name != "outputclass" && !ServiceAttributes.Contains(a.Name) &&
+                        !TableLayoutAttributes.Contains(a.Name) && !a.Name.StartsWith("xml:", StringComparison.Ordinal) &&
+                        !a.Name.StartsWith("xmlns", StringComparison.Ordinal) && !a.Name.StartsWith("ditaarch:", StringComparison.Ordinal))
+            .OrderBy(a => a.Name, StringComparer.Ordinal);
+        foreach (var attribute in others)
+        {
+            Add(attribute.Name, attribute.Value);
         }
 
         var classes = (node.GetAttribute("outputclass") ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
             .Where(token => !HiddenClassPrefixes.Any(prefix => token.StartsWith(prefix, StringComparison.Ordinal))).ToList();
         if (classes.Count > 0)
         {
-            parts.Add("class: " + string.Join(" ", classes));
+            Add("class", string.Join(" ", classes));
         }
 
         return parts.Count == 0 ? null : string.Join(" · ", parts);

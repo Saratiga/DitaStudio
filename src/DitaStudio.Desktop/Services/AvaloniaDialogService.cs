@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Avalonia.Layout;
 using Avalonia.Media;
 using DitaStudio.Core.Schema;
@@ -27,16 +29,43 @@ public sealed partial class AvaloniaDialogService : IDialogService
 
     // ------------------------------------------------------------ каркас окна
 
-    private static Window Shell(string title, Control content, double width = 460, double height = 320) => new()
+    /// <summary>
+    /// Окно диалога. По умолчанию (<paramref name="autoHeight"/>) высота подбирается под содержимое: окно ровно такой высоты, чтобы
+    /// были видны все поля и кнопки, но не выше рабочей области экрана (дальше — полоса прокрутки). <paramref name="width"/> — ширина;
+    /// <paramref name="height"/> — высота только для окон с растягиваемым содержимым (<paramref name="autoHeight"/> = false: список или
+    /// вкладки на всё окно — у них собственной высоты нет).
+    /// </summary>
+    private static Window Shell(string title, Control content, double width = 460, double height = 320, bool autoHeight = true)
     {
-        Title = title,
-        Width = width,
-        Height = height,
-        WindowStartupLocation = WindowStartupLocation.CenterOwner,
-        CanResize = true,
-        ShowInTaskbar = false,
-        Content = content
-    };
+        var window = new Window
+        {
+            Title = title,
+            Width = width,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = true,
+            ShowInTaskbar = false
+        };
+
+        if (!autoHeight)
+        {
+            window.Height = height;
+            window.Content = content;
+            return window;
+        }
+
+        window.SizeToContent = SizeToContent.Height;
+        window.MaxHeight = 900;
+        window.Content = content as ScrollViewer ?? new ScrollViewer { Content = content, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        window.Opened += (_, _) =>
+        {
+            // Выше рабочей области экрана окно не бывает: лишнее прокручивается.
+            if (window.Screens.ScreenFromWindow(window) is { } screen)
+            {
+                window.MaxHeight = Math.Max(240, screen.WorkingArea.Height / window.RenderScaling * 0.92);
+            }
+        };
+        return window;
+    }
 
     /// <summary>Показывает окно модально над главным; true — нажата основная кнопка.</summary>
     private async Task<bool> ShowAsync(Window window)
@@ -79,6 +108,24 @@ public sealed partial class AvaloniaDialogService : IDialogService
         panel.Children.Add(ok);
         panel.Children.Add(cancel);
         return panel;
+    }
+
+    /// <summary>
+    /// Двойной щелчок по строке списка = выбрать её и нажать «ОК» (кнопка по умолчанию из <paramref name="buttons"/>): не нужно
+    /// сначала выделять строку, а потом тянуться к кнопке. Щелчок мимо строки (полоса прокрутки, пустое место) ничего не делает.
+    /// </summary>
+    private static void AcceptOnDoubleTap(ListBox list, Panel buttons)
+    {
+        list.DoubleTapped += (_, e) =>
+        {
+            if (list.SelectedItem is null || (e.Source as Visual)?.FindAncestorOfType<ListBoxItem>(includeSelf: true) is null)
+            {
+                return;
+            }
+
+            buttons.Children.OfType<Button>().FirstOrDefault(b => b.IsDefault)?.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            e.Handled = true;
+        };
     }
 
     private static Button CloseButton(Window window)
@@ -224,7 +271,9 @@ public sealed partial class AvaloniaDialogService : IDialogService
 
         T? result = null;
         var window = Shell(title, panel, 420, 320);
-        panel.Children.Add(Buttons(window, () => result = list.SelectedIndex >= 0 ? items[list.SelectedIndex] : null));
+        var buttons = Buttons(window, () => result = list.SelectedIndex >= 0 ? items[list.SelectedIndex] : null);
+        panel.Children.Add(buttons);
+        AcceptOnDoubleTap(list, buttons);
         return await ShowAsync(window) ? result : null;
     }
 

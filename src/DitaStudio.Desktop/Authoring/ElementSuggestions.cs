@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -48,15 +49,6 @@ public sealed class ElementSuggestions : Popup
 
         // Размер — тот, что пользователь выбрал в прошлый раз; ручка в правом нижнем углу растягивает окно.
         (_grid.Width, _grid.Height) = PopupSizeSettings.Load();
-        var grip = new Avalonia.Controls.Primitives.Thumb
-        {
-            Width = 16,
-            Height = 16,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            VerticalAlignment = VerticalAlignment.Bottom,
-            Cursor = new Cursor(StandardCursorType.BottomRightCorner),
-            Background = Brushes.Transparent
-        };
         var gripMark = new Avalonia.Controls.Shapes.Path
         {
             Data = Geometry.Parse("M 14,2 L 2,14 M 14,7 L 7,14 M 14,12 L 12,14"),
@@ -68,13 +60,15 @@ public sealed class ElementSuggestions : Popup
             VerticalAlignment = VerticalAlignment.Bottom,
             IsHitTestVisible = false
         };
-        ToolTip.SetTip(grip, "Потяните, чтобы изменить размер окна");
-        grip.DragDelta += (_, e) => ResizeBy(e.Vector.X, e.Vector.Y);
-        grip.DragCompleted += (_, _) => PopupSizeSettings.Save(_grid.Width, _grid.Height);
         Grid.SetColumnSpan(gripMark, 2);
-        Grid.SetColumnSpan(grip, 2);
         _grid.Children.Add(gripMark);
-        _grid.Children.Add(grip);
+        foreach (var corner in new[] { PopupCorner.BottomRight, PopupCorner.BottomLeft, PopupCorner.TopRight, PopupCorner.TopLeft })
+        {
+            var grip = CreateGrip(corner);
+            Grid.SetColumnSpan(grip, 2);
+            _grid.Children.Add(grip);
+        }
+
         var grid = _grid;
 
         var border = new Border { Padding = new Thickness(6), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), Child = grid };
@@ -82,6 +76,8 @@ public sealed class ElementSuggestions : Popup
         border.Bind(Border.BorderBrushProperty, border.GetResourceObservable("Line"));
         Child = border;
 
+        ScrollViewer.SetHorizontalScrollBarVisibility(_list, ScrollBarVisibility.Disabled);
+        _list.ItemTemplate = new FuncDataTemplate<ElementSuggestion>((item, _) => new TextBlock { Text = item?.Title, TextWrapping = TextWrapping.Wrap });
         _list.ItemsSource = items;
         _list.SelectedIndex = 0;
         _list.SelectionChanged += (_, _) => _description.Text = (_list.SelectedItem as ElementSuggestion)?.Description ?? string.Empty;
@@ -128,6 +124,103 @@ public sealed class ElementSuggestions : Popup
     /// окончании перетаскивания (см. ручку), а здесь — только меняет.</summary>
     public void ResizeBy(double dx, double dy) =>
         (_grid.Width, _grid.Height) = PopupSizeSettings.Clamp(_grid.Width + dx, _grid.Height + dy);
+
+    /// <summary>Угол окна, за который его растягивают.</summary>
+    public enum PopupCorner
+    {
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight
+    }
+
+    /// <summary>
+    /// Растягивает окно за угол: <paramref name="dx"/>, <paramref name="dy"/> — сдвиг этого угла. За правые и нижние углы окно растёт
+    /// в ту же сторону; за левые и верхние — в сторону сдвига, а противоположный угол остаётся на месте (окно перемещается).
+    /// Размер ограничен (<see cref="PopupSizeSettings.Clamp"/>); возвращает фактическое изменение размера (ширина, высота).
+    /// </summary>
+    public (double Width, double Height) ResizeFromCorner(PopupCorner corner, double dx, double dy)
+    {
+        var left = corner is PopupCorner.TopLeft or PopupCorner.BottomLeft;
+        var top = corner is PopupCorner.TopLeft or PopupCorner.TopRight;
+        var (oldWidth, oldHeight) = (_grid.Width, _grid.Height);
+        (_grid.Width, _grid.Height) = PopupSizeSettings.Clamp(oldWidth + (left ? -dx : dx), oldHeight + (top ? -dy : dy));
+        var (grewX, grewY) = (_grid.Width - oldWidth, _grid.Height - oldHeight);
+        if (left)
+        {
+            HorizontalOffset -= grewX;
+        }
+
+        if (top)
+        {
+            VerticalOffset -= grewY;
+        }
+
+        return (grewX, grewY);
+    }
+
+    // Ручка угла: невидимая, с нужным курсором. Сдвиг считается по экранным координатам указателя, а не по DragDelta ручки:
+    // при растягивании за левый или верхний угол окно (а с ним и ручка) едет под указателем, и относительный сдвиг «дрожал» бы.
+    private Control CreateGrip(PopupCorner corner)
+    {
+        var grip = new Border
+        {
+            Width = 16,
+            Height = 16,
+            Background = Brushes.Transparent,
+            HorizontalAlignment = corner is PopupCorner.TopLeft or PopupCorner.BottomLeft ? HorizontalAlignment.Left : HorizontalAlignment.Right,
+            VerticalAlignment = corner is PopupCorner.TopLeft or PopupCorner.TopRight ? VerticalAlignment.Top : VerticalAlignment.Bottom,
+            Cursor = new Cursor(corner switch
+            {
+                PopupCorner.TopLeft => StandardCursorType.TopLeftCorner,
+                PopupCorner.TopRight => StandardCursorType.TopRightCorner,
+                PopupCorner.BottomLeft => StandardCursorType.BottomLeftCorner,
+                _ => StandardCursorType.BottomRightCorner
+            }),
+            Tag = corner
+        };
+        ToolTip.SetTip(grip, "Потяните, чтобы изменить размер окна");
+
+        PixelPoint? last = null;
+        PixelPoint Screen(PointerEventArgs e)
+        {
+            var root = TopLevel.GetTopLevel(grip)!;
+            return root.PointToScreen(e.GetPosition(root));
+        }
+
+        grip.PointerPressed += (_, e) =>
+        {
+            if (e.GetCurrentPoint(grip).Properties.IsLeftButtonPressed && TopLevel.GetTopLevel(grip) is not null)
+            {
+                last = Screen(e);
+                e.Pointer.Capture(grip);
+                e.Handled = true;
+            }
+        };
+        grip.PointerMoved += (_, e) =>
+        {
+            if (last is not { } from || TopLevel.GetTopLevel(grip) is not { } root)
+            {
+                return;
+            }
+
+            var now = Screen(e);
+            ResizeFromCorner(corner, (now.X - from.X) / root.RenderScaling, (now.Y - from.Y) / root.RenderScaling);
+            last = now;
+        };
+        grip.PointerReleased += (_, e) =>
+        {
+            if (last is null)
+            {
+                return;
+            }
+
+            last = null;
+            e.Pointer.Capture(null);
+            PopupSizeSettings.Save(_grid.Width, _grid.Height);
+        };
+        return grip;
+    }
 
     /// <summary>Выбирает строку списка (для тестов).</summary>
     public void Select(ElementSuggestion item) => _list.SelectedItem = item;

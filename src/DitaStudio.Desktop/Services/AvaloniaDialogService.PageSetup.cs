@@ -58,7 +58,7 @@ public sealed partial class AvaloniaDialogService
 
         DocxLayout? result = null;
         var root = new DockPanel { Margin = new Thickness(8) };
-        var window = Shell("Оформление DOCX", root, 640, 700);
+        var window = Shell("Оформление DOCX", root, 640, 700, autoHeight: false);
         var buttons = Buttons(window, () =>
         {
             result = current.Clone();
