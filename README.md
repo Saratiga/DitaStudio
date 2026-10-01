@@ -2,14 +2,13 @@
 
 Настольный редактор технической документации на DITA 1.3 — аналог Oxygen XML Author,
 написанный на C# (.NET 8). Основная версия — кроссплатформенная, на **Avalonia UI**
-(Windows, Linux, macOS; `src/DitaStudio.Desktop`); прежняя WPF-версия для Windows
-(`src/DitaStudio.App`) сохраняется как легаси. Обе оболочки используют одно ядро
-(`DitaStudio.Core`, без внешних зависимостей) и общие модели представления
-(`DitaStudio.Presentation`); экспорт в Word — `DitaStudio.Docx` → DocumentFormat.OpenXml.
+(Windows, Linux, macOS; `src/DitaStudio.Desktop`). Интерфейс опирается на ядро
+(`DitaStudio.Core`, без внешних зависимостей) и модели представления
+(`DitaStudio.Presentation`, не знающие про UI-фреймворк); экспорт в Word — `DitaStudio.Docx` → DocumentFormat.OpenXml.
 
 Готовые сборки (не требуют установленного .NET) — на странице
 [релизов](https://github.com/Saratiga/DitaStudio/releases): Windows x64, Linux x64,
-macOS (Intel, на Apple Silicon — через Rosetta). Легаси-версия WPF в релизы больше не входит
+macOS (Intel, на Apple Silicon — через Rosetta).
 (готовых сборок нет), её можно собрать из исходников. Предпросмотр и печать
 в PDF — встроенный Chromium, отдельно ничего ставить не нужно.
 
@@ -188,25 +187,15 @@ dotnet publish src/DitaStudio.Desktop -c Release -r linux-x64 --self-contained t
 Сборка весит около 450 МБ (из них ~350 МБ — встроенный Chromium); пакеты NuGet при первой
 сборке занимают ~1,5 ГБ — в них Chromium сразу для трёх ОС.
 
-Легаси-версия WPF (только Windows):
-
-```powershell
-dotnet build DitaStudio.sln -c Release
-dotnet run --project src\DitaStudio.App
-dotnet publish src\DitaStudio.App -c Release -r win-x64 --self-contained true -o publish
-```
-
 ## Тесты
 
 ```powershell
 dotnet test tests\DitaStudio.Tests          # ~860 проверок ядра и DOCX-экспорта
 dotnet test tests\DitaStudio.Desktop.Tests  # интерфейс Avalonia (headless, в т.ч. на Linux)
-dotnet test tests\DitaStudio.UiTests          # UI-тесты легаси-версии WPF на реальном DitaStudio.exe
 ```
 
 Тесты интерфейса Avalonia идут без экрана (Avalonia.Headless) и сохраняют снимки окон в
-`tests/DitaStudio.Desktop.Tests/bin/Debug/net8.0/screenshots`; среди них — проверки паритета
-с WPF (все пункты меню и подсказки кнопок, сценарии UI-тестов WPF). Встроенный Chromium
+`tests/DitaStudio.Desktop.Tests/bin/Debug/net8.0/screenshots`. Встроенный Chromium
 проверяется отдельно, под X-сервером:
 `DITASTUDIO_CEF_TESTS=1 xvfb-run -a dotnet test tests/DitaStudio.Desktop.Tests --filter FullyQualifiedName~CefPreviewTests`.
 
@@ -224,16 +213,10 @@ dotnet test tests\DitaStudio.UiTests          # UI-тесты легаси-ве�
 dotnet test tests\DitaStudio.Tests --settings tests\DitaStudio.Tests\coverage.runsettings
 ```
 
-Легаси-версия WPF и её UI-тесты в CI не участвуют — их можно собрать и запустить только локально.
-
 Релиз: пуш тега `vX.Y.Z` (равного `<Version>` в `DitaStudio.Desktop.csproj`) запускает
 `release.yml` — тесты, самодостаточные сборки на раннерах каждой ОС и черновик релиза с
 архивами `DitaStudio-vX.Y.Z-win-x64.zip`, `-linux-x64.tar.gz` и `-osx-x64.tar.gz`; текст
 «Что нового» дописывается вручную перед публикацией. Ручной запуск — пробная сборка без релиза.
-
-UI-тесты WPF (xUnit + FlaUI) запускают собранный `DitaStudio.exe` и управляют им через UI
-Automation, поэтому решение нужно собрать заранее. Та же библиотека управления доступна
-из командной строки для ручной проверки: `dotnet run --project tools\UiHarness -- --help`.
 
 Полный чек-лист функционального тестирования — [docs/TESTPLAN.md](docs/TESTPLAN.md).
 
@@ -305,13 +288,9 @@ src/DitaStudio.Desktop/         кроссплатформенный интер�
   Services/                     диалоги, выбор файлов, окно сравнения
   Themes/                       светлая и тёмная палитры, стили элементов управления
   Dictionaries/                 словари Hunspell (ru_RU, en_US)
-src/DitaStudio.App/             легаси-интерфейс WPF (Windows)
 tests/DitaStudio.Tests/         проверки ядра и DOCX-экспорта (xUnit)
 tests/DitaStudio.Desktop.Tests/ тесты интерфейса Avalonia (Avalonia.Headless, снимки окон)
-tests/DitaStudio.UiTests/       UI-тесты легаси-версии WPF (xUnit + FlaUI)
 tests/TestPlugin/               пример плагина
-tools/DitaStudio.UiAutomation/  общая библиотека UI-автоматизации (FlaUI/UIA3)
-tools/UiHarness/                CLI для ручной UI-проверки
 samples/GuideSample/            небольшой учебный DITA-проект
 samples/DitaStudioGuide/        руководство пользователя по DITA Studio, оформленное как DITA-проект
 docs/TESTPLAN.md                чек-лист функционального тестирования
@@ -326,7 +305,7 @@ docs/TESTPLAN.md                чек-лист функционального �
 
 - В режиме «Автор» содержимое плашек (например, alt-текст картинки, атрибуты ссылки)
   правится только в режиме исходного кода, не прямо в плашке.
-- PDF печатается встроенным Chromium (в легаси-версии — WebView2); своего движка вёрстки нет.
+- PDF печатается встроенным Chromium; своего движка вёрстки нет.
   Если Chromium не запустился, предпросмотр открывается внешним браузером, а PDF печатается
   установленным Edge/Chrome — уже без своих колонтитулов.
 - Сборка для macOS — только под Intel (встроенный Chromium CefGlue выпускается под x64), на
@@ -359,8 +338,7 @@ docs/TESTPLAN.md                чек-лист функционального �
 ## Лицензия
 
 [MIT](LICENSE). Сторонние библиотеки распространяются под собственными лицензиями:
-Avalonia, AvaloniaEdit, AvalonEdit, CefGlue, CommunityToolkit.Mvvm и DocumentFormat.OpenXml —
+Avalonia, AvaloniaEdit, CefGlue, CommunityToolkit.Mvvm и DocumentFormat.OpenXml —
 MIT; Chromium Embedded Framework — BSD; WeCantSpell.Hunspell — MPL 1.1/GPL 2.0/LGPL 2.1;
 словари Hunspell — ru_RU (BSD, А. Лебедев) и en_US (SCOWL), тексты лицензий — в
-`src/DitaStudio.Desktop/Dictionaries`; Microsoft.Web.WebView2 (легаси-версия) — BSD-подобная
-лицензия Microsoft; для UI-тестов используется FlaUI (MIT).
+`src/DitaStudio.Desktop/Dictionaries`.

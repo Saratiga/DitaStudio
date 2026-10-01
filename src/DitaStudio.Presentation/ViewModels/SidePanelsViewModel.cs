@@ -11,8 +11,7 @@ namespace DitaStudio.Presentation.ViewModels;
 /// <summary>
 /// Правая панель: атрибуты элемента под курсором, палитра допустимых для вставки элементов и
 /// структура документа. Перестраивается при смене вкладки или положения курсора
-/// (<see cref="Refresh"/>). Использует Avalonia-оболочка; WPF-оболочка пока строит панель сама
-/// (MainWindow.SidePanels.cs).
+/// (<see cref="Refresh"/>).
 /// </summary>
 public partial class SidePanelsViewModel : ObservableObject
 {

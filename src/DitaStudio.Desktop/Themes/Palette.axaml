@@ -1,8 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Палитра редактора — те же цвета, что в WPF-версии (src/DitaStudio.App/Themes/Light.xaml
-         и Dark.xaml). Тема переключается через Application.RequestedThemeVariant, стили
+    <!-- Палитра редактора. Тема переключается через Application.RequestedThemeVariant, стили
          (Controls.axaml) берут цвета через DynamicResource. -->
 
     <ResourceDictionary.ThemeDictionaries>

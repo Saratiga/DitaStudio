@@ -8,10 +8,7 @@ using DitaStudio.Presentation.Services;
 
 namespace DitaStudio.Presentation.ViewModels;
 
-// Открытие/сканирование папки проекта и список ключей. Дерево файлов
-// (BuildProjectTree и связанное) — императивное построение WPF-дерева,
-// вызываемое из многих мест (Insert/Documents/Help) — сознательно оставлено
-// в MainWindow.Project.cs, тот же класс риска, что и SidePanels (шаг 4).
+// Открытие/сканирование папок проектов, дерево файлов и список ключей.
 public partial class ProjectViewModel : ObservableObject
 {
     private readonly MainViewModel _main;
@@ -27,8 +24,7 @@ public partial class ProjectViewModel : ObservableObject
     [ObservableProperty]
     private string scopedKeysHintText = string.Empty;
 
-    /// <summary>Дерево файлов проекта (корень — папка проекта). Строит <see cref="RebuildTree"/>;
-    /// WPF-оболочка пока строит своё дерево сама.</summary>
+    /// <summary>Дерево файлов проекта (корень — папка проекта). Строит <see cref="RebuildTree"/>.</summary>
     public ObservableCollection<ProjectTreeNode> Tree { get; } = new();
 
     [ObservableProperty]

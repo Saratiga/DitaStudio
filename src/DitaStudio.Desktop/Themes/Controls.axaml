@@ -1,8 +1,7 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Плоские стили редактора поверх темы Fluent — повторяют WPF-версию
-         (src/DitaStudio.App/Themes/Controls.xaml): те же отступы, скругления, подчёркивание
+    <!-- Плоские стили редактора поверх темы Fluent: отступы, скругления, подчёркивание
          активной вкладки, мягкая подсветка выделения. Все цвета — через DynamicResource
          из Palette.axaml, поэтому светлая и тёмная темы переключаются без перезапуска. -->
 

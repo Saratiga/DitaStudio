@@ -1,5 +1,5 @@
 # Релиз: самодостаточные сборки кроссплатформенной версии (Avalonia) для Windows, Linux и
-# macOS. Легаси-версия WPF в релизы больше не входит (исходники остаются в src/DitaStudio.App).
+# macOS.
 #
 #   DitaStudio-vX.Y.Z-win-x64.zip          — Avalonia, Windows x64
 #   DitaStudio-vX.Y.Z-linux-x64.tar.gz     — Avalonia, Linux x64

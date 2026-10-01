@@ -1,4 +1,3 @@
-using System.Xml.Linq;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Controls.Primitives;
@@ -12,9 +11,8 @@ using Xunit;
 namespace DitaStudio.Desktop.Tests;
 
 /// <summary>
-/// Паритет с WPF-версией (она остаётся как легаси): каждый пункт меню и подсказка кнопки WPF
-/// есть и в Avalonia, и сценарии автоматизированных UI-тестов WPF (tests/DitaStudio.UiTests,
-/// подмножество docs/TESTPLAN.md) проходят в Avalonia-окне так же — через меню, как пользователь.
+/// Сценарии прежних UI-тестов удалённой WPF-версии (подмножество docs/TESTPLAN.md) в Avalonia-окне:
+/// через меню, как пользователь.
 /// </summary>
 public sealed class ParityTests : IDisposable
 {
@@ -51,36 +49,7 @@ public sealed class ParityTests : IDisposable
         }
     }
 
-    // ------------------------------------------------------------ разметка окна
-
-    private static IEnumerable<string> Attributes(string file, params string[] names)
-    {
-        var xml = XDocument.Load(Path.Combine(RepositoryRoot(), file));
-        return xml.Descendants()
-            .SelectMany(e => e.Attributes())
-            .Where(a => names.Contains(a.Name.LocalName))
-            .Select(a => a.Value)
-            .Where(v => !v.StartsWith('{'))
-            .Distinct();
-    }
-
-    [Fact]
-    public void EveryWpfMenuItem_ExistsInAvalonia()
-    {
-        var avalonia = Attributes("src/DitaStudio.Desktop/MainWindow.axaml", "Header").ToHashSet();
-        var missing = Attributes("src/DitaStudio.App/MainWindow.xaml", "Header").Where(h => !avalonia.Contains(h)).ToList();
-        Assert.True(missing.Count == 0, "нет в Avalonia: " + string.Join(", ", missing));
-    }
-
-    [Fact]
-    public void EveryWpfToolbarTooltip_ExistsInAvalonia()
-    {
-        var avalonia = Attributes("src/DitaStudio.Desktop/MainWindow.axaml", "ToolTip.Tip", "ToolTip").ToHashSet();
-        var missing = Attributes("src/DitaStudio.App/MainWindow.xaml", "ToolTip").Where(t => !avalonia.Contains(t)).ToList();
-        Assert.True(missing.Count == 0, "нет в Avalonia: " + string.Join(", ", missing));
-    }
-
-    // ------------------------------------------------------------ сценарии SmokeTests WPF
+    // ------------------------------------------------------------ сценарии прежних UI-тестов
 
     [AvaloniaFact]
     public void MainWindow_HasExpectedTitle()

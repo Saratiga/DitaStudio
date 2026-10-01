@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Кроссплатформенная версия редактора на Avalonia (Windows, Linux, macOS). Переносится
-       параллельно с WPF-приложением src/DitaStudio.App, пока не достигнет паритета. -->
+  <!-- Редактор на Avalonia (Windows, Linux, macOS). -->
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
