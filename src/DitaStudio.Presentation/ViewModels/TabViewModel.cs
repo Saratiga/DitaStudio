@@ -12,6 +12,9 @@ public partial class TabViewModel : ObservableObject
 
     public IDocumentView Pane { get; }
 
+    /// <summary>Проект, которому принадлежит документ: при выборе вкладки он становится активным.</summary>
+    public DitaStudio.Core.Project.DitaProject? Project { get; init; }
+
     // Не readonly: обновляется при переносе/переименовании файла
     // (MainWindow.Project.cs, OnProjectFileMove) — тот же смысл, что раньше
     // TabItem.Tag.
@@ -30,9 +33,11 @@ public partial class TabViewModel : ObservableObject
 
     public void RefreshTitle() => Title = TitleFor(Pane);
 
-    private static string TitleFor(IDocumentView pane) =>
+    // При нескольких открытых проектах к имени файла добавляется проект: у разных проектов бывают одноимённые топики.
+    private string TitleFor(IDocumentView pane) =>
         (pane.IsDirty ? "• " : string.Empty) +
-        (pane.FilePath is null ? pane.Title : Path.GetFileName(pane.FilePath));
+        (pane.FilePath is null ? pane.Title : Path.GetFileName(pane.FilePath)) +
+        (_owner.ShowProjectInTitles && Project is { } project ? $" · {project.Name}" : string.Empty);
 
     /// <summary>Вкладка закреплена: стоит слева, без крестика, не закрывается кнопкой «✕» и <c>Ctrl+W</c>
     /// (но закрывается командами «Закрыть все» и «Закрыть остальные»).</summary>

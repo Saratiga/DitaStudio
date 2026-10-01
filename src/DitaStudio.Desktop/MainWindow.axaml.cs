@@ -183,6 +183,50 @@ public partial class MainWindow : Window
     private void OnProjectTreeDoubleTapped(object? sender, TappedEventArgs e) =>
         ViewModel.ProjectPanel.OpenSelectedFileCommand.Execute(null);
 
+    // ------------------------------------------------------------ вкладки карт
+
+    /// <summary>«＋ Карта»: меню карт активного проекта — выбранная открывается вкладкой.</summary>
+    private void OnOpenMapClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Control anchor)
+        {
+            return;
+        }
+
+        var flyout = new MenuFlyout();
+        foreach (var map in ViewModel.Map.Maps)
+        {
+            var item = new MenuItem { Header = map.RelativePath };
+            var captured = map;
+            item.Click += (_, _) => ViewModel.Map.SelectedMap = captured;
+            flyout.Items.Add(item);
+        }
+
+        if (flyout.Items.Count == 0)
+        {
+            flyout.Items.Add(new MenuItem { Header = "В проекте нет карт", IsEnabled = false });
+        }
+
+        flyout.ShowAt(anchor);
+    }
+
+    private void OnCloseMapTabClick(object? sender, RoutedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is OpenMapTab tab)
+        {
+            ViewModel.Map.CloseMapCommand.Execute(tab);
+        }
+
+        e.Handled = true;
+    }
+
+    // Правая кнопка выбирает вкладку (ListBox), так что «Закрыть» относится к выбранной.
+    private void OnCloseSelectedMapTabClick(object? sender, RoutedEventArgs e) =>
+        ViewModel.Map.CloseMapCommand.Execute(ViewModel.Map.SelectedMapTab);
+
+    private void OnCloseOtherMapTabsClick(object? sender, RoutedEventArgs e) =>
+        ViewModel.Map.CloseOtherMapsCommand.Execute(ViewModel.Map.SelectedMapTab);
+
     /// <summary>
     /// Двойной щелчок по строке карты открывает её топик — и у строки с дочерними тоже: обработчик
     /// стоит в туннеле, раньше самой строки дерева, которая иначе забирает двойной щелчок себе

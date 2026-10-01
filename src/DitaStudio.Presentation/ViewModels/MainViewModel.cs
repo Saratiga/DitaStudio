@@ -1,5 +1,7 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DitaStudio.Core.Project;
+using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Services;
 
 namespace DitaStudio.Presentation.ViewModels;
@@ -16,9 +18,57 @@ public partial class MainViewModel : ObservableObject
     // истины (шаг 5 спеки), не отдельное наблюдаемое поле.
     public IDocumentView? Current => Documents.SelectedTab?.Pane;
 
-    // Открытый проект. Источник истины теперь ProjectViewModel.LoadProject.
+    // Активный проект — тот, с которым работают поиск, проверка, публикация, ключи, условия и список продуктов: проект выбранной
+    // вкладки, выбранного файла в дереве или выбранной карты. Открытых проектов может быть несколько (см. Projects).
     [ObservableProperty]
     private DitaProject? project;
+
+    /// <summary>Открытые проекты окна: несколько папок рядом. Добавляет <see cref="ProjectViewModel.LoadProjectAsync"/>, убирает «Закрыть проект».</summary>
+    public ObservableCollection<DitaProject> Projects { get; } = new();
+
+    /// <summary>Проект, которому принадлежит файл (самая глубокая из открытых папок, в которой он лежит); null — файл вне открытых проектов.</summary>
+    public DitaProject? ProjectOf(string path)
+    {
+        var full = Path.GetFullPath(path);
+        return Projects
+            .Where(p => IsInside(p.RootPath, full))
+            .OrderByDescending(p => Path.GetFullPath(p.RootPath).Length)
+            .FirstOrDefault();
+    }
+
+    private static bool IsInside(string root, string full)
+    {
+        var folder = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        return full.StartsWith(folder + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+               full.StartsWith(folder + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(full, folder, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Сменился активный проект.</summary>
+    public event EventHandler? ActiveProjectChanged;
+
+    /// <summary>
+    /// Делает проект активным: окно показывает его каталог элементов (внешний DTD у проектов свой), условия сборки, ключи, список
+    /// карт и название. Вкладки документов других проектов остаются открытыми.
+    /// </summary>
+    public void ActivateProject(DitaProject project)
+    {
+        if (ReferenceEquals(Project, project))
+        {
+            return;
+        }
+
+        Project = project;
+        DitaCatalog.Activate(project.Catalog);
+        WindowTitle = $"DITA Studio — {project.Name}";
+        Conditions = new ConditionsResult(
+            project.ExcludedConditionValues.ToDictionary(kv => kv.Key, kv => new HashSet<string>(kv.Value)),
+            project.ShowDraftComments);
+        RefreshMapSelector?.Invoke();
+        ProjectPanel.RefreshKeysList();
+        RefreshEditorContext?.Invoke();
+        ActiveProjectChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     // Условия сборки — используются ProjectViewModel (начальные значения при
     // открытии проекта) и ещё не мигрированным MainWindow.Publish.cs.

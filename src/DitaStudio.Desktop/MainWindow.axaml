@@ -38,6 +38,8 @@
             <MenuItem Header="_Файл">
                 <MenuItem Header="Открыть папку проекта…" Command="{Binding ProjectPanel.OpenProjectCommand}" InputGesture="Ctrl+Shift+O" />
                 <MenuItem Header="Недавние проекты" Name="RecentProjectsMenu" />
+                <MenuItem Header="Закрыть проект" Command="{Binding ProjectPanel.CloseProjectCommand}"
+                          ToolTip.Tip="Закрыть активный проект; остальные открытые проекты остаются" />
                 <MenuItem Header="Подключить проект-источник ключей…" Command="{Binding ProjectPanel.AddReferencedProjectCommand}" />
                 <MenuItem Header="Отключить все проекты-источники" Command="{Binding ProjectPanel.ClearReferencedProjectsCommand}" />
                 <MenuItem Header="Подключить внешний DTD (кастомная специализация)…" Command="{Binding ProjectPanel.AttachExternalDtdCommand}" />
@@ -321,6 +323,8 @@
                             <TreeView.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="Переименовать / переместить файл…" Command="{Binding ProjectPanel.MoveSelectedFileCommand}" />
+                                    <MenuItem Header="Закрыть проект" Command="{Binding ProjectPanel.CloseProjectCommand}"
+                                              ToolTip.Tip="Закрыть проект выбранного узла; остальные открытые проекты остаются" />
                                 </ContextMenu>
                             </TreeView.ContextMenu>
                             <TreeView.Styles>
@@ -344,9 +348,33 @@
 
                 <TabItem Header="Карта">
                     <DockPanel>
-                        <ComboBox Name="MapSelector" DockPanel.Dock="Top" Margin="4" HorizontalAlignment="Stretch"
-                                  ItemsSource="{Binding Map.Maps}" SelectedItem="{Binding Map.SelectedMap}"
-                                  DisplayMemberBinding="{Binding RelativePath}" />
+                        <DockPanel DockPanel.Dock="Top" Margin="4,4,4,0">
+                            <Button Name="OpenMapButton" DockPanel.Dock="Right" Content="＋ Карта" Padding="6,3" Margin="4,0,0,0"
+                                    Click="OnOpenMapClick" ToolTip.Tip="Открыть ещё одну карту активного проекта вкладкой" />
+                            <ListBox Name="MapTabs" ItemsSource="{Binding Map.OpenMaps}" SelectedItem="{Binding Map.SelectedMapTab}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Закрыть" Click="OnCloseSelectedMapTabClick" />
+                                        <MenuItem Header="Закрыть остальные" Click="OnCloseOtherMapTabsClick" />
+                                    </ContextMenu>
+                                </ListBox.ContextMenu>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate DataType="vm:OpenMapTab">
+                                        <StackPanel Orientation="Horizontal" ToolTip.Tip="{Binding ToolTip}">
+                                            <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+                                            <Button Content="✕" Padding="3,0" Margin="6,0,0,0" FontSize="10" Background="Transparent"
+                                                    BorderThickness="0" Click="OnCloseMapTabClick" ToolTip.Tip="Закрыть карту" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </DockPanel>
                         <WrapPanel DockPanel.Dock="Top" Margin="4,0,4,4">
                             <Button Content="+ Топик" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.AddTopicrefCommand}" ToolTip.Tip="Добавить ссылку на топик" />
                             <Button Content="+ Раздел" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.AddTopicheadCommand}" />

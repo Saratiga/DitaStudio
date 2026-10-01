@@ -34,6 +34,15 @@ public partial class ProjectViewModel : ObservableObject
     [ObservableProperty]
     private ProjectTreeNode? selectedTreeNode;
 
+    // Выбор файла или папки в дереве делает активным её проект: новые документы, поиск, публикация и ключи — этого проекта.
+    partial void OnSelectedTreeNodeChanged(ProjectTreeNode? value)
+    {
+        if (!_suppressActivation && value?.Project is { } project && _main.Projects.Contains(project))
+        {
+            _main.ActivateProject(project);
+        }
+    }
+
     public ProjectViewModel(MainViewModel main)
     {
         _main = main;
@@ -51,55 +60,48 @@ public partial class ProjectViewModel : ObservableObject
         await LoadProjectAsync(folder);
     }
 
+    /// <summary>
+    /// Открывает папку проекта **рядом** с уже открытыми: другие проекты и их вкладки остаются, новый становится активным. Если папка
+    /// уже открыта, она просто становится активной.
+    /// </summary>
     public async Task LoadProjectAsync(string path)
     {
-        // Смена проекта закрывает все вкладки — несохранённые правки не должны пропасть молча.
-        if (!await _main.Documents.ConfirmCloseAsync())
+        var full = Path.GetFullPath(path);
+        if (_main.Projects.FirstOrDefault(p => string.Equals(Path.GetFullPath(p.RootPath).TrimEnd('\\', '/'), full.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase)) is { } open)
         {
+            _main.ActivateProject(open);
+            _main.StatusText = $"Проект «{open.Name}» уже открыт — он стал активным.";
             return;
         }
-
-        _main.Recovery.Detach();
-        _main.ExternalChanges.Detach();
 
         var project = new DitaProject(path);
         // Сбой записи настройки проекта (.ditastudio-*) — сразу сообщаем: иначе пользователь
         // считает, что условия/CSS/DTD сохранены, а после перезапуска их не окажется.
         project.SettingsWarning += message => _ = _main.Dialogs.MessageAsync("Настройки проекта", message);
-        _main.Project = project;
-        foreach (var pane in _main.Panes.Values)
-        {
-            (pane as IDisposable)?.Dispose();
-        }
-
-        _main.Panes.Clear();
 
         // Каталог проекта активируем до Scan: тип документа (топик/карта) определяется по нему,
         // и корневые элементы специализации из внешнего DTD должны уже быть известны.
         var dtdNote = ActivateProjectCatalog(project);
-        _main.Documents.Tabs.Clear();
-
         try
         {
             project.Scan();
         }
         catch (Exception ex)
         {
+            DitaCatalog.Activate(_main.Project?.Catalog); // каталог прежнего активного проекта возвращается
             await _main.Dialogs.MessageAsync("Проект", $"Не удалось прочитать папку: {ex.Message}");
             return;
         }
 
-        _main.WindowTitle = $"DITA Studio — {project.Name}";
-        _main.Conditions = new ConditionsResult(
-            project.ExcludedConditionValues.ToDictionary(kv => kv.Key, kv => new HashSet<string>(kv.Value)),
-            project.ShowDraftComments);
+        _main.Projects.Add(project);
+        _main.Documents.RefreshAllTabTitles();
+        _main.ActivateProject(project);
         _main.RefreshProjectTree?.Invoke();
-        _main.RefreshMapSelector?.Invoke();
-        RefreshKeysList();
         RecentProjects.Add(path);
         _main.RefreshRecentProjectsMenu?.Invoke();
 
-        _main.StatusText = $"Проект открыт: {project.Files.Count} файлов, {project.Keys.Count} ключей.{dtdNote}";
+        _main.StatusText = $"Проект открыт: {project.Files.Count} файлов, {project.Keys.Count} ключей.{dtdNote}" +
+                           (_main.Projects.Count > 1 ? $" Открыто проектов: {_main.Projects.Count}." : string.Empty);
 
         if (project.SettingsWarnings.Count > 0)
         {
@@ -108,8 +110,60 @@ public partial class ProjectViewModel : ObservableObject
 
         _main.Recovery.Attach(project);
         _main.ExternalChanges.Attach(project);
-        await _main.Recovery.OfferRestoreAsync();
-        _main.Documents.RestorePinnedTabs();
+        await _main.Recovery.OfferRestoreAsync(project);
+        _main.Documents.RestorePinnedTabs(project);
+    }
+
+    /// <summary>Закрыть проект: выбранного в дереве узла или активный.</summary>
+    [RelayCommand]
+    private async Task CloseProject()
+    {
+        if ((SelectedTreeNode?.Project ?? _main.Project) is { } project)
+        {
+            await CloseProjectAsync(project);
+        }
+    }
+
+    /// <summary>
+    /// Закрывает один проект: его вкладки (с обычным вопросом о несохранённом; «Отмена» оставляет всё как было), наблюдение и копии для
+    /// восстановления, его карты в списке карт. Остальные проекты и их вкладки не затрагиваются; активным становится последний
+    /// из оставшихся.
+    /// </summary>
+    public async Task<bool> CloseProjectAsync(DitaProject project)
+    {
+        if (!_main.Projects.Contains(project) || !await _main.Documents.ConfirmCloseAsync(project))
+        {
+            return false;
+        }
+
+        _main.Documents.DiscardTabsOf(project);
+        _main.Recovery.Detach(project);
+        _main.ExternalChanges.Detach(project);
+        _main.Map.ForgetProject(project);
+        _main.Projects.Remove(project);
+        _main.Documents.RefreshAllTabTitles();
+
+        if (ReferenceEquals(_main.Project, project))
+        {
+            if (_main.Projects.LastOrDefault() is { } next)
+            {
+                _main.ActivateProject(next);
+            }
+            else
+            {
+                _main.Project = null;
+                DitaCatalog.Activate(null);
+                _main.WindowTitle = "DITA Studio";
+                _main.Conditions = null;
+                _main.RefreshMapSelector?.Invoke();
+                RefreshKeysList();
+                _main.RefreshEditorContext?.Invoke();
+            }
+        }
+
+        _main.RefreshProjectTree?.Invoke();
+        _main.StatusText = $"Проект «{project.Name}» закрыт." + (_main.Projects.Count > 0 ? $" Открыто проектов: {_main.Projects.Count}." : string.Empty);
+        return true;
     }
 
     /// <summary>Строит каталог проекта (встроенный + элементы внешнего DTD, если подключён) и делает
@@ -302,24 +356,43 @@ public partial class ProjectViewModel : ObservableObject
 
     public void RebuildTree()
     {
+        // Выбранный узел запоминается по пути: перестройка дерева не должна сбрасывать выбор и менять активный проект.
+        var selectedPath = SelectedTreeNode?.File?.FullPath ?? SelectedTreeNode?.FolderPath;
+        var selectedProject = SelectedTreeNode?.Project;
         Tree.Clear();
-        var project = _main.Project;
-        if (project is null)
+        foreach (var project in _main.Projects)
         {
-            return;
+            var root = new ProjectTreeNode(project.Name, project.RootPath, null, project);
+            var folders = new Dictionary<string, ProjectTreeNode>(StringComparer.OrdinalIgnoreCase) { [string.Empty] = root };
+
+            foreach (var file in project.Files)
+            {
+                var directory = Path.GetDirectoryName(file.RelativePath) ?? string.Empty;
+                EnsureFolder(project, folders, directory).Children.Add(new ProjectTreeNode(file.FileName, null, file, project));
+            }
+
+            Tree.Add(root);
         }
 
-        var root = new ProjectTreeNode(project.Name, project.RootPath, null);
-        var folders = new Dictionary<string, ProjectTreeNode>(StringComparer.OrdinalIgnoreCase) { [string.Empty] = root };
-
-        foreach (var file in project.Files)
+        if (selectedPath is not null)
         {
-            var directory = Path.GetDirectoryName(file.RelativePath) ?? string.Empty;
-            EnsureFolder(project, folders, directory).Children.Add(new ProjectTreeNode(file.FileName, null, file));
+            var restored = Tree.SelectMany(Flatten).FirstOrDefault(n => ReferenceEquals(n.Project, selectedProject) &&
+                string.Equals(n.File?.FullPath ?? n.FolderPath, selectedPath, StringComparison.OrdinalIgnoreCase));
+            _suppressActivation = true;
+            try
+            {
+                SelectedTreeNode = restored;
+            }
+            finally
+            {
+                _suppressActivation = false;
+            }
         }
-
-        Tree.Add(root);
     }
+
+    private bool _suppressActivation;
+
+    private static IEnumerable<ProjectTreeNode> Flatten(ProjectTreeNode node) => node.Children.SelectMany(Flatten).Prepend(node);
 
     private static ProjectTreeNode EnsureFolder(DitaProject project, Dictionary<string, ProjectTreeNode> folders, string relativeDirectory)
     {
@@ -329,7 +402,7 @@ public partial class ProjectViewModel : ObservableObject
         }
 
         var parent = EnsureFolder(project, folders, Path.GetDirectoryName(relativeDirectory) ?? string.Empty);
-        var node = new ProjectTreeNode(Path.GetFileName(relativeDirectory), Path.Combine(project.RootPath, relativeDirectory), null);
+        var node = new ProjectTreeNode(Path.GetFileName(relativeDirectory), Path.Combine(project.RootPath, relativeDirectory), null, project);
         parent.Children.Add(node);
         folders[relativeDirectory] = node;
         return node;
@@ -358,7 +431,7 @@ public partial class ProjectViewModel : ObservableObject
     /// <summary>Переименовывает/переносит файл с запросом нового имени и обновлением ссылок.</summary>
     public async Task MoveFileAsync(ProjectFile file)
     {
-        var project = _main.Project;
+        var project = _main.ProjectOf(file.FullPath) ?? _main.Project;
         if (project is null)
         {
             return;
@@ -383,7 +456,7 @@ public partial class ProjectViewModel : ObservableObject
     /// </summary>
     public async Task OfferRenameByTitleAsync(IDocumentView pane)
     {
-        var project = _main.Project;
+        var project = pane.FilePath is { } titlePath ? _main.ProjectOf(titlePath) ?? _main.Project : _main.Project;
         if (project is null || pane.FilePath is not { } path || project.FindFile(path) is not { } file ||
             DitaCatalog.Default.Get(pane.Document.Root.Name)?.IsTopicType != true)
         {
@@ -437,7 +510,7 @@ public partial class ProjectViewModel : ObservableObject
     /// <summary>Переносит файл на новый относительный путь и обновляет ссылки на него по всему проекту.</summary>
     public async Task MoveFileToAsync(ProjectFile file, string newRelative)
     {
-        var project = _main.Project;
+        var project = _main.ProjectOf(file.FullPath) ?? _main.Project;
         if (project is null)
         {
             return;
@@ -498,7 +571,7 @@ public partial class ProjectViewModel : ObservableObject
     /// </summary>
     public string? DeleteFile(ProjectFile file)
     {
-        var project = _main.Project;
+        var project = _main.ProjectOf(file.FullPath) ?? _main.Project;
         if (project is null)
         {
             return "Проект не открыт.";

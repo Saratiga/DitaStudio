@@ -21,7 +21,8 @@ public sealed class ExternalChangeWatcher : IDisposable
 
     private readonly MainViewModel _main;
     private readonly IUiTimer _debounce;
-    private FileSystemWatcher? _watcher;
+    // По наблюдателю на папку каждого открытого проекта.
+    private readonly Dictionary<DitaProject, FileSystemWatcher> _watchers = new();
     private bool _checking;
 
     public ExternalChangeWatcher(MainViewModel main)
@@ -38,40 +39,50 @@ public sealed class ExternalChangeWatcher : IDisposable
         _ = CheckNowAsync();
     }
 
+    /// <summary>Ставит папку проекта на наблюдение; другие открытые проекты наблюдаются по-прежнему.</summary>
     public void Attach(DitaProject project)
     {
-        Detach();
+        Detach(project);
+        FileSystemWatcher? watcher = null;
         try
         {
-            _watcher = new FileSystemWatcher(project.RootPath)
+            watcher = new FileSystemWatcher(project.RootPath)
             {
                 IncludeSubdirectories = true,
                 NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName,
                 InternalBufferSize = 64 * 1024
             };
-            _watcher.Changed += OnFileEvent;
-            _watcher.Created += OnFileEvent;
-            _watcher.Deleted += OnFileEvent;
-            _watcher.Renamed += OnFileEvent;
-            _watcher.Error += (_, _) => Schedule(); // переполнение буфера — просто проверяем всё
-            _watcher.EnableRaisingEvents = true;
+            watcher.Changed += OnFileEvent;
+            watcher.Created += OnFileEvent;
+            watcher.Deleted += OnFileEvent;
+            watcher.Renamed += OnFileEvent;
+            watcher.Error += (_, _) => Schedule(); // переполнение буфера — просто проверяем всё
+            watcher.EnableRaisingEvents = true;
+            _watchers[project] = watcher;
         }
         catch (Exception ex) when (ex is IOException or ArgumentException or UnauthorizedAccessException)
         {
             // Папку не удалось поставить на наблюдение — остаётся проверка при активации окна.
-            _watcher?.Dispose();
-            _watcher = null;
+            watcher?.Dispose();
+        }
+    }
+
+    /// <summary>Снимает с наблюдения папку одного проекта (его закрыли).</summary>
+    public void Detach(DitaProject project)
+    {
+        if (_watchers.Remove(project, out var watcher))
+        {
+            watcher.EnableRaisingEvents = false;
+            watcher.Dispose();
         }
     }
 
     public void Detach()
     {
         _debounce.Stop();
-        if (_watcher is not null)
+        foreach (var project in _watchers.Keys.ToList())
         {
-            _watcher.EnableRaisingEvents = false;
-            _watcher.Dispose();
-            _watcher = null;
+            Detach(project);
         }
     }
 
@@ -100,8 +111,7 @@ public sealed class ExternalChangeWatcher : IDisposable
     /// <summary>Сверяет открытые документы с диском и реагирует на изменения.</summary>
     public async Task CheckNowAsync()
     {
-        var project = _main.Project;
-        if (_checking || project is null)
+        if (_checking || _main.Projects.Count == 0)
         {
             return;
         }
@@ -122,18 +132,25 @@ public sealed class ExternalChangeWatcher : IDisposable
             // Документы, прочитанные проектом для ссылок и ключей, но не открытые во вкладках:
             // выбрасываем из кэша, следующее обращение перечитает свежую версию.
             var openDocuments = _main.Panes.Values.Select(p => p.Document).ToHashSet();
-            foreach (var doc in project.OpenDocuments.ToList())
+            foreach (var project in _main.Projects.ToList())
             {
-                if (!openDocuments.Contains(doc) && !doc.IsDirty && doc.FilePath is not null && doc.HasChangedOnDisk())
+                foreach (var doc in project.OpenDocuments.ToList())
                 {
-                    project.Invalidate(doc.FilePath);
-                    changed = true;
+                    if (!openDocuments.Contains(doc) && !doc.IsDirty && doc.FilePath is not null && doc.HasChangedOnDisk())
+                    {
+                        project.Invalidate(doc.FilePath);
+                        changed = true;
+                    }
                 }
             }
 
             if (changed)
             {
-                project.RebuildKeySpace();
+                foreach (var project in _main.Projects)
+                {
+                    project.RebuildKeySpace();
+                }
+
                 _main.ProjectPanel.RefreshKeysList();
                 _main.Documents.RefreshAllTabTitles();
                 _main.RefreshEditorContext?.Invoke();

@@ -8,12 +8,19 @@ namespace DitaStudio.Presentation.ViewModels;
 /// <summary>Узел дерева файлов проекта: папка (<see cref="FolderPath"/>) или файл (<see cref="File"/>).</summary>
 public sealed partial class ProjectTreeNode : ObservableObject
 {
-    public ProjectTreeNode(string name, string? folderPath, ProjectFile? file)
+    public ProjectTreeNode(string name, string? folderPath, ProjectFile? file, DitaProject? project = null)
     {
         Name = name;
         FolderPath = folderPath;
         File = file;
+        Project = project;
     }
+
+    /// <summary>Проект, к которому относится узел (корень, папка, файл): выбор узла делает этот проект активным.</summary>
+    public DitaProject? Project { get; }
+
+    /// <summary>Узел — корень проекта (папка проекта целиком).</summary>
+    public bool IsProjectRoot => Project is not null && File is null && string.Equals(FolderPath, Project.RootPath, StringComparison.OrdinalIgnoreCase);
 
     public string Name { get; }
 
@@ -38,6 +45,28 @@ public sealed partial class ProjectTreeNode : ObservableObject
 
     [ObservableProperty]
     private bool isExpanded = true;
+}
+
+/// <summary>Вкладка открытой карты в панели «Карта»: карта и проект, которому она принадлежит.</summary>
+public sealed partial class OpenMapTab : ObservableObject
+{
+    public OpenMapTab(DitaProject project, ProjectFile file)
+    {
+        Project = project;
+        this.file = file;
+        title = file.FileName;
+    }
+
+    public DitaProject Project { get; }
+
+    [ObservableProperty]
+    private ProjectFile file;
+
+    /// <summary>Имя файла карты; при нескольких открытых проектах — с названием проекта («guide.ditamap · Пример»).</summary>
+    [ObservableProperty]
+    private string title;
+
+    public string ToolTip => File.FullPath;
 }
 
 /// <summary>Узел дерева карты — обёртка над <see cref="MapItem"/> для привязки.</summary>

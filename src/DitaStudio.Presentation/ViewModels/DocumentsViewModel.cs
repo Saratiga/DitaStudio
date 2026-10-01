@@ -23,17 +23,26 @@ public partial class DocumentsViewModel : ObservableObject
         _main = main;
     }
 
-    partial void OnSelectedTabChanged(TabViewModel? value) => _main.RefreshEditorContext?.Invoke();
+    partial void OnSelectedTabChanged(TabViewModel? value)
+    {
+        // Вкладка чужого проекта делает его активным: каталог элементов, ключи, карты, поиск и публикация — его.
+        if (value?.Project is { } project && _main.Projects.Contains(project))
+        {
+            _main.ActivateProject(project);
+        }
+
+        _main.RefreshEditorContext?.Invoke();
+    }
 
     public IDocumentView? OpenDocument(string path)
     {
-        var project = _main.Project;
+        var full = Path.GetFullPath(path);
+        var project = _main.ProjectOf(full) ?? _main.Project;
         if (project is null)
         {
             return null;
         }
 
-        var full = Path.GetFullPath(path);
         if (_main.Panes.TryGetValue(full, out var existing))
         {
             SelectedTab = Tabs.FirstOrDefault(t => ReferenceEquals(t.Pane, existing));
@@ -52,7 +61,8 @@ public partial class DocumentsViewModel : ObservableObject
         }
 
         var pane = _main.Services.CreateDocumentView(project, document);
-        var tab = new TabViewModel(this, pane, full);
+        var tab = new TabViewModel(this, pane, full) { Project = project };
+        tab.RefreshTitle();
         if (IsPinnedPath(project, full))
         {
             tab.IsPinned = true;
@@ -79,6 +89,8 @@ public partial class DocumentsViewModel : ObservableObject
         _main.StatusText = $"Открыт {Path.GetFileName(full)}";
         return pane;
     }
+
+    internal bool ShowProjectInTitles => _main.Projects.Count > 1;
 
     public void RefreshAllTabTitles()
     {
@@ -126,7 +138,7 @@ public partial class DocumentsViewModel : ObservableObject
         Tabs.Remove(tab);
         if (tab.IsPinned)
         {
-            SavePinned(); // закрытая вкладка больше не закреплена — при следующем открытии проекта сама не откроется
+            SavePinned(tab.Project ?? _main.Project); // закрытая вкладка больше не закреплена — при следующем открытии проекта сама не откроется
         }
 
         // Вкладка оболочки может держать тяжёлые ресурсы (встроенный браузер предпросмотра).
@@ -163,15 +175,15 @@ public partial class DocumentsViewModel : ObservableObject
             Tabs.Move(index, target);
         }
 
-        SavePinned();
+        SavePinned(tab.Project ?? _main.Project);
         SelectedTab = tab;
     }
 
-    private void SavePinned()
+    private void SavePinned(DitaProject? project)
     {
-        if (_main.Project is { } project)
+        if (project is not null)
         {
-            project.SetPinnedFiles(Tabs.Where(t => t.IsPinned).Select(t => RelativeOf(project, t.FullPath)));
+            project.SetPinnedFiles(Tabs.Where(t => t.IsPinned && ReferenceEquals(t.Project ?? _main.Project, project)).Select(t => RelativeOf(project, t.FullPath)));
         }
     }
 
@@ -200,9 +212,9 @@ public partial class DocumentsViewModel : ObservableObject
     private Task CloseAllTabs() => CloseAllAsync();
 
     /// <summary>После открытия проекта открывает закреплённые вкладки (файлы, которых уже нет, пропускаются).</summary>
-    public void RestorePinnedTabs()
+    public void RestorePinnedTabs(DitaProject? target = null)
     {
-        if (_main.Project is not { } project)
+        if ((target ?? _main.Project) is not { } project)
         {
             return;
         }
@@ -216,7 +228,7 @@ public partial class DocumentsViewModel : ObservableObject
             }
         }
 
-        SelectedTab = Tabs.FirstOrDefault();
+        SelectedTab = Tabs.FirstOrDefault(t => ReferenceEquals(t.Project, project)) ?? Tabs.FirstOrDefault();
     }
 
     [RelayCommand]
@@ -235,9 +247,9 @@ public partial class DocumentsViewModel : ObservableObject
             return;
         }
 
-        _main.Project?.RebuildKeySpace();
+        (tab!.Project ?? _main.Project)?.RebuildKeySpace();
         _main.ProjectPanel.RefreshKeysList();
-        tab!.RefreshTitle();
+        tab.RefreshTitle();
         _main.StatusText = $"Сохранено: {Path.GetFileName(pane.FilePath ?? pane.Title)}";
     }
 
@@ -263,6 +275,11 @@ public partial class DocumentsViewModel : ObservableObject
             }
         }
 
+        foreach (var project in _main.Projects)
+        {
+            project.RebuildKeySpace();
+        }
+
         _main.Project?.RebuildKeySpace();
         _main.ProjectPanel.RefreshKeysList();
         _main.StatusText = $"Сохранено файлов: {saved}";
@@ -273,14 +290,15 @@ public partial class DocumentsViewModel : ObservableObject
     // true — можно закрывать: всё сохранено или пользователь отказался от
     // правок (тогда и копии для восстановления удаляются). Если сохранить
     // не удалось, возвращает false — иначе правки пропали бы молча.
-    public async Task<bool> ConfirmCloseAsync()
+    public async Task<bool> ConfirmCloseAsync(DitaProject? onlyProject = null)
     {
-        foreach (var tab in Tabs)
+        var scope = onlyProject is null ? Tabs.ToList() : Tabs.Where(t => ReferenceEquals(t.Project, onlyProject)).ToList();
+        foreach (var tab in scope)
         {
             tab.Pane.CommitPendingEdits();
         }
 
-        var dirty = Tabs.Count(t => t.Pane.IsDirty);
+        var dirty = scope.Count(t => t.Pane.IsDirty);
         if (dirty == 0)
         {
             return true;
@@ -297,13 +315,32 @@ public partial class DocumentsViewModel : ObservableObject
         if (answer == AskResult.Yes)
         {
             await SaveAll();
-            if (Tabs.Any(t => t.Pane.IsDirty))
+            if (scope.Any(t => t.Pane.IsDirty))
             {
                 return false;
             }
         }
 
-        _main.Recovery.ForgetAll();
+        if (onlyProject is null)
+        {
+            _main.Recovery.ForgetAll();
+        }
+        else
+        {
+            _main.Recovery.ForgetAll(onlyProject);
+        }
+
         return true;
+    }
+
+    /// <summary>Закрывает все вкладки проекта без вопросов (вопрос о несохранённом задаётся раньше — <see cref="ConfirmCloseAsync"/>).</summary>
+    public void DiscardTabsOf(DitaProject project)
+    {
+        foreach (var tab in Tabs.Where(t => ReferenceEquals(t.Project, project)).ToList())
+        {
+            _main.Panes.Remove(tab.FullPath);
+            Tabs.Remove(tab);
+            (tab.Pane as IDisposable)?.Dispose();
+        }
     }
 }

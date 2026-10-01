@@ -1130,7 +1130,9 @@ public sealed class MainWindowTests : IDisposable
         await about.CloseToRightCommand.ExecuteAsync(null);
         Assert.Equal(new[] { "install.dita", "about.dita" }, tabs.Select(Name));
 
-        // Проект открывается заново — закреплённые вкладки открываются сами и закреплены.
+        // Проект закрывают и открывают заново — закреплённые вкладки открываются сами и закреплены.
+        Assert.True(await window.ViewModel.ProjectPanel.CloseProjectAsync(window.ViewModel.Project!));
+        Assert.Empty(tabs);
         await window.ViewModel.ProjectPanel.LoadProjectAsync(_project);
         Dispatcher.UIThread.RunJobs();
         Assert.Equal(new[] { "install.dita", "about.dita" }, tabs.Select(Name));
