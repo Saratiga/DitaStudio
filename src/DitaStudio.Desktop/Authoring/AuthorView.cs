@@ -46,6 +46,15 @@ public sealed partial class AuthorView : UserControl
 
     public AuthorView()
     {
+        // Esc выключает кисть маркера раньше редактора блока (тот ловит Esc сам).
+        AddHandler(Avalonia.Input.InputElement.KeyDownEvent, (_, e) =>
+        {
+            if (_markerPen && e.Key == Avalonia.Input.Key.Escape)
+            {
+                e.Handled = true;
+                StopMarkerPen();
+            }
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         _scroll = new ScrollViewer
         {
             Content = _panel,
@@ -551,6 +560,51 @@ public sealed partial class AuthorView : UserControl
     /// <summary>Узел выделенной целиком таблицы (контур) или null.</summary>
     public DitaNode? SelectedTable => _outlined?.Tag is DitaNode { Name: "table" or "simpletable" or "properties" or "choicetable" } table ? table : null;
 
+    // ---------------------------------------------------------------- кисть маркера
+
+    private bool _markerPen;
+    private string? _markerPenToken;
+
+    /// <summary>Режим кисти: выделение текста мышью сразу закрашивается выбранным цветом (null — «ластик»), пока не нажат Esc.</summary>
+    public bool MarkerPenActive => _markerPen;
+
+    public string? MarkerPenToken => _markerPenToken;
+
+    /// <summary>Есть ли выделенный текст в блоке, где стоит курсор.</summary>
+    public bool HasTextSelection => _activeEditor is { } editor && _order.Contains(editor) && !editor.TextArea.Selection.IsEmpty;
+
+    public bool StartMarkerPen(string? token)
+    {
+        _markerPen = true;
+        _markerPenToken = token;
+        SelectionChanged?.Invoke(this, EventArgs.Empty); // панель инструментов обновляет вид кнопки
+        return true;
+    }
+
+    public void StopMarkerPen()
+    {
+        if (!_markerPen)
+        {
+            return;
+        }
+
+        _markerPen = false;
+        _markerPenToken = null;
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void OnMouseSelectionFinished(BlockEditor editor)
+    {
+        if (!_markerPen || editor.TextArea.Selection.IsEmpty || !_order.Contains(editor))
+        {
+            return;
+        }
+
+        _activeEditor = editor;
+        CurrentNode = editor.Node;
+        Surface.ApplyTextFormat(TextFormatting.MarkPrefix, _markerPenToken);
+    }
+
     /// <summary>Узел выделенного целиком блока (контур вокруг него) или null: рисунок, примечание, абзац, таблица, список…</summary>
     public DitaNode? SelectedBlock => _outlined?.Tag as DitaNode;
 
@@ -704,15 +758,19 @@ public sealed partial class AuthorView : UserControl
                 return false;
             }
 
+            // Маркер — всегда фразовый элемент вокруг выделенного текста (в DOCX это выделение знаков, а не заливка абзаца), поэтому
+            // у контейнера без текста и без выделения он недоступен.
+            var marker = prefix == TextFormatting.MarkPrefix;
+
             // Контейнер (note, section, div…), выбранный щелчком по рамке: у него нет своего текста —
             // класс ставится на сам контейнер и действует на всё внутри.
             if (_view.ActiveEditorFor(CurrentNode) is not { } editor)
             {
-                return SetCurrentBlockFormat(prefix, token);
+                return !marker && SetCurrentBlockFormat(prefix, token);
             }
 
             var selection = editor.TextArea.Selection;
-            var wholeBlock = !selection.IsEmpty && selection.SurroundingSegment.Offset == 0 &&
+            var wholeBlock = !marker && !selection.IsEmpty && selection.SurroundingSegment.Offset == 0 &&
                              selection.SurroundingSegment.Length == editor.Document.TextLength;
             if (wholeBlock)
             {
@@ -724,7 +782,7 @@ public sealed partial class AuthorView : UserControl
             }
 
             _view.BeforeStructuralEdit?.Invoke(_view, "Оформление текста");
-            if (token is null && selection.IsEmpty && TextFormatting.Token(CurrentNode, prefix) is not null)
+            if (!marker && token is null && selection.IsEmpty && TextFormatting.Token(CurrentNode, prefix) is not null)
             {
                 return SetCurrentBlockFormat(prefix, null);
             }
@@ -733,6 +791,16 @@ public sealed partial class AuthorView : UserControl
             editor.TextArea.Focus();
             return true;
         }
+
+        public override bool HasTextSelection => _view.HasTextSelection;
+
+        public override bool MarkerPenActive => _view.MarkerPenActive;
+
+        public override string? MarkerPenToken => _view.MarkerPenToken;
+
+        public override bool StartMarkerPen(string? token) => _view.StartMarkerPen(token);
+
+        public override void StopMarkerPen() => _view.StopMarkerPen();
 
         public override bool InsertInlineElement(DitaNode element, string placeholder)
         {

@@ -355,6 +355,30 @@ public static class DocxPropsWriter
         }
     }
 
+    /// <summary>
+    /// Цвет из палитры выделения Word (#RRGGBB без «#») → его имя; null — цвета в палитре нет. Выделение (w:highlight) Word допускает
+    /// только прямо в прогоне, но не в определении стиля, поэтому маркер ставится на прогоны, а не в стили знаков.
+    /// </summary>
+    public static W.HighlightColorValues? HighlightFor(string hex) => hex.ToUpperInvariant() switch
+    {
+        "FFFF00" => W.HighlightColorValues.Yellow,
+        "00FF00" => W.HighlightColorValues.Green,
+        "00FFFF" => W.HighlightColorValues.Cyan,
+        "FF00FF" => W.HighlightColorValues.Magenta,
+        "0000FF" => W.HighlightColorValues.Blue,
+        "FF0000" => W.HighlightColorValues.Red,
+        "000080" => W.HighlightColorValues.DarkBlue,
+        "008080" => W.HighlightColorValues.DarkCyan,
+        "008000" => W.HighlightColorValues.DarkGreen,
+        "800080" => W.HighlightColorValues.DarkMagenta,
+        "800000" => W.HighlightColorValues.DarkRed,
+        "808000" => W.HighlightColorValues.DarkYellow,
+        "808080" => W.HighlightColorValues.DarkGray,
+        "C0C0C0" => W.HighlightColorValues.LightGray,
+        "000000" => W.HighlightColorValues.Black,
+        _ => null
+    };
+
     public static W.Shading Shading(string fill) => new()
     {
         Val = W.ShadingPatternValues.Clear,

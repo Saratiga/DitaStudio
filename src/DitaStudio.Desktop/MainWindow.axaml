@@ -230,6 +230,14 @@
                         <Rectangle Height="3" Width="14" Fill="#C00000" />
                     </StackPanel>
                 </Button>
+                <Button Classes="tool" Name="MarkerButton" ToolTip.Tip="Маркер: закрасить выделенный текст цветом; без выделения — режим кисти (выделяйте текст мышью, Esc — выключить)">
+                    <StackPanel Spacing="1">
+                        <Border Background="#FFFF00" CornerRadius="2" Padding="3,0" HorizontalAlignment="Center">
+                            <TextBlock Text="А" FontWeight="SemiBold" Foreground="Black" />
+                        </Border>
+                        <Rectangle Name="MarkerSwatch" Height="3" Width="14" Fill="#FFFF00" />
+                    </StackPanel>
+                </Button>
                 <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-left" ToolTip.Tip="По левому краю">
                     <Path Classes="icon" Data="M1,3 H15 M1,6.5 H10 M1,10 H15 M1,13.5 H10" />
                 </Button>

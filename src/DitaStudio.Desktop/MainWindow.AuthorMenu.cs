@@ -121,6 +121,8 @@ public partial class MainWindow
           .Append(new MenuItem { Header = "Без цвета", Command = ViewModel.Insert.SetTextColorCommand, CommandParameter = null })
           .ToList();
 
+        var marks = MarkerMenuItems();
+
         var placeable = PagePlacement.PlaceableFor(node);
         var place = placeable is null ? null : PagePlacement.Of(placeable);
         var positions = new List<Control>
@@ -152,6 +154,7 @@ public partial class MainWindow
                 new MenuItem { Header = "Выравнивание", ItemsSource = align },
                 new MenuItem { Header = "Размер шрифта", ItemsSource = sizes },
                 new MenuItem { Header = "Цвет текста", ItemsSource = colors },
+                new MenuItem { Header = "Маркер", ItemsSource = marks },
                 new Separator(),
                 new MenuItem
                 {
@@ -169,6 +172,78 @@ public partial class MainWindow
                 }
             }
         };
+    }
+
+    /// <summary>Пункты маркера: четыре цвета, «Другой цвет…» и «Нет цвета» — для меню «Оформление» и палитры кнопки.</summary>
+    private List<Control> MarkerMenuItems()
+    {
+        var items = TextFormatting.Marks.Select(m => (Control)new MenuItem
+        {
+            Header = m.Label,
+            Icon = Swatch(m.Hex),
+            Command = ViewModel.Insert.SetMarkerCommand,
+            CommandParameter = m.Token
+        }).ToList();
+        items.Add(new MenuItem { Header = "Другой цвет…", Command = ViewModel.Insert.SetMarkerCommand, CommandParameter = InsertViewModel.CustomMarker });
+        items.Add(new Separator());
+        items.Add(new MenuItem { Header = "Нет цвета", Command = ViewModel.Insert.SetMarkerCommand, CommandParameter = null });
+        return items;
+    }
+
+    /// <summary>Палитра кнопки «Маркер» на панели: цвета, «Другой цвет…», «Нет цвета» (с выделением снимает маркер, без — ластик).</summary>
+    private void BuildMarkerPalette()
+    {
+        var panel = new StackPanel { Width = 170, Margin = new Avalonia.Thickness(4) };
+        var swatches = new WrapPanel();
+        foreach (var (token, label, hex) in TextFormatting.Marks)
+        {
+            var swatch = new Button
+            {
+                Content = Swatch(hex),
+                Padding = new Avalonia.Thickness(4),
+                Margin = new Avalonia.Thickness(2),
+                Command = ViewModel.Insert.SetMarkerCommand,
+                CommandParameter = token
+            };
+            ToolTip.SetTip(swatch, label);
+            swatch.Click += (_, _) => MarkerButton.Flyout?.Hide();
+            swatches.Children.Add(swatch);
+        }
+
+        panel.Children.Add(swatches);
+        var custom = new Button
+        {
+            Content = "Другой цвет…",
+            Margin = new Avalonia.Thickness(2, 6, 2, 0),
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+            Command = ViewModel.Insert.SetMarkerCommand,
+            CommandParameter = InsertViewModel.CustomMarker
+        };
+        custom.Click += (_, _) => MarkerButton.Flyout?.Hide();
+        panel.Children.Add(custom);
+        var none = new Button
+        {
+            Content = "Нет цвета",
+            Margin = new Avalonia.Thickness(2, 4, 2, 2),
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+            Command = ViewModel.Insert.SetMarkerCommand,
+            CommandParameter = null
+        };
+        none.Click += (_, _) => MarkerButton.Flyout?.Hide();
+        panel.Children.Add(none);
+        MarkerButton.Flyout = new Flyout { Content = panel };
+    }
+
+    /// <summary>Кнопка «Маркер»: подсвечена, пока включена кисть; полоска под буквой — цвет кисти.</summary>
+    internal void RefreshMarkerButton()
+    {
+        var author = ViewModel.Current?.Author;
+        var active = author?.MarkerPenActive == true;
+        MarkerButton.Classes.Set("active", active);
+        if (active && author!.MarkerPenToken is { } token && TextFormatting.ParseMarkToken(token) is { } hex)
+        {
+            MarkerSwatch.Fill = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse(hex));
+        }
     }
 
     private static Border Swatch(string hex) => new()

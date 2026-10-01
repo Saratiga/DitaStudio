@@ -20,6 +20,16 @@ public static class InlineStyles
         {
             run.SetForegroundBrush(new SolidColorBrush(Color.Parse(hex)));
         }
+
+        if (TextFormatting.MarkOf(node) is { } mark)
+        {
+            // Маркер: цвет фона, как «выделение текста» в Word; текст на нём чёрный — тёмный фон на светлой теме не должен «съедать» буквы.
+            run.SetBackgroundBrush(new SolidColorBrush(Color.Parse(mark)));
+            if (TextFormatting.ColorOf(node) is null)
+            {
+                run.SetForegroundBrush(TextFormatting.IsDarkColor(mark) ? Brushes.White : Brushes.Black);
+            }
+        }
     }
 
     /// <summary>Применяет оформление элемента к участку текста редактора блока.</summary>

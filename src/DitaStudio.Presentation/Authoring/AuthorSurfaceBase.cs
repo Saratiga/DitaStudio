@@ -49,6 +49,18 @@ public abstract class AuthorSurfaceBase : IAuthorSurface
     /// </summary>
     public virtual bool ApplyTextFormat(string prefix, string? token) => false;
 
+    public virtual bool HasTextSelection => false;
+
+    public virtual bool MarkerPenActive => false;
+
+    public virtual string? MarkerPenToken => null;
+
+    public virtual bool StartMarkerPen(string? token) => false;
+
+    public virtual void StopMarkerPen()
+    {
+    }
+
     /// <summary>
     /// Вставляет у курсора фразовый элемент с текстом: выделение оборачивается, иначе внутрь
     /// ставится выделенная заготовка <paramref name="placeholder"/>. false — оболочка так не умеет

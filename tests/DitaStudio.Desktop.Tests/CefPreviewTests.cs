@@ -291,6 +291,9 @@ public sealed class CefPreviewTests
             "<p>Без границ, пустое название:</p>" + Table("<title/>", " frame=\"none\" rowsep=\"0\" colsep=\"0\"") +
             "<p>Только горизонтальные линии, без названия:</p>" + Table("", " frame=\"topbot\" colsep=\"0\"") +
             "<p>Убрана линия под строкой и справа от столбца:</p>" + Table("<title>Выборочные линии</title>", " rowsep=\"0\"") +
+            "<p>Маркер (Д3): <ph outputclass=\"mark-yellow\">жёлтый</ph>, <ph outputclass=\"mark-green\">зелёный</ph>, <ph outputclass=\"mark-red\">красный</ph>, " +
+            "<ph outputclass=\"mark-blue\">синий</ph>, свой <ph outputclass=\"mark-ff8800\">оранжевый</ph> и <ph outputclass=\"mark-000080\">тёмно-синий</ph>; " +
+            "<ph outputclass=\"mark-yellow size-18\">крупный</ph> и <ph outputclass=\"mark-yellow color-red\">красный по жёлтому</ph>.</p>" +
             "<p>Блоки внутри ячеек (Д9):</p><table><tgroup cols=\"2\"><thead><row><entry>Что</entry><entry>Подробно</entry></row></thead><tbody>" +
             "<row><entry>Два абзаца</entry><entry><p>Первый абзац ячейки.</p><p>Второй абзац ячейки.</p></entry></row>" +
             "<row><entry>Абзац и список</entry><entry><p>Вводная фраза.</p><ul><li>Пункт один</li><li>Пункт два</li></ul></entry></row>" +

@@ -50,11 +50,11 @@ public sealed partial class HtmlRenderer
         switch (BlockElementCategoryMap.Of(node.Name))
         {
             case BlockElementCategory.ContainerDiv:
-                return $"<div class=\"{node.Name}\"{Attrs(node)}>{RenderChildren(node, level)}</div>\n";
+                return $"<div{ClassedAttrs(node.Name, node)}>{RenderChildren(node, level)}</div>\n";
             case BlockElementCategory.ContainerSection:
                 return RenderSection(node, level);
             case BlockElementCategory.Preformatted:
-                return $"<pre class=\"{node.Name}\"{Attrs(node)}>{RenderPreContent(node)}</pre>\n";
+                return $"<pre{ClassedAttrs(node.Name, node)}>{RenderPreContent(node)}</pre>\n";
             case BlockElementCategory.Figure:
                 return RenderFigure(node, level);
             case BlockElementCategory.SimpleTable:
@@ -75,7 +75,7 @@ public sealed partial class HtmlRenderer
             {
                 var ordered = node.Name == "steps";
                 var tag = ordered ? "ol" : "ul";
-                return GeneratedTitle(L.Steps) + $"<{tag} class=\"steps\"{Attrs(node)}>\n{RenderChildren(node, level)}</{tag}>\n";
+                return GeneratedTitle(L.Steps) + $"<{tag}{ClassedAttrs("steps", node)}>\n{RenderChildren(node, level)}</{tag}>\n";
             }
         }
 
@@ -98,11 +98,11 @@ public sealed partial class HtmlRenderer
                 return $"<li{Attrs(node)}>{RenderInlineChildren(node)}</li>\n";
 
             case "substeps":
-                return $"<ol class=\"steps\"{Attrs(node)}>\n{RenderChildren(node, level)}</ol>\n";
+                return $"<ol{ClassedAttrs("steps", node)}>\n{RenderChildren(node, level)}</ol>\n";
 
             case "step":
             case "substep":
-                return $"<li class=\"step\"{Attrs(node)}>{RenderChildren(node, level)}</li>\n";
+                return $"<li{ClassedAttrs("step", node)}>{RenderChildren(node, level)}</li>\n";
 
             case "cmd":
                 return $"<div class=\"cmd\">{RenderInlineChildren(node)}</div>\n";
@@ -171,7 +171,7 @@ public sealed partial class HtmlRenderer
             DisplayKind.Empty => RenderInline(node),
             DisplayKind.Meta => string.Empty,
             DisplayKind.Preformatted => $"<pre class=\"{node.Name}\">{RenderPreContent(node)}</pre>\n",
-            _ => $"<div class=\"{node.Name}\"{Attrs(node)}>{RenderChildren(node, level)}</div>\n"
+            _ => $"<div{ClassedAttrs(node.Name, node)}>{RenderChildren(node, level)}</div>\n"
         };
     }
 
@@ -287,7 +287,7 @@ public sealed partial class HtmlRenderer
             return $"<span class=\"{node.Name}\">{Escape(keyText)}</span>";
         }
 
-        return $"<span class=\"{node.Name}\"{Attrs(node)}>{RenderInlineChildren(node)}</span>";
+        return $"<span{ClassedAttrs(node.Name, node)}>{RenderInlineChildren(node)}</span>";
     }
 
     private string? KeyTextFor(DitaNode node)

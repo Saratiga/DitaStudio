@@ -978,6 +978,167 @@ public sealed class AuthorViewTests
             "Не показываются в «Авторе» и не внесены в список исключений: " + string.Join(", ", notShown.Except(BlocksNotShownInAuthor)));
     }
 
+    /// <summary>Д3: маркер — выделенный текст оборачивается в `ph` с классом mark-…; другой цвет заменяет прежний, «Нет цвета» снимает;
+    /// весь абзац тоже закрашивается фразой (не классом на абзаце); маркер, цвет и размер независимы.</summary>
+    [AvaloniaFact]
+    public void Marker_AppliesToSelection_ReplacesAndRemoves_AsInlineElement()
+    {
+        var (window, author, document, _) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><p>Один два три четыре.</p><p>Второй абзац целиком.</p></conbody></concept>");
+        var paragraphs = Paragraphs(document);
+        var first = paragraphs[0];
+        var editor = Focus(window, author, first, 0);
+        editor.Select(5, 3); // «два»
+        Assert.True(author.Surface.HasTextSelection);
+        Assert.True(author.Surface.ApplyTextFormat(DitaStudio.Core.Publishing.TextFormatting.MarkPrefix, "mark-yellow"));
+        Dispatcher.UIThread.RunJobs();
+
+        var ph = first.ElementChildren().Single(n => n.Name == "ph");
+        Assert.Equal("два", ph.InnerText);
+        Assert.Equal("mark-yellow", ph.GetAttribute("outputclass"));
+        Assert.Null(first.GetAttribute("outputclass"));
+        Assert.Equal("Один два три четыре.", first.InnerText);
+
+        // Другой цвет на том же слове — класс заменяется, вложенных обёрток нет.
+        editor = author.EditorFor(first)!;
+        editor.FocusEditor(5);
+        editor.Select(5, 3);
+        Assert.True(author.Surface.ApplyTextFormat(DitaStudio.Core.Publishing.TextFormatting.MarkPrefix, "mark-red"));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("mark-red", first.ElementChildren().Single(n => n.Name == "ph").GetAttribute("outputclass"));
+        Assert.Empty(first.ElementChildren().Single(n => n.Name == "ph").ElementChildren());
+
+        // Свой цвет — класс по коду.
+        editor = author.EditorFor(first)!;
+        editor.FocusEditor(5);
+        editor.Select(5, 3);
+        Assert.True(author.Surface.ApplyTextFormat(DitaStudio.Core.Publishing.TextFormatting.MarkPrefix, DitaStudio.Core.Publishing.TextFormatting.MarkToken("#ff8800")));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("mark-ff8800", first.ElementChildren().Single(n => n.Name == "ph").GetAttribute("outputclass"));
+
+        // «Нет цвета» — маркер снят, слово на месте.
+        editor = author.EditorFor(first)!;
+        editor.FocusEditor(5);
+        editor.Select(5, 3);
+        Assert.True(author.Surface.ApplyTextFormat(DitaStudio.Core.Publishing.TextFormatting.MarkPrefix, null));
+        Dispatcher.UIThread.RunJobs();
+        Assert.DoesNotContain(first.DescendantsAndSelf(), n => (n.GetAttribute("outputclass") ?? string.Empty).Contains("mark-"));
+        Assert.Equal("Один два три четыре.", first.InnerText);
+
+        // Весь абзац: маркер — фразой вокруг текста, класса на самом абзаце нет (в DOCX это выделение знаков, а не заливка абзаца).
+        var second = paragraphs[1];
+        editor = Focus(window, author, second, 0);
+        editor.Select(0, editor.Document.TextLength);
+        Assert.True(author.Surface.ApplyTextFormat(DitaStudio.Core.Publishing.TextFormatting.MarkPrefix, "mark-green"));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(second.GetAttribute("outputclass"));
+        Assert.Equal("mark-green", second.ElementChildren().Single(n => n.Name == "ph").GetAttribute("outputclass"));
+
+        // Маркер и цвет текста — независимые группы: оба на одном слове.
+        editor = author.EditorFor(second)!;
+        editor.FocusEditor(0);
+        editor.Select(0, 6);
+        Assert.True(author.Surface.ApplyTextFormat(DitaStudio.Core.Publishing.TextFormatting.ColorPrefix, "color-red"));
+        Dispatcher.UIThread.RunJobs();
+        var classes = string.Join(" ", second.DescendantsAndSelf().Select(n => n.GetAttribute("outputclass")).Where(c => c is not null));
+        Assert.Contains("mark-green", classes);
+        Assert.Contains("color-red", classes);
+
+        window.Close();
+    }
+
+    /// <summary>Д3: режим кисти — выделение мышью сразу закрашивается; Esc выключает; ластик снимает маркер.</summary>
+    [AvaloniaFact]
+    public void MarkerPen_PaintsMouseSelection_UntilEscape_AndEraserRemoves()
+    {
+        var (window, author, document, _) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><p>Раз два три четыре пять шесть.</p></conbody></concept>");
+        var paragraph = Paragraphs(document)[0];
+        var editor = Focus(window, author, paragraph, 0);
+        var changed = 0;
+        author.SelectionChanged += (_, _) => changed++;
+
+        Assert.False(author.Surface.MarkerPenActive);
+        Assert.True(author.Surface.StartMarkerPen("mark-green"));
+        Assert.True(author.Surface.MarkerPenActive);
+        Assert.Equal("mark-green", author.Surface.MarkerPenToken);
+        Assert.True(changed > 0); // панель инструментов узнаёт о включении
+
+        // Протяжка мышью по тексту: от начала слова «два» до конца «три».
+        Point At(int offset)
+        {
+            var location = editor.TextArea.TextView.GetVisualPosition(new AvaloniaEdit.TextViewPosition(editor.Document.GetLocation(offset)), AvaloniaEdit.Rendering.VisualYPosition.TextMiddle);
+            return editor.TextArea.TextView.TranslatePoint(location - editor.TextArea.TextView.ScrollOffset, window)!.Value;
+        }
+
+        void Drag(int from, int to)
+        {
+            window.MouseDown(At(from), Avalonia.Input.MouseButton.Left);
+            window.MouseMove(At((from + to) / 2), RawInputModifiers.LeftMouseButton);
+            window.MouseMove(At(to), RawInputModifiers.LeftMouseButton);
+            window.MouseUp(At(to), Avalonia.Input.MouseButton.Left);
+            Dispatcher.UIThread.RunJobs();
+            Dispatcher.UIThread.RunJobs(DispatcherPriority.Background);
+        }
+
+        Drag(5, 13);
+        var marked = paragraph.ElementChildren().Where(n => n.Name == "ph").ToList();
+        Assert.Single(marked);
+        Assert.Equal("mark-green", marked[0].GetAttribute("outputclass"));
+        // Границы выделения мышью — по ближайшей букве: закрашено «два три» плюс-минус символ, но не весь абзац и не начало.
+        Assert.Contains("три", marked[0].InnerText);
+        Assert.DoesNotContain("Раз", marked[0].InnerText);
+        Assert.DoesNotContain("шесть", marked[0].InnerText);
+        Assert.True(author.Surface.MarkerPenActive); // кисть остаётся включённой
+
+        // Ластик: то же выделение снимает маркер.
+        editor = author.EditorFor(paragraph)!;
+        Assert.True(author.Surface.StartMarkerPen(null));
+        Drag(5, 13);
+        Assert.DoesNotContain(paragraph.DescendantsAndSelf(), n => (n.GetAttribute("outputclass") ?? string.Empty).Contains("mark-"));
+        Assert.Equal("Раз два три четыре пять шесть.", paragraph.InnerText);
+
+        // Esc выключает кисть; выделение после этого текст не меняет.
+        Press(window, Key.Escape, RawInputModifiers.None);
+        Assert.False(author.Surface.MarkerPenActive);
+        editor = author.EditorFor(paragraph)!;
+        Drag(14, 18);
+        Assert.DoesNotContain(paragraph.DescendantsAndSelf(), n => (n.GetAttribute("outputclass") ?? string.Empty).Contains("mark-"));
+        window.Close();
+    }
+
+    /// <summary>Снимки для глаз: маркеры четырёх цветов, свой цвет, вместе с цветом и размером текста — светлая и тёмная темы.</summary>
+    [AvaloniaFact]
+    public void Marker_Screenshots_LightAndDark()
+    {
+        var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+        Directory.CreateDirectory(dir);
+        foreach (var (theme, variant) in new[] { ("light", ThemeVariant.Light), ("dark", ThemeVariant.Dark) })
+        {
+            Application.Current!.RequestedThemeVariant = variant;
+            try
+            {
+                var (window, author, _, _) = Show(
+                    "<concept id=\"c\"><title>Маркер</title><conbody>" +
+                    "<p>Обычный текст, <ph outputclass=\"mark-yellow\">жёлтый маркер</ph>, <ph outputclass=\"mark-green\">зелёный маркер</ph>, " +
+                    "<ph outputclass=\"mark-red\">красный маркер</ph> и <ph outputclass=\"mark-blue\">синий маркер</ph>.</p>" +
+                    "<p>Свой цвет: <ph outputclass=\"mark-ff8800\">оранжевый</ph>, <ph outputclass=\"mark-c9c9ff\">светло-сиреневый</ph>; " +
+                    "вместе с размером: <ph outputclass=\"mark-yellow size-18\">крупный жёлтый</ph> и с цветом текста: <ph outputclass=\"mark-yellow color-red\">красный по жёлтому</ph>.</p>" +
+                    "<p>Маркер внутри <b>жирного <ph outputclass=\"mark-green\">слова</ph></b> и в <note><p><ph outputclass=\"mark-yellow\">заметке</ph></p></note></p>" +
+                    "</conbody></concept>");
+                window.Width = 900;
+                window.Height = 420;
+                Dispatcher.UIThread.RunJobs();
+                window.CaptureRenderedFrame()!.Save(Path.Combine(dir, $"author-marker-{theme}.png"));
+                window.Close();
+            }
+            finally
+            {
+                Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
+            }
+        }
+    }
+
     /// <summary>Д4, как у пользователя: щелчок мышью по рамке или подписи блока выделяет его целиком (контур), Backspace или Delete
     /// удаляют одним шагом отмены, Esc снимает выделение. Абзац, примечание, рисунок и XML-комментарий.</summary>
     [AvaloniaFact]

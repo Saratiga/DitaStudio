@@ -27,8 +27,36 @@ public sealed partial class DocxRenderer
 
     private IEnumerable<OpenXmlElement> RenderInlineRunsForNode(DitaNode node) =>
         node.Kind == NodeKind.Element
-            ? WithInlineClasses(node, () => RenderInlineRunsForNodeCore(node))
+            ? WithMarker(node, WithInlineClasses(node, () => RenderInlineRunsForNodeCore(node)))
             : RenderInlineRunsForNodeCore(node);
+
+    /// <summary>Маркер: класс mark-… с цветом из палитры выделения Word (красный, жёлтый, зелёный, синий…) ставится на знаки как
+    /// настоящее «выделение текста» — Word допускает его только прямо в прогоне, не в стиле. Вложенный маркер главнее внешнего.</summary>
+    private static IEnumerable<OpenXmlElement> WithMarker(DitaNode node, IEnumerable<OpenXmlElement> runs)
+    {
+        if (TextFormatting.MarkOf(node) is not { } hex || DocxPropsWriter.HighlightFor(hex[1..]) is not { } color)
+        {
+            return runs;
+        }
+
+        var list = runs.ToList();
+        // На тёмном выделении (синее…) текст белый, если цвет не задан: Word при «авто» цвете делает так сам, но не каждый просмотрщик.
+        var white = TextFormatting.IsDarkColor(hex) && TextFormatting.ColorOf(node) is null;
+        foreach (var run in list.SelectMany(e => e is W.Run r ? new[] { r } : e.Descendants<W.Run>()))
+        {
+            if (run.RunProperties?.Highlight is null)
+            {
+                var properties = run.RunProperties ??= new W.RunProperties();
+                properties.Highlight = new W.Highlight { Val = color };
+                if (white && properties.Color is null)
+                {
+                    properties.Color = new W.Color { Val = "FFFFFF" };
+                }
+            }
+        }
+
+        return list;
+    }
 
     private IEnumerable<OpenXmlElement> RenderInlineRunsForNodeCore(DitaNode node)
     {

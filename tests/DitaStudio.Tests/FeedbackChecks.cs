@@ -676,7 +676,8 @@ internal static partial class CoreChecks
             var single = new HtmlPublisher(project).Publish(Path.Combine(root, "guide.ditamap"),
                 new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true });
             var html = File.ReadAllText(single.EntryFile);
-            Check(html.Contains("class=\"size-10\"") && html.Contains(".size-10 { font-size: 10pt; }"), "HTML: класс фразы и его CSS");
+            Check(html.Contains("class=\"ph size-10\"") && html.Contains(".size-10 { font-size: 10pt; }"), "HTML: класс фразы и его CSS");
+            Check(!System.Text.RegularExpressions.Regex.IsMatch(html, "<[a-z0-9]+ [^>]*class=\"[^\"]*\"[^>]*class=\""), "HTML: у тега один атрибут class (базовый класс и outputclass вместе)");
         });
     }
 

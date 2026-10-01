@@ -144,6 +144,21 @@ public interface IAuthorSurface
     /// <summary>Оформление выделенного текста (или текста, который будет набран у курсора).</summary>
     bool ApplyTextFormat(string prefix, string? token) => false;
 
+    /// <summary>Есть ли выделенный текст (в «Авторе» — внутри одного блока).</summary>
+    bool HasTextSelection => false;
+
+    /// <summary>Включён ли режим «кисти» маркера: выделение текста мышью сразу закрашивается выбранным цветом (как в Word).</summary>
+    bool MarkerPenActive => false;
+
+    /// <summary>Цвет кисти маркера — класс <c>mark-…</c>; null при включённой кисти — «ластик» (выделение снимает маркер).</summary>
+    string? MarkerPenToken => null;
+
+    /// <summary>Включает кисть маркера выбранным цветом (<paramref name="token"/> = null — ластик). false — оболочка так не умеет.</summary>
+    bool StartMarkerPen(string? token) => false;
+
+    /// <summary>Выключает кисть маркера.</summary>
+    void StopMarkerPen() { }
+
     /// <summary>Оформление текущего блока — класс группы вместо прежнего (null — снять).</summary>
     bool SetCurrentBlockFormat(string prefix, string? token) => false;
 

@@ -74,7 +74,7 @@ public sealed partial class HtmlRenderer
     {
         var type = node.GetAttribute("type") ?? "note";
         var label = L.NoteLabel(type);
-        return $"<div class=\"note {Escape(type)}\"{Attrs(node)}><span class=\"label\">{Escape(label)}:</span> {RenderInlineChildren(node)}</div>\n";
+        return $"<div{ClassedAttrs("note " + type, node)}><span class=\"label\">{Escape(label)}:</span> {RenderInlineChildren(node)}</div>\n";
     }
 
     private string RenderHazard(DitaNode node, int level)

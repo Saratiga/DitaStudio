@@ -40,6 +40,9 @@ public interface IDialogService
     /// <summary>Запрашивает одну строку текста; null — отмена. Оболочки без такого окна возвращают null.</summary>
     Task<string?> PromptTextAsync(string title, string label, string initial, string hint, string okText = "ОК") => Task.FromResult<string?>(null);
 
+    /// <summary>Окно выбора цвета: палитра и шестнадцатеричный код. Возвращает «#RRGGBB» или null (отмена). Оболочки без такого окна возвращают null.</summary>
+    Task<string?> PickColorAsync(string title, string? initialHex) => Task.FromResult<string?>(null);
+
     Task AboutAsync();
 
     Task<NewDocumentResult?> NewDocumentAsync(string projectRoot, IEnumerable<string> folders, string? preselectedFolder);

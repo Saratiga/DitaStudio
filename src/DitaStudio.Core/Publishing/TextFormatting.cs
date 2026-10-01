@@ -16,6 +16,7 @@ public static class TextFormatting
     public const string AlignPrefix = "align-";
     public const string SizePrefix = "size-";
     public const string ColorPrefix = "color-";
+    public const string MarkPrefix = "mark-";
 
     /// <summary>Выравнивание: класс → (подпись, значение text-align).</summary>
     public static readonly IReadOnlyList<(string Token, string Label, string Css)> Alignments = new[]
@@ -39,6 +40,84 @@ public static class TextFormatting
         ("color-purple", "Фиолетовый", "#7030A0"),
         ("color-gray", "Серый", "#7F7F7F")
     };
+
+    /// <summary>
+    /// Цвета маркера (выделение фона, как «Цвет выделения текста» в Word): класс → (подпись, цвет). Это цвета палитры выделения Word,
+    /// поэтому в DOCX они становятся настоящим выделением (<c>w:highlight</c>), а не заливкой.
+    /// </summary>
+    public static readonly IReadOnlyList<(string Token, string Label, string Hex)> Marks = new[]
+    {
+        ("mark-red", "Красный", "#FF0000"),
+        ("mark-yellow", "Жёлтый", "#FFFF00"),
+        ("mark-green", "Зелёный", "#00FF00"),
+        ("mark-blue", "Синий", "#0000FF")
+    };
+
+    /// <summary>Класс своего цвета маркера по «#RRGGBB» (или «RRGGBB»): «mark-ff8800»; null — не цвет.</summary>
+    public static string? MarkToken(string hex)
+    {
+        var digits = hex.Trim().TrimStart('#');
+        if (digits.Length != 6 || !digits.All(Uri.IsHexDigit))
+        {
+            return null;
+        }
+
+        var token = MarkPrefix + digits.ToLowerInvariant();
+        // Совпадающий со стандартным — стандартное имя (mark-yellow), а не второе написание того же цвета.
+        var upper = "#" + digits.ToUpperInvariant();
+        return Marks.FirstOrDefault(m => m.Hex == upper).Token ?? token;
+    }
+
+    /// <summary>Цвет класса маркера (#RRGGBB): стандартного (mark-yellow) или своего (mark-ff8800); null — это не класс маркера.</summary>
+    public static string? ParseMarkToken(string token)
+    {
+        if (!token.StartsWith(MarkPrefix, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        if (Marks.FirstOrDefault(m => m.Token == token) is { Token: not null } named)
+        {
+            return named.Hex;
+        }
+
+        var digits = token[MarkPrefix.Length..];
+        return digits.Length == 6 && digits.All(Uri.IsHexDigit) ? "#" + digits.ToUpperInvariant() : null;
+    }
+
+    /// <summary>Цвет маркера узла (#RRGGBB); null — не задан.</summary>
+    public static string? MarkOf(DitaNode node) =>
+        Tokens(node).Select(ParseMarkToken).FirstOrDefault(hex => hex is not null);
+
+    /// <summary>Класс маркера своего цвета (не из <see cref="Marks"/>) — встроенного правила CSS у него нет, оно выводится при публикации.</summary>
+    public static bool IsCustomMark(string token) =>
+        ParseMarkToken(token) is not null && !Marks.Any(m => m.Token == token);
+
+    /// <summary>Тёмный ли фон (#RRGGBB): на нём текст «по умолчанию» делается белым — как автоматический цвет шрифта в Word на тёмном
+    /// выделении (синий, тёмно-красный…). Красный и светлее — остаются с чёрным.</summary>
+    public static bool IsDarkColor(string hex)
+    {
+        var digits = hex.TrimStart('#');
+        if (digits.Length != 6)
+        {
+            return false;
+        }
+
+        double Channel(int index)
+        {
+            var value = Convert.ToInt32(digits.Substring(index * 2, 2), 16) / 255.0;
+            return value <= 0.03928 ? value / 12.92 : Math.Pow((value + 0.055) / 1.055, 2.4);
+        }
+
+        return 0.2126 * Channel(0) + 0.7152 * Channel(1) + 0.0722 * Channel(2) < 0.1;
+    }
+
+    /// <summary>Правило CSS своего цвета маркера («background-color: #FF8800»; на тёмном фоне ещё «color: #FFFFFF»); null — класс не свой цвет маркера.</summary>
+    public static string? CustomMarkCss(string token) =>
+        IsCustomMark(token) ? $"background-color: {ParseMarkToken(token)}" + (IsDarkColor(ParseMarkToken(token)!) ? "; color: #FFFFFF" : string.Empty) : null;
+
+    /// <summary>Правило CSS класса, которого нет во встроенном списке (свой размер или свой цвет маркера); null — класс обычный.</summary>
+    public static string? CustomClassCss(string token) => CustomSizeCss(token) ?? CustomMarkCss(token);
 
     /// <summary>Наименьший и наибольший размер шрифта, пт, который можно задать своим числом.</summary>
     public const double MinCustomSize = 4;
@@ -87,6 +166,12 @@ public static class TextFormatting
         foreach (var size in Sizes)
         {
             css.Append('.').Append(SizeToken(size)).Append(" { font-size: ").Append(size).Append("pt; }\n");
+        }
+
+        // Маркеры — раньше цветов текста: явный цвет текста главнее белого, который тёмный маркер ставит по умолчанию.
+        foreach (var (token, _, hex) in Marks)
+        {
+            css.Append('.').Append(token).Append(" { background-color: ").Append(hex).Append(IsDarkColor(hex) ? "; color: #FFFFFF" : string.Empty).Append("; }\n");
         }
 
         foreach (var (token, _, hex) in Colors)

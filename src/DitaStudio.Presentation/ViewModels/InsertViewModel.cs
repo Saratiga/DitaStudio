@@ -694,6 +694,67 @@ public partial class InsertViewModel : ObservableObject
             color.Token is null ? "Цвет текста снят." : $"Цвет текста: {color.Label.ToLowerInvariant()}.");
     }
 
+    /// <summary>
+    /// Маркер, как «Цвет выделения текста» в Word: есть выделение — закрашивается сразу; нет — включается кисть этого цвета (дальше
+    /// выделение мышью красит текст, пока не нажат <c>Esc</c> или тот же значок). Параметр: <c>mark-red</c>…, <c>null</c> — «Нет цвета»
+    /// (с выделением снимает маркер, без — «ластик»), <c>custom</c> — выбрать свой цвет в окне.
+    /// </summary>
+    [RelayCommand]
+    private async Task SetMarker(string? token)
+    {
+        var author = _main.Current?.Author;
+        if (author is null)
+        {
+            _main.StatusText = "Откройте документ и выделите текст.";
+            return;
+        }
+
+        if (token == CustomMarker)
+        {
+            var current = author.MarkerPenToken is { } pen ? TextFormatting.ParseMarkToken(pen) : null;
+            var picked = await _main.Dialogs.PickColorAsync("Цвет маркера", current);
+            if (picked is null || TextFormatting.MarkToken(picked) is not { } custom)
+            {
+                return;
+            }
+
+            token = custom;
+        }
+
+        if (author.HasTextSelection)
+        {
+            ApplyTextFormat(TextFormatting.MarkPrefix, token, token is null ? "Маркер снят." : $"Маркер: {MarkerLabel(token)}.");
+            return;
+        }
+
+        // Выделения нет — кисть: тот же цвет второй раз выключает её.
+        if (author.MarkerPenActive && author.MarkerPenToken == token)
+        {
+            author.StopMarkerPen();
+            _main.StatusText = "Маркер выключен.";
+            return;
+        }
+
+        if (author.StartMarkerPen(token))
+        {
+            _main.StatusText = token is null
+                ? "Режим маркера: ластик — выделите текст мышью, чтобы снять маркер. Esc — выключить."
+                : $"Режим маркера: {MarkerLabel(token)} — выделяйте текст мышью, он закрашивается. Esc — выключить.";
+        }
+        else
+        {
+            _main.StatusText = "Здесь маркер недоступен.";
+        }
+    }
+
+    /// <summary>Параметр команды маркера «Другой цвет…».</summary>
+    public const string CustomMarker = "custom";
+
+    private static string MarkerLabel(string token) =>
+        TextFormatting.Marks.FirstOrDefault(m => m.Token == token) is { Label: not null } named
+            ? named.Label.ToLowerInvariant()
+            : TextFormatting.ParseMarkToken(token) ?? token;
+
     private void ApplyTextFormat(string prefix, string? token, string done)
     {
         var author = _main.Current?.Author;

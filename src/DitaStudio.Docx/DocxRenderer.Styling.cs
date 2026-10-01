@@ -77,6 +77,7 @@ public sealed partial class DocxRenderer
         var tokens = (node.GetAttribute("outputclass") ?? string.Empty)
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .Append(node.Name).ToList();
+        tokens.RemoveAll(IsHighlightMark); // маркер из палитры Word ставится выделением на знаки, а не стилем (см. WithMarker)
         foreach (var token in tokens)
         {
             Sheet.RegisterSizeClass(token); // свой размер шрифта — класс создаётся на лету
@@ -105,6 +106,9 @@ public sealed partial class DocxRenderer
 
         return new ClassContext(key, classes, rules);
     }
+
+    private static bool IsHighlightMark(string token) =>
+        DitaStudio.Core.Publishing.TextFormatting.ParseMarkToken(token) is { } hex && DocxPropsWriter.HighlightFor(hex[1..]) is not null;
 
     /// <summary>Пока область открыта, все абзацы получают производный стиль с классами узла.</summary>
     private IDisposable BlockScope(DitaNode node)

@@ -157,6 +157,11 @@
         <Setter Property="FontSize" Value="14" />
     </Style>
 
+    <!-- Включённый режим (кисть маркера): кнопка подсвечена. -->
+    <Style Selector="Button.tool.active">
+        <Setter Property="Background" Value="{DynamicResource AccentHover}" />
+    </Style>
+
     <!-- Векторные иконки кнопок панели (таблица, строки, столбцы) — контур цветом текста. -->
     <Style Selector="Button.tool Path.icon">
         <Setter Property="Width" Value="16" />

@@ -126,6 +126,14 @@ public sealed class BlockEditor : TextEditor
         void EndPointerCaret() => Dispatcher.UIThread.Post(() => _pointerPlacesCaret = false, DispatcherPriority.Background);
         TextArea.AddHandler(PointerReleasedEvent, (_, _) => EndPointerCaret(), RoutingStrategies.Tunnel, handledEventsToo: true);
         TextArea.PointerCaptureLost += (_, _) => EndPointerCaret();
+        // Выделение мышью закончено (кнопку отпустили) — для режима кисти маркера: выделенное сразу закрашивается.
+        TextArea.AddHandler(PointerReleasedEvent, (_, _) => Dispatcher.UIThread.Post(() =>
+        {
+            if (!TextArea.Selection.IsEmpty)
+            {
+                MouseSelectionFinished?.Invoke(this, EventArgs.Empty);
+            }
+        }, DispatcherPriority.Input), RoutingStrategies.Tunnel, handledEventsToo: true);
         // При получении фокуса TextArea просит внешнюю область показать её целиком (весь блок, иногда выше экрана) — щелчок мышью
         // из-за этого прокручивал полосу. Когда курсор ставят мышью, запрос гасится; с клавиатуры (Tab, стрелки) работает как раньше.
         TextArea.AddHandler(RequestBringIntoViewEvent, (_, e) =>
@@ -157,6 +165,9 @@ public sealed class BlockEditor : TextEditor
     public InlineContent Content => _content;
 
     public event EventHandler<StructureRequestEventArgs>? StructureRequested;
+
+    /// <summary>Выделение мышью закончено: кнопку отпустили, выделенный текст не пуст.</summary>
+    public event EventHandler? MouseSelectionFinished;
 
     /// <summary>Текст изменён пользователем (для отметки «не сохранено»).</summary>
     public event EventHandler? ContentChanged;

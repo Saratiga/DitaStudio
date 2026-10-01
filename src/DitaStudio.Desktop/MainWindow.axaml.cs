@@ -49,6 +49,7 @@ public partial class MainWindow : Window
         {
             ViewModel.SidePanels.Refresh();
             ViewModel.SidePanels.RefreshOutline();
+            RefreshMarkerButton();
         };
         ViewModel.RefreshProjectTree = ViewModel.ProjectPanel.RebuildTree;
         ViewModel.RefreshMapSelector = ViewModel.Map.RefreshMaps;
@@ -76,6 +77,7 @@ public partial class MainWindow : Window
         ViewModel.Map.Tree.CollectionChanged += OnMapTreeCollectionChanged;
         ViewModel.Map.RevealRequested += OnMapRevealRequested;
         BuildColorPalette();
+        BuildMarkerPalette();
     }
 
     public MainViewModel ViewModel { get; }

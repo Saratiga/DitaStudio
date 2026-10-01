@@ -278,6 +278,82 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Д3: команда «Маркер» — с выделением закрашивает, без — включает кисть (повтор выключает); «Другой цвет…» открывает окно
+    /// выбора цвета; кнопка на панели подсвечена, пока кисть включена.</summary>
+    [AvaloniaFact]
+    public async Task Marker_Command_AppliesOrStartsPen_CustomColorDialog_ButtonState()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.Length > 10);
+        var editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        var button = window.GetLogicalDescendants().OfType<Button>().First(b => b.Name == "MarkerButton");
+        Assert.NotNull(button.Flyout);
+        Assert.False(button.Classes.Contains("active"));
+
+        // С выделением — сразу закрашено.
+        editor.Select(0, 4);
+        await vm.Insert.SetMarkerCommand.ExecuteAsync("mark-yellow");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains("Маркер: жёлтый", vm.StatusText);
+        Assert.Equal("mark-yellow", p.ElementChildren().First(n => n.Name == "ph").GetAttribute("outputclass"));
+
+        // Без выделения — кисть; кнопка подсвечена, цвет на полоске; повтор того же цвета выключает.
+        editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.TextArea.ClearSelection(); // закрашенное осталось выделенным, как в Word
+        editor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        await vm.Insert.SetMarkerCommand.ExecuteAsync("mark-green");
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(pane.Author.MarkerPenActive);
+        Assert.Contains("Режим маркера", vm.StatusText);
+        Assert.True(button.Classes.Contains("active"));
+        await vm.Insert.SetMarkerCommand.ExecuteAsync("mark-green");
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(pane.Author.MarkerPenActive);
+        Assert.False(button.Classes.Contains("active"));
+        Assert.Contains("Маркер выключен", vm.StatusText);
+
+        // «Ластик» без выделения.
+        await vm.Insert.SetMarkerCommand.ExecuteAsync(null);
+        Assert.True(pane.Author.MarkerPenActive);
+        Assert.Null(pane.Author.MarkerPenToken);
+        Assert.Contains("ластик", vm.StatusText);
+        pane.Author.StopMarkerPen();
+
+        // «Другой цвет…»: окно с палитрой и кодом; введённый код становится классом mark-ff8800.
+        editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(10);
+        editor.Select(10, 3);
+        var running = vm.Insert.SetMarkerCommand.ExecuteAsync(Presentation.ViewModels.InsertViewModel.CustomMarker);
+        Dispatcher.UIThread.RunJobs();
+        var dialog = Assert.Single(window.OwnedWindows);
+        var hex = dialog.GetLogicalDescendants().OfType<TextBox>().First(t => Avalonia.Automation.AutomationProperties.GetName(t) == "Код цвета");
+        Assert.Equal(48, dialog.GetLogicalDescendants().OfType<Button>().Count(b => (Avalonia.Automation.AutomationProperties.GetName(b) ?? string.Empty).StartsWith("Цвет #"))); // образцы палитры
+        hex.Text = "#ff8800";
+        dialog.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "ОК").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        await running;
+        Assert.Contains(p.DescendantsAndSelf(), n => n.GetAttribute("outputclass") == "mark-ff8800");
+
+        // Отмена окна ничего не меняет.
+        var before = p.InnerText;
+        editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(20);
+        editor.Select(20, 3);
+        var cancelling = vm.Insert.SetMarkerCommand.ExecuteAsync(Presentation.ViewModels.InsertViewModel.CustomMarker);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Single(window.OwnedWindows).GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Отмена")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        await cancelling;
+        Assert.Equal(before, p.InnerText);
+        window.Close();
+    }
+
     /// <summary>Д2: в окне-списке двойной щелчок по строке сразу выбирает её (без «ОК»); щелчок мимо строки и один щелчок — нет.</summary>
     [AvaloniaFact]
     public async Task PickOneDialog_DoubleTapOnRow_ChoosesItWithoutOk()

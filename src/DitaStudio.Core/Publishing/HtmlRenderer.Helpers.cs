@@ -11,6 +11,13 @@ public sealed partial class HtmlRenderer
 {
     private string Attrs(DitaNode node) => IdAttr(node) + BuildClassAttr(null, node);
 
+    /// <summary>
+    /// Атрибуты тега, у которого есть собственный класс (<c>div class="steps"</c>): базовый класс и <c>outputclass</c> — в одном
+    /// атрибуте <c>class</c>, затем <c>id</c>. Раньше базовый класс писался сам, а <see cref="Attrs"/> добавлял второй атрибут
+    /// <c>class</c>; браузер берёт первый, и классы оформления (цвет, размер, маркер) на таких элементах не действовали.
+    /// </summary>
+    private string ClassedAttrs(string baseClass, DitaNode node) => BuildClassAttr(baseClass, node) + IdAttr(node);
+
     private string IdAttr(DitaNode node)
     {
         var id = node.GetAttribute("id");
@@ -76,12 +83,14 @@ public sealed partial class HtmlRenderer
         var classAttr = classes.Count == 0 ? string.Empty : $" class=\"{Escape(string.Join(' ', classes))}\"";
         var styleAttr = FlagStyleAttr(flag);
 
-        // Свой размер шрифта (size-13_5): встроенного CSS-класса у него нет, размер ставится стилем элемента.
-        var customSize = string.IsNullOrWhiteSpace(outputclass) ? null : outputclass!
-            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Select(TextFormatting.CustomSizeCss).FirstOrDefault(css => css is not null);
-        if (customSize is not null)
+        // Свой размер шрифта (size-13_5) и свой цвет маркера (mark-ff8800): встроенного CSS-класса у них нет, значение ставится стилем элемента.
+        var customStyles = string.IsNullOrWhiteSpace(outputclass)
+            ? new List<string>()
+            : outputclass!.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Select(TextFormatting.CustomClassCss).Where(css => css is not null).Select(css => css!).ToList();
+        if (customStyles.Count > 0)
         {
-            styleAttr = styleAttr.Length == 0 ? $" style=\"{customSize}\"" : styleAttr.Replace("style=\"", $"style=\"{customSize}; ");
+            var custom = string.Join("; ", customStyles);
+            styleAttr = styleAttr.Length == 0 ? $" style=\"{custom}\"" : styleAttr.Replace("style=\"", $"style=\"{custom}; ");
         }
 
         return classAttr + styleAttr;
