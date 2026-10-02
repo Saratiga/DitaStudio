@@ -1,3 +1,5 @@
+using DitaStudio.Core.Localization;
+
 namespace DitaStudio.Core.Schema;
 
 public enum AttrType
@@ -18,8 +20,10 @@ public sealed class AttributeDef
         Values = values;
         Required = required;
         DefaultValue = defaultValue;
-        Description = description;
+        _description = description;
     }
+
+    private readonly string _description;
 
     public string Name { get; }
 
@@ -31,7 +35,8 @@ public sealed class AttributeDef
 
     public string? DefaultValue { get; }
 
-    public string Description { get; }
+    /// <summary>Описание на языке интерфейса (ключ Attr_имя в ресурсах); нет перевода — текст каталога.</summary>
+    public string Description => Loc.Instance.Find("Attr_" + Name) ?? _description;
 
     public override string ToString() => Name;
 }
@@ -85,8 +90,10 @@ public sealed class ElementDef
         Display = display;
         ModelText = modelText;
         Attributes = attributes;
-        Description = description;
+        _description = description;
     }
+
+    private readonly string _description;
 
     public string Name { get; }
 
@@ -99,7 +106,8 @@ public sealed class ElementDef
 
     public IReadOnlyDictionary<string, AttributeDef> Attributes { get; }
 
-    public string Description { get; }
+    /// <summary>Описание на языке интерфейса (ключ Elem_имя в ресурсах); нет перевода — текст каталога.</summary>
+    public string Description => Loc.Instance.Find("Elem_" + Name) ?? _description;
 
     public ContentModel Model => _model ??= ModelParser.Parse(ModelText);
 

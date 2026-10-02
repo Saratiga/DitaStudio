@@ -58,6 +58,60 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Attr_audience" xml:space="preserve">
+    <value>Condition: audience</value>
+  </data>
+  <data name="Attr_conkeyref" xml:space="preserve">
+    <value>Reuse of content through a key</value>
+  </data>
+  <data name="Attr_conref" xml:space="preserve">
+    <value>Reuse of content by a direct reference</value>
+  </data>
+  <data name="Attr_format" xml:space="preserve">
+    <value>Format of the link target (dita, html, pdf…)</value>
+  </data>
+  <data name="Attr_href" xml:space="preserve">
+    <value>Reference to a topic, element or external resource</value>
+  </data>
+  <data name="Attr_id" xml:space="preserve">
+    <value>Unique identifier of the element within the topic</value>
+  </data>
+  <data name="Attr_keyref" xml:space="preserve">
+    <value>Reference through a key defined in the map (keydef)</value>
+  </data>
+  <data name="Attr_otherprops" xml:space="preserve">
+    <value>Condition: other properties</value>
+  </data>
+  <data name="Attr_outputclass" xml:space="preserve">
+    <value>Class for styling in the output format</value>
+  </data>
+  <data name="Attr_platform" xml:space="preserve">
+    <value>Condition: platform</value>
+  </data>
+  <data name="Attr_product" xml:space="preserve">
+    <value>Condition: product</value>
+  </data>
+  <data name="Attr_props" xml:space="preserve">
+    <value>Custom condition for conditional builds</value>
+  </data>
+  <data name="Attr_rev" xml:space="preserve">
+    <value>Revision mark for change highlighting</value>
+  </data>
+  <data name="Attr_scope" xml:space="preserve">
+    <value>Location of the link target</value>
+  </data>
+  <data name="Attr_tcauthor" xml:space="preserve">
+    <value>Track changes: who made the change (used together with status="new"/"deleted")</value>
+  </data>
+  <data name="Attr_tcdate" xml:space="preserve">
+    <value>Track changes: when the change was made (ISO date)</value>
+  </data>
+  <data name="Attr_translate" xml:space="preserve">
+    <value>Whether to translate the element content</value>
+  </data>
+  <data name="Attr_type" xml:space="preserve">
+    <value>Type of the target topic</value>
+  </data>
   <data name="Author_01Content2" xml:space="preserve">
     <value>&lt;{0}&gt;
 
@@ -1517,6 +1571,1266 @@ Content: {2}</value>
   </data>
   <data name="Doc_SourceEdit" xml:space="preserve">
     <value>Source edit</value>
+  </data>
+  <data name="Elem_abbreviated-form" xml:space="preserve">
+    <value>Abbreviated form of a glossary term</value>
+  </data>
+  <data name="Elem_abbrevlist" xml:space="preserve">
+    <value>List of abbreviations</value>
+  </data>
+  <data name="Elem_abstract" xml:space="preserve">
+    <value>Extended introduction, may contain shortdesc</value>
+  </data>
+  <data name="Elem_alt" xml:space="preserve">
+    <value>Alternative text of an image</value>
+  </data>
+  <data name="Elem_amendments" xml:space="preserve">
+    <value>List of amendments</value>
+  </data>
+  <data name="Elem_anchor" xml:space="preserve">
+    <value>Attachment point for content from another map</value>
+  </data>
+  <data name="Elem_anchorref" xml:space="preserve">
+    <value>Reference to an attachment point</value>
+  </data>
+  <data name="Elem_apiname" xml:space="preserve">
+    <value>API element name</value>
+  </data>
+  <data name="Elem_appendices" xml:space="preserve">
+    <value>Appendices section</value>
+  </data>
+  <data name="Elem_appendix" xml:space="preserve">
+    <value>Appendix</value>
+  </data>
+  <data name="Elem_approved" xml:space="preserve">
+    <value>Approved</value>
+  </data>
+  <data name="Elem_area" xml:space="preserve">
+    <value>Active area of an image</value>
+  </data>
+  <data name="Elem_attributedef" xml:space="preserve">
+    <value>Attribute the enumeration is defined for</value>
+  </data>
+  <data name="Elem_audience" xml:space="preserve">
+    <value>Target audience</value>
+  </data>
+  <data name="Elem_audio" xml:space="preserve">
+    <value>Audio</value>
+  </data>
+  <data name="Elem_author" xml:space="preserve">
+    <value>Author</value>
+  </data>
+  <data name="Elem_b" xml:space="preserve">
+    <value>Bold</value>
+  </data>
+  <data name="Elem_backmatter" xml:space="preserve">
+    <value>Back matter of the book</value>
+  </data>
+  <data name="Elem_bibliolist" xml:space="preserve">
+    <value>Bibliography</value>
+  </data>
+  <data name="Elem_body" xml:space="preserve">
+    <value>Body of a general topic</value>
+  </data>
+  <data name="Elem_bodydiv" xml:space="preserve">
+    <value>Logical group of content in a topic body: text, blocks, sections</value>
+  </data>
+  <data name="Elem_bookabstract" xml:space="preserve">
+    <value>Book abstract</value>
+  </data>
+  <data name="Elem_bookchangehistory" xml:space="preserve">
+    <value>Book change history</value>
+  </data>
+  <data name="Elem_bookevent" xml:space="preserve">
+    <value>Event in the book history</value>
+  </data>
+  <data name="Elem_bookeventtype" xml:space="preserve">
+    <value>Event type</value>
+  </data>
+  <data name="Elem_bookid" xml:space="preserve">
+    <value>Book identification</value>
+  </data>
+  <data name="Elem_booklibrary" xml:space="preserve">
+    <value>Series or library of publications</value>
+  </data>
+  <data name="Elem_booklist" xml:space="preserve">
+    <value>Custom book list</value>
+  </data>
+  <data name="Elem_booklists" xml:space="preserve">
+    <value>Book lists</value>
+  </data>
+  <data name="Elem_bookmap" xml:space="preserve">
+    <value>Bookmap: chapters, parts, appendices</value>
+  </data>
+  <data name="Elem_bookmeta" xml:space="preserve">
+    <value>Book metadata</value>
+  </data>
+  <data name="Elem_booknumber" xml:space="preserve">
+    <value>Book number</value>
+  </data>
+  <data name="Elem_bookowner" xml:space="preserve">
+    <value>Book rights holder</value>
+  </data>
+  <data name="Elem_bookpartno" xml:space="preserve">
+    <value>Edition part number</value>
+  </data>
+  <data name="Elem_bookrights" xml:space="preserve">
+    <value>Rights to the book</value>
+  </data>
+  <data name="Elem_booktitle" xml:space="preserve">
+    <value>Book title</value>
+  </data>
+  <data name="Elem_booktitlealt" xml:space="preserve">
+    <value>Alternative title</value>
+  </data>
+  <data name="Elem_boolean" xml:space="preserve">
+    <value>Boolean value (obsolete in favor of state)</value>
+  </data>
+  <data name="Elem_brand" xml:space="preserve">
+    <value>Brand</value>
+  </data>
+  <data name="Elem_category" xml:space="preserve">
+    <value>Content category</value>
+  </data>
+  <data name="Elem_cause" xml:space="preserve">
+    <value>Cause of the problem</value>
+  </data>
+  <data name="Elem_change-completed" xml:space="preserve">
+    <value>Change completion date</value>
+  </data>
+  <data name="Elem_change-historylist" xml:space="preserve">
+    <value>Topic change history</value>
+  </data>
+  <data name="Elem_change-item" xml:space="preserve">
+    <value>Change entry</value>
+  </data>
+  <data name="Elem_change-organization" xml:space="preserve">
+    <value>Organization that made the change</value>
+  </data>
+  <data name="Elem_change-person" xml:space="preserve">
+    <value>Who made the change</value>
+  </data>
+  <data name="Elem_change-request-id" xml:space="preserve">
+    <value>Request number</value>
+  </data>
+  <data name="Elem_change-request-reference" xml:space="preserve">
+    <value>Reference to a change request</value>
+  </data>
+  <data name="Elem_change-request-system" xml:space="preserve">
+    <value>Request tracking system</value>
+  </data>
+  <data name="Elem_change-revisionid" xml:space="preserve">
+    <value>Revision identifier</value>
+  </data>
+  <data name="Elem_change-started" xml:space="preserve">
+    <value>Change start date</value>
+  </data>
+  <data name="Elem_change-summary" xml:space="preserve">
+    <value>Short description of the change</value>
+  </data>
+  <data name="Elem_chapter" xml:space="preserve">
+    <value>Chapter</value>
+  </data>
+  <data name="Elem_chdesc" xml:space="preserve">
+    <value>Description of an option</value>
+  </data>
+  <data name="Elem_chdeschd" xml:space="preserve">
+    <value>“Description” column heading</value>
+  </data>
+  <data name="Elem_chhead" xml:space="preserve">
+    <value>Header of a choices table</value>
+  </data>
+  <data name="Elem_choice" xml:space="preserve">
+    <value>A way to perform</value>
+  </data>
+  <data name="Elem_choices" xml:space="preserve">
+    <value>Ways to perform a step</value>
+  </data>
+  <data name="Elem_choicetable" xml:space="preserve">
+    <value>Table of choices in a task step</value>
+  </data>
+  <data name="Elem_choption" xml:space="preserve">
+    <value>Choice option</value>
+  </data>
+  <data name="Elem_choptionhd" xml:space="preserve">
+    <value>“Option” column heading</value>
+  </data>
+  <data name="Elem_chrow" xml:space="preserve">
+    <value>Row of a choices table</value>
+  </data>
+  <data name="Elem_cite" xml:space="preserve">
+    <value>Title of a source</value>
+  </data>
+  <data name="Elem_cmd" xml:space="preserve">
+    <value>Step command — what exactly to do</value>
+  </data>
+  <data name="Elem_cmdname" xml:space="preserve">
+    <value>Command name</value>
+  </data>
+  <data name="Elem_codeblock" xml:space="preserve">
+    <value>Source code block</value>
+  </data>
+  <data name="Elem_codeph" xml:space="preserve">
+    <value>Inline code fragment</value>
+  </data>
+  <data name="Elem_coderef" xml:space="preserve">
+    <value>Code inserted from an external file</value>
+  </data>
+  <data name="Elem_colophon" xml:space="preserve">
+    <value>Colophon</value>
+  </data>
+  <data name="Elem_colspec" xml:space="preserve">
+    <value>Column specification</value>
+  </data>
+  <data name="Elem_completed" xml:space="preserve">
+    <value>Work completed</value>
+  </data>
+  <data name="Elem_component" xml:space="preserve">
+    <value>Product component</value>
+  </data>
+  <data name="Elem_conbody" xml:space="preserve">
+    <value>Body of a concept</value>
+  </data>
+  <data name="Elem_conbodydiv" xml:space="preserve">
+    <value>Group of sections and examples in the body of a concept</value>
+  </data>
+  <data name="Elem_concept" xml:space="preserve">
+    <value>Concept — explains what it is and why it is needed</value>
+  </data>
+  <data name="Elem_condition" xml:space="preserve">
+    <value>Problem symptom</value>
+  </data>
+  <data name="Elem_consequence" xml:space="preserve">
+    <value>Consequences</value>
+  </data>
+  <data name="Elem_context" xml:space="preserve">
+    <value>Context: why and when the task is performed</value>
+  </data>
+  <data name="Elem_coords" xml:space="preserve">
+    <value>Area coordinates</value>
+  </data>
+  <data name="Elem_copyrfirst" xml:space="preserve">
+    <value>First year of the rights</value>
+  </data>
+  <data name="Elem_copyrholder" xml:space="preserve">
+    <value>Copyright holder</value>
+  </data>
+  <data name="Elem_copyright" xml:space="preserve">
+    <value>Copyright information</value>
+  </data>
+  <data name="Elem_copyrlast" xml:space="preserve">
+    <value>Last year of the rights</value>
+  </data>
+  <data name="Elem_copyryear" xml:space="preserve">
+    <value>Copyright year</value>
+  </data>
+  <data name="Elem_created" xml:space="preserve">
+    <value>Creation date</value>
+  </data>
+  <data name="Elem_critdates" xml:space="preserve">
+    <value>Key dates of the document</value>
+  </data>
+  <data name="Elem_data" xml:space="preserve">
+    <value>Arbitrary metadata inside the content</value>
+  </data>
+  <data name="Elem_data-about" xml:space="preserve">
+    <value>Metadata about another element</value>
+  </data>
+  <data name="Elem_dd" xml:space="preserve">
+    <value>Definition of a term</value>
+  </data>
+  <data name="Elem_ddhd" xml:space="preserve">
+    <value>Heading of the definitions column</value>
+  </data>
+  <data name="Elem_dedication" xml:space="preserve">
+    <value>Dedication</value>
+  </data>
+  <data name="Elem_defaultSubject" xml:space="preserve">
+    <value>Default value</value>
+  </data>
+  <data name="Elem_delim" xml:space="preserve">
+    <value>Syntax delimiter</value>
+  </data>
+  <data name="Elem_desc" xml:space="preserve">
+    <value>Description of an object, figure or link</value>
+  </data>
+  <data name="Elem_ditavalmeta" xml:space="preserve">
+    <value>Conditional filtering metadata</value>
+  </data>
+  <data name="Elem_ditavalref" xml:space="preserve">
+    <value>Apply conditional filtering to a map branch</value>
+  </data>
+  <data name="Elem_div" xml:space="preserve">
+    <value>Arbitrary group of content: text, phrases and blocks without a title of its own</value>
+  </data>
+  <data name="Elem_dl" xml:space="preserve">
+    <value>Definition list</value>
+  </data>
+  <data name="Elem_dlentry" xml:space="preserve">
+    <value>“Term — definition” pair</value>
+  </data>
+  <data name="Elem_dlhead" xml:space="preserve">
+    <value>Heading of a definition list</value>
+  </data>
+  <data name="Elem_draft-comment" xml:space="preserve">
+    <value>Draft comment (not published)</value>
+  </data>
+  <data name="Elem_draftintro" xml:space="preserve">
+    <value>Draft introduction</value>
+  </data>
+  <data name="Elem_dt" xml:space="preserve">
+    <value>Term</value>
+  </data>
+  <data name="Elem_dthd" xml:space="preserve">
+    <value>Heading of the terms column</value>
+  </data>
+  <data name="Elem_dvrKeyscopePrefix" xml:space="preserve">
+    <value>Key scope prefix</value>
+  </data>
+  <data name="Elem_dvrKeyscopeSuffix" xml:space="preserve">
+    <value>Key scope suffix</value>
+  </data>
+  <data name="Elem_dvrResourcePrefix" xml:space="preserve">
+    <value>Prefix of the result file name</value>
+  </data>
+  <data name="Elem_dvrResourceSuffix" xml:space="preserve">
+    <value>Suffix of the result file name</value>
+  </data>
+  <data name="Elem_edited" xml:space="preserve">
+    <value>Edited</value>
+  </data>
+  <data name="Elem_edition" xml:space="preserve">
+    <value>Edition</value>
+  </data>
+  <data name="Elem_elementdef" xml:space="preserve">
+    <value>Element the enumeration applies to</value>
+  </data>
+  <data name="Elem_entry" xml:space="preserve">
+    <value>Table cell</value>
+  </data>
+  <data name="Elem_enumerationdef" xml:space="preserve">
+    <value>Enumeration of allowed attribute values</value>
+  </data>
+  <data name="Elem_equation-block" xml:space="preserve">
+    <value>Display equation</value>
+  </data>
+  <data name="Elem_equation-figure" xml:space="preserve">
+    <value>Numbered equation with a title</value>
+  </data>
+  <data name="Elem_equation-inline" xml:space="preserve">
+    <value>Inline equation</value>
+  </data>
+  <data name="Elem_equation-number" xml:space="preserve">
+    <value>Equation number</value>
+  </data>
+  <data name="Elem_example" xml:space="preserve">
+    <value>Usage example</value>
+  </data>
+  <data name="Elem_fallback" xml:space="preserve">
+    <value>Content shown instead of the media</value>
+  </data>
+  <data name="Elem_featnum" xml:space="preserve">
+    <value>Feature number</value>
+  </data>
+  <data name="Elem_fig" xml:space="preserve">
+    <value>Figure with a title</value>
+  </data>
+  <data name="Elem_figgroup" xml:space="preserve">
+    <value>Group inside a figure</value>
+  </data>
+  <data name="Elem_figurelist" xml:space="preserve">
+    <value>List of figures</value>
+  </data>
+  <data name="Elem_filepath" xml:space="preserve">
+    <value>File path</value>
+  </data>
+  <data name="Elem_fn" xml:space="preserve">
+    <value>Footnote</value>
+  </data>
+  <data name="Elem_foreign" xml:space="preserve">
+    <value>Content of a foreign vocabulary (SVG, MathML, etc.)</value>
+  </data>
+  <data name="Elem_fragment" xml:space="preserve">
+    <value>Named syntax fragment</value>
+  </data>
+  <data name="Elem_fragref" xml:space="preserve">
+    <value>Reference to a syntax fragment</value>
+  </data>
+  <data name="Elem_frontmatter" xml:space="preserve">
+    <value>Front matter of the book</value>
+  </data>
+  <data name="Elem_glossAbbreviation" xml:space="preserve">
+    <value>Abbreviation</value>
+  </data>
+  <data name="Elem_glossAcronym" xml:space="preserve">
+    <value>Acronym</value>
+  </data>
+  <data name="Elem_glossAlt" xml:space="preserve">
+    <value>Alternative form of the term</value>
+  </data>
+  <data name="Elem_glossAlternateFor" xml:space="preserve">
+    <value>Reference to the main form of the term</value>
+  </data>
+  <data name="Elem_glossarylist" xml:space="preserve">
+    <value>Glossary</value>
+  </data>
+  <data name="Elem_glossBody" xml:space="preserve">
+    <value>Additional information about the term</value>
+  </data>
+  <data name="Elem_glossdef" xml:space="preserve">
+    <value>Term definition</value>
+  </data>
+  <data name="Elem_glossentry" xml:space="preserve">
+    <value>Glossary entry</value>
+  </data>
+  <data name="Elem_glossgroup" xml:space="preserve">
+    <value>Group of glossary entries</value>
+  </data>
+  <data name="Elem_glossPartOfSpeech" xml:space="preserve">
+    <value>Part of speech</value>
+  </data>
+  <data name="Elem_glossProperty" xml:space="preserve">
+    <value>Arbitrary term property</value>
+  </data>
+  <data name="Elem_glossref" xml:space="preserve">
+    <value>Reference to a glossary entry</value>
+  </data>
+  <data name="Elem_glossScopeNote" xml:space="preserve">
+    <value>Scope of the term</value>
+  </data>
+  <data name="Elem_glossShortForm" xml:space="preserve">
+    <value>Short form</value>
+  </data>
+  <data name="Elem_glossStatus" xml:space="preserve">
+    <value>Term status (recommended, obsolete…)</value>
+  </data>
+  <data name="Elem_glossSurfaceForm" xml:space="preserve">
+    <value>Full form of the term for the first mention</value>
+  </data>
+  <data name="Elem_glossSymbol" xml:space="preserve">
+    <value>Graphic symbol of the term</value>
+  </data>
+  <data name="Elem_glossSynonym" xml:space="preserve">
+    <value>Synonym</value>
+  </data>
+  <data name="Elem_glossterm" xml:space="preserve">
+    <value>Glossary term</value>
+  </data>
+  <data name="Elem_glossUsage" xml:space="preserve">
+    <value>Usage notes</value>
+  </data>
+  <data name="Elem_groupchoice" xml:space="preserve">
+    <value>Group of mutually exclusive items</value>
+  </data>
+  <data name="Elem_groupcomp" xml:space="preserve">
+    <value>Group of items without spaces</value>
+  </data>
+  <data name="Elem_groupseq" xml:space="preserve">
+    <value>Sequence of syntax items</value>
+  </data>
+  <data name="Elem_hasInstance" xml:space="preserve">
+    <value>“Instance” relation</value>
+  </data>
+  <data name="Elem_hasKind" xml:space="preserve">
+    <value>“Kind” relation</value>
+  </data>
+  <data name="Elem_hasNarrower" xml:space="preserve">
+    <value>“Narrower” relation</value>
+  </data>
+  <data name="Elem_hasPart" xml:space="preserve">
+    <value>“Part” relation</value>
+  </data>
+  <data name="Elem_hasRelated" xml:space="preserve">
+    <value>“Related” relation</value>
+  </data>
+  <data name="Elem_hazardstatement" xml:space="preserve">
+    <value>Hazard statement</value>
+  </data>
+  <data name="Elem_hazardsymbol" xml:space="preserve">
+    <value>Hazard symbol</value>
+  </data>
+  <data name="Elem_howtoavoid" xml:space="preserve">
+    <value>How to avoid the hazard</value>
+  </data>
+  <data name="Elem_i" xml:space="preserve">
+    <value>Italic</value>
+  </data>
+  <data name="Elem_image" xml:space="preserve">
+    <value>Image</value>
+  </data>
+  <data name="Elem_imagemap" xml:space="preserve">
+    <value>Image with active areas</value>
+  </data>
+  <data name="Elem_index-see" xml:space="preserve">
+    <value>“See” cross-reference</value>
+  </data>
+  <data name="Elem_index-see-also" xml:space="preserve">
+    <value>“See also” cross-reference</value>
+  </data>
+  <data name="Elem_index-sort-as" xml:space="preserve">
+    <value>Index sort key</value>
+  </data>
+  <data name="Elem_indexlist" xml:space="preserve">
+    <value>Subject index</value>
+  </data>
+  <data name="Elem_indexterm" xml:space="preserve">
+    <value>Subject index term</value>
+  </data>
+  <data name="Elem_info" xml:space="preserve">
+    <value>Explanation of a step</value>
+  </data>
+  <data name="Elem_isbn" xml:space="preserve">
+    <value>ISBN</value>
+  </data>
+  <data name="Elem_itemgroup" xml:space="preserve">
+    <value>Group of content inside a list item</value>
+  </data>
+  <data name="Elem_keydef" xml:space="preserve">
+    <value>Key definition</value>
+  </data>
+  <data name="Elem_keyword" xml:space="preserve">
+    <value>Keyword</value>
+  </data>
+  <data name="Elem_keywords" xml:space="preserve">
+    <value>Keywords</value>
+  </data>
+  <data name="Elem_kwd" xml:space="preserve">
+    <value>Required syntax keyword</value>
+  </data>
+  <data name="Elem_lcAnswerContent" xml:space="preserve">
+    <value>Text of an answer option</value>
+  </data>
+  <data name="Elem_lcAnswerOption" xml:space="preserve">
+    <value>Answer option</value>
+  </data>
+  <data name="Elem_lcAnswerOptionGroup" xml:space="preserve">
+    <value>Answer options</value>
+  </data>
+  <data name="Elem_lcArea" xml:space="preserve">
+    <value>Active area of an image</value>
+  </data>
+  <data name="Elem_lcAreaCoords" xml:space="preserve">
+    <value>Coordinates of an active area</value>
+  </data>
+  <data name="Elem_lcAudience" xml:space="preserve">
+    <value>Target audience of the course</value>
+  </data>
+  <data name="Elem_lcCorrectResponse" xml:space="preserve">
+    <value>Mark of the correct option</value>
+  </data>
+  <data name="Elem_lcDuration" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="Elem_lcFeedback" xml:space="preserve">
+    <value>Feedback on an option</value>
+  </data>
+  <data name="Elem_lcFeedbackCorrect" xml:space="preserve">
+    <value>Feedback for a correct answer</value>
+  </data>
+  <data name="Elem_lcFeedbackIncorrect" xml:space="preserve">
+    <value>Feedback for an incorrect answer</value>
+  </data>
+  <data name="Elem_lcGapAnalysis" xml:space="preserve">
+    <value>Knowledge gap analysis</value>
+  </data>
+  <data name="Elem_lcHotspot" xml:space="preserve">
+    <value>Exercise with active areas</value>
+  </data>
+  <data name="Elem_lcInteraction" xml:space="preserve">
+    <value>Interactive exercise</value>
+  </data>
+  <data name="Elem_lcIntervention" xml:space="preserve">
+    <value>Training measures</value>
+  </data>
+  <data name="Elem_lcIntro" xml:space="preserve">
+    <value>Introduction</value>
+  </data>
+  <data name="Elem_lcItem" xml:space="preserve">
+    <value>Left item of a pair</value>
+  </data>
+  <data name="Elem_lcMatching" xml:space="preserve">
+    <value>Matching exercise</value>
+  </data>
+  <data name="Elem_lcMatchingItem" xml:space="preserve">
+    <value>Right item of a pair</value>
+  </data>
+  <data name="Elem_lcMatchingPair" xml:space="preserve">
+    <value>Pair to match</value>
+  </data>
+  <data name="Elem_lcMultipleSelect" xml:space="preserve">
+    <value>Question with several correct answers</value>
+  </data>
+  <data name="Elem_lcNeedsAnalysis" xml:space="preserve">
+    <value>Needs analysis</value>
+  </data>
+  <data name="Elem_lcNextSteps" xml:space="preserve">
+    <value>What to do next</value>
+  </data>
+  <data name="Elem_lcObjective" xml:space="preserve">
+    <value>Learning objective</value>
+  </data>
+  <data name="Elem_lcObjectiveGroup" xml:space="preserve">
+    <value>Group of learning objectives</value>
+  </data>
+  <data name="Elem_lcObjectives" xml:space="preserve">
+    <value>Learning objectives</value>
+  </data>
+  <data name="Elem_lcObjectivesStem" xml:space="preserve">
+    <value>Lead-in phrase for the list of objectives</value>
+  </data>
+  <data name="Elem_lcOpenAnswer" xml:space="preserve">
+    <value>Sample answer to an open question</value>
+  </data>
+  <data name="Elem_lcOpenQuestion" xml:space="preserve">
+    <value>Open question</value>
+  </data>
+  <data name="Elem_lcPrereqs" xml:space="preserve">
+    <value>Learner prerequisites</value>
+  </data>
+  <data name="Elem_lcProject" xml:space="preserve">
+    <value>Training project information</value>
+  </data>
+  <data name="Elem_lcQuestion" xml:space="preserve">
+    <value>Question wording</value>
+  </data>
+  <data name="Elem_lcResources" xml:space="preserve">
+    <value>Materials and resources</value>
+  </data>
+  <data name="Elem_lcReview" xml:space="preserve">
+    <value>Review of the material</value>
+  </data>
+  <data name="Elem_lcSequence" xml:space="preserve">
+    <value>Correct sequence number</value>
+  </data>
+  <data name="Elem_lcSequenceOption" xml:space="preserve">
+    <value>Sequence item</value>
+  </data>
+  <data name="Elem_lcSequenceOptionGroup" xml:space="preserve">
+    <value>Items to put in order</value>
+  </data>
+  <data name="Elem_lcSequencing" xml:space="preserve">
+    <value>Ordering exercise</value>
+  </data>
+  <data name="Elem_lcSingleSelect" xml:space="preserve">
+    <value>Question with one correct answer</value>
+  </data>
+  <data name="Elem_lcSummary" xml:space="preserve">
+    <value>Summary</value>
+  </data>
+  <data name="Elem_lcTechnical" xml:space="preserve">
+    <value>Technical requirements</value>
+  </data>
+  <data name="Elem_lcTrueFalse" xml:space="preserve">
+    <value>True/false question</value>
+  </data>
+  <data name="Elem_learningAssessment" xml:space="preserve">
+    <value>Knowledge assessment</value>
+  </data>
+  <data name="Elem_learningAssessmentbody" xml:space="preserve">
+    <value>Body of an assessment</value>
+  </data>
+  <data name="Elem_learningBase" xml:space="preserve">
+    <value>Base learning topic</value>
+  </data>
+  <data name="Elem_learningBasebody" xml:space="preserve">
+    <value>Body of a base learning topic</value>
+  </data>
+  <data name="Elem_learningContent" xml:space="preserve">
+    <value>Learning content</value>
+  </data>
+  <data name="Elem_learningContentbody" xml:space="preserve">
+    <value>Body of learning content</value>
+  </data>
+  <data name="Elem_learningOverview" xml:space="preserve">
+    <value>Learning module overview</value>
+  </data>
+  <data name="Elem_learningOverviewbody" xml:space="preserve">
+    <value>Body of an overview</value>
+  </data>
+  <data name="Elem_learningPlan" xml:space="preserve">
+    <value>Course plan</value>
+  </data>
+  <data name="Elem_learningPlanbody" xml:space="preserve">
+    <value>Body of a course plan</value>
+  </data>
+  <data name="Elem_learningSummary" xml:space="preserve">
+    <value>Learning module summary</value>
+  </data>
+  <data name="Elem_learningSummarybody" xml:space="preserve">
+    <value>Body of a summary</value>
+  </data>
+  <data name="Elem_li" xml:space="preserve">
+    <value>List item</value>
+  </data>
+  <data name="Elem_line-through" xml:space="preserve">
+    <value>Strikethrough</value>
+  </data>
+  <data name="Elem_lines" xml:space="preserve">
+    <value>Text with line breaks preserved</value>
+  </data>
+  <data name="Elem_link" xml:space="preserve">
+    <value>Related link</value>
+  </data>
+  <data name="Elem_linklist" xml:space="preserve">
+    <value>Ordered list of links</value>
+  </data>
+  <data name="Elem_linkpool" xml:space="preserve">
+    <value>Group of links with common properties</value>
+  </data>
+  <data name="Elem_linktext" xml:space="preserve">
+    <value>Link text</value>
+  </data>
+  <data name="Elem_longdescref" xml:space="preserve">
+    <value>Reference to a detailed description of an image</value>
+  </data>
+  <data name="Elem_lq" xml:space="preserve">
+    <value>Long quotation</value>
+  </data>
+  <data name="Elem_mainbooktitle" xml:space="preserve">
+    <value>Main book title</value>
+  </data>
+  <data name="Elem_maintainer" xml:space="preserve">
+    <value>Person responsible for the edition</value>
+  </data>
+  <data name="Elem_map" xml:space="preserve">
+    <value>Map: publication structure</value>
+  </data>
+  <data name="Elem_mapref" xml:space="preserve">
+    <value>Reference to a nested map</value>
+  </data>
+  <data name="Elem_markupname" xml:space="preserve">
+    <value>Markup element name</value>
+  </data>
+  <data name="Elem_mathml" xml:space="preserve">
+    <value>MathML container</value>
+  </data>
+  <data name="Elem_mathmlref" xml:space="preserve">
+    <value>Reference to an external MathML file</value>
+  </data>
+  <data name="Elem_media-source" xml:space="preserve">
+    <value>Media file source</value>
+  </data>
+  <data name="Elem_media-track" xml:space="preserve">
+    <value>Subtitle or chapter track</value>
+  </data>
+  <data name="Elem_menucascade" xml:space="preserve">
+    <value>Sequence of menu items</value>
+  </data>
+  <data name="Elem_messagepanel" xml:space="preserve">
+    <value>Hazard message panel</value>
+  </data>
+  <data name="Elem_metadata" xml:space="preserve">
+    <value>Topic metadata</value>
+  </data>
+  <data name="Elem_msgblock" xml:space="preserve">
+    <value>System message block</value>
+  </data>
+  <data name="Elem_msgnum" xml:space="preserve">
+    <value>Message number</value>
+  </data>
+  <data name="Elem_msgph" xml:space="preserve">
+    <value>System message text</value>
+  </data>
+  <data name="Elem_navref" xml:space="preserve">
+    <value>Reference to an external navigation map</value>
+  </data>
+  <data name="Elem_navtitle" xml:space="preserve">
+    <value>Title for the table of contents and navigation</value>
+  </data>
+  <data name="Elem_note" xml:space="preserve">
+    <value>Note, warning, tip</value>
+  </data>
+  <data name="Elem_notices" xml:space="preserve">
+    <value>Legal notices</value>
+  </data>
+  <data name="Elem_numcharref" xml:space="preserve">
+    <value>Numeric character reference</value>
+  </data>
+  <data name="Elem_object" xml:space="preserve">
+    <value>Embedded object</value>
+  </data>
+  <data name="Elem_ol" xml:space="preserve">
+    <value>Numbered list</value>
+  </data>
+  <data name="Elem_oper" xml:space="preserve">
+    <value>Operator in syntax</value>
+  </data>
+  <data name="Elem_option" xml:space="preserve">
+    <value>Command-line option</value>
+  </data>
+  <data name="Elem_organization" xml:space="preserve">
+    <value>Organization</value>
+  </data>
+  <data name="Elem_othermeta" xml:space="preserve">
+    <value>Arbitrary “name — value” pair</value>
+  </data>
+  <data name="Elem_overline" xml:space="preserve">
+    <value>Overline</value>
+  </data>
+  <data name="Elem_p" xml:space="preserve">
+    <value>Paragraph</value>
+  </data>
+  <data name="Elem_param" xml:space="preserve">
+    <value>Parameter of an embedded object</value>
+  </data>
+  <data name="Elem_parameterentity" xml:space="preserve">
+    <value>Parameter entity</value>
+  </data>
+  <data name="Elem_parml" xml:space="preserve">
+    <value>Parameter list</value>
+  </data>
+  <data name="Elem_parmname" xml:space="preserve">
+    <value>Parameter name</value>
+  </data>
+  <data name="Elem_part" xml:space="preserve">
+    <value>Part of the book</value>
+  </data>
+  <data name="Elem_pd" xml:space="preserve">
+    <value>Parameter description</value>
+  </data>
+  <data name="Elem_permissions" xml:space="preserve">
+    <value>Access restrictions</value>
+  </data>
+  <data name="Elem_person" xml:space="preserve">
+    <value>Person</value>
+  </data>
+  <data name="Elem_ph" xml:space="preserve">
+    <value>General phrase</value>
+  </data>
+  <data name="Elem_plentry" xml:space="preserve">
+    <value>“Parameter — description” pair</value>
+  </data>
+  <data name="Elem_postreq" xml:space="preserve">
+    <value>What to do after the task is completed</value>
+  </data>
+  <data name="Elem_pre" xml:space="preserve">
+    <value>Verbatim text with formatting preserved</value>
+  </data>
+  <data name="Elem_preface" xml:space="preserve">
+    <value>Preface</value>
+  </data>
+  <data name="Elem_prereq" xml:space="preserve">
+    <value>What to do before starting</value>
+  </data>
+  <data name="Elem_printlocation" xml:space="preserve">
+    <value>Place of printing</value>
+  </data>
+  <data name="Elem_prodinfo" xml:space="preserve">
+    <value>Product information</value>
+  </data>
+  <data name="Elem_prodname" xml:space="preserve">
+    <value>Product name</value>
+  </data>
+  <data name="Elem_prognum" xml:space="preserve">
+    <value>Program number</value>
+  </data>
+  <data name="Elem_prolog" xml:space="preserve">
+    <value>Prolog: authorship and metadata</value>
+  </data>
+  <data name="Elem_propdesc" xml:space="preserve">
+    <value>Property description</value>
+  </data>
+  <data name="Elem_propdeschd" xml:space="preserve">
+    <value>“Description” column heading</value>
+  </data>
+  <data name="Elem_properties" xml:space="preserve">
+    <value>Properties table (reference topic)</value>
+  </data>
+  <data name="Elem_property" xml:space="preserve">
+    <value>Row of a properties table</value>
+  </data>
+  <data name="Elem_prophead" xml:space="preserve">
+    <value>Header of a properties table</value>
+  </data>
+  <data name="Elem_proptype" xml:space="preserve">
+    <value>Property type</value>
+  </data>
+  <data name="Elem_proptypehd" xml:space="preserve">
+    <value>“Type” column heading</value>
+  </data>
+  <data name="Elem_propvalue" xml:space="preserve">
+    <value>Property value</value>
+  </data>
+  <data name="Elem_propvaluehd" xml:space="preserve">
+    <value>“Value” column heading</value>
+  </data>
+  <data name="Elem_pt" xml:space="preserve">
+    <value>Parameter name</value>
+  </data>
+  <data name="Elem_published" xml:space="preserve">
+    <value>Published</value>
+  </data>
+  <data name="Elem_publisher" xml:space="preserve">
+    <value>Publisher</value>
+  </data>
+  <data name="Elem_publisherinformation" xml:space="preserve">
+    <value>Publisher information</value>
+  </data>
+  <data name="Elem_publishtype" xml:space="preserve">
+    <value>Publication type</value>
+  </data>
+  <data name="Elem_q" xml:space="preserve">
+    <value>Short quotation</value>
+  </data>
+  <data name="Elem_refbody" xml:space="preserve">
+    <value>Body of a reference topic</value>
+  </data>
+  <data name="Elem_refbodydiv" xml:space="preserve">
+    <value>Group of reference sections</value>
+  </data>
+  <data name="Elem_reference" xml:space="preserve">
+    <value>Reference — tables, parameters, syntax</value>
+  </data>
+  <data name="Elem_refsyn" xml:space="preserve">
+    <value>Brief syntax</value>
+  </data>
+  <data name="Elem_related-links" xml:space="preserve">
+    <value>Block of related links</value>
+  </data>
+  <data name="Elem_relatedSubjects" xml:space="preserve">
+    <value>Related categories</value>
+  </data>
+  <data name="Elem_relcell" xml:space="preserve">
+    <value>Cell of a relationship table</value>
+  </data>
+  <data name="Elem_relcolspec" xml:space="preserve">
+    <value>Column specification of a relationship table</value>
+  </data>
+  <data name="Elem_relheader" xml:space="preserve">
+    <value>Header of a relationship table</value>
+  </data>
+  <data name="Elem_relrow" xml:space="preserve">
+    <value>Row of a relationship table</value>
+  </data>
+  <data name="Elem_reltable" xml:space="preserve">
+    <value>Relationship table between topics</value>
+  </data>
+  <data name="Elem_remedy" xml:space="preserve">
+    <value>Remedy</value>
+  </data>
+  <data name="Elem_repsep" xml:space="preserve">
+    <value>Separator of repeated items</value>
+  </data>
+  <data name="Elem_required-cleanup" xml:space="preserve">
+    <value>Unfinished content that needs work</value>
+  </data>
+  <data name="Elem_resourceid" xml:space="preserve">
+    <value>Resource identifier for the help system</value>
+  </data>
+  <data name="Elem_responsibleParty" xml:space="preserve">
+    <value>Who carries out the remedy</value>
+  </data>
+  <data name="Elem_result" xml:space="preserve">
+    <value>Result of the task</value>
+  </data>
+  <data name="Elem_reviewed" xml:space="preserve">
+    <value>Reviewed</value>
+  </data>
+  <data name="Elem_revised" xml:space="preserve">
+    <value>Revision date</value>
+  </data>
+  <data name="Elem_revisionid" xml:space="preserve">
+    <value>Revision identifier</value>
+  </data>
+  <data name="Elem_row" xml:space="preserve">
+    <value>Table row</value>
+  </data>
+  <data name="Elem_schemeref" xml:space="preserve">
+    <value>Reference to another scheme</value>
+  </data>
+  <data name="Elem_screen" xml:space="preserve">
+    <value>Text screen capture</value>
+  </data>
+  <data name="Elem_searchtitle" xml:space="preserve">
+    <value>Title for search engines</value>
+  </data>
+  <data name="Elem_section" xml:space="preserve">
+    <value>Section with an optional title</value>
+  </data>
+  <data name="Elem_sectiondiv" xml:space="preserve">
+    <value>Group of content inside a section</value>
+  </data>
+  <data name="Elem_sep" xml:space="preserve">
+    <value>Separator between syntax items</value>
+  </data>
+  <data name="Elem_series" xml:space="preserve">
+    <value>Product series</value>
+  </data>
+  <data name="Elem_shape" xml:space="preserve">
+    <value>Area shape: rect, circle, poly, default</value>
+  </data>
+  <data name="Elem_shortcut" xml:space="preserve">
+    <value>Keyboard shortcut</value>
+  </data>
+  <data name="Elem_shortdesc" xml:space="preserve">
+    <value>Short description of the topic (one or two sentences)</value>
+  </data>
+  <data name="Elem_simpletable" xml:space="preserve">
+    <value>Simple table</value>
+  </data>
+  <data name="Elem_sl" xml:space="preserve">
+    <value>Simple list without bullets</value>
+  </data>
+  <data name="Elem_sli" xml:space="preserve">
+    <value>Simple list item</value>
+  </data>
+  <data name="Elem_sort-as" xml:space="preserve">
+    <value>Sort string</value>
+  </data>
+  <data name="Elem_source" xml:space="preserve">
+    <value>Source of the material</value>
+  </data>
+  <data name="Elem_started" xml:space="preserve">
+    <value>Work started</value>
+  </data>
+  <data name="Elem_state" xml:space="preserve">
+    <value>Named state value</value>
+  </data>
+  <data name="Elem_stentry" xml:space="preserve">
+    <value>Cell of a simple table</value>
+  </data>
+  <data name="Elem_step" xml:space="preserve">
+    <value>Step</value>
+  </data>
+  <data name="Elem_stepresult" xml:space="preserve">
+    <value>Result of a step</value>
+  </data>
+  <data name="Elem_steps" xml:space="preserve">
+    <value>Numbered steps</value>
+  </data>
+  <data name="Elem_steps-informal" xml:space="preserve">
+    <value>Free-form description of actions</value>
+  </data>
+  <data name="Elem_steps-unordered" xml:space="preserve">
+    <value>Steps in no particular order</value>
+  </data>
+  <data name="Elem_stepsection" xml:space="preserve">
+    <value>Subheading inside a sequence of steps</value>
+  </data>
+  <data name="Elem_steptroubleshooting" xml:space="preserve">
+    <value>What to do if a step fails</value>
+  </data>
+  <data name="Elem_stepxmp" xml:space="preserve">
+    <value>Example for a step</value>
+  </data>
+  <data name="Elem_sthead" xml:space="preserve">
+    <value>Header of a simple table</value>
+  </data>
+  <data name="Elem_strow" xml:space="preserve">
+    <value>Row of a simple table</value>
+  </data>
+  <data name="Elem_sub" xml:space="preserve">
+    <value>Subscript</value>
+  </data>
+  <data name="Elem_subjectdef" xml:space="preserve">
+    <value>Subject category definition</value>
+  </data>
+  <data name="Elem_subjectHead" xml:space="preserve">
+    <value>Heading of a group of categories</value>
+  </data>
+  <data name="Elem_subjectHeadMeta" xml:space="preserve">
+    <value>Metadata of a group heading</value>
+  </data>
+  <data name="Elem_subjectRel" xml:space="preserve">
+    <value>Row of the category relationship table</value>
+  </data>
+  <data name="Elem_subjectRelHeader" xml:space="preserve">
+    <value>Header of the category relationship table</value>
+  </data>
+  <data name="Elem_subjectRelTable" xml:space="preserve">
+    <value>Relationship table of categories</value>
+  </data>
+  <data name="Elem_subjectRole" xml:space="preserve">
+    <value>Role of a category in a relation</value>
+  </data>
+  <data name="Elem_subjectScheme" xml:space="preserve">
+    <value>Subject scheme for conditional builds</value>
+  </data>
+  <data name="Elem_substep" xml:space="preserve">
+    <value>Substep</value>
+  </data>
+  <data name="Elem_substeps" xml:space="preserve">
+    <value>Substeps</value>
+  </data>
+  <data name="Elem_subtitle" xml:space="preserve">
+    <value>Subtitle</value>
+  </data>
+  <data name="Elem_summary" xml:space="preserve">
+    <value>Short explanation</value>
+  </data>
+  <data name="Elem_sup" xml:space="preserve">
+    <value>Superscript</value>
+  </data>
+  <data name="Elem_svg-container" xml:space="preserve">
+    <value>Container for embedded SVG graphics</value>
+  </data>
+  <data name="Elem_svgref" xml:space="preserve">
+    <value>Reference to an external SVG file</value>
+  </data>
+  <data name="Elem_synblk" xml:space="preserve">
+    <value>Syntax block</value>
+  </data>
+  <data name="Elem_synnote" xml:space="preserve">
+    <value>Note to a syntax diagram</value>
+  </data>
+  <data name="Elem_synnoteref" xml:space="preserve">
+    <value>Reference to a syntax note</value>
+  </data>
+  <data name="Elem_synph" xml:space="preserve">
+    <value>Inline syntax fragment</value>
+  </data>
+  <data name="Elem_syntaxdiagram" xml:space="preserve">
+    <value>Syntax diagram</value>
+  </data>
+  <data name="Elem_systemoutput" xml:space="preserve">
+    <value>System output</value>
+  </data>
+  <data name="Elem_table" xml:space="preserve">
+    <value>CALS table</value>
+  </data>
+  <data name="Elem_tablelist" xml:space="preserve">
+    <value>List of tables</value>
+  </data>
+  <data name="Elem_task" xml:space="preserve">
+    <value>Task — step-by-step instructions</value>
+  </data>
+  <data name="Elem_taskbody" xml:space="preserve">
+    <value>Body of a task</value>
+  </data>
+  <data name="Elem_tasktroubleshooting" xml:space="preserve">
+    <value>Task troubleshooting</value>
+  </data>
+  <data name="Elem_tbody" xml:space="preserve">
+    <value>Table body</value>
+  </data>
+  <data name="Elem_term" xml:space="preserve">
+    <value>Term</value>
+  </data>
+  <data name="Elem_tested" xml:space="preserve">
+    <value>Tested</value>
+  </data>
+  <data name="Elem_text" xml:space="preserve">
+    <value>Text fragment without semantics</value>
+  </data>
+  <data name="Elem_textentity" xml:space="preserve">
+    <value>Text entity</value>
+  </data>
+  <data name="Elem_tgroup" xml:space="preserve">
+    <value>Group of rows and columns of a table</value>
+  </data>
+  <data name="Elem_thead" xml:space="preserve">
+    <value>Table header</value>
+  </data>
+  <data name="Elem_title" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="Elem_titlealts" xml:space="preserve">
+    <value>Alternative titles</value>
+  </data>
+  <data name="Elem_tm" xml:space="preserve">
+    <value>Trademark</value>
+  </data>
+  <data name="Elem_toc" xml:space="preserve">
+    <value>Table of contents</value>
+  </data>
+  <data name="Elem_topic" xml:space="preserve">
+    <value>General topic — the basis of all topic types</value>
+  </data>
+  <data name="Elem_topicgroup" xml:space="preserve">
+    <value>Group of references with common properties (not in the table of contents)</value>
+  </data>
+  <data name="Elem_topichead" xml:space="preserve">
+    <value>Table of contents node without a topic of its own</value>
+  </data>
+  <data name="Elem_topicmeta" xml:space="preserve">
+    <value>Metadata of a topic reference</value>
+  </data>
+  <data name="Elem_topicref" xml:space="preserve">
+    <value>Reference to a topic in a map</value>
+  </data>
+  <data name="Elem_topicset" xml:space="preserve">
+    <value>Named set of topics for reuse</value>
+  </data>
+  <data name="Elem_topicsetref" xml:space="preserve">
+    <value>Reference to a topic set</value>
+  </data>
+  <data name="Elem_trademarklist" xml:space="preserve">
+    <value>List of trademarks</value>
+  </data>
+  <data name="Elem_troublebody" xml:space="preserve">
+    <value>Body of a troubleshooting topic</value>
+  </data>
+  <data name="Elem_troubleshooting" xml:space="preserve">
+    <value>Troubleshooting: symptom, cause, remedy</value>
+  </data>
+  <data name="Elem_troubleSolution" xml:space="preserve">
+    <value>“Cause — remedy” pair</value>
+  </data>
+  <data name="Elem_tt" xml:space="preserve">
+    <value>Monospaced text</value>
+  </data>
+  <data name="Elem_tutorialinfo" xml:space="preserve">
+    <value>Additional explanation for learning</value>
+  </data>
+  <data name="Elem_typeofhazard" xml:space="preserve">
+    <value>Type of hazard</value>
+  </data>
+  <data name="Elem_u" xml:space="preserve">
+    <value>Underline</value>
+  </data>
+  <data name="Elem_uicontrol" xml:space="preserve">
+    <value>UI control: button, field, menu item</value>
+  </data>
+  <data name="Elem_ul" xml:space="preserve">
+    <value>Bulleted list</value>
+  </data>
+  <data name="Elem_unknown" xml:space="preserve">
+    <value>Unknown content</value>
+  </data>
+  <data name="Elem_userinput" xml:space="preserve">
+    <value>User input</value>
+  </data>
+  <data name="Elem_var" xml:space="preserve">
+    <value>Variable in syntax</value>
+  </data>
+  <data name="Elem_varname" xml:space="preserve">
+    <value>Variable name</value>
+  </data>
+  <data name="Elem_video" xml:space="preserve">
+    <value>Video</value>
+  </data>
+  <data name="Elem_video-poster" xml:space="preserve">
+    <value>Video poster frame</value>
+  </data>
+  <data name="Elem_volume" xml:space="preserve">
+    <value>Volume</value>
+  </data>
+  <data name="Elem_vrm" xml:space="preserve">
+    <value>Version, release, modification</value>
+  </data>
+  <data name="Elem_vrmlist" xml:space="preserve">
+    <value>List of product versions</value>
+  </data>
+  <data name="Elem_wintitle" xml:space="preserve">
+    <value>Window or dialog title</value>
+  </data>
+  <data name="Elem_xmlatt" xml:space="preserve">
+    <value>XML attribute name</value>
+  </data>
+  <data name="Elem_xmlelement" xml:space="preserve">
+    <value>XML element name</value>
+  </data>
+  <data name="Elem_xmlnsname" xml:space="preserve">
+    <value>XML namespace name</value>
+  </data>
+  <data name="Elem_xmlpi" xml:space="preserve">
+    <value>XML processing instruction</value>
+  </data>
+  <data name="Elem_xref" xml:space="preserve">
+    <value>Cross-reference</value>
+  </data>
+  <data name="Elem_year" xml:space="preserve">
+    <value>Year</value>
   </data>
   <data name="Hdr_ProjectProducts" xml:space="preserve">
     <value>Project products</value>

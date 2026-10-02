@@ -54,6 +54,10 @@ public sealed class Loc : INotifyPropertyChanged
     public string Get(string key) =>
         Resources.GetString(key, _culture) ?? Resources.GetString(key, CultureInfo.InvariantCulture) ?? key;
 
+    /// <summary>Строка на текущем языке или null, если для ключа её нет (описания элементов DITA откатываются на текст каталога).</summary>
+    public string? Find(string key) =>
+        Resources.GetString(key, _culture) ?? Resources.GetString(key, CultureInfo.InvariantCulture);
+
     public static string T(string key) => Instance.Get(key);
 
     /// <summary>Строка с подстановкой: ключ и значения для {0}, {1}… из ресурса.</summary>

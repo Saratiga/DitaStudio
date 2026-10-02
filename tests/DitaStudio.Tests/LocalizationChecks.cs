@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Resources;
 using System.Text.RegularExpressions;
 using DitaStudio.Core.Localization;
+using DitaStudio.Core.Schema;
 
 namespace DitaStudio.Tests;
 
@@ -104,6 +105,32 @@ internal static partial class CoreChecks
 
         var cyrillicInEnglish = neutral.Where(kv => Regex.IsMatch(kv.Value, "[А-Яа-яЁё]")).Select(kv => kv.Key).ToList();
         Check(cyrillicInEnglish.Count == 0, "в английских строках осталась кириллица: " + string.Join(", ", cyrillicInEnglish.Take(10)));
+
+        // --- описания элементов и атрибутов DITA переводятся: на каждый элемент встроенного каталога есть строка
+        var noDescription = DitaCatalog.Builtin.Elements.Keys.Where(n => !neutral.ContainsKey("Elem_" + n)).ToList();
+        Check(noDescription.Count == 0, "нет описания элемента в ресурсах: " + string.Join(", ", noDescription.Take(10)));
+        var libraryAttrs = DitaCatalog.Builtin.Elements.Values.SelectMany(e => e.Attributes.Values)
+            .Where(a => a.Description.Length > 0).Select(a => a.Name).Distinct().ToList();
+        var noAttr = libraryAttrs.Where(n => !neutral.ContainsKey("Attr_" + n)).ToList();
+        Check(noAttr.Count == 0, "нет описания атрибута в ресурсах: " + string.Join(", ", noAttr.Take(10)));
+        var keepPath = LanguageSettings.SettingsPath;
+        LanguageSettings.SettingsPath = Path.Combine(Path.GetTempPath(), "DitaStudioTests", "language-" + Guid.NewGuid().ToString("N") + ".txt");
+        Loc.Instance.SetUserLanguage("en", new[] { "ru-RU" });
+        try
+        {
+            var p = DitaCatalog.Builtin.Get("p")!;
+            Check(p.Description == "Paragraph", "описание элемента на английском: " + p.Description);
+            Check(Regex.IsMatch(DitaCatalog.Builtin.Get("lcFeedbackIncorrect")!.Description, "^[A-Za-z ]+$"), "описание без кириллицы");
+            Check(DitaCatalog.Builtin.Get("p")!.Attributes.TryGetValue("outputclass", out var oc) && oc.Description.StartsWith("Class for"),
+                "описание атрибута на английском");
+            Loc.Instance.SetUserLanguage("ru");
+            Check(DitaCatalog.Builtin.Get("p")!.Description == "Абзац", "после смены языка описание снова русское");
+        }
+        finally
+        {
+            Loc.Instance.SetUserLanguage(originalChoice, new[] { originalLanguage }); // пока путь настройки временный
+            LanguageSettings.SettingsPath = keepPath;
+        }
 
         // --- каждый ключ, на который ссылается код или разметка, есть в ресурсах
         var used = UsedResourceKeys(RepositoryRoot());
