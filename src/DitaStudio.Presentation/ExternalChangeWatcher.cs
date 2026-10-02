@@ -24,7 +24,6 @@ public sealed class ExternalChangeWatcher : IDisposable
     private readonly UiServices _ui;
     private readonly ShellHooks _hooks;
     private readonly IDocumentHost _docs;
-    private ProjectViewModel _projectPanel = null!; // задаётся Link после создания (петля зависимостей)
     private readonly IUiTimer _debounce;
     // По наблюдателю на папку каждого открытого проекта.
     private readonly Dictionary<DitaProject, FileSystemWatcher> _watchers = new();
@@ -39,12 +38,6 @@ public sealed class ExternalChangeWatcher : IDisposable
         _docs = docs;
         // Одна запись файла порождает серию событий — проверяем один раз, когда серия утихла.
         _debounce = context.Ui.Platform.CreateTimer(TimeSpan.FromMilliseconds(400), OnDebounceTick);
-    }
-
-    /// <summary>Замыкает петлю зависимостей: вызывается один раз из MainViewModel после создания всех VM.</summary>
-    internal void Link(ProjectViewModel projectPanel)
-    {
-        _projectPanel = projectPanel;
     }
 
     private void OnDebounceTick()
@@ -165,7 +158,7 @@ public sealed class ExternalChangeWatcher : IDisposable
                     project.RebuildKeySpace();
                 }
 
-                _projectPanel.RefreshKeysList();
+                _workspace.NotifyKeysChanged();
                 _docs.RefreshAllTabTitles();
                 _hooks.RefreshEditorContext?.Invoke();
             }

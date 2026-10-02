@@ -89,7 +89,9 @@ src/DitaStudio.Presentation/ ViewModel'и и сервисы оболочки, м
                          MainViewModel не знают: получают в конструкторе ShellContext (IShellState,
                          IWorkspace, UiServices, ShellHooks), IDocumentHost и нужных соседей
                          (ViewModels/ShellContracts.cs); MainViewModel — только сборка и IShellState;
-                         открытые проекты — Workspace; три петли замыкаются через Link()
+                         открытые проекты — Workspace; циклов между VM нет: связь «вверх» — событиями
+                         (DocumentsViewModel.DocumentSettled/ProjectSettled/RootTitleCommitted,
+                         IWorkspace.KeysChanged), операции над файлами — ProjectFileOperations
                          MapViewModel и InsertViewModel — partial по областям (Map: .Tabs/.Tree/.Files/
                          .Edit/.ContextMenu/.RelTable; Insert: .Tables/.ImagesAndLinks/.Text);
                          чистая логика вынесена в RelTableConverter и TableNodeBuilder

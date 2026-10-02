@@ -24,7 +24,7 @@ public partial class MapViewModel : ObservableObject
     private readonly ShellHooks _hooks;
     private readonly DocumentsViewModel _documents;
     private readonly SearchViewModel _search;
-    private ProjectViewModel _projectPanel = null!; // задаётся Link после создания (петля зависимостей)
+    private readonly ProjectFileOperations _fileOps;
 
     /// <summary>Карты активного проекта — из них открывается новая вкладка карты.</summary>
     public ObservableCollection<ProjectFile> Maps { get; } = new();
@@ -48,7 +48,7 @@ public partial class MapViewModel : ObservableObject
     [ObservableProperty]
     private MapTreeNode? selectedNode;
 
-    public MapViewModel(ShellContext context, DocumentsViewModel documents, SearchViewModel search)
+    public MapViewModel(ShellContext context, DocumentsViewModel documents, SearchViewModel search, ProjectFileOperations fileOps)
     {
         _shell = context.Shell;
         _workspace = context.Workspace;
@@ -56,12 +56,7 @@ public partial class MapViewModel : ObservableObject
         _hooks = context.Hooks;
         _documents = documents;
         _search = search;
-    }
-
-    /// <summary>Замыкает петлю зависимостей: вызывается один раз из MainViewModel после создания всех VM.</summary>
-    internal void Link(ProjectViewModel projectPanel)
-    {
-        _projectPanel = projectPanel;
+        _fileOps = fileOps;
     }
 
     partial void OnSelectedNodeChanged(MapTreeNode? value)

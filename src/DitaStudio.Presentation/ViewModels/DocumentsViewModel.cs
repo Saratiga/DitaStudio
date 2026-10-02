@@ -15,8 +15,6 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
     private readonly IWorkspace _workspace;
     private readonly UiServices _ui;
     private readonly ShellHooks _hooks;
-    private AutoRecovery _recovery = null!; // задаётся Link после создания (петля зависимостей)
-    private ProjectViewModel _projectPanel = null!; // задаётся Link после создания (петля зависимостей)
 
     public ObservableCollection<TabViewModel> Tabs { get; } = new();
 
@@ -60,12 +58,11 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
         _hooks = context.Hooks;
     }
 
-    /// <summary>Замыкает петлю зависимостей: вызывается один раз из MainViewModel после создания всех VM.</summary>
-    internal void Link(AutoRecovery recovery, ProjectViewModel projectPanel)
-    {
-        _recovery = recovery;
-        _projectPanel = projectPanel;
-    }
+    public event Action<string>? DocumentSettled;
+
+    public event Action<DitaProject?>? ProjectSettled;
+
+    public event Action<IDocumentView>? RootTitleCommitted;
 
     partial void OnSelectedTabChanged(TabViewModel? value)
     {
@@ -114,14 +111,14 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
 
         pane.DirtyChanged += (_, _) => tab.RefreshTitle();
         pane.SelectionChanged += (_, _) => _hooks.RefreshEditorContext?.Invoke();
-        pane.RootTitleCommitted += (_, _) => _ = _projectPanel.OfferRenameByTitleAsync(pane);
+        pane.RootTitleCommitted += (_, _) => RootTitleCommitted?.Invoke(pane);
         pane.OpenFileRequested += (_, path) => OpenDocument(path);
         pane.StatusRequested += (_, message) => _shell.StatusText = message;
         pane.Saved += (_, _) =>
         {
             if (pane.FilePath is { } saved)
             {
-                _recovery.Forget(saved);
+                DocumentSettled?.Invoke(saved);
             }
         };
 
@@ -149,7 +146,7 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
     {
         foreach (var tab in Tabs.Where(t => string.Equals(t.FullPath, fullPath, StringComparison.OrdinalIgnoreCase)).ToList())
         {
-            _recovery.Forget(tab.FullPath);
+            DocumentSettled?.Invoke(tab.FullPath);
             Panes.Remove(tab.FullPath);
             Tabs.Remove(tab);
             (tab.Pane as IDisposable)?.Dispose();
@@ -177,7 +174,7 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
         }
 
         // Сохранено или пользователь отказался от правок — копия для восстановления не нужна.
-        _recovery.Forget(tab.FullPath);
+        DocumentSettled?.Invoke(tab.FullPath);
         Panes.Remove(tab.FullPath);
         Tabs.Remove(tab);
         if (tab.IsPinned)
@@ -292,7 +289,7 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
         }
 
         (tab!.Project ?? _workspace.Project)?.RebuildKeySpace();
-        _projectPanel.RefreshKeysList();
+        _workspace.NotifyKeysChanged();
         tab.RefreshTitle();
         _shell.StatusText = $"Сохранено: {Path.GetFileName(pane.FilePath ?? pane.Title)}";
     }
@@ -325,7 +322,7 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
         }
 
         _workspace.Project?.RebuildKeySpace();
-        _projectPanel.RefreshKeysList();
+        _workspace.NotifyKeysChanged();
         _shell.StatusText = $"Сохранено файлов: {saved}";
     }
 
@@ -367,11 +364,11 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
 
         if (onlyProject is null)
         {
-            _recovery.ForgetAll();
+            ProjectSettled?.Invoke(null);
         }
         else
         {
-            _recovery.ForgetAll(onlyProject);
+            ProjectSettled?.Invoke(onlyProject);
         }
 
         return true;

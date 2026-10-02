@@ -23,6 +23,10 @@ public sealed partial class Workspace : ObservableObject, IWorkspace
 
     public event EventHandler? ActiveProjectChanged;
 
+    public event EventHandler? KeysChanged;
+
+    public void NotifyKeysChanged() => KeysChanged?.Invoke(this, EventArgs.Empty);
+
     public DitaProject? ProjectOf(string path)
     {
         var full = Path.GetFullPath(path);

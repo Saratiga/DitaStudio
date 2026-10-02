@@ -45,6 +45,11 @@ public interface IWorkspace
 
     /// <summary>Сменился активный проект (в том числе на «никакой»).</summary>
     event EventHandler? ActiveProjectChanged;
+
+    /// <summary>Ключи проектов могли измениться (сохранён документ, внешняя правка, перенос или удаление файла): панель ключей перечитывается.</summary>
+    event EventHandler? KeysChanged;
+
+    void NotifyKeysChanged();
 }
 
 /// <summary>Открытые документы: текущая вкладка, вкладки по пути, открытие файла.</summary>
@@ -64,6 +69,15 @@ public interface IDocumentHost
 
     /// <summary>Общий хвост рефакторинга: открытые документы помечаются несохранёнными и перерисовываются, закрытые — сохраняются.</summary>
     void ApplyRefactorResult(RefactorResult result);
+
+    /// <summary>Документ сохранён или его вкладка закрыта без сохранения: копия для восстановления больше не нужна.</summary>
+    event Action<string>? DocumentSettled;
+
+    /// <summary>То же для всех несохранённых документов проекта (null — всех проектов): закрытие проекта или окна.</summary>
+    event Action<DitaProject?>? ProjectSettled;
+
+    /// <summary>Пользователь закончил править заголовок топика в документе (фокус ушёл).</summary>
+    event Action<IDocumentView>? RootTitleCommitted;
 }
 
 /// <summary>

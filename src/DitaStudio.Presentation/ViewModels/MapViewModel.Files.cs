@@ -198,7 +198,7 @@ public partial class MapViewModel
     {
         if (SelectedFile is { } file)
         {
-            await _projectPanel.MoveFileAsync(file);
+            await _fileOps.MoveFileAsync(file);
             RebuildTree();
         }
     }
@@ -275,7 +275,7 @@ public partial class MapViewModel
             AfterMapEdit(pane);
         }
 
-        if (_projectPanel.DeleteFile(file) is { } error)
+        if (_fileOps.DeleteFile(file) is { } error)
         {
             await _ui.Dialogs.MessageAsync("Удаление файла", error);
             return;

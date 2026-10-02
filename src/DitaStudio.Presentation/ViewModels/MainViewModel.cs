@@ -90,17 +90,15 @@ public partial class MainViewModel : ObservableObject, IShellState
         Services = services;
         var context = new ShellContext(this, Workspace, services, Hooks);
 
-        // Порядок важен: каждая VM получает уже созданные. Три петли (Documents ↔ ProjectPanel и Recovery, ExternalChanges и Map
-        // → ProjectPanel) замыкаются через Link после создания.
+        // Порядок важен: каждая VM получает уже созданные; циклических зависимостей нет — связь «вверх»
+        // идёт событиями (DocumentsViewModel, IWorkspace).
         Documents = new DocumentsViewModel(context);
         Recovery = new AutoRecovery(context, Documents);
         ExternalChanges = new ExternalChangeWatcher(context, Documents);
         Search = new SearchViewModel(context, Documents);
-        Map = new MapViewModel(context, Documents, Search);
-        ProjectPanel = new ProjectViewModel(context, Documents, Recovery, ExternalChanges, Map);
-        Documents.Link(Recovery, ProjectPanel);
-        ExternalChanges.Link(ProjectPanel);
-        Map.Link(ProjectPanel);
+        var fileOps = new ProjectFileOperations(context, Documents);
+        Map = new MapViewModel(context, Documents, Search, fileOps);
+        ProjectPanel = new ProjectViewModel(context, Documents, Recovery, ExternalChanges, Map, fileOps);
 
         Help = new HelpViewModel(context, Documents);
         Validation = new ValidationViewModel(context, Documents);

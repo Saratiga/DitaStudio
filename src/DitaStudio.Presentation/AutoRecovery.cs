@@ -38,6 +38,20 @@ public sealed class AutoRecovery
         _ui = context.Ui;
         _docs = docs;
         _timer = context.Ui.Platform.CreateTimer(Interval, SnapshotAll);
+
+        // Документ сохранён или закрыт без сохранения — копия не нужна.
+        docs.DocumentSettled += Forget;
+        docs.ProjectSettled += project =>
+        {
+            if (project is null)
+            {
+                ForgetAll();
+            }
+            else
+            {
+                ForgetAll(project);
+            }
+        };
     }
 
     /// <summary>Берёт проект под защиту: копии его несохранённых документов пишутся по таймеру. Другие проекты остаются под защитой.</summary>
