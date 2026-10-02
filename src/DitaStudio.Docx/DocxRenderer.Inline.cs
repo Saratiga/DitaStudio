@@ -8,6 +8,7 @@ using DocumentFormat.OpenXml.Packaging;
 using Drawing = DocumentFormat.OpenXml.Drawing;
 using Pic = DocumentFormat.OpenXml.Drawing.Pictures;
 using W = DocumentFormat.OpenXml.Wordprocessing;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Docx;
 
@@ -389,7 +390,7 @@ public sealed partial class DocxRenderer
         var absolute = RefResolver.ResolvePath(_document.FilePath, href!);
         if (absolute is null || !File.Exists(absolute))
         {
-            _options.Warnings.Add($"Изображение не найдено: {href}");
+            _options.Warnings.Add(Loc.T("Core_ImageNotFound0", href));
             yield break;
         }
 
@@ -399,7 +400,7 @@ public sealed partial class DocxRenderer
 
         if (!supported)
         {
-            _options.Warnings.Add($"Формат изображения не поддерживается в DOCX (показан как ссылка): {href}");
+            _options.Warnings.Add(Loc.T("Core_TheImageFormatIsNotSupported", href));
             yield return new W.Run(new W.RunProperties(new W.Italic(), new W.Color { Val = "808080" }),
                 new W.Text($"[изображение: {Path.GetFileName(absolute)}{(string.IsNullOrEmpty(alt) ? string.Empty : " — " + alt)}]"));
             yield break;

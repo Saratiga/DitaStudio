@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Xml.Linq;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Localization;
 
@@ -71,7 +72,7 @@ public static class XliffConverter
         var body = xliff.Root?.Element("file")?.Element("body");
         if (body is null)
         {
-            warnings.Add("В XLIFF нет <file>/<body> — импортировать нечего.");
+            warnings.Add(Loc.T("Core_TheXLIFFHasNoFileBody"));
             return 0;
         }
 
@@ -101,18 +102,18 @@ public static class XliffConverter
 
         counter++;
         var id = counter.ToString(CultureInfo.InvariantCulture);
-        var context = $"сегмент #{id} ({node.Path})";
+        var context = Loc.T("Core_Segment01", id, node.Path);
 
         if (!units.TryGetValue(id, out var unit))
         {
-            warnings.Add($"{context}: в XLIFF нет такого сегмента — пропущен, документ мог измениться после экспорта.");
+            warnings.Add(Loc.T("Core_0TheXLIFFHasNoSuch", context));
             return;
         }
 
         var target = unit.Element("target");
         if (target is null)
         {
-            warnings.Add($"{context}: нет <target> — пропущен.");
+            warnings.Add(Loc.T("Core_0NoTargetSkipped", context));
             return;
         }
 
@@ -239,7 +240,7 @@ public static class XliffConverter
                     {
                         if (bptId < 1 || bptId > registry.Count)
                         {
-                            warnings.Add($"{context}: placeholder id=\"{bptId}\" вне диапазона — тег и его содержимое пропущены.");
+                            warnings.Add(Loc.T("Core_0PlaceholderId1IsOut", context, bptId));
                         }
                         else
                         {
@@ -265,7 +266,7 @@ public static class XliffConverter
                     }
                     else
                     {
-                        warnings.Add($"{context}: несогласованный </ept id=\"{eptId}\"> — правки внутри тега могли потеряться.");
+                        warnings.Add(Loc.T("Core_0InconsistentEptId1Edits", context, eptId));
                     }
 
                     break;
@@ -276,7 +277,7 @@ public static class XliffConverter
         {
             // clone уже стоит в дереве результата (добавлен в Current() в момент bpt, до push) —
             // здесь только доносим накопленное содержимое незакрытого тега, без повторного Add.
-            warnings.Add($"{context}: не закрыт тег (bpt id={stack.Peek().Id}) — содержимое сохранено как есть.");
+            warnings.Add(Loc.T("Core_0ATagIsNotClosed", context, stack.Peek().Id));
             var (_, clone, children) = stack.Pop();
             ReplaceDirectContent(clone, children);
         }
@@ -294,7 +295,7 @@ public static class XliffConverter
 
         if (id < 1 || id > registry.Count)
         {
-            warnings.Add($"{context}: placeholder id=\"{id}\" вне диапазона — пропущен.");
+            warnings.Add(Loc.T("Core_0PlaceholderId1IsOut2", context, id));
             return null;
         }
 
@@ -309,7 +310,7 @@ public static class XliffConverter
             return id;
         }
 
-        warnings.Add($"{context}: у <{el.Name.LocalName}> нет корректного id — пропущен.");
+        warnings.Add(Loc.T("Core_01HasNoValidId", context, el.Name.LocalName));
         return null;
     }
 

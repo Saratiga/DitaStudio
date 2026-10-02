@@ -1,4 +1,5 @@
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Schema.Dtd;
 
@@ -35,14 +36,14 @@ public static class DtdCatalogLoader
             }
             catch (Exception ex)
             {
-                schema.Warnings.Add($"Элемент \"{name}\": не удалось разобрать контент-модель \"{modelText}\": {ex.Message}");
+                schema.Warnings.Add(Loc.T("Core_Element0CouldNotParseThe", name, modelText, ex.Message));
                 continue;
             }
 
             var display = InferDisplay(classAttr, model);
             var attrDict = attributes.ToDictionary(a => a.Name, StringComparer.Ordinal);
 
-            elements.Add(new ElementDef(name, classAttr, display, modelText, attrDict, "Из внешнего DTD")
+            elements.Add(new ElementDef(name, classAttr, display, modelText, attrDict, Loc.T("Core_FromTheExternalDTD"))
             {
                 Domain = "external"
             });

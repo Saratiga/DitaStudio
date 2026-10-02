@@ -1,5 +1,6 @@
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Validation;
 
@@ -29,7 +30,7 @@ public sealed class DitaValidator
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Error,
-                $"Неизвестный корневой элемент <{document.Root.Name}>. Проверьте, что документ соответствует DITA 1.3.",
+                Loc.T("Core_UnknownRootElement0CheckThat", document.Root.Name),
                 document.Root,
                 document.FilePath));
         }
@@ -37,7 +38,7 @@ public sealed class DitaValidator
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Warning,
-                $"Элемент <{document.Root.Name}> обычно не используется как корень документа.",
+                Loc.T("Core_TheElement0IsNotNormally", document.Root.Name),
                 document.Root,
                 document.FilePath));
         }
@@ -64,7 +65,7 @@ public sealed class DitaValidator
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Error,
-                $"Элемент <{node.Name}> отсутствует в словаре DITA 1.3.",
+                Loc.T("Msg_TheElement0IsNotIn", node.Name),
                 node,
                 file));
             return;
@@ -78,7 +79,7 @@ public sealed class DitaValidator
             {
                 issues.Add(new ValidationIssue(
                     IssueSeverity.Error,
-                    $"Идентификатор \"{id}\" уже используется в этом документе.",
+                    Loc.T("Core_TheIdentifier0IsAlreadyUsed", id),
                     node,
                     file));
             }
@@ -111,7 +112,7 @@ public sealed class DitaValidator
             {
                 issues.Add(new ValidationIssue(
                     IssueSeverity.Warning,
-                    $"Атрибут @{attr.Name} не объявлен для элемента <{node.Name}>.",
+                    Loc.T("Core_TheAttribute0IsNotDeclared", attr.Name, node.Name),
                     node,
                     file));
                 continue;
@@ -122,7 +123,7 @@ public sealed class DitaValidator
             {
                 issues.Add(new ValidationIssue(
                     IssueSeverity.Error,
-                    $"Недопустимое значение @{attr.Name}=\"{attr.Value}\" у <{node.Name}>. Допустимо: {string.Join(", ", attrDef.Values)}.",
+                    Loc.T("Core_InvalidValue01On2", attr.Name, attr.Value, node.Name, string.Join(", ", attrDef.Values)),
                     node,
                     file));
             }
@@ -134,7 +135,7 @@ public sealed class DitaValidator
             {
                 issues.Add(new ValidationIssue(
                     IssueSeverity.Error,
-                    $"У элемента <{node.Name}> отсутствует обязательный атрибут @{attrDef.Name}.",
+                    Loc.T("Core_TheElement0LacksTheRequired", node.Name, attrDef.Name),
                     node,
                     file));
             }
@@ -162,7 +163,7 @@ public sealed class DitaValidator
                 {
                     issues.Add(new ValidationIssue(
                         IssueSeverity.Error,
-                        $"Элемент <{node.Name}> не может содержать текст напрямую — перенесите его в дочерний элемент.",
+                        Loc.T("Core_TheElement0CannotContainText", node.Name),
                         node,
                         file));
                     break;
@@ -175,7 +176,7 @@ public sealed class DitaValidator
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Error,
-                $"Элемент <{node.Name}> должен быть пустым.",
+                Loc.T("Core_TheElement0MustBeEmpty", node.Name),
                 node,
                 file));
             return;
@@ -189,22 +190,22 @@ public sealed class DitaValidator
         if (errorIndex >= 0 && errorIndex < names.Count)
         {
             var hint = expected.Count > 0
-                ? $" Здесь допустимы: {string.Join(", ", expected.Take(12))}{(expected.Count > 12 ? "…" : string.Empty)}."
+                ? Loc.T("Core_AllowedHere01", string.Join(", ", expected.Take(12)), (expected.Count > 12 ? "…" : string.Empty))
                 : string.Empty;
             issues.Add(new ValidationIssue(
                 IssueSeverity.Error,
-                $"Элемент <{names[errorIndex]}> недопустим внутри <{node.Name}> в этой позиции.{hint}",
+                Loc.T("Core_TheElement0IsNotAllowed", names[errorIndex], node.Name, hint),
                 errorIndex < node.ElementChildren().Count() ? node.ElementChildren().ElementAt(errorIndex) : node,
                 file));
         }
         else
         {
             var missing = expected.Count > 0
-                ? $" Не хватает одного из: {string.Join(", ", expected.Take(12))}{(expected.Count > 12 ? "…" : string.Empty)}."
+                ? Loc.T("Core_MissingOneOf01", string.Join(", ", expected.Take(12)), (expected.Count > 12 ? "…" : string.Empty))
                 : string.Empty;
             issues.Add(new ValidationIssue(
                 IssueSeverity.Error,
-                $"Содержимое <{node.Name}> неполное.{missing}",
+                Loc.T("Core_TheContentOf0IsIncomplete", node.Name, missing),
                 node,
                 file));
         }
@@ -241,7 +242,7 @@ public sealed class DitaValidator
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Warning,
-                "У топика нет атрибута @id — на него нельзя сослаться из карты и из других топиков.",
+                Loc.T("Core_TheTopicHasNoIdAttribute"),
                 root,
                 document.FilePath));
         }
@@ -253,7 +254,7 @@ public sealed class DitaValidator
             // заголовок не печатается и в оглавление не попадает.
             issues.Add(new ValidationIssue(
                 IssueSeverity.Info,
-                $"Пустой заголовок: топик публикуется без заголовка и не попадает в оглавление; в карте и ссылках он называется «{document.Title}».",
+                Loc.T("Core_EmptyTitleTheTopicIsPublished", document.Title),
                 title,
                 document.FilePath));
         }
@@ -261,7 +262,7 @@ public sealed class DitaValidator
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Error,
-                "Пустой заголовок топика.",
+                Loc.T("Core_EmptyTopicTitle"),
                 title ?? root,
                 document.FilePath));
         }
@@ -270,7 +271,7 @@ public sealed class DitaValidator
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Info,
-                "Нет краткого описания (shortdesc) — оно используется в подсказках ссылок и в поиске.",
+                Loc.T("Core_NoShortDescriptionShortdescItIs"),
                 root,
                 document.FilePath));
         }
@@ -295,7 +296,7 @@ public sealed class DitaValidator
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Warning,
-                $"Пустой элемент <{node.Name}>.",
+                Loc.T("Core_EmptyElement0", node.Name),
                 node,
                 document.FilePath));
         }
@@ -305,7 +306,7 @@ public sealed class DitaValidator
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Error,
-                "У изображения не задан ни @href, ни @keyref.",
+                Loc.T("Core_TheImageHasNeitherHrefNor"),
                 node,
                 document.FilePath));
         }
@@ -315,7 +316,7 @@ public sealed class DitaValidator
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Info,
-                "У изображения нет альтернативного текста.",
+                Loc.T("Core_TheImageHasNoAlternativeText"),
                 node,
                 document.FilePath));
         }

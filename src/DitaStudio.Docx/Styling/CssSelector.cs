@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Docx.Styling;
 
@@ -43,7 +44,7 @@ public sealed class CssSelector
             var (steps, pseudoElement) = parser.ParseComplex();
             if (!parser.AtEnd)
             {
-                throw new FormatException($"неожиданный символ «{parser.Current}»");
+                throw new FormatException(Loc.T("Core_UnexpectedCharacter0", parser.Current));
             }
 
             return new CssSelector(text.Trim(), steps, pseudoElement);
@@ -317,7 +318,7 @@ public sealed class CssSelector
                     pseudoElement = element;
                     if (!AtEnd)
                     {
-                        throw new FormatException("после псевдоэлемента ничего быть не может");
+                        throw new FormatException(Loc.T("Core_NothingCanFollowAPseudoElement"));
                     }
 
                     break;
@@ -341,13 +342,13 @@ public sealed class CssSelector
                 }
                 else
                 {
-                    throw new FormatException($"неожиданный символ «{Current}»");
+                    throw new FormatException(Loc.T("Core_UnexpectedCharacter0", Current));
                 }
             }
 
             if (steps.Count == 0)
             {
-                throw new FormatException("пустой селектор");
+                throw new FormatException(Loc.T("Core_EmptySelector"));
             }
 
             return (steps, pseudoElement);
@@ -403,7 +404,7 @@ public sealed class CssSelector
                             var element = Identifier().ToLowerInvariant();
                             if (element is not ("before" or "after"))
                             {
-                                throw new FormatException($"псевдоэлемент ::{element} не поддерживается");
+                                throw new FormatException(Loc.T("Core_ThePseudoElement0IsNot", element));
                             }
 
                             pseudoElement = element;
@@ -422,7 +423,7 @@ public sealed class CssSelector
                     default:
                         if (!any && compound.Classes.Count == 0 && compound.Id is null && compound.Attributes.Count == 0 && compound.Pseudos.Count == 0)
                         {
-                            throw new FormatException($"неожиданный символ «{Current}»");
+                            throw new FormatException(Loc.T("Core_UnexpectedCharacter0", Current));
                         }
 
                         return compound;
@@ -451,7 +452,7 @@ public sealed class CssSelector
                 {
                     if (AtEnd || Current != '(')
                     {
-                        throw new FormatException(":not() без скобок");
+                        throw new FormatException(Loc.T("Core_NotWithoutParentheses"));
                     }
 
                     _position++;
@@ -461,13 +462,13 @@ public sealed class CssSelector
                         pseudo.Not.Add(ParseCompound(out var element));
                         if (element is not null)
                         {
-                            throw new FormatException("в :not() псевдоэлементов быть не может");
+                            throw new FormatException(Loc.T("Core_PseudoElementsCannotAppearInsideNot"));
                         }
 
                         SkipSpaces();
                         if (AtEnd)
                         {
-                            throw new FormatException(":not() не закрыт");
+                            throw new FormatException(Loc.T("Core_NotIsNotClosed"));
                         }
 
                         if (Current == ',')
@@ -482,12 +483,12 @@ public sealed class CssSelector
                             return pseudo;
                         }
 
-                        throw new FormatException("в :not() допустимы только простые селекторы");
+                        throw new FormatException(Loc.T("Core_OnlySimpleSelectorsAreAllowedInside"));
                     }
                 }
 
                 default:
-                    throw new FormatException($"псевдокласс :{name} не поддерживается");
+                    throw new FormatException(Loc.T("Core_ThePseudoClass0IsNot", name));
             }
         }
 
@@ -495,13 +496,13 @@ public sealed class CssSelector
         {
             if (AtEnd || Current != '(')
             {
-                throw new FormatException("нет аргумента в скобках");
+                throw new FormatException(Loc.T("Core_NoArgumentInParentheses"));
             }
 
             var close = _text.IndexOf(')', _position);
             if (close < 0)
             {
-                throw new FormatException("скобка не закрыта");
+                throw new FormatException(Loc.T("Core_ParenthesisIsNotClosed"));
             }
 
             var argument = _text[(_position + 1)..close].Trim();
@@ -527,7 +528,7 @@ public sealed class CssSelector
             {
                 return int.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var only)
                     ? (0, only)
-                    : throw new FormatException($"непонятный номер «{argument}»");
+                    : throw new FormatException(Loc.T("Core_UnclearNumber0", argument));
             }
 
             var aText = text[..n];
@@ -537,13 +538,13 @@ public sealed class CssSelector
                 "-" => -1,
                 _ => int.TryParse(aText, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var parsed)
                     ? parsed
-                    : throw new FormatException($"непонятный номер «{argument}»")
+                    : throw new FormatException(Loc.T("Core_UnclearNumber0", argument))
             };
             var bText = text[(n + 1)..];
             var b = 0;
             if (bText.Length > 0 && !int.TryParse(bText, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out b))
             {
-                throw new FormatException($"непонятный номер «{argument}»");
+                throw new FormatException(Loc.T("Core_UnclearNumber0", argument));
             }
 
             return (a, b);
@@ -554,7 +555,7 @@ public sealed class CssSelector
             var close = _text.IndexOf(']', _position);
             if (close < 0)
             {
-                throw new FormatException("скобка [ не закрыта");
+                throw new FormatException(Loc.T("Core_BracketIsNotClosed"));
             }
 
             var body = _text[(_position + 1)..close].Trim();
@@ -575,7 +576,7 @@ public sealed class CssSelector
             var end = body.IndexOf('=', opIndex);
             if (end < 0)
             {
-                throw new FormatException($"непонятный атрибутный селектор [{body}]");
+                throw new FormatException(Loc.T("Core_UnclearAttributeSelector0", body));
             }
 
             var op = body[opIndex..(end + 1)];
@@ -588,7 +589,7 @@ public sealed class CssSelector
 
             if (name.Length == 0 || op is not ("=" or "~=" or "|=" or "^=" or "$=" or "*="))
             {
-                throw new FormatException($"непонятный атрибутный селектор [{body}]");
+                throw new FormatException(Loc.T("Core_UnclearAttributeSelector0", body));
             }
 
             return new AttributeTest(name, op, value, ignoreCase);
@@ -606,7 +607,7 @@ public sealed class CssSelector
 
             if (_position == start)
             {
-                throw new FormatException("ожидалось имя");
+                throw new FormatException(Loc.T("Core_ANameWasExpected"));
             }
 
             return text.ToString();

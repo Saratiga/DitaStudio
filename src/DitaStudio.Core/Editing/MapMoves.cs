@@ -1,5 +1,6 @@
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Editing;
 
@@ -30,13 +31,13 @@ public static class MapMoves
         reason = string.Empty;
         if (node.Parent is null || node.Name is "map" or "bookmap")
         {
-            reason = "Корень карты перенести нельзя.";
+            reason = Loc.T("Core_TheMapRootCannotBeMoved");
             return false;
         }
 
         if (ReferenceEquals(node, target))
         {
-            reason = "Строку нельзя перенести на саму себя.";
+            reason = Loc.T("Core_ARowCannotBeMovedOnto");
             return false;
         }
 
@@ -44,14 +45,14 @@ public static class MapMoves
         {
             if (ReferenceEquals(ancestor, node))
             {
-                reason = "Строку нельзя перенести в её собственную ветку.";
+                reason = Loc.T("Core_ARowCannotBeMovedInto");
                 return false;
             }
         }
 
         if (!ReferenceEquals(RootOf(node), RootOf(target)))
         {
-            reason = "Строки из разных файлов карты переносятся через «Вырезать» и «Вставить».";
+            reason = Loc.T("Core_RowsFromDifferentMapFilesAre");
             return false;
         }
 
@@ -69,7 +70,7 @@ public static class MapMoves
         var newParent = position == DropPosition.Child ? target : target.Parent;
         if (newParent is null)
         {
-            reason = "Перед корнем карты и после него строку поставить нельзя.";
+            reason = Loc.T("Core_ARowCannotBePlacedBefore");
             return false;
         }
 
@@ -85,7 +86,7 @@ public static class MapMoves
         var definition = DitaCatalog.Default.Get(newParent.Name);
         if (definition is not null && !definition.Automaton.Validate(names, out _, out _))
         {
-            reason = $"«{elementName}» нельзя поместить в «{newParent.Name}» на это место.";
+            reason = Loc.T("Core_0CannotBePlacedIn1", elementName, newParent.Name);
             return false;
         }
 
@@ -118,7 +119,7 @@ public static class MapMoves
         var oldParent = copy.Parent;
         if (!operation(copy))
         {
-            reason = "Операция здесь недоступна.";
+            reason = Loc.T("Core_TheOperationIsNotAvailableHere");
             return false;
         }
 
@@ -150,8 +151,8 @@ public static class MapMoves
         }
 
         reason = errorIndex < names.Count
-            ? $"Так нельзя: «{names[errorIndex]}» не может стоять здесь внутри «{container.Name}»."
-            : $"Так нельзя: в «{container.Name}» не хватает обязательного элемента ({string.Join(", ", expected.Take(3))}).";
+            ? Loc.T("Core_NotAllowed0CannotStandHere", names[errorIndex], container.Name)
+            : Loc.T("Core_NotAllowed0LacksARequired", container.Name, string.Join(", ", expected.Take(3)));
         return false;
     }
 

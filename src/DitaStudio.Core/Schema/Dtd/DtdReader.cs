@@ -1,4 +1,5 @@
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Schema.Dtd;
 
@@ -30,7 +31,7 @@ public static class DtdReader
         }
         catch (Exception ex)
         {
-            schema.Warnings.Add($"Некорректный путь \"{path}\": {ex.Message}");
+            schema.Warnings.Add(Loc.T("Core_InvalidPath01", path, ex.Message));
             return;
         }
 
@@ -41,7 +42,7 @@ public static class DtdReader
 
         if (!File.Exists(full))
         {
-            schema.Warnings.Add($"Файл не найден: {full}");
+            schema.Warnings.Add(Loc.T("Core_FileNotFound0", full));
             return;
         }
 
@@ -52,7 +53,7 @@ public static class DtdReader
         }
         catch (Exception ex)
         {
-            schema.Warnings.Add($"Не удалось прочитать {full}: {ex.Message}");
+            schema.Warnings.Add(Loc.T("Core_CouldNotRead01", full, ex.Message));
             return;
         }
 

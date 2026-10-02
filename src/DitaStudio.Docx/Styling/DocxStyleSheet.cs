@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Docx.Styling;
 
@@ -148,8 +149,8 @@ public sealed partial class DocxStyleSheet
         foreach (var at in parsed.SkippedAtRules.Distinct())
         {
             _diag.Add(at == "@font-face"
-                ? "Правила @font-face в DOCX не переносятся: шрифт должен быть установлен на компьютере, где открывают документ."
-                : $"Правила {at} в DOCX не поддерживаются и пропущены.");
+                ? Loc.T("Core_FontFaceRulesAreNotCarried")
+                : Loc.T("Core_TheRules0AreNotSupported", at));
         }
 
         CollectVariables(parsed);

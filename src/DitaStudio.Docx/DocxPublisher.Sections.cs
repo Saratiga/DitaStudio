@@ -8,6 +8,7 @@ using DitaStudio.Docx.Styling;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using W = DocumentFormat.OpenXml.Wordprocessing;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Docx;
 
@@ -143,7 +144,7 @@ public sealed partial class DocxPublisher
             var full = DocxLayout.ResolveImage(_project.RootPath, relative);
             if (full is null && relative.Trim().Length > 0)
             {
-                warnings.Add($"Картинка колонтитула не найдена или не PNG/JPEG/GIF/BMP: {relative}");
+                warnings.Add(Loc.T("Core_TheHeaderOrFooterImageWas", relative));
             }
 
             return full;

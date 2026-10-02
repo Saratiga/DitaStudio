@@ -2,6 +2,7 @@ using System.Text;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Validation;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Publishing;
 
@@ -94,7 +95,7 @@ public sealed class HtmlPublisher
 
             if (!File.Exists(absolute))
             {
-                warnings.Add($"Изображение не найдено: {absolute}");
+                warnings.Add(Loc.T("Core_ImageNotFound0", absolute));
                 return Path.GetFileName(absolute);
             }
 
@@ -117,7 +118,7 @@ public sealed class HtmlPublisher
             }
             catch (Exception ex)
             {
-                warnings.Add($"Не удалось скопировать {absolute}: {ex.Message}");
+                warnings.Add(Loc.T("Core_CouldNotCopy01", absolute, ex.Message));
             }
 
             var relative = "media/" + name;
@@ -178,7 +179,7 @@ public sealed class HtmlPublisher
             var doc = _project.TryGetDocument(path);
             if (doc is null)
             {
-                warnings.Add($"Не удалось прочитать {path}");
+                warnings.Add(Loc.T("Core_CouldNotRead0", path));
                 continue;
             }
 

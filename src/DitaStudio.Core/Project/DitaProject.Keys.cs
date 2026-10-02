@@ -1,4 +1,5 @@
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Project;
 
@@ -259,7 +260,7 @@ public sealed partial class DitaProject
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 // недоступный проект-источник пропускаем — не мешаем работе с основным
-                Settings.Report($"Проект-источник ключей {path} недоступен: {ex.Message}");
+                Settings.Report(Loc.T("Core_TheKeySourceProject0Is", path, ex.Message));
             }
         }
     }

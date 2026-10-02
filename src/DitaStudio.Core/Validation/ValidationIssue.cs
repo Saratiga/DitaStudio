@@ -1,4 +1,5 @@
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Validation;
 
@@ -33,11 +34,11 @@ public sealed class ValidationIssue
 
     public string SeverityText => Severity switch
     {
-        IssueSeverity.Error => "Ошибка",
-        IssueSeverity.Warning => "Предупреждение",
-        _ => "Сведения"
+        IssueSeverity.Error => Loc.T("Core_Error"),
+        IssueSeverity.Warning => Loc.T("Core_Warning"),
+        _ => Loc.T("Core_Information")
     };
 
     public override string ToString() =>
-        $"{SeverityText}: {Message} ({Location}{(Line > 0 ? $", строка {Line}" : string.Empty)})";
+        $"{SeverityText}: {Message} ({Location}{(Line > 0 ? $", {Loc.T("Core_LineN", Line)}" : string.Empty)})";
 }

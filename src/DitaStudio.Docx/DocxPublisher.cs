@@ -8,6 +8,7 @@ using DitaStudio.Docx.Styling;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using W = DocumentFormat.OpenXml.Wordprocessing;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Docx;
 
@@ -118,7 +119,7 @@ public sealed partial class DocxPublisher
                 var doc = _project.TryGetDocument(item.TargetPath!);
                 if (doc is null)
                 {
-                    warnings.Add($"Не удалось прочитать {item.TargetPath}");
+                    warnings.Add(Loc.T("Core_CouldNotRead0", item.TargetPath));
                     continue;
                 }
 
@@ -143,9 +144,9 @@ public sealed partial class DocxPublisher
             warnings.AddRange(renderOptions.Warnings);
             if (styles.UnmatchedSelectors() is { Count: > 0 } unmatched)
             {
-                warnings.Add("CSS → DOCX: селекторы не совпали ни с одним элементом публикации и ничего не оформили: " +
-                             string.Join("; ", unmatched.Take(5)) + (unmatched.Count > 5 ? $" и ещё {unmatched.Count - 5}" : string.Empty) +
-                             ". Селекторы сопоставляются с элементами DITA (имя элемента, .outputclass, [атрибут], потомок, ребёнок, :nth-child…), а не с тегами HTML-публикации.");
+                warnings.Add(Loc.T("Core_CSSDOCXTheseSelectorsMatchedNo") +
+                             string.Join("; ", unmatched.Take(5)) + (unmatched.Count > 5 ? Loc.T("Core_And0More", unmatched.Count - 5) : string.Empty) +
+                             Loc.T("Core_SelectorsAreMatchedAgainstDITAElements"));
             }
             mainPart.Document.Save();
         });

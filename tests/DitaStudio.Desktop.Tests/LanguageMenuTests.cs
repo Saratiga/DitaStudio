@@ -1,7 +1,9 @@
+using System.Text.RegularExpressions;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using DitaStudio.Core.Localization;
 using Xunit;
 
@@ -64,6 +66,53 @@ public sealed class LanguageMenuTests
         Loc.Instance.SetUserLanguage("ru");
         Dispatcher.UIThread.RunJobs();
         window.Close();
+    }
+
+    [AvaloniaFact]
+    public void EnglishUi_MenusToolbarAndPanels_HaveNoRussianText()
+    {
+        Loc.Instance.SetUserLanguage("en");
+        var window = new MainWindow();
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var texts = new List<string>();
+        foreach (var control in window.GetVisualDescendants().OfType<Control>().Concat(new Control[] { window }))
+        {
+            switch (control)
+            {
+                case MenuItem item:
+                    texts.Add(item.Header?.ToString() ?? string.Empty);
+                    foreach (var sub in item.Items.OfType<MenuItem>())
+                    {
+                        texts.Add(sub.Header?.ToString() ?? string.Empty);
+                    }
+
+                    break;
+                case TabItem tab:
+                    texts.Add(tab.Header?.ToString() ?? string.Empty);
+                    break;
+                case TextBlock block:
+                    texts.Add(block.Text ?? string.Empty);
+                    break;
+                case ContentControl content when content.Content is string text:
+                    texts.Add(text);
+                    break;
+            }
+
+            if (ToolTip.GetTip(control) is string tip)
+            {
+                texts.Add(tip);
+            }
+        }
+
+        var russian = texts.Where(t => Regex.IsMatch(t, "[А-Яа-яЁё]")).Distinct().ToList();
+        Loc.Instance.SetUserLanguage("ru");
+        Dispatcher.UIThread.RunJobs();
+        window.Close();
+
+        Assert.True(texts.Count > 100, $"собрано подписей: {texts.Count}");
+        Assert.True(russian.Count == 0, "русский текст в английском интерфейсе: " + string.Join(" | ", russian.Take(10)));
     }
 
     private static List<MenuItem> LanguageItems(MainWindow window) =>

@@ -2,6 +2,7 @@ using DitaStudio.Core.Publishing;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using W = DocumentFormat.OpenXml.Wordprocessing;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Docx;
 
@@ -105,7 +106,7 @@ internal static class DocxHeaderFooter
                             var full = DocxLayout.ResolveImage(projectRoot, image.Path);
                             if (full is null || DocxPictures.AddImage(part, full) is not { } relId)
                             {
-                                warnings.Add($"Картинка колонтитула не найдена или не PNG/JPEG/GIF/BMP: {image.Path}");
+                                warnings.Add(Loc.T("Core_TheHeaderOrFooterImageWas", image.Path));
                                 break;
                             }
 

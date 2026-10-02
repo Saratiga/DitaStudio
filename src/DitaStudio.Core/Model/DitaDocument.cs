@@ -2,6 +2,7 @@ using System.Text;
 using System.Xml;
 using DitaStudio.Core.IO;
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Model;
 
@@ -137,7 +138,7 @@ public sealed class DitaDocument
     /// </summary>
     public void Reload()
     {
-        var path = FilePath ?? throw new InvalidOperationException("Не задан путь к файлу.");
+        var path = FilePath ?? throw new InvalidOperationException(Loc.T("Core_TheFilePathIsNotSet"));
         var fresh = Load(path);
         Root = fresh.Root;
         DoctypeName = fresh.DoctypeName;
@@ -213,7 +214,7 @@ public sealed class DitaDocument
 
         if (root is null)
         {
-            throw new XmlException("В документе нет корневого элемента.");
+            throw new XmlException(Loc.T("Core_TheDocumentHasNoRootElement"));
         }
 
         doc.Root = root;
@@ -332,7 +333,7 @@ public sealed class DitaDocument
 
     public void Save(string? path = null)
     {
-        var target = path ?? FilePath ?? throw new InvalidOperationException("Не задан путь к файлу.");
+        var target = path ?? FilePath ?? throw new InvalidOperationException(Loc.T("Core_TheFilePathIsNotSet"));
         AtomicFile.WriteAllText(target, ToXmlString(), new UTF8Encoding(false));
         FilePath = target;
         DiskStamp = FileStamp.Of(target);

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Publishing;
 
@@ -317,7 +318,7 @@ public sealed class PageMarginBoxes
                 case "margin":
                     break; // место задаёт поле (left/center/right), остальное в колонтитулах Word не выразить
                 default:
-                    warnings.Add($"@{Name(position)} {property}: свойство не поддерживается в колонтитулах");
+                    warnings.Add(Loc.T("Core_01ThePropertyIsNot", Name(position), property));
                     break;
             }
         }
@@ -381,7 +382,7 @@ public sealed class PageMarginBoxes
                 var close = open < 0 ? -1 : value.IndexOf(')', open);
                 if (open < 0 || close < 0)
                 {
-                    warnings.Add($"@{Name(position)} content: не разобрано «{value[i..].Trim()}»");
+                    warnings.Add(Loc.T("Core_0Content1CouldNotBe", Name(position), value[i..].Trim()));
                     break;
                 }
 
@@ -403,7 +404,7 @@ public sealed class PageMarginBoxes
                         items.Add(new MarginContent.Image(argument));
                         break;
                     default:
-                        warnings.Add($"@{Name(position)} content: {function}({argument}) не поддерживается");
+                        warnings.Add(Loc.T("Core_0Content12IsNot", Name(position), function, argument));
                         break;
                 }
             }

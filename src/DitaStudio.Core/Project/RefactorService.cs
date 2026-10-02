@@ -1,5 +1,6 @@
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Templates;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Project;
 
@@ -89,7 +90,7 @@ public static class RefactorService
 
         if (!string.Equals(oldFull, newFull, StringComparison.OrdinalIgnoreCase) && File.Exists(newFull))
         {
-            throw new IOException($"Файл уже существует: {newFull}");
+            throw new IOException(Loc.T("Core_TheFileAlreadyExists0", newFull));
         }
 
         var updated = 0;
@@ -192,7 +193,7 @@ public static class RefactorService
                 System.IO.Path.Combine(project.RootPath, newFileRelativePath ?? "shared.dita"));
             if (File.Exists(targetFull))
             {
-                throw new IOException($"Файл уже существует: {targetFull}");
+                throw new IOException(Loc.T("Core_TheFileAlreadyExists0", targetFull));
             }
 
             var title = char.ToUpperInvariant(elementId[0]) + elementId[1..].Replace('_', ' ');

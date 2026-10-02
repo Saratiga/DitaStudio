@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Publishing;
 
@@ -66,8 +67,8 @@ public static class PdfExporter
         var browser = FindBrowser();
         if (browser is null)
         {
-            return "Не найден браузер на движке Chromium (Microsoft Edge, Google Chrome или Chromium). " +
-                   "Откройте собранный HTML и напечатайте его в PDF вручную.";
+            return Loc.T("Core_NoChromiumBasedBrowserWasFound") +
+                   Loc.T("Core_OpenTheBuiltHTMLAndPrint");
         }
 
         // Старый PDF от прошлой сборки убираем заранее: иначе, если браузер не сможет записать
@@ -82,8 +83,8 @@ public static class PdfExporter
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return $"Не удалось заменить {Path.GetFileName(pdfPath)}: файл занят другой программой " +
-                   $"(закройте его в просмотрщике PDF). {ex.Message}";
+            return Loc.T("Core_CouldNotReplace0TheFile", Path.GetFileName(pdfPath)) +
+                   Loc.T("Core_CloseItInThePDFViewer", ex.Message);
         }
 
         var profileDir = Path.Combine(Path.GetTempPath(), "DitaStudioPrint");
@@ -120,7 +121,7 @@ public static class PdfExporter
             using var process = Process.Start(info);
             if (process is null)
             {
-                return "Не удалось запустить браузер для печати.";
+                return Loc.T("Core_CouldNotStartTheBrowserFor");
             }
 
             // Chromium много пишет в stderr даже при успехе. Если не вычитывать потоки, буфер
@@ -139,7 +140,7 @@ public static class PdfExporter
                     // процесс уже завершился
                 }
 
-                return "Печать в PDF заняла слишком много времени и была прервана.";
+                return Loc.T("Core_PrintingToPDFTookTooLong");
             }
 
             if (!File.Exists(pdfPath))
@@ -148,8 +149,8 @@ public static class PdfExporter
                 // основного — ждём текст ошибки недолго.
                 var error = errorOutput.Wait(5000) ? errorOutput.Result : string.Empty;
                 return string.IsNullOrWhiteSpace(error)
-                    ? "Браузер завершился, но PDF не создан."
-                    : $"Браузер сообщил об ошибке: {error.Trim()}";
+                    ? Loc.T("Core_TheBrowserExitedButNoPDF")
+                    : Loc.T("Core_TheBrowserReportedAnError0", error.Trim());
             }
 
             return null;

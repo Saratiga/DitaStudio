@@ -1,4 +1,5 @@
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Publishing;
 
@@ -15,17 +16,17 @@ public static class PagePlacement
     public const string Prefix = "place-";
 
     /// <summary>Девять положений: класс → подпись.</summary>
-    public static readonly IReadOnlyList<(string Token, string Label)> Positions = new[]
+    public static IReadOnlyList<(string Token, string Label)> Positions => new[]
     {
-        ("place-top-left", "Вверху слева"),
-        ("place-top-center", "Вверху по центру"),
-        ("place-top-right", "Вверху справа"),
-        ("place-middle-left", "Посередине слева"),
-        ("place-middle-center", "По центру листа"),
-        ("place-middle-right", "Посередине справа"),
-        ("place-bottom-left", "Внизу слева"),
-        ("place-bottom-center", "Внизу по центру"),
-        ("place-bottom-right", "Внизу справа")
+        ("place-top-left", Loc.T("Menu_PlacementTopLeft")),
+        ("place-top-center", Loc.T("Menu_PlacementTopCenter")),
+        ("place-top-right", Loc.T("Menu_PlacementTopRight")),
+        ("place-middle-left", Loc.T("Menu_PlacementMiddleLeft")),
+        ("place-middle-center", Loc.T("Menu_PlacementMiddleCenter")),
+        ("place-middle-right", Loc.T("Menu_PlacementMiddleRight")),
+        ("place-bottom-left", Loc.T("Menu_PlacementBottomLeft")),
+        ("place-bottom-center", Loc.T("Menu_PlacementBottomCenter")),
+        ("place-bottom-right", Loc.T("Menu_PlacementBottomRight"))
     };
 
     /// <summary>Блоки, которые можно поставить на отдельный лист.</summary>

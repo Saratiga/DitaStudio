@@ -1,4 +1,5 @@
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Project;
 
@@ -70,7 +71,7 @@ public sealed class MapItem
     public string BrokenReason { get; internal set; } = string.Empty;
 
     /// <summary>Что можно сделать со строкой, файл которой не найден.</summary>
-    public const string BrokenAdvice = "Создайте файл по ссылке, выберите другой файл или уберите строку из карты (правая кнопка мыши по строке).";
+    public static string BrokenAdvice => Loc.T("Core_CreateTheFileForTheReference");
 
     /// <summary>Глубина вложенности (0 — корень карты).</summary>
     public int Level => Parent is null ? 0 : Parent.Level + 1;
@@ -297,14 +298,14 @@ public sealed class MapTree
                 item.IsBroken = !File.Exists(keyDef.ResolvedPath);
                 if (item.IsBroken)
                 {
-                    item.BrokenReason = $"Ключ «{keyName}» указывает на файл, которого нет: {keyDef.ResolvedPath}. {MapItem.BrokenAdvice}";
+                    item.BrokenReason = Loc.T("Core_TheKey0PointsToA", keyName, keyDef.ResolvedPath, MapItem.BrokenAdvice);
                 }
             }
             else
             {
                 item.IsBroken = true;
-                item.BrokenReason = $"Ключ «{keyName}» не определён: в карте нет keydef с таким ключом (или он вне области ключей этой строки). " +
-                                    "Определите ключ или замените ссылку на файл.";
+                item.BrokenReason = Loc.T("Core_TheKey0IsNotDefined", keyName) +
+                                    Loc.T("Core_DefineTheKeyOrReplaceThe");
             }
 
             return;
@@ -327,8 +328,8 @@ public sealed class MapTree
         if (item.IsBroken)
         {
             item.BrokenReason = reference.Path is null
-                ? $"Ссылка href=\"{href}\" не разобрана: неверный путь. {MapItem.BrokenAdvice}"
-                : $"Файл не найден: {reference.Path} (href=\"{href}\" в карте {System.IO.Path.GetFileName(mapPath)}). {MapItem.BrokenAdvice}";
+                ? Loc.T("Core_TheReferenceHref0CouldNot", href, MapItem.BrokenAdvice)
+                : Loc.T("Core_FileNotFound0Href1", reference.Path, href, System.IO.Path.GetFileName(mapPath), MapItem.BrokenAdvice);
         }
     }
 
@@ -375,7 +376,7 @@ public sealed class MapTree
 
         if (item.Node.Name == "keydef")
         {
-            return item.Keys is null ? "keydef" : $"ключ: {item.Keys}";
+            return item.Keys is null ? "keydef" : Loc.T("Core_Key0", item.Keys);
         }
 
         var href = item.Href;

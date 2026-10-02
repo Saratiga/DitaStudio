@@ -1,4 +1,5 @@
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Schema;
 
@@ -65,7 +66,7 @@ public sealed class DitaCatalog
         if (ReferenceEquals(this, Builtin))
         {
             throw new InvalidOperationException(
-                "Встроенный каталог не меняется — используйте WithElements(...) и каталог проекта.");
+                Loc.T("Core_TheBuiltInCatalogCannotBe"));
         }
 
         foreach (var def in extra)

@@ -1,5 +1,6 @@
 using System.Text;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Templates;
 
@@ -11,18 +12,18 @@ public sealed record DocumentTemplate(string Key, string RootElement, string Dis
 /// <summary>Заготовки новых документов DITA.</summary>
 public static class DocumentTemplates
 {
-    public static readonly IReadOnlyList<DocumentTemplate> All = new List<DocumentTemplate>
+    public static IReadOnlyList<DocumentTemplate> All => new List<DocumentTemplate>
     {
-        new("concept", "concept", "Концепция", "Объясняет, что это такое и зачем нужно", ".dita"),
-        new("task", "task", "Задача", "Пошаговая инструкция", ".dita"),
-        new("reference", "reference", "Справка", "Таблицы, параметры, синтаксис", ".dita"),
-        new("table", "reference", "Таблица (без заголовка)", "Топик из одной таблицы: заголовок топика не печатается", ".dita"),
-        new("troubleshooting", "troubleshooting", "Устранение неполадки", "Признак, причина, решение", ".dita"),
-        new("topic", "topic", "Универсальный топик", "Свободная структура", ".dita"),
-        new("glossentry", "glossentry", "Статья глоссария", "Термин и его определение", ".dita"),
-        new("map", "map", "Карта", "Структура публикации", ".ditamap"),
-        new("bookmap", "bookmap", "Карта книги", "Главы, части, приложения", ".ditamap"),
-        new("subjectScheme", "subjectScheme", "Схема категорий", "Значения условных атрибутов", ".ditamap")
+        new("concept", "concept", Loc.T("Core_Concept"), Loc.T("Core_ExplainsWhatItIsAndWhy"), ".dita"),
+        new("task", "task", Loc.T("Core_Task"), Loc.T("Core_StepByStepInstructions"), ".dita"),
+        new("reference", "reference", Loc.T("Msg_Help"), Loc.T("Core_TablesParametersSyntax"), ".dita"),
+        new("table", "reference", Loc.T("Core_TableWithoutTitle"), Loc.T("Core_ATopicMadeOfOneTable"), ".dita"),
+        new("troubleshooting", "troubleshooting", Loc.T("Core_Troubleshooting"), Loc.T("Core_ConditionCauseRemedy"), ".dita"),
+        new("topic", "topic", Loc.T("Core_GeneralTopic"), Loc.T("Core_FreeStructure"), ".dita"),
+        new("glossentry", "glossentry", Loc.T("Core_GlossaryEntry"), Loc.T("Core_ATermAndItsDefinition"), ".dita"),
+        new("map", "map", Loc.T("Tab_Map"), Loc.T("Core_PublicationStructure"), ".ditamap"),
+        new("bookmap", "bookmap", Loc.T("Core_Bookmap"), Loc.T("Core_ChaptersPartsAppendices"), ".ditamap"),
+        new("subjectScheme", "subjectScheme", Loc.T("Core_SubjectScheme"), Loc.T("Core_ValuesOfConditionalAttributes"), ".ditamap")
     };
 
     public static DocumentTemplate? Find(string key) =>

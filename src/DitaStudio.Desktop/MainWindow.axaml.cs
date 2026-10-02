@@ -162,7 +162,11 @@ public partial class MainWindow : Window
             IsChecked = string.Equals(Loc.Instance.UserChoice, code, StringComparison.Ordinal),
             GroupName = "UiLanguage"
         };
-        item.Click += (_, _) => Loc.Instance.SetUserLanguage(code);
+        item.Click += (_, _) =>
+        {
+            Loc.Instance.SetUserLanguage(code);
+            ViewModel.StatusText = Loc.T("Msg_LanguageSwitched");
+        };
         return item;
     }
 

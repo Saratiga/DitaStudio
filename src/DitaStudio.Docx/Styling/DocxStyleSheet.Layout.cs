@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Docx.Styling;
 
@@ -92,8 +93,8 @@ public sealed partial class DocxStyleSheet
     {
         if (parsed.PageRules.Any(r => r.Pseudo is not null))
         {
-            _diag.Add("Правила @page :first/:left/:right в DOCX не поддерживаются — первая страница без колонтитулов " +
-                      "и зеркальные поля задаются в «Публикация → Оформление DOCX…».");
+            _diag.Add(Loc.T("Core_ThePageRulesFirstLeftRight") +
+                      Loc.T("Core_AndMirroredMarginsAreSetIn"));
         }
 
         var width = Page.WidthPt;

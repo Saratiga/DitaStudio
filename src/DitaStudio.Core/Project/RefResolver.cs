@@ -1,5 +1,6 @@
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Validation;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Project;
 
@@ -303,7 +304,7 @@ public static class RefResolver
                 {
                     issues.Add(new ValidationIssue(
                         IssueSeverity.Error,
-                        $"Ключ \"{key}\" не объявлен ни в одной карте проекта.",
+                        Loc.T("Core_TheKey0IsNotDeclared", key),
                         node,
                         baseFile));
                 }
@@ -316,7 +317,7 @@ public static class RefResolver
                 {
                     issues.Add(new ValidationIssue(
                         IssueSeverity.Error,
-                        $"Не удалось разрешить conkeyref=\"{conkeyref}\".",
+                        Loc.T("Core_CouldNotResolveConkeyref0", conkeyref),
                         node,
                         baseFile));
                 }
@@ -350,7 +351,7 @@ public static class RefResolver
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Error,
-                $"Файл по ссылке @{attribute}=\"{href}\" не найден: {reference.Path}. Создайте файл с таким именем, поправьте путь в ссылке или уберите ссылку.",
+                Loc.T("Core_TheFileForTheReference0", attribute, href, reference.Path),
                 node,
                 baseFile));
             return;
@@ -371,7 +372,7 @@ public static class RefResolver
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Warning,
-                $"Не найден целевой элемент ссылки @{attribute}=\"{href}\".",
+                Loc.T("Core_TheTargetElementOfTheReference", attribute, href),
                 node,
                 baseFile));
         }

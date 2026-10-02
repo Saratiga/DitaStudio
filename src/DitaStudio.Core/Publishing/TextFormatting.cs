@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Publishing;
 
@@ -19,38 +20,38 @@ public static class TextFormatting
     public const string MarkPrefix = "mark-";
 
     /// <summary>Выравнивание: класс → (подпись, значение text-align).</summary>
-    public static readonly IReadOnlyList<(string Token, string Label, string Css)> Alignments = new[]
+    public static IReadOnlyList<(string Token, string Label, string Css)> Alignments => new[]
     {
-        ("align-left", "По левому краю", "left"),
-        ("align-center", "По центру", "center"),
-        ("align-right", "По правому краю", "right"),
-        ("align-justify", "По ширине", "justify")
+        ("align-left", Loc.T("Tip_AlignLeft"), "left"),
+        ("align-center", Loc.T("Tip_AlignCenter"), "center"),
+        ("align-right", Loc.T("Tip_AlignRight"), "right"),
+        ("align-justify", Loc.T("Tip_AlignJustify"), "justify")
     };
 
     /// <summary>Размеры шрифта, пт.</summary>
     public static readonly IReadOnlyList<int> Sizes = new[] { 8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28 };
 
     /// <summary>Цвета текста: класс → (подпись, цвет).</summary>
-    public static readonly IReadOnlyList<(string Token, string Label, string Hex)> Colors = new[]
+    public static IReadOnlyList<(string Token, string Label, string Hex)> Colors => new[]
     {
-        ("color-red", "Красный", "#C00000"),
-        ("color-orange", "Оранжевый", "#D86A00"),
-        ("color-green", "Зелёный", "#00873C"),
-        ("color-blue", "Синий", "#1F5FBF"),
-        ("color-purple", "Фиолетовый", "#7030A0"),
-        ("color-gray", "Серый", "#7F7F7F")
+        ("color-red", Loc.T("Core_Red"), "#C00000"),
+        ("color-orange", Loc.T("Core_Orange"), "#D86A00"),
+        ("color-green", Loc.T("Core_Green"), "#00873C"),
+        ("color-blue", Loc.T("Core_Blue"), "#1F5FBF"),
+        ("color-purple", Loc.T("Core_Purple"), "#7030A0"),
+        ("color-gray", Loc.T("Core_Gray"), "#7F7F7F")
     };
 
     /// <summary>
     /// Цвета маркера (выделение фона, как «Цвет выделения текста» в Word): класс → (подпись, цвет). Это цвета палитры выделения Word,
     /// поэтому в DOCX они становятся настоящим выделением (<c>w:highlight</c>), а не заливкой.
     /// </summary>
-    public static readonly IReadOnlyList<(string Token, string Label, string Hex)> Marks = new[]
+    public static IReadOnlyList<(string Token, string Label, string Hex)> Marks => new[]
     {
-        ("mark-red", "Красный", "#FF0000"),
-        ("mark-yellow", "Жёлтый", "#FFFF00"),
-        ("mark-green", "Зелёный", "#00FF00"),
-        ("mark-blue", "Синий", "#0000FF")
+        ("mark-red", Loc.T("Core_Red"), "#FF0000"),
+        ("mark-yellow", Loc.T("Core_Yellow"), "#FFFF00"),
+        ("mark-green", Loc.T("Core_Green"), "#00FF00"),
+        ("mark-blue", Loc.T("Core_Blue"), "#0000FF")
     };
 
     /// <summary>Класс своего цвета маркера по «#RRGGBB» (или «RRGGBB»): «mark-ff8800»; null — не цвет.</summary>

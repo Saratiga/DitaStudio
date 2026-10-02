@@ -8,6 +8,7 @@ using DitaStudio.Docx.Styling;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using W = DocumentFormat.OpenXml.Wordprocessing;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Docx;
 
@@ -31,7 +32,7 @@ public sealed partial class DocxPublisher
                 var full = DocxLayout.ResolveImage(_project.RootPath, layout.TitleImage);
                 if (full is null || DocxPictures.AddImage(mainPart, full) is not { } relId)
                 {
-                    warnings.Add($"Картинка титульной страницы не найдена или не PNG/JPEG/GIF/BMP: {layout.TitleImage}");
+                    warnings.Add(Loc.T("Core_TheTitlePageImageWasNot", layout.TitleImage));
                 }
                 else
                 {

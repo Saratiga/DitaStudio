@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DitaStudio.Core.IO;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Project;
 
@@ -82,7 +83,7 @@ public static class ProductList
         }
         catch (JsonException ex)
         {
-            throw new IOException($"Файл списка продуктов повреждён: {ex.Message}", ex);
+            throw new IOException(Loc.T("Core_TheProductListFileIsDamaged", ex.Message), ex);
         }
     }
 

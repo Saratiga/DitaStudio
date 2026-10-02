@@ -1,5 +1,6 @@
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Validation;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Project;
 
@@ -25,7 +26,7 @@ public sealed partial class DitaProject
             {
                 issues.Add(new ValidationIssue(
                     IssueSeverity.Error,
-                    $"Файл не разбирается как XML: {ex.Message}",
+                    Loc.T("Core_TheFileCannotBeParsedAs", ex.Message),
                     null,
                     file.FullPath));
                 continue;
@@ -48,7 +49,7 @@ public sealed partial class DitaProject
                 catch (Exception ex)
                 {
                     issues.Add(new ValidationIssue(
-                        IssueSeverity.Warning, $"Плагин \"{plugin.Name}\" упал при проверке: {ex.Message}", null, file.FullPath));
+                        IssueSeverity.Warning, Loc.T("Msg_ThePlugin0FailedDuringValidation", plugin.Name, ex.Message), null, file.FullPath));
                 }
             }
         }

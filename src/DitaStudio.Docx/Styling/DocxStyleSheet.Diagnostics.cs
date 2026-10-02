@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Docx.Styling;
 
@@ -31,20 +32,20 @@ public sealed partial class DocxStyleSheet
                     _finalized = true;
                     if (_selectors.Count > 0)
                     {
-                        _messages.Add("CSS → DOCX: селекторы не поддерживаются, правила пропущены: " + Sample(_selectors) +
-                                      ". В DOCX работают теги и классы HTML-публикации (p, h1, .note, .shortdesc…), классы outputclass и " +
-                                      "селекторы по элементам DITA: имя, .класс, #id, [атрибут], потомок, ребёнок, соседи, :first-child, " +
+                        _messages.Add(Loc.T("Core_CSSDOCXTheseSelectorsAreNot") + Sample(_selectors) +
+                                      Loc.T("Core_InDOCXTheTagsAndClasses") +
+                                      Loc.T("Core_SelectorsByDITAElementsNameClass") +
                                       ":last-child, :nth-child(), :nth-of-type(), :not(), :empty, ::before, ::after.");
                     }
 
                     if (_properties.Count > 0)
                     {
-                        _messages.Add("CSS → DOCX: свойства не переносятся в Word: " + Sample(_properties) + ".");
+                        _messages.Add(Loc.T("Core_CSSDOCXThesePropertiesAreNot") + Sample(_properties) + ".");
                     }
 
                     if (_values.Count > 0)
                     {
-                        _messages.Add("CSS → DOCX: значения не распознаны: " + Sample(_values) + ".");
+                        _messages.Add(Loc.T("Core_CSSDOCXTheseValuesWereNot") + Sample(_values) + ".");
                     }
                 }
 
@@ -56,7 +57,7 @@ public sealed partial class DocxStyleSheet
         {
             const int limit = 8;
             var shown = string.Join(", ", items.Take(limit));
-            return items.Count > limit ? $"{shown} и ещё {items.Count - limit}" : shown;
+            return items.Count > limit ? Loc.T("Core_0And1More", shown, items.Count - limit) : shown;
         }
     }
 }

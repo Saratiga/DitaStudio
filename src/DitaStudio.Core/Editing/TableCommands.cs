@@ -1,5 +1,6 @@
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Editing;
 
@@ -26,13 +27,13 @@ public static class TableCommands
 {
     public static string Describe(TableOperation operation) => operation switch
     {
-        TableOperation.InsertRowAbove => "Вставка строки выше",
-        TableOperation.InsertRowBelow => "Вставка строки ниже",
-        TableOperation.DeleteRow => "Удаление строки",
-        TableOperation.InsertColumnLeft => "Вставка столбца слева",
-        TableOperation.InsertColumnRight => "Вставка столбца справа",
-        TableOperation.DeleteColumn => "Удаление столбца",
-        _ => "Разделение ячейки"
+        TableOperation.InsertRowAbove => Loc.T("Core_InsertRowAbove"),
+        TableOperation.InsertRowBelow => Loc.T("Core_InsertRowBelow"),
+        TableOperation.DeleteRow => Loc.T("Core_DeleteRow"),
+        TableOperation.InsertColumnLeft => Loc.T("Core_InsertColumnLeft"),
+        TableOperation.InsertColumnRight => Loc.T("Core_InsertColumnRight"),
+        TableOperation.DeleteColumn => Loc.T("Core_DeleteColumn"),
+        _ => Loc.T("Core_SplitCell")
     };
 
     /// <summary>Ячейка таблицы, внутри которой узел (entry, stentry, proptype…), или null.</summary>

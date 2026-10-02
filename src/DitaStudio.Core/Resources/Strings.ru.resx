@@ -404,6 +404,468 @@
   <data name="Col_Target" xml:space="preserve">
     <value>Цель</value>
   </data>
+  <data name="Core_01HasNoValidId" xml:space="preserve">
+    <value>{0}: у &lt;{1}&gt; нет корректного id — пропущен.</value>
+  </data>
+  <data name="Core_01ThePropertyIsNot" xml:space="preserve">
+    <value>@{0} {1}: свойство не поддерживается в колонтитулах</value>
+  </data>
+  <data name="Core_0And1More" xml:space="preserve">
+    <value>{0} и ещё {1}</value>
+  </data>
+  <data name="Core_0ATagIsNotClosed" xml:space="preserve">
+    <value>{0}: не закрыт тег (bpt id={1}) — содержимое сохранено как есть.</value>
+  </data>
+  <data name="Core_0CannotBePlacedIn1" xml:space="preserve">
+    <value>«{0}» нельзя поместить в «{1}» на это место.</value>
+  </data>
+  <data name="Core_0Content12IsNot" xml:space="preserve">
+    <value>@{0} content: {1}({2}) не поддерживается</value>
+  </data>
+  <data name="Core_0Content1CouldNotBe" xml:space="preserve">
+    <value>@{0} content: не разобрано «{1}»</value>
+  </data>
+  <data name="Core_0InconsistentEptId1Edits" xml:space="preserve">
+    <value>{0}: несогласованный &lt;/ept id="{1}"&gt; — правки внутри тега могли потеряться.</value>
+  </data>
+  <data name="Core_0NoTargetSkipped" xml:space="preserve">
+    <value>{0}: нет &lt;target&gt; — пропущен.</value>
+  </data>
+  <data name="Core_0PlaceholderId1IsOut" xml:space="preserve">
+    <value>{0}: placeholder id="{1}" вне диапазона — тег и его содержимое пропущены.</value>
+  </data>
+  <data name="Core_0PlaceholderId1IsOut2" xml:space="preserve">
+    <value>{0}: placeholder id="{1}" вне диапазона — пропущен.</value>
+  </data>
+  <data name="Core_0TheXLIFFHasNoSuch" xml:space="preserve">
+    <value>{0}: в XLIFF нет такого сегмента — пропущен, документ мог измениться после экспорта.</value>
+  </data>
+  <data name="Core_AllowedHere01" xml:space="preserve">
+    <value> Здесь допустимы: {0}{1}.</value>
+  </data>
+  <data name="Core_ANameWasExpected" xml:space="preserve">
+    <value>ожидалось имя</value>
+  </data>
+  <data name="Core_And0More" xml:space="preserve">
+    <value> и ещё {0}</value>
+  </data>
+  <data name="Core_AndMirroredMarginsAreSetIn" xml:space="preserve">
+    <value>и зеркальные поля задаются в «Публикация → Оформление DOCX…».</value>
+  </data>
+  <data name="Core_ARowCannotBeMovedInto" xml:space="preserve">
+    <value>Строку нельзя перенести в её собственную ветку.</value>
+  </data>
+  <data name="Core_ARowCannotBeMovedOnto" xml:space="preserve">
+    <value>Строку нельзя перенести на саму себя.</value>
+  </data>
+  <data name="Core_ARowCannotBePlacedBefore" xml:space="preserve">
+    <value>Перед корнем карты и после него строку поставить нельзя.</value>
+  </data>
+  <data name="Core_ATermAndItsDefinition" xml:space="preserve">
+    <value>Термин и его определение</value>
+  </data>
+  <data name="Core_ATopicMadeOfOneTable" xml:space="preserve">
+    <value>Топик из одной таблицы: заголовок топика не печатается</value>
+  </data>
+  <data name="Core_Blue" xml:space="preserve">
+    <value>Синий</value>
+  </data>
+  <data name="Core_Bookmap" xml:space="preserve">
+    <value>Карта книги</value>
+  </data>
+  <data name="Core_BracketIsNotClosed" xml:space="preserve">
+    <value>скобка [ не закрыта</value>
+  </data>
+  <data name="Core_ChaptersPartsAppendices" xml:space="preserve">
+    <value>Главы, части, приложения</value>
+  </data>
+  <data name="Core_CloseItInThePDFViewer" xml:space="preserve">
+    <value>(закройте его в просмотрщике PDF). {0}</value>
+  </data>
+  <data name="Core_Concept" xml:space="preserve">
+    <value>Концепция</value>
+  </data>
+  <data name="Core_ConditionCauseRemedy" xml:space="preserve">
+    <value>Признак, причина, решение</value>
+  </data>
+  <data name="Core_CouldNotCopy01" xml:space="preserve">
+    <value>Не удалось скопировать {0}: {1}</value>
+  </data>
+  <data name="Core_CouldNotRead0" xml:space="preserve">
+    <value>Не удалось прочитать {0}</value>
+  </data>
+  <data name="Core_CouldNotRead01" xml:space="preserve">
+    <value>Не удалось прочитать {0}: {1}</value>
+  </data>
+  <data name="Core_CouldNotRead012" xml:space="preserve">
+    <value>Не удалось прочитать {0}: {1}. {2}</value>
+  </data>
+  <data name="Core_CouldNotRead01Default" xml:space="preserve">
+    <value>Не удалось прочитать {0}: {1}. Используются настройки по умолчанию.</value>
+  </data>
+  <data name="Core_CouldNotReadTheStyleFile" xml:space="preserve">
+    <value>Не удалось прочитать файл стилей {0}: {1}</value>
+  </data>
+  <data name="Core_CouldNotReplace0TheFile" xml:space="preserve">
+    <value>Не удалось заменить {0}: файл занят другой программой </value>
+  </data>
+  <data name="Core_CouldNotResolveConkeyref0" xml:space="preserve">
+    <value>Не удалось разрешить conkeyref="{0}".</value>
+  </data>
+  <data name="Core_CouldNotSave012" xml:space="preserve">
+    <value>Не удалось сохранить {0}: {1}. {2}</value>
+  </data>
+  <data name="Core_CouldNotStartTheBrowserFor" xml:space="preserve">
+    <value>Не удалось запустить браузер для печати.</value>
+  </data>
+  <data name="Core_CreateTheFileForTheReference" xml:space="preserve">
+    <value>Создайте файл по ссылке, выберите другой файл или уберите строку из карты (правая кнопка мыши по строке).</value>
+  </data>
+  <data name="Core_CSSDOCXThesePropertiesAreNot" xml:space="preserve">
+    <value>CSS → DOCX: свойства не переносятся в Word: </value>
+  </data>
+  <data name="Core_CSSDOCXTheseSelectorsAreNot" xml:space="preserve">
+    <value>CSS → DOCX: селекторы не поддерживаются, правила пропущены: </value>
+  </data>
+  <data name="Core_CSSDOCXTheseSelectorsMatchedNo" xml:space="preserve">
+    <value>CSS → DOCX: селекторы не совпали ни с одним элементом публикации и ничего не оформили: </value>
+  </data>
+  <data name="Core_CSSDOCXTheseValuesWereNot" xml:space="preserve">
+    <value>CSS → DOCX: значения не распознаны: </value>
+  </data>
+  <data name="Core_DefaultValuesAreUsed" xml:space="preserve">
+    <value>Используются значения по умолчанию.</value>
+  </data>
+  <data name="Core_DefineTheKeyOrReplaceThe" xml:space="preserve">
+    <value>Определите ключ или замените ссылку на файл.</value>
+  </data>
+  <data name="Core_DeleteColumn" xml:space="preserve">
+    <value>Удаление столбца</value>
+  </data>
+  <data name="Core_DeleteRow" xml:space="preserve">
+    <value>Удаление строки</value>
+  </data>
+  <data name="Core_Element0CouldNotParseThe" xml:space="preserve">
+    <value>Элемент "{0}": не удалось разобрать контент-модель "{1}": {2}</value>
+  </data>
+  <data name="Core_EmptyElement0" xml:space="preserve">
+    <value>Пустой элемент &lt;{0}&gt;.</value>
+  </data>
+  <data name="Core_EmptySelector" xml:space="preserve">
+    <value>пустой селектор</value>
+  </data>
+  <data name="Core_EmptyTitleTheTopicIsPublished" xml:space="preserve">
+    <value>Пустой заголовок: топик публикуется без заголовка и не попадает в оглавление; в карте и ссылках он называется «{0}».</value>
+  </data>
+  <data name="Core_EmptyTopicTitle" xml:space="preserve">
+    <value>Пустой заголовок топика.</value>
+  </data>
+  <data name="Core_Error" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="Core_ExplainsWhatItIsAndWhy" xml:space="preserve">
+    <value>Объясняет, что это такое и зачем нужно</value>
+  </data>
+  <data name="Core_FileNotFound0" xml:space="preserve">
+    <value>Файл не найден: {0}</value>
+  </data>
+  <data name="Core_FileNotFound0Href1" xml:space="preserve">
+    <value>Файл не найден: {0} (href="{1}" в карте {2}). {3}</value>
+  </data>
+  <data name="Core_FontFaceRulesAreNotCarried" xml:space="preserve">
+    <value>Правила @font-face в DOCX не переносятся: шрифт должен быть установлен на компьютере, где открывают документ.</value>
+  </data>
+  <data name="Core_FreeStructure" xml:space="preserve">
+    <value>Свободная структура</value>
+  </data>
+  <data name="Core_FromTheExternalDTD" xml:space="preserve">
+    <value>Из внешнего DTD</value>
+  </data>
+  <data name="Core_GeneralTopic" xml:space="preserve">
+    <value>Универсальный топик</value>
+  </data>
+  <data name="Core_GlossaryEntry" xml:space="preserve">
+    <value>Статья глоссария</value>
+  </data>
+  <data name="Core_Gray" xml:space="preserve">
+    <value>Серый</value>
+  </data>
+  <data name="Core_Green" xml:space="preserve">
+    <value>Зелёный</value>
+  </data>
+  <data name="Core_ImageNotFound0" xml:space="preserve">
+    <value>Изображение не найдено: {0}</value>
+  </data>
+  <data name="Core_InDOCXTheTagsAndClasses" xml:space="preserve">
+    <value>. В DOCX работают теги и классы HTML-публикации (p, h1, .note, .shortdesc…), классы outputclass и </value>
+  </data>
+  <data name="Core_Information" xml:space="preserve">
+    <value>Сведения</value>
+  </data>
+  <data name="Core_InsertColumnLeft" xml:space="preserve">
+    <value>Вставка столбца слева</value>
+  </data>
+  <data name="Core_InsertColumnRight" xml:space="preserve">
+    <value>Вставка столбца справа</value>
+  </data>
+  <data name="Core_InsertRowAbove" xml:space="preserve">
+    <value>Вставка строки выше</value>
+  </data>
+  <data name="Core_InsertRowBelow" xml:space="preserve">
+    <value>Вставка строки ниже</value>
+  </data>
+  <data name="Core_InvalidPath01" xml:space="preserve">
+    <value>Некорректный путь "{0}": {1}</value>
+  </data>
+  <data name="Core_InvalidValue01On2" xml:space="preserve">
+    <value>Недопустимое значение @{0}="{1}" у &lt;{2}&gt;. Допустимо: {3}.</value>
+  </data>
+  <data name="Core_Key0" xml:space="preserve">
+    <value>ключ: {0}</value>
+  </data>
+  <data name="Core_LineN" xml:space="preserve">
+    <value>строка {0}</value>
+  </data>
+  <data name="Core_MissingOneOf01" xml:space="preserve">
+    <value> Не хватает одного из: {0}{1}.</value>
+  </data>
+  <data name="Core_NoArgumentInParentheses" xml:space="preserve">
+    <value>нет аргумента в скобках</value>
+  </data>
+  <data name="Core_NoChromiumBasedBrowserWasFound" xml:space="preserve">
+    <value>Не найден браузер на движке Chromium (Microsoft Edge, Google Chrome или Chromium). </value>
+  </data>
+  <data name="Core_NoShortDescriptionShortdescItIs" xml:space="preserve">
+    <value>Нет краткого описания (shortdesc) — оно используется в подсказках ссылок и в поиске.</value>
+  </data>
+  <data name="Core_NotAllowed0CannotStandHere" xml:space="preserve">
+    <value>Так нельзя: «{0}» не может стоять здесь внутри «{1}».</value>
+  </data>
+  <data name="Core_NotAllowed0LacksARequired" xml:space="preserve">
+    <value>Так нельзя: в «{0}» не хватает обязательного элемента ({1}).</value>
+  </data>
+  <data name="Core_NothingCanFollowAPseudoElement" xml:space="preserve">
+    <value>после псевдоэлемента ничего быть не может</value>
+  </data>
+  <data name="Core_NotIsNotClosed" xml:space="preserve">
+    <value>:not() не закрыт</value>
+  </data>
+  <data name="Core_NotWithoutParentheses" xml:space="preserve">
+    <value>:not() без скобок</value>
+  </data>
+  <data name="Core_OnlySimpleSelectorsAreAllowedInside" xml:space="preserve">
+    <value>в :not() допустимы только простые селекторы</value>
+  </data>
+  <data name="Core_OpenTheBuiltHTMLAndPrint" xml:space="preserve">
+    <value>Откройте собранный HTML и напечатайте его в PDF вручную.</value>
+  </data>
+  <data name="Core_Orange" xml:space="preserve">
+    <value>Оранжевый</value>
+  </data>
+  <data name="Core_ParenthesisIsNotClosed" xml:space="preserve">
+    <value>скобка не закрыта</value>
+  </data>
+  <data name="Core_PinningAppliesUntilTheProjectIs" xml:space="preserve">
+    <value>Закрепление действует до закрытия проекта.</value>
+  </data>
+  <data name="Core_PrintingToPDFTookTooLong" xml:space="preserve">
+    <value>Печать в PDF заняла слишком много времени и была прервана.</value>
+  </data>
+  <data name="Core_PseudoElementsCannotAppearInsideNot" xml:space="preserve">
+    <value>в :not() псевдоэлементов быть не может</value>
+  </data>
+  <data name="Core_PublicationStructure" xml:space="preserve">
+    <value>Структура публикации</value>
+  </data>
+  <data name="Core_Purple" xml:space="preserve">
+    <value>Фиолетовый</value>
+  </data>
+  <data name="Core_Red" xml:space="preserve">
+    <value>Красный</value>
+  </data>
+  <data name="Core_RowsFromDifferentMapFilesAre" xml:space="preserve">
+    <value>Строки из разных файлов карты переносятся через «Вырезать» и «Вставить».</value>
+  </data>
+  <data name="Core_Segment01" xml:space="preserve">
+    <value>сегмент #{0} ({1})</value>
+  </data>
+  <data name="Core_SelectorsAreMatchedAgainstDITAElements" xml:space="preserve">
+    <value>. Селекторы сопоставляются с элементами DITA (имя элемента, .outputclass, [атрибут], потомок, ребёнок, :nth-child…), а не с тегами HTML-публикации.</value>
+  </data>
+  <data name="Core_SelectorsByDITAElementsNameClass" xml:space="preserve">
+    <value>селекторы по элементам DITA: имя, .класс, #id, [атрибут], потомок, ребёнок, соседи, :first-child, </value>
+  </data>
+  <data name="Core_SplitCell" xml:space="preserve">
+    <value>Разделение ячейки</value>
+  </data>
+  <data name="Core_StepByStepInstructions" xml:space="preserve">
+    <value>Пошаговая инструкция</value>
+  </data>
+  <data name="Core_SubjectScheme" xml:space="preserve">
+    <value>Схема категорий</value>
+  </data>
+  <data name="Core_TablesParametersSyntax" xml:space="preserve">
+    <value>Таблицы, параметры, синтаксис</value>
+  </data>
+  <data name="Core_TableWithoutTitle" xml:space="preserve">
+    <value>Таблица (без заголовка)</value>
+  </data>
+  <data name="Core_Task" xml:space="preserve">
+    <value>Задача</value>
+  </data>
+  <data name="Core_TheAttribute0IsNotDeclared" xml:space="preserve">
+    <value>Атрибут @{0} не объявлен для элемента &lt;{1}&gt;.</value>
+  </data>
+  <data name="Core_TheBrowserExitedButNoPDF" xml:space="preserve">
+    <value>Браузер завершился, но PDF не создан.</value>
+  </data>
+  <data name="Core_TheBrowserReportedAnError0" xml:space="preserve">
+    <value>Браузер сообщил об ошибке: {0}</value>
+  </data>
+  <data name="Core_TheBuiltInCatalogCannotBe" xml:space="preserve">
+    <value>Встроенный каталог не меняется — используйте WithElements(...) и каталог проекта.</value>
+  </data>
+  <data name="Core_TheConnectedConditionsFile0Could" xml:space="preserve">
+    <value>Подключённый файл условий {0} не прочитан: {1} — условия из него не применены.</value>
+  </data>
+  <data name="Core_TheConnectedConditionsFile0Was" xml:space="preserve">
+    <value>Подключённый файл условий {0} не найден — условия из него не применены.</value>
+  </data>
+  <data name="Core_TheContentOf0IsIncomplete" xml:space="preserve">
+    <value>Содержимое &lt;{0}&gt; неполное.{1}</value>
+  </data>
+  <data name="Core_TheCustomStyleFileWasNot" xml:space="preserve">
+    <value>Пользовательский файл стилей не найден: {0}</value>
+  </data>
+  <data name="Core_TheDocumentHasNoRootElement" xml:space="preserve">
+    <value>В документе нет корневого элемента.</value>
+  </data>
+  <data name="Core_TheElement0CannotContainText" xml:space="preserve">
+    <value>Элемент &lt;{0}&gt; не может содержать текст напрямую — перенесите его в дочерний элемент.</value>
+  </data>
+  <data name="Core_TheElement0IsNotAllowed" xml:space="preserve">
+    <value>Элемент &lt;{0}&gt; недопустим внутри &lt;{1}&gt; в этой позиции.{2}</value>
+  </data>
+  <data name="Core_TheElement0IsNotNormally" xml:space="preserve">
+    <value>Элемент &lt;{0}&gt; обычно не используется как корень документа.</value>
+  </data>
+  <data name="Core_TheElement0LacksTheRequired" xml:space="preserve">
+    <value>У элемента &lt;{0}&gt; отсутствует обязательный атрибут @{1}.</value>
+  </data>
+  <data name="Core_TheElement0MustBeEmpty" xml:space="preserve">
+    <value>Элемент &lt;{0}&gt; должен быть пустым.</value>
+  </data>
+  <data name="Core_TheFileAlreadyExists0" xml:space="preserve">
+    <value>Файл уже существует: {0}</value>
+  </data>
+  <data name="Core_TheFileCannotBeParsedAs" xml:space="preserve">
+    <value>Файл не разбирается как XML: {0}</value>
+  </data>
+  <data name="Core_TheFileForTheReference0" xml:space="preserve">
+    <value>Файл по ссылке @{0}="{1}" не найден: {2}. Создайте файл с таким именем, поправьте путь в ссылке или уберите ссылку.</value>
+  </data>
+  <data name="Core_TheFilePathIsNotSet" xml:space="preserve">
+    <value>Не задан путь к файлу.</value>
+  </data>
+  <data name="Core_TheHeaderOrFooterImageWas" xml:space="preserve">
+    <value>Картинка колонтитула не найдена или не PNG/JPEG/GIF/BMP: {0}</value>
+  </data>
+  <data name="Core_TheIdentifier0IsAlreadyUsed" xml:space="preserve">
+    <value>Идентификатор "{0}" уже используется в этом документе.</value>
+  </data>
+  <data name="Core_TheImageFormatIsNotSupported" xml:space="preserve">
+    <value>Формат изображения не поддерживается в DOCX (показан как ссылка): {0}</value>
+  </data>
+  <data name="Core_TheImageHasNeitherHrefNor" xml:space="preserve">
+    <value>У изображения не задан ни @href, ни @keyref.</value>
+  </data>
+  <data name="Core_TheImageHasNoAlternativeText" xml:space="preserve">
+    <value>У изображения нет альтернативного текста.</value>
+  </data>
+  <data name="Core_TheKey0IsNotDeclared" xml:space="preserve">
+    <value>Ключ "{0}" не объявлен ни в одной карте проекта.</value>
+  </data>
+  <data name="Core_TheKey0IsNotDefined" xml:space="preserve">
+    <value>Ключ «{0}» не определён: в карте нет keydef с таким ключом (или он вне области ключей этой строки). </value>
+  </data>
+  <data name="Core_TheKey0PointsToA" xml:space="preserve">
+    <value>Ключ «{0}» указывает на файл, которого нет: {1}. {2}</value>
+  </data>
+  <data name="Core_TheKeySourceProject0Is" xml:space="preserve">
+    <value>Проект-источник ключей {0} недоступен: {1}</value>
+  </data>
+  <data name="Core_TheMapRootCannotBeMoved" xml:space="preserve">
+    <value>Корень карты перенести нельзя.</value>
+  </data>
+  <data name="Core_TheOperationIsNotAvailableHere" xml:space="preserve">
+    <value>Операция здесь недоступна.</value>
+  </data>
+  <data name="Core_ThePageRulesFirstLeftRight" xml:space="preserve">
+    <value>Правила @page :first/:left/:right в DOCX не поддерживаются — первая страница без колонтитулов </value>
+  </data>
+  <data name="Core_TheProductListAppliesUntilThe" xml:space="preserve">
+    <value>Список продуктов действует до закрытия проекта.</value>
+  </data>
+  <data name="Core_TheProductListFileIsDamaged" xml:space="preserve">
+    <value>Файл списка продуктов повреждён: {0}</value>
+  </data>
+  <data name="Core_TheProductListIsEmpty" xml:space="preserve">
+    <value>Список продуктов пуст.</value>
+  </data>
+  <data name="Core_ThePseudoClass0IsNot" xml:space="preserve">
+    <value>псевдокласс :{0} не поддерживается</value>
+  </data>
+  <data name="Core_ThePseudoElement0IsNot" xml:space="preserve">
+    <value>псевдоэлемент ::{0} не поддерживается</value>
+  </data>
+  <data name="Core_ThereAreNoPinnedTabs" xml:space="preserve">
+    <value>Закреплённых вкладок нет.</value>
+  </data>
+  <data name="Core_TheReferenceHref0CouldNot" xml:space="preserve">
+    <value>Ссылка href="{0}" не разобрана: неверный путь. {1}</value>
+  </data>
+  <data name="Core_TheRules0AreNotSupported" xml:space="preserve">
+    <value>Правила {0} в DOCX не поддерживаются и пропущены.</value>
+  </data>
+  <data name="Core_TheSettingAppliesUntilTheProject" xml:space="preserve">
+    <value>Настройка действует до закрытия проекта.</value>
+  </data>
+  <data name="Core_TheTargetElementOfTheReference" xml:space="preserve">
+    <value>Не найден целевой элемент ссылки @{0}="{1}".</value>
+  </data>
+  <data name="Core_TheTitlePageImageWasNot" xml:space="preserve">
+    <value>Картинка титульной страницы не найдена или не PNG/JPEG/GIF/BMP: {0}</value>
+  </data>
+  <data name="Core_TheTopicHasNoIdAttribute" xml:space="preserve">
+    <value>У топика нет атрибута @id — на него нельзя сослаться из карты и из других топиков.</value>
+  </data>
+  <data name="Core_TheXLIFFHasNoFileBody" xml:space="preserve">
+    <value>В XLIFF нет &lt;file&gt;/&lt;body&gt; — импортировать нечего.</value>
+  </data>
+  <data name="Core_Troubleshooting" xml:space="preserve">
+    <value>Устранение неполадки</value>
+  </data>
+  <data name="Core_UnclearAttributeSelector0" xml:space="preserve">
+    <value>непонятный атрибутный селектор [{0}]</value>
+  </data>
+  <data name="Core_UnclearNumber0" xml:space="preserve">
+    <value>непонятный номер «{0}»</value>
+  </data>
+  <data name="Core_UnexpectedCharacter0" xml:space="preserve">
+    <value>неожиданный символ «{0}»</value>
+  </data>
+  <data name="Core_UnknownRootElement0CheckThat" xml:space="preserve">
+    <value>Неизвестный корневой элемент &lt;{0}&gt;. Проверьте, что документ соответствует DITA 1.3.</value>
+  </data>
+  <data name="Core_ValuesOfConditionalAttributes" xml:space="preserve">
+    <value>Значения условных атрибутов</value>
+  </data>
+  <data name="Core_Warning" xml:space="preserve">
+    <value>Предупреждение</value>
+  </data>
+  <data name="Core_Yellow" xml:space="preserve">
+    <value>Жёлтый</value>
+  </data>
   <data name="Dlg_0010Mm" xml:space="preserve">
     <value>{0:0.#} × {1:0.#} мм</value>
   </data>
@@ -1922,6 +2384,9 @@
   </data>
   <data name="Msg_KeySourceProjectsConnected0Their" xml:space="preserve">
     <value>Подключено проектов-источников ключей: {0} — их ключи в списке не показаны, </value>
+  </data>
+  <data name="Msg_LanguageSwitched" xml:space="preserve">
+    <value>Язык переключён. Тексты уже открытых вкладок обновятся при их повторном открытии.</value>
   </data>
   <data name="Msg_LineBelowRow" xml:space="preserve">
     <value>Линия под строкой</value>

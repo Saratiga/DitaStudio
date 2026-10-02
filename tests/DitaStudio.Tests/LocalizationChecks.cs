@@ -102,6 +102,9 @@ internal static partial class CoreChecks
             .Where(k => Placeholders(neutral[k]) != Placeholders(russian[k])).ToList();
         Check(placeholderMismatch.Count == 0, "подстановки {0} различаются между языками: " + string.Join(", ", placeholderMismatch.Take(10)));
 
+        var cyrillicInEnglish = neutral.Where(kv => Regex.IsMatch(kv.Value, "[А-Яа-яЁё]")).Select(kv => kv.Key).ToList();
+        Check(cyrillicInEnglish.Count == 0, "в английских строках осталась кириллица: " + string.Join(", ", cyrillicInEnglish.Take(10)));
+
         // --- каждый ключ, на который ссылается код или разметка, есть в ресурсах
         var used = UsedResourceKeys(RepositoryRoot());
         var unknown = used.Where(u => !neutral.ContainsKey(u.Key)).Select(u => $"{u.Key} ({u.File})").ToList();

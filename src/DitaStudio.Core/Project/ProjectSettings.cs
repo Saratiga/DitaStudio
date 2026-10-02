@@ -1,6 +1,7 @@
 using System.Text;
 using DitaStudio.Core.IO;
 using DitaStudio.Core.Publishing;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Core.Project;
 
@@ -23,8 +24,8 @@ public sealed class ProjectSettings
     private const string PinnedTabsFile = ".ditastudio-pinned";
     private const string ProductsFile = ".ditastudio-products";
 
-    private const string SaveFailedTail = "Настройка действует до закрытия проекта.";
-    private const string LoadFailedTail = "Используются значения по умолчанию.";
+    private static string SaveFailedTail => Loc.T("Core_TheSettingAppliesUntilTheProject");
+    private static string LoadFailedTail => Loc.T("Core_DefaultValuesAreUsed");
 
     private readonly string _root;
     private readonly List<string> _warnings = new();
@@ -83,7 +84,7 @@ public sealed class ProjectSettings
         var path = FullPathOf(CustomCssPath);
         if (!File.Exists(path))
         {
-            warning = $"Пользовательский файл стилей не найден: {path}";
+            warning = Loc.T("Core_TheCustomStyleFileWasNot", path);
             return null;
         }
 
@@ -93,7 +94,7 @@ public sealed class ProjectSettings
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            warning = $"Не удалось прочитать файл стилей {path}: {ex.Message}";
+            warning = Loc.T("Core_CouldNotReadTheStyleFile", path, ex.Message);
             return null;
         }
     }
@@ -220,7 +221,7 @@ public sealed class ProjectSettings
         var fullPath = FullPathOf(DitavalPath);
         if (!File.Exists(fullPath))
         {
-            error = $"Подключённый файл условий {DitavalPath} не найден — условия из него не применены.";
+            error = Loc.T("Core_TheConnectedConditionsFile0Was", DitavalPath);
             return null;
         }
 
@@ -230,7 +231,7 @@ public sealed class ProjectSettings
         }
         catch (Exception ex) when (ex is System.Xml.XmlException or IOException or UnauthorizedAccessException)
         {
-            error = $"Подключённый файл условий {DitavalPath} не прочитан: {ex.Message} — условия из него не применены.";
+            error = Loc.T("Core_TheConnectedConditionsFile0Could", DitavalPath, ex.Message);
             return null;
         }
     }
@@ -292,11 +293,11 @@ public sealed class ProjectSettings
     {
         Products = ProductList.Clean(products);
         var list = Products;
-        Save(ProductsFile, "Список продуктов действует до закрытия проекта.",
+        Save(ProductsFile, Loc.T("Core_TheProductListAppliesUntilThe"),
             list.Count == 0 ? null : path => ProductList.Write(path, list));
     }
 
-    private void LoadProducts() => Load(ProductsFile, "Список продуктов пуст.",
+    private void LoadProducts() => Load(ProductsFile, Loc.T("Core_TheProductListIsEmpty"),
         path => Products = ProductList.Read(path),
         () => Products = Array.Empty<ProductInfo>());
 
@@ -309,11 +310,11 @@ public sealed class ProjectSettings
     {
         var files = relativePaths.Select(p => p.Replace('\\', '/')).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         PinnedFiles = files;
-        Save(PinnedTabsFile, "Закрепление действует до закрытия проекта.",
+        Save(PinnedTabsFile, Loc.T("Core_PinningAppliesUntilTheProjectIs"),
             files.Count == 0 ? null : path => WriteLines(path, files));
     }
 
-    private void LoadPinnedFiles() => Load(PinnedTabsFile, "Закреплённых вкладок нет.",
+    private void LoadPinnedFiles() => Load(PinnedTabsFile, Loc.T("Core_ThereAreNoPinnedTabs"),
         path => PinnedFiles = File.ReadAllLines(path).Select(l => l.Trim()).Where(l => l.Length > 0).ToList(),
         () => PinnedFiles = Array.Empty<string>());
 
@@ -388,7 +389,7 @@ public sealed class ProjectSettings
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
         {
             DocxLayout = new DocxLayout();
-            DocxLayoutWarning = $"Не удалось прочитать {DocxLayoutFile}: {ex.Message}. Используются настройки по умолчанию.";
+            DocxLayoutWarning = Loc.T("Core_CouldNotRead01Default", DocxLayoutFile, ex.Message);
         }
     }
 
@@ -421,7 +422,7 @@ public sealed class ProjectSettings
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            Report($"Не удалось сохранить {settingsFile}: {ex.Message}. {failedTail}");
+            Report(Loc.T("Core_CouldNotSave012", settingsFile, ex.Message, failedTail));
         }
     }
 
@@ -439,7 +440,7 @@ public sealed class ProjectSettings
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             reset();
-            Report($"Не удалось прочитать {settingsFile}: {ex.Message}. {failedTail}");
+            Report(Loc.T("Core_CouldNotRead012", settingsFile, ex.Message, failedTail));
         }
     }
 
