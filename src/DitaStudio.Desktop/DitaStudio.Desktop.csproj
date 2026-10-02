@@ -10,7 +10,7 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>DitaStudio.Desktop</RootNamespace>
     <AssemblyName>DitaStudio.Desktop</AssemblyName>
-    <Version>0.7.0</Version>
+    <Version>0.8.0</Version>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <!-- Привязки по отражению: разметка привязана к общим ViewModel'ям (DitaStudio.Presentation). -->
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
