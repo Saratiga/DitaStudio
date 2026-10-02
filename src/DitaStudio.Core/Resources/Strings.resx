@@ -896,6 +896,9 @@ Content: {2}</value>
   <data name="Core_TheXLIFFHasNoFileBody" xml:space="preserve">
     <value>The XLIFF has no &lt;file&gt;/&lt;body&gt; — nothing to import.</value>
   </data>
+  <data name="Core_TheXLIFFWasExportedFromA" xml:space="preserve">
+    <value>The XLIFF was exported from a document in the language “{0}”, and this document is in “{1}” — check that it is the right file.</value>
+  </data>
   <data name="Core_Troubleshooting" xml:space="preserve">
     <value>Troubleshooting</value>
   </data>
@@ -1118,6 +1121,9 @@ Content: {2}</value>
   </data>
   <data name="Dlg_ElementsInTheDictionary0" xml:space="preserve">
     <value>Elements in the dictionary: {0}</value>
+  </data>
+  <data name="Dlg_EnterLanguageCodes" xml:space="preserve">
+    <value>Enter the source and target language codes.</value>
   </data>
   <data name="Dlg_EnterTheSheetWidthAndHeight" xml:space="preserve">
     <value>Enter the sheet width and height: from {0:0} to {1:0} mm.</value>
@@ -1452,6 +1458,9 @@ Content: {2}</value>
   <data name="Dlg_ShowHeadersAndFooters" xml:space="preserve">
     <value>Show headers and footers</value>
   </data>
+  <data name="Dlg_SourceLanguage" xml:space="preserve">
+    <value>Source language (the document language)</value>
+  </data>
   <data name="Dlg_StaysInItsPlaceEditThe" xml:space="preserve">
     <value>stays in its place — edit the text afterwards in the target topic.</value>
   </data>
@@ -1475,6 +1484,9 @@ Content: {2}</value>
   </data>
   <data name="Dlg_TableTitle" xml:space="preserve">
     <value>Table title</value>
+  </data>
+  <data name="Dlg_TargetLanguage" xml:space="preserve">
+    <value>Target language (the translation language)</value>
   </data>
   <data name="Dlg_TextLanguage" xml:space="preserve">
     <value>Text language</value>
@@ -1550,6 +1562,12 @@ Content: {2}</value>
   </data>
   <data name="Dlg_Width" xml:space="preserve">
     <value>Width</value>
+  </data>
+  <data name="Dlg_XliffLanguages" xml:space="preserve">
+    <value>XLIFF languages</value>
+  </data>
+  <data name="Dlg_XliffLanguagesHint" xml:space="preserve">
+    <value>Language codes as in xml:lang: ru, en, de, fr, es, uk… A region may be added (en-US).</value>
   </data>
   <data name="Dlg_Yes" xml:space="preserve">
     <value>Yes</value>

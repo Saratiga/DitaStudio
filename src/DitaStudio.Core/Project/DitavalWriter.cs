@@ -3,9 +3,9 @@ using DitaStudio.Core.IO;
 
 namespace DitaStudio.Core.Project;
 
-/// <summary>Пишет .ditaval из DitavalRules — обратная операция к DitavalReader.Read. Сохраняет
-/// оба вида правил (action="exclude" и action="flag"): правка исключений через диалог условий
-/// не должна стирать правила подсветки, написанные вручную в том же файле.</summary>
+/// <summary>Пишет .ditaval из DitavalRules — обратная операция к DitavalReader.Read. Сохраняет все виды правил
+/// (exclude, include, passthrough, flag): правка исключений через диалог условий не должна стирать правила,
+/// написанные вручную в том же файле.</summary>
 public static class DitavalWriter
 {
     public static void Write(string path, DitavalRules rules)
@@ -20,6 +20,27 @@ public static class DitavalWriter
                 sb.Append("  <prop action=\"exclude\" att=\"").Append(Escape(attribute))
                   .Append("\" val=\"").Append(Escape(value)).Append("\"/>\n");
             }
+        }
+
+        foreach (var attribute in (rules.ExcludeUnlisted ?? new HashSet<string>()).OrderBy(a => a, StringComparer.Ordinal))
+        {
+            sb.Append("  <prop action=\"exclude\" att=\"").Append(Escape(attribute)).Append("\"/>\n");
+        }
+
+        foreach (var (attribute, values) in (rules.Include ?? new()).OrderBy(kv => kv.Key, StringComparer.Ordinal))
+        {
+            foreach (var value in values.OrderBy(v => v, StringComparer.Ordinal))
+            {
+                sb.Append("  <prop action=\"include\" att=\"").Append(Escape(attribute))
+                  .Append("\" val=\"").Append(Escape(value)).Append("\"/>\n");
+            }
+        }
+
+        foreach (var pass in rules.Passthrough ?? new())
+        {
+            sb.Append("  <prop action=\"passthrough\" att=\"").Append(Escape(pass.Attribute)).Append('"');
+            AppendOptionalAttr(sb, "val", pass.Value);
+            sb.Append("/>\n");
         }
 
         foreach (var flag in rules.Flags)

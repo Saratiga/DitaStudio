@@ -93,7 +93,35 @@ public sealed partial class HtmlRenderer
             styleAttr = styleAttr.Length == 0 ? $" style=\"{custom}\"" : styleAttr.Replace("style=\"", $"style=\"{custom}; ");
         }
 
-        return classAttr + styleAttr;
+        return classAttr + styleAttr + PassthroughAttrs(node);
+    }
+
+    /// <summary>Правила passthrough: атрибут узла выводится как <c>data-имя="значение"</c> (при заданном @val — если он среди значений).</summary>
+    private string PassthroughAttrs(DitaNode? node)
+    {
+        var rules = _options.PassthroughRules;
+        if (node is null || rules is null || rules.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var sb = new StringBuilder();
+        var done = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var rule in rules)
+        {
+            var value = node.GetAttribute(rule.Attribute);
+            if (string.IsNullOrWhiteSpace(value) || !done.Add(rule.Attribute))
+            {
+                continue;
+            }
+
+            if (rule.Value is null || value!.Split(' ', StringSplitOptions.RemoveEmptyEntries).Contains(rule.Value))
+            {
+                sb.Append(" data-").Append(Escape(rule.Attribute)).Append("=\"").Append(Escape(value!)).Append('"');
+            }
+        }
+
+        return sb.ToString();
     }
 
     /// <summary>Первое правило подсветки .ditaval, у которого атрибут узла присутствует и (если задан

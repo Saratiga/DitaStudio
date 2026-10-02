@@ -17,21 +17,29 @@ public static class PublishFilter
             return false;
         }
 
-        if (options.ExcludeConditions.Count == 0)
+        if (options.ExcludeConditions.Count == 0 && options.ExcludeUnlistedConditions.Count == 0)
         {
             return true;
         }
 
-        foreach (var (attribute, excluded) in options.ExcludeConditions)
+        foreach (var attribute in options.ExcludeConditions.Keys.Concat(options.ExcludeUnlistedConditions).Distinct(StringComparer.Ordinal))
         {
             var value = node.GetAttribute(attribute);
             if (string.IsNullOrWhiteSpace(value))
             {
-                continue;
+                continue; // элемент без атрибута входит всегда
             }
 
+            options.ExcludeConditions.TryGetValue(attribute, out var excluded);
+            var unlisted = options.ExcludeUnlistedConditions.Contains(attribute);
+            options.IncludeConditions.TryGetValue(attribute, out var included);
+
+            // Значение исключено: названо в exclude, либо исключены все значения атрибута и это не возвращено через include.
+            bool IsExcluded(string token) =>
+                excluded?.Contains(token) == true || (unlisted && included?.Contains(token) != true);
+
             var tokens = value!.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (tokens.Length > 0 && tokens.All(excluded.Contains))
+            if (tokens.Length > 0 && tokens.All(IsExcluded))
             {
                 return false;
             }

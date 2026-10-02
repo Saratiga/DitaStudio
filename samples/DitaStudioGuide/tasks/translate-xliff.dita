@@ -17,8 +17,9 @@
       <step>
         <cmd>Откройте топик и выберите <menucascade><uicontrol>Публикация</uicontrol>
           <uicontrol>Экспорт в XLIFF (для перевода)…</uicontrol></menucascade>.</cmd>
-        <stepresult>Создаётся файл <filepath>.xliff</filepath> с языковой парой
-          <codeph>ru</codeph> → <codeph>en</codeph>.</stepresult>
+        <info>Окно «Языки XLIFF» предлагает исходный язык (<codeph>xml:lang</codeph> документа) и целевой;
+          можно ввести любые коды языков.</info>
+        <stepresult>Создаётся файл <filepath>.xliff</filepath> с выбранной языковой парой.</stepresult>
       </step>
       <step>
         <cmd>Передайте файл переводчику; перевод записывается в элементы <codeph>target</codeph>.</cmd>

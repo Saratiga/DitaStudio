@@ -896,6 +896,9 @@
   <data name="Core_TheXLIFFHasNoFileBody" xml:space="preserve">
     <value>В XLIFF нет &lt;file&gt;/&lt;body&gt; — импортировать нечего.</value>
   </data>
+  <data name="Core_TheXLIFFWasExportedFromA" xml:space="preserve">
+    <value>XLIFF выгружен из документа на языке «{0}», а этот документ — на «{1}»: проверьте, что это нужный файл.</value>
+  </data>
   <data name="Core_Troubleshooting" xml:space="preserve">
     <value>Устранение неполадки</value>
   </data>
@@ -1118,6 +1121,9 @@
   </data>
   <data name="Dlg_ElementsInTheDictionary0" xml:space="preserve">
     <value>Элементов в словаре: {0}</value>
+  </data>
+  <data name="Dlg_EnterLanguageCodes" xml:space="preserve">
+    <value>Укажите коды исходного и целевого языков.</value>
   </data>
   <data name="Dlg_EnterTheSheetWidthAndHeight" xml:space="preserve">
     <value>Укажите ширину и высоту листа: от {0:0} до {1:0} мм.</value>
@@ -1452,6 +1458,9 @@
   <data name="Dlg_ShowHeadersAndFooters" xml:space="preserve">
     <value>Показывать колонтитулы</value>
   </data>
+  <data name="Dlg_SourceLanguage" xml:space="preserve">
+    <value>Исходный язык (язык документа)</value>
+  </data>
   <data name="Dlg_StaysInItsPlaceEditThe" xml:space="preserve">
     <value>остаётся пустая ссылка conref — редактировать текст затем нужно в целевом топике.</value>
   </data>
@@ -1475,6 +1484,9 @@
   </data>
   <data name="Dlg_TableTitle" xml:space="preserve">
     <value>Заголовок таблицы</value>
+  </data>
+  <data name="Dlg_TargetLanguage" xml:space="preserve">
+    <value>Целевой язык (язык перевода)</value>
   </data>
   <data name="Dlg_TextLanguage" xml:space="preserve">
     <value>Язык текста</value>
@@ -1550,6 +1562,12 @@
   </data>
   <data name="Dlg_Width" xml:space="preserve">
     <value>Ширина</value>
+  </data>
+  <data name="Dlg_XliffLanguages" xml:space="preserve">
+    <value>Языки XLIFF</value>
+  </data>
+  <data name="Dlg_XliffLanguagesHint" xml:space="preserve">
+    <value>Коды языков, как в xml:lang: ru, en, de, fr, es, uk… Можно с регионом (en-US).</value>
   </data>
   <data name="Dlg_Yes" xml:space="preserve">
     <value>Да</value>

@@ -72,8 +72,8 @@ public sealed partial class DocxPublisher
         var culture = CultureFor(layout.Language);
         var date = DateTime.Now.ToString("d MMMM yyyy", culture);
 
-        var tree = MapTree.Build(_project, mapPath);
-        var labels = Labels.For(options.Language);
+        var tree = MapTree.Build(_project, mapPath, node => PublishFilter.IsIncluded(node, options));
+        var labels = Labels.For(options.Language ?? DocumentLanguage.ForPublication(_project.TryGetDocument(mapPath)));
         var topics = tree.PublicationOrder.ToList();
         var bookmarks = AssignBookmarks(topics);
         var title = tree.Root.Title;

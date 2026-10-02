@@ -38,6 +38,9 @@ public sealed class CoreTests
     [Fact] public void ProjectTests() => Run(CoreChecks.ProjectTests);
     [Fact] public void ProjectSettingsTests() => Run(CoreChecks.ProjectSettingsTests);
     [Fact] public void LocalizationTests() => Run(CoreChecks.LocalizationTests);
+    [Fact] public void ConditionalMapTests() => Run(CoreChecks.ConditionalMapTests);
+    [Fact] public void DitavalActionsTests() => Run(CoreChecks.DitavalActionsTests);
+    [Fact] public void PublicationLanguageTests() => Run(CoreChecks.PublicationLanguageTests);
     [Fact] public void HtmlPublisherMiscTests() => Run(CoreChecks.HtmlPublisherMiscTests);
     [Fact] public void KeyScopeTests() => Run(CoreChecks.KeyScopeTests);
     [Fact] public void KeyDefinitionMiscTests() => Run(CoreChecks.KeyDefinitionMiscTests);

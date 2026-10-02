@@ -2,6 +2,8 @@ using System.Text.RegularExpressions;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
+using DitaStudio.Desktop.Views;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DitaStudio.Core.Localization;
@@ -113,6 +115,51 @@ public sealed class LanguageMenuTests
 
         Assert.True(texts.Count > 100, $"собрано подписей: {texts.Count}");
         Assert.True(russian.Count == 0, "русский текст в английском интерфейсе: " + string.Join(" | ", russian.Take(10)));
+    }
+
+    [AvaloniaFact]
+    public async Task OpenDocument_AuthorLabels_FollowLanguage_WhenDocumentHasNoXmlLang_AndDocumentLanguageWhenItHasOne()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioLangTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            const string task = "<?xml version=\"1.0\"?><task id=\"{0}\"{1}><title>T</title><taskbody><prereq><p>Условие</p></prereq><steps><step><cmd>Шаг</cmd></step></steps></taskbody></task>";
+            File.WriteAllText(Path.Combine(root, "free.dita"), string.Format(task, "free", string.Empty));
+            File.WriteAllText(Path.Combine(root, "fixed.dita"), string.Format(task, "fixed", " xml:lang=\"ru-RU\""));
+            Loc.Instance.SetUserLanguage("ru");
+            var window = new MainWindow();
+            window.Show();
+            await window.ViewModel.ProjectPanel.LoadProjectAsync(root);
+            var free = window.ViewModel.OpenDocument(Path.Combine(root, "free.dita"))!;
+            var fixedLang = window.ViewModel.OpenDocument(Path.Combine(root, "fixed.dita"))!;
+            Dispatcher.UIThread.RunJobs();
+
+            IEnumerable<string> Texts(object view) => ((DocumentView)view).AuthorEditor.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty).ToList();
+            Assert.Contains("Перед началом", Texts(free));
+            Assert.Contains("Перед началом", Texts(fixedLang));
+
+            Loc.Instance.SetUserLanguage("en");
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Contains("Before you begin", Texts(free)); // у документа нет xml:lang — по языку интерфейса, пересобралось при смене языка
+            Assert.Contains("Перед началом", Texts(fixedLang)); // xml:lang=ru-RU — подписи остаются русскими
+
+            Loc.Instance.SetUserLanguage("ru");
+            Dispatcher.UIThread.RunJobs();
+            window.Close();
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(root, true);
+            }
+            catch (IOException)
+            {
+                // временные файлы удалятся системой
+            }
+        }
     }
 
     private static List<MenuItem> LanguageItems(MainWindow window) =>

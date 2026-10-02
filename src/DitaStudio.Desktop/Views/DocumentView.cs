@@ -41,7 +41,10 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
         _pdfPrinter = pdfPrinter;
         Document = document;
         _preview = new PreviewPane(project, document, CommitPendingEdits, pdfPrinter);
+        _author.Labels = Labels.ForDocument(document); // подписи разделов — по xml:lang документа, нет его — по языку интерфейса
         _author.Load(document);
+        _languageChanged = (_, _) => RefreshForLanguage();
+        Loc.Instance.LanguageChanged += _languageChanged;
         _author.DocumentModified += (_, _) => RaiseDirty();
         _author.SelectionChanged += (_, _) => SelectionChanged?.Invoke(this, EventArgs.Empty);
         _author.RootTitleCommitted += (_, _) => RootTitleCommitted?.Invoke(this, EventArgs.Empty);
@@ -299,9 +302,24 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
     /// <summary>Вкладка предпросмотра (для тестов).</summary>
     public PreviewPane Preview => _preview;
 
+    private readonly EventHandler _languageChanged = null!;
+
+    /// <summary>Сменился язык интерфейса: подписи «Автора» (разделы, плашки, подписи рисунков) строятся заново на новом языке.</summary>
+    private void RefreshForLanguage()
+    {
+        if (CommitPendingEdits() is not null)
+        {
+            return; // правка не записалась в модель — «Автор» не трогаем, чтобы её не потерять
+        }
+
+        _author.Labels = Labels.ForDocument(Document);
+        _author.Rebuild();
+    }
+
     /// <summary>Закрытие вкладки документа: освобождаем встроенный браузер предпросмотра.</summary>
     public void Dispose()
     {
+        Loc.Instance.LanguageChanged -= _languageChanged;
         _preview.DisposeBrowser();
         _live?.DisposeBrowser();
     }

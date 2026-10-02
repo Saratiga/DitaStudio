@@ -129,7 +129,7 @@ public sealed partial class AvaloniaDialogService
         var fullPath = Path.Combine(project.RootPath, project.DitavalPath.Replace('/', Path.DirectorySeparatorChar));
         try
         {
-            DitavalWriter.Write(fullPath, new DitavalRules(exclude, current.Flags));
+            DitavalWriter.Write(fullPath, current with { Exclude = exclude }); // include, passthrough и подсветка остаются нетронутыми
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

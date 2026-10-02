@@ -15,14 +15,23 @@ public sealed class PublishOptions
 
     public bool ShowDraftComments { get; set; }
 
-    /// <summary>Язык подписей публикации («Содержание»/«Contents»); по умолчанию — язык интерфейса.</summary>
-    public string Language { get; set; } = Core.Localization.Loc.Instance.Language;
+    /// <summary>Язык подписей публикации («Содержание»/«Contents»). null — по <c>xml:lang</c> карты или документа, нет его — по языку интерфейса.</summary>
+    public string? Language { get; set; }
 
     /// <summary>Условная фильтрация: атрибут -> значения, которые нужно исключить.</summary>
     public Dictionary<string, HashSet<string>> ExcludeConditions { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>Атрибуты, у которых исключены все значения, кроме возвращённых <see cref="IncludeConditions"/> (.ditaval: exclude без val).</summary>
+    public HashSet<string> ExcludeUnlistedConditions { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>Возвращаемые значения (.ditaval: include) для атрибутов из <see cref="ExcludeUnlistedConditions"/>.</summary>
+    public Dictionary<string, HashSet<string>> IncludeConditions { get; } = new(StringComparer.Ordinal);
+
     /// <summary>Правила подсветки (action="flag" из .ditaval) — цвет/фон/начертание по атрибуту.</summary>
     public List<DitavalFlagRule> FlagConditions { get; } = new();
+
+    /// <summary>Правила passthrough из .ditaval: значение атрибута выводится в HTML как data-атрибут.</summary>
+    public List<DitavalPassthroughRule> PassthroughConditions { get; } = new();
 
     public bool CopyImages { get; set; } = true;
 
@@ -61,8 +70,8 @@ public sealed class HtmlPublisher
 
     public PublishResult Publish(string mapPath, PublishOptions options)
     {
-        var tree = MapTree.Build(_project, mapPath);
-        var labels = Labels.For(options.Language);
+        var tree = MapTree.Build(_project, mapPath, node => PublishFilter.IsIncluded(node, options));
+        var labels = Labels.For(options.Language ?? DocumentLanguage.ForPublication(_project.TryGetDocument(mapPath)));
         var warnings = new List<string>();
         var written = new List<string>();
 
@@ -134,6 +143,7 @@ public sealed class HtmlPublisher
             ImageSource = ImageSource,
             Filter = node => PublishFilter.IsIncluded(node, options),
             FlagRules = options.FlagConditions,
+            PassthroughRules = options.PassthroughConditions,
             Numbering = new HeadingNumbering(_project.DocxLayout.NumberHeadings, _project.DocxLayout.NumberingDepth),
             NumberFiguresAndTables = _project.DocxLayout.NumberFiguresAndTables,
             CaptionSeparator = _project.DocxLayout.CaptionSeparator,
@@ -326,7 +336,7 @@ public sealed class HtmlPublisher
     public string RenderPreview(DitaDocument document, PublishOptions? options = null, string? extraCss = null)
     {
         options ??= new PublishOptions();
-        var labels = Labels.For(options.Language);
+        var labels = Labels.For(options.Language ?? DocumentLanguage.ForPublication(document));
         var body = PreviewBody(document, options, labels);
         var customCss = LoadCustomCss(out _);
         if (!string.IsNullOrEmpty(extraCss))
@@ -344,7 +354,7 @@ public sealed class HtmlPublisher
     public (string Body, string Css) RenderPagedParts(DitaDocument document, PublishOptions? options = null)
     {
         options ??= new PublishOptions();
-        var labels = Labels.For(options.Language);
+        var labels = Labels.For(options.Language ?? DocumentLanguage.ForPublication(document));
         var body = PreviewBody(document, options, labels);
         return (body, Assets.StyleSheet + "\n" + LoadCustomCss(out _));
     }
@@ -364,6 +374,7 @@ public sealed class HtmlPublisher
             // (зачёркнутым, см. .tc-deleted), чтобы правку можно было принять/отклонить осознанно.
             Filter = node => PublishFilter.IsIncluded(node, options, showTrackedDeletions: true),
             FlagRules = options.FlagConditions,
+            PassthroughRules = options.PassthroughConditions,
             NumberFiguresAndTables = _project.DocxLayout.NumberFiguresAndTables,
             CaptionSeparator = _project.DocxLayout.CaptionSeparator
         };

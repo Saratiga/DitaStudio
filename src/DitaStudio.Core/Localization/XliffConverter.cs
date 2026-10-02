@@ -80,6 +80,14 @@ public static class XliffConverter
             .Where(u => u.Attribute("id") is not null)
             .ToDictionary(u => u.Attribute("id")!.Value, u => u);
 
+        // Перевод, выпущенный для документа на другом языке, чем у этого, — вероятно, не тот файл.
+        var sourceLang = DocumentLanguage.Primary(xliff.Root?.Element("file")?.Attribute("source-language")?.Value);
+        var documentLang = DocumentLanguage.Primary(DocumentLanguage.Of(document));
+        if (sourceLang is not null && documentLang is not null && sourceLang != documentLang)
+        {
+            warnings.Add(Loc.T("Core_TheXLIFFWasExportedFromA", sourceLang, documentLang));
+        }
+
         var counter = 0;
         var applied = 0;
         ApplyForImport(document.Root, units, warnings, ref counter, ref applied);

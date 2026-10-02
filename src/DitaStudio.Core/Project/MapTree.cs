@@ -144,7 +144,9 @@ public sealed class MapTree
     /// друг с другом не связываются (это одна "роль" в строке).</summary>
     public IReadOnlyDictionary<string, IReadOnlyList<RelatedLink>> RelatedLinks { get; }
 
-    public static MapTree Build(DitaProject project, string mapPath)
+    /// <param name="include">Условная сборка: строка карты (<c>topicref</c>, <c>topichead</c>, <c>chapter</c>…), для которой вернулось false,
+    /// вместе со всей своей веткой в дерево не входит, а связи reltable на её топики снимаются. null — дерево полное (редактор карты).</param>
+    public static MapTree Build(DitaProject project, string mapPath, Func<DitaNode, bool>? include = null)
     {
         var doc = project.GetDocument(mapPath);
         var root = new MapItem(doc.Root, mapPath)
@@ -154,7 +156,12 @@ public sealed class MapTree
 
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { System.IO.Path.GetFullPath(mapPath) };
         var relatedLinks = new Dictionary<string, List<RelatedLink>>(StringComparer.OrdinalIgnoreCase);
-        AddChildren(project, doc, doc.Root, root, mapPath, visited, 0, relatedLinks);
+        AddChildren(project, doc, doc.Root, root, mapPath, visited, 0, relatedLinks, include);
+        if (include is not null)
+        {
+            DropLinksToMissingTopics(root, relatedLinks);
+        }
+
         return new MapTree(root, mapPath, relatedLinks);
     }
 
@@ -166,7 +173,8 @@ public sealed class MapTree
         string mapPath,
         HashSet<string> visited,
         int depth,
-        Dictionary<string, List<RelatedLink>> relatedLinks)
+        Dictionary<string, List<RelatedLink>> relatedLinks,
+        Func<DitaNode, bool>? include)
     {
         if (depth > 24)
         {
@@ -177,13 +185,18 @@ public sealed class MapTree
         {
             if (child.Name == "reltable")
             {
-                CollectRelTable(child, mapPath, relatedLinks);
+                CollectRelTable(child, mapPath, relatedLinks, include);
                 continue;
             }
 
             if (child.Name is "topicmeta" or "title" or "data" or "data-about" or "ditavalmeta")
             {
                 continue;
+            }
+
+            if (include is not null && !include(child))
+            {
+                continue; // исключено условиями сборки — вместе с веткой
             }
 
             var item = new MapItem(child, mapPath) { Parent = parentItem };
@@ -201,14 +214,14 @@ public sealed class MapTree
                     if (subDoc is not null)
                     {
                         item.Title = string.IsNullOrEmpty(item.Title) ? subDoc.Title : item.Title;
-                        AddChildren(project, subDoc, subDoc.Root, item, full, visited, depth + 1, relatedLinks);
+                        AddChildren(project, subDoc, subDoc.Root, item, full, visited, depth + 1, relatedLinks, include);
                     }
 
                     visited.Remove(full);
                 }
             }
 
-            AddChildren(project, mapDoc, child, item, mapPath, visited, depth + 1, relatedLinks);
+            AddChildren(project, mapDoc, child, item, mapPath, visited, depth + 1, relatedLinks, include);
         }
     }
 
@@ -218,13 +231,13 @@ public sealed class MapTree
     public sealed record RelatedLink(string Path, string? TopicId);
 
     private static void CollectRelTable(
-        DitaNode reltable, string mapPath, Dictionary<string, List<RelatedLink>> relatedLinks)
+        DitaNode reltable, string mapPath, Dictionary<string, List<RelatedLink>> relatedLinks, Func<DitaNode, bool>? include)
     {
-        foreach (var relrow in reltable.ElementChildren().Where(n => n.Name == "relrow"))
+        foreach (var relrow in reltable.ElementChildren().Where(n => n.Name == "relrow" && (include is null || include(n))))
         {
-            var cells = relrow.ElementChildren().Where(n => n.Name == "relcell")
+            var cells = relrow.ElementChildren().Where(n => n.Name == "relcell" && (include is null || include(n)))
                 .Select(cell => cell.ElementChildren()
-                    .Where(n => n.Name == "topicref")
+                    .Where(n => n.Name == "topicref" && (include is null || include(n)))
                     .Select(tr => ResolveRelRef(mapPath, tr))
                     .Where(r => r is not null)
                     .Select(r => r!.Value)
@@ -250,6 +263,24 @@ public sealed class MapTree
                     }
                 }
             }
+        }
+    }
+
+    /// <summary>После условной фильтрации: связи reltable с топиками, которых в дереве больше нет, снимаются.</summary>
+    private static void DropLinksToMissingTopics(MapItem root, Dictionary<string, List<RelatedLink>> relatedLinks)
+    {
+        var present = new HashSet<string>(
+            root.DescendantsAndSelf().Where(i => i.TargetPath is not null).Select(i => System.IO.Path.GetFullPath(i.TargetPath!)),
+            StringComparer.OrdinalIgnoreCase);
+        foreach (var key in relatedLinks.Keys.ToList())
+        {
+            if (!present.Contains(key))
+            {
+                relatedLinks.Remove(key);
+                continue;
+            }
+
+            relatedLinks[key] = relatedLinks[key].Where(l => present.Contains(System.IO.Path.GetFullPath(l.Path))).ToList();
         }
     }
 

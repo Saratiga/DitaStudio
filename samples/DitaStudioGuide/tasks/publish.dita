@@ -40,7 +40,11 @@
           снаружи, подхватываются автоматически. Правила <parmname>action="exclude"</parmname>
           складываются с отмеченными в диалоге, правила <parmname>action="flag"</parmname>
           подсвечивают содержимое в публикации (цвет, фон, начертание, полоса изменений).
-          Действия <parmname>include</parmname> и <parmname>passthrough</parmname> пропускаются.</info>
+          Правило <parmname>action="exclude"</parmname> без <parmname>val</parmname> исключает все значения
+          атрибута, кроме возвращённых правилами <parmname>action="include"</parmname>;
+          <parmname>action="passthrough"</parmname> выводит значение атрибута в HTML как
+          <codeph>data-</codeph>атрибут. Условия действуют и на строки карты: исключённый
+          <codeph>topicref</codeph> уходит из публикации вместе с веткой.</info>
       </step>
       <step>
         <cmd>Чтобы изменить исключения в связанном файле, не выходя из редактора, выберите

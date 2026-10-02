@@ -44,6 +44,10 @@ public interface IDialogService
     /// <summary>Окно выбора цвета: палитра и шестнадцатеричный код. Возвращает «#RRGGBB» или null (отмена). Оболочки без такого окна возвращают null.</summary>
     Task<string?> PickColorAsync(string title, string? initialHex) => Task.FromResult<string?>(null);
 
+    /// <summary>Окно выбора исходного и целевого языков XLIFF (коды как в xml:lang); null — отмена. Оболочки без такого окна оставляют предложенные языки.</summary>
+    Task<(string Source, string Target)?> PickXliffLanguagesAsync(string source, string target) =>
+        Task.FromResult<(string Source, string Target)?>((source, target));
+
     Task AboutAsync();
 
     Task<NewDocumentResult?> NewDocumentAsync(string projectRoot, IEnumerable<string> folders, string? preselectedFolder);

@@ -137,8 +137,13 @@ public sealed class Labels
     public string NoteLabel(string? type) =>
         Notes.TryGetValue(type ?? "note", out var label) ? label : Notes.GetValueOrDefault("note", "Note");
 
-    public static Labels For(string? language) =>
-        language is not null && language.StartsWith("en", StringComparison.OrdinalIgnoreCase)
-            ? English
-            : Russian;
+    /// <summary>Подписи для языка ("ru", "en-US"…): русские для русского, для любого другого — английские; язык не задан — по языку интерфейса.</summary>
+    public static Labels For(string? language)
+    {
+        var primary = Localization.DocumentLanguage.Primary(language) ?? Localization.Loc.Instance.Language;
+        return primary == "ru" ? Russian : English;
+    }
+
+    /// <summary>Подписи для документа: по его <c>xml:lang</c>, нет — по языку интерфейса.</summary>
+    public static Labels ForDocument(Model.DitaDocument? document) => For(Localization.DocumentLanguage.ForPublication(document));
 }

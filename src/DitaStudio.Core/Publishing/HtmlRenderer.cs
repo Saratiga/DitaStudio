@@ -25,6 +25,9 @@ public sealed class RenderOptions
     /// <summary>Правила подсветки (action="flag" из .ditaval) — цвет/фон/начертание по атрибуту.</summary>
     public IReadOnlyList<DitavalFlagRule>? FlagRules { get; set; }
 
+    /// <summary>Правила passthrough из .ditaval: значение атрибута попадает в HTML как data-атрибут.</summary>
+    public IReadOnlyList<DitavalPassthroughRule>? PassthroughRules { get; set; }
+
     public bool NumberFiguresAndTables { get; set; } = true;
 
     /// <summary>Вместо картинки, которой нет на диске, выводится заметная плашка «Картинка не найдена: путь» (предпросмотр).</summary>

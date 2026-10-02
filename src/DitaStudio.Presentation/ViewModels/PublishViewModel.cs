@@ -70,8 +70,7 @@ public partial class PublishViewModel : ObservableObject
 
         var options = new PublishOptions
         {
-            ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false,
-            Language = Loc.Instance.Language
+            ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false
         };
 
         var conditionsWarning = ApplyConditions(options);
@@ -136,7 +135,7 @@ public partial class PublishViewModel : ObservableObject
             return;
         }
 
-        var options = new PublishOptions { ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false, Language = Loc.Instance.Language };
+        var options = new PublishOptions { ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false };
         var conditionsWarning = ApplyConditions(options);
 
         _shell.BottomTabIndex = 2;
@@ -276,6 +275,22 @@ public partial class PublishViewModel : ObservableObject
 
         DitaProject.MergeExcludeConditions(options.ExcludeConditions, linked.Exclude);
         options.FlagConditions.AddRange(linked.Flags);
+        foreach (var attribute in linked.ExcludeUnlisted ?? new HashSet<string>())
+        {
+            options.ExcludeUnlistedConditions.Add(attribute);
+        }
+
+        foreach (var (attribute, values) in linked.Include ?? new Dictionary<string, HashSet<string>>())
+        {
+            if (!options.IncludeConditions.TryGetValue(attribute, out var set))
+            {
+                options.IncludeConditions[attribute] = set = new HashSet<string>();
+            }
+
+            set.UnionWith(values);
+        }
+
+        options.PassthroughConditions.AddRange(linked.Passthrough ?? new List<DitavalPassthroughRule>());
         return null;
     }
 
@@ -399,7 +414,15 @@ public partial class PublishViewModel : ObservableObject
             return;
         }
 
-        var xliff = XliffConverter.Export(pane.Document, "ru", "en");
+        // Исходный язык — язык документа (xml:lang, нет его — язык интерфейса); целевой — по умолчанию «другой» из ru/en, выбирается в окне.
+        var sourceLanguage = DocumentLanguage.Of(pane.Document) ?? Loc.Instance.Language;
+        var defaultTarget = DocumentLanguage.Primary(sourceLanguage) == "en" ? UiLanguages.Russian : UiLanguages.English;
+        if (await _ui.Dialogs.PickXliffLanguagesAsync(sourceLanguage, defaultTarget) is not { } languages)
+        {
+            return;
+        }
+
+        var xliff = XliffConverter.Export(pane.Document, languages.Source, languages.Target);
         try
         {
             AtomicFile.Write(xliffFile, stream => xliff.Save(stream));
@@ -507,8 +530,7 @@ public partial class PublishViewModel : ObservableObject
         {
             OutputDirectory = outputDirectory,
             SingleFile = singleFile,
-            ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false,
-            Language = Loc.Instance.Language
+            ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false
         };
 
         var conditionsWarning = ApplyConditions(options);
