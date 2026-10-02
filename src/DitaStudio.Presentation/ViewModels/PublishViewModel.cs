@@ -71,7 +71,7 @@ public partial class PublishViewModel : ObservableObject
         var options = new PublishOptions
         {
             ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false,
-            Language = "ru"
+            Language = Loc.Instance.Language
         };
 
         var conditionsWarning = ApplyConditions(options);
@@ -136,7 +136,7 @@ public partial class PublishViewModel : ObservableObject
             return;
         }
 
-        var options = new PublishOptions { ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false, Language = "ru" };
+        var options = new PublishOptions { ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false, Language = Loc.Instance.Language };
         var conditionsWarning = ApplyConditions(options);
 
         _shell.BottomTabIndex = 2;
@@ -508,7 +508,7 @@ public partial class PublishViewModel : ObservableObject
             OutputDirectory = outputDirectory,
             SingleFile = singleFile,
             ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false,
-            Language = "ru"
+            Language = Loc.Instance.Language
         };
 
         var conditionsWarning = ApplyConditions(options);
