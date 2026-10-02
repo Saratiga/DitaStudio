@@ -83,7 +83,9 @@ src/DitaStudio.Core/     ядро, не знает про интерфейс —
   Publishing/            HTML-генератор, подписи, стили, печать в PDF
   Editing/               структурные операции и история отмены
   Templates/             заготовки новых документов
-src/DitaStudio.Docx/     экспорт в DOCX (DocxPublisher/DocxRenderer, Styling — CSS → стили Word); зависит от Core
+src/DitaStudio.Docx/     экспорт в DOCX (DocxPublisher/DocxRenderer, Styling — CSS → стили Word); зависит от Core.
+                         DocxPublisher (.FrontMatter/.Sections/.HeaderFooter/.Package) и DocxStyleSheet
+                         (.Lists/.Selectors/.Layout/.Diagnostics) — partial по областям
 src/DitaStudio.Presentation/ ViewModel'и и сервисы оболочки, модель блока «Автора», орфография,
                          автодополнение, плагины команд «Автора». ViewModel'и друг о друге и о
                          MainViewModel не знают: получают в конструкторе ShellContext (IShellState,
@@ -95,7 +97,9 @@ src/DitaStudio.Presentation/ ViewModel'и и сервисы оболочки, м
                          MapViewModel и InsertViewModel — partial по областям (Map: .Tabs/.Tree/.Files/
                          .Edit/.ContextMenu/.RelTable; Insert: .Tables/.ImagesAndLinks/.Text);
                          чистая логика вынесена в RelTableConverter и TableNodeBuilder
-src/DitaStudio.Desktop/  интерфейс на Avalonia (Authoring, Preview, Views, Services, Themes)
+src/DitaStudio.Desktop/  интерфейс на Avalonia (Authoring, Preview, Views, Services, Themes);
+                         AuthorView — partial (.Building — построение дерева блоков, .AttributeNotes,
+                         .TitleBadges, .SpecialBlocks, .Tables и др.)
 tests/DitaStudio.Tests/  проверки ядра (xUnit)
 tests/DitaStudio.Desktop.Tests/ headless-тесты интерфейса (+ CefPreviewTests, MultiProjectTests)
 tests/TestPlugin/        пример плагина
