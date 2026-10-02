@@ -58,10 +58,724 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Btn_AddAttribute" xml:space="preserve">
+    <value>Добавить атрибут</value>
+  </data>
+  <data name="Btn_AddMap" xml:space="preserve">
+    <value>＋ Карта</value>
+  </data>
+  <data name="Btn_AddSection" xml:space="preserve">
+    <value>+ Раздел</value>
+  </data>
+  <data name="Btn_AddTopic" xml:space="preserve">
+    <value>+ Топик</value>
+  </data>
+  <data name="Btn_BoldLetter" xml:space="preserve">
+    <value>Ж</value>
+  </data>
+  <data name="Btn_Create" xml:space="preserve">
+    <value>Создать…</value>
+  </data>
+  <data name="Btn_Find" xml:space="preserve">
+    <value>Найти</value>
+  </data>
+  <data name="Btn_ItalicLetter" xml:space="preserve">
+    <value>К</value>
+  </data>
+  <data name="Btn_Refresh" xml:space="preserve">
+    <value>Обновить</value>
+  </data>
+  <data name="Btn_Reltable" xml:space="preserve">
+    <value>Таблица соответствий…</value>
+  </data>
+  <data name="Btn_ReplaceAll" xml:space="preserve">
+    <value>Заменить всё</value>
+  </data>
+  <data name="Btn_TextColorLetter" xml:space="preserve">
+    <value>А</value>
+  </data>
+  <data name="Btn_UnderlineLetter" xml:space="preserve">
+    <value>Ч</value>
+  </data>
+  <data name="Chk_ElementNames" xml:space="preserve">
+    <value>искать имена элементов</value>
+  </data>
+  <data name="Chk_Regex" xml:space="preserve">
+    <value>регулярное выражение</value>
+  </data>
+  <data name="Col_File" xml:space="preserve">
+    <value>Файл</value>
+  </data>
+  <data name="Col_Fragment" xml:space="preserve">
+    <value>Фрагмент</value>
+  </data>
+  <data name="Col_Key" xml:space="preserve">
+    <value>Ключ</value>
+  </data>
+  <data name="Col_Level" xml:space="preserve">
+    <value>Уровень</value>
+  </data>
+  <data name="Col_Location" xml:space="preserve">
+    <value>Место</value>
+  </data>
+  <data name="Col_Message" xml:space="preserve">
+    <value>Сообщение</value>
+  </data>
+  <data name="Col_Target" xml:space="preserve">
+    <value>Цель</value>
+  </data>
+  <data name="Hdr_ProjectProducts" xml:space="preserve">
+    <value>Продукты проекта</value>
+  </data>
   <data name="Language_Auto" xml:space="preserve">
     <value>Как в системе</value>
   </data>
+  <data name="Menu_About" xml:space="preserve">
+    <value>О программе</value>
+  </data>
+  <data name="Menu_AddChildTopic" xml:space="preserve">
+    <value>Добавить дочерний топик…</value>
+  </data>
+  <data name="Menu_AddKeySourceProject" xml:space="preserve">
+    <value>Подключить проект-источник ключей…</value>
+  </data>
+  <data name="Menu_AddSection" xml:space="preserve">
+    <value>Добавить раздел</value>
+  </data>
+  <data name="Menu_AddTopicAfter" xml:space="preserve">
+    <value>Добавить топик после…</value>
+  </data>
+  <data name="Menu_AddTopicBefore" xml:space="preserve">
+    <value>Добавить топик перед…</value>
+  </data>
+  <data name="Menu_AllBorders" xml:space="preserve">
+    <value>Все границы</value>
+  </data>
+  <data name="Menu_Arrange" xml:space="preserve">
+    <value>Упорядочить</value>
+  </data>
+  <data name="Menu_AttachDitaval" xml:space="preserve">
+    <value>Подключить .ditaval…</value>
+  </data>
+  <data name="Menu_AttachExternalDtd" xml:space="preserve">
+    <value>Подключить внешний DTD (кастомная специализация)…</value>
+  </data>
+  <data name="Menu_Bold" xml:space="preserve">
+    <value>Полужирный</value>
+  </data>
+  <data name="Menu_Borders" xml:space="preserve">
+    <value>Границы</value>
+  </data>
+  <data name="Menu_BuildConditions" xml:space="preserve">
+    <value>Условия сборки…</value>
+  </data>
+  <data name="Menu_BuildSingleHtml" xml:space="preserve">
+    <value>Собрать один HTML…</value>
+  </data>
+  <data name="Menu_BuildSite" xml:space="preserve">
+    <value>Собрать сайт HTML…</value>
+  </data>
+  <data name="Menu_BulletedList" xml:space="preserve">
+    <value>Маркированный список</value>
+  </data>
+  <data name="Menu_CellBorders" xml:space="preserve">
+    <value>Границы выделенных ячеек (как в Word)</value>
+  </data>
+  <data name="Menu_ChooseOtherFile" xml:space="preserve">
+    <value>Выбрать другой файл…</value>
+  </data>
+  <data name="Menu_CloseAll" xml:space="preserve">
+    <value>Закрыть все</value>
+  </data>
+  <data name="Menu_CloseAllTabs" xml:space="preserve">
+    <value>Закрыть все вкладки</value>
+  </data>
+  <data name="Menu_CloseMap" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="Menu_CloseOtherMaps" xml:space="preserve">
+    <value>Закрыть остальные</value>
+  </data>
+  <data name="Menu_CloseProject" xml:space="preserve">
+    <value>Закрыть проект</value>
+  </data>
+  <data name="Menu_CloseTab" xml:space="preserve">
+    <value>Закрыть вкладку</value>
+  </data>
+  <data name="Menu_CloseToRight" xml:space="preserve">
+    <value>Закрыть справа</value>
+  </data>
+  <data name="Menu_CodeBlock" xml:space="preserve">
+    <value>Блок кода</value>
+  </data>
+  <data name="Menu_CollapseAll" xml:space="preserve">
+    <value>Свернуть всё</value>
+  </data>
+  <data name="Menu_ColumnLineRemove" xml:space="preserve">
+    <value>Линия справа от столбца: убрать</value>
+  </data>
+  <data name="Menu_ColumnLineShow" xml:space="preserve">
+    <value>Линия справа от столбца: показать</value>
+  </data>
+  <data name="Menu_CompareFiles" xml:space="preserve">
+    <value>Сравнить файлы…</value>
+  </data>
+  <data name="Menu_CompareGit" xml:space="preserve">
+    <value>Сравнить с последним коммитом (git)</value>
+  </data>
+  <data name="Menu_CompareSvn" xml:space="preserve">
+    <value>Сравнить с версией BASE (svn)</value>
+  </data>
+  <data name="Menu_Copy" xml:space="preserve">
+    <value>Копировать</value>
+  </data>
+  <data name="Menu_CreateFileForRef" xml:space="preserve">
+    <value>Создать файл по ссылке</value>
+  </data>
+  <data name="Menu_CrossReference" xml:space="preserve">
+    <value>Перекрёстная ссылка…</value>
+  </data>
+  <data name="Menu_CustomCss" xml:space="preserve">
+    <value>Пользовательский CSS…</value>
+  </data>
+  <data name="Menu_Cut" xml:space="preserve">
+    <value>Вырезать</value>
+  </data>
+  <data name="Menu_DarkTheme" xml:space="preserve">
+    <value>Тёмная тема</value>
+  </data>
+  <data name="Menu_DeleteColumn" xml:space="preserve">
+    <value>Удалить столбец</value>
+  </data>
+  <data name="Menu_DeleteElement" xml:space="preserve">
+    <value>Удалить элемент</value>
+  </data>
+  <data name="Menu_DeleteFile" xml:space="preserve">
+    <value>Удалить файл…</value>
+  </data>
+  <data name="Menu_DeleteRow" xml:space="preserve">
+    <value>Удалить строку</value>
+  </data>
+  <data name="Menu_DeleteTable" xml:space="preserve">
+    <value>Удалить таблицу</value>
+  </data>
+  <data name="Menu_DetachExternalDtd" xml:space="preserve">
+    <value>Отключить внешний DTD</value>
+  </data>
+  <data name="Menu_DocxLayout" xml:space="preserve">
+    <value>Оформление DOCX…</value>
+  </data>
+  <data name="Menu_Down" xml:space="preserve">
+    <value>Вниз</value>
+  </data>
+  <data name="Menu_Duplicate" xml:space="preserve">
+    <value>Дублировать</value>
+  </data>
+  <data name="Menu_Edit" xml:space="preserve">
+    <value>_Правка</value>
+  </data>
+  <data name="Menu_EditDitaval" xml:space="preserve">
+    <value>Редактировать .ditaval…</value>
+  </data>
+  <data name="Menu_Element" xml:space="preserve">
+    <value>Элемент…</value>
+  </data>
+  <data name="Menu_ElementHelp" xml:space="preserve">
+    <value>Об элементе под курсором</value>
+  </data>
+  <data name="Menu_EnterHints" xml:space="preserve">
+    <value>Подсказка по Enter</value>
+  </data>
+  <data name="Menu_Exit" xml:space="preserve">
+    <value>Выход</value>
+  </data>
+  <data name="Menu_ExpandAll" xml:space="preserve">
+    <value>Развернуть всё</value>
+  </data>
+  <data name="Menu_ExportDocx" xml:space="preserve">
+    <value>Экспорт в DOCX…</value>
+  </data>
+  <data name="Menu_ExportPdf" xml:space="preserve">
+    <value>Экспорт в PDF…</value>
+  </data>
+  <data name="Menu_ExportXliff" xml:space="preserve">
+    <value>Экспорт в XLIFF (для перевода)…</value>
+  </data>
+  <data name="Menu_ExtractToConref" xml:space="preserve">
+    <value>Вынести в conref…</value>
+  </data>
+  <data name="Menu_File" xml:space="preserve">
+    <value>_Файл</value>
+  </data>
+  <data name="Menu_FindInProject" xml:space="preserve">
+    <value>Найти в проекте…</value>
+  </data>
+  <data name="Menu_FindTopicRefs" xml:space="preserve">
+    <value>Найти ссылки на топик</value>
+  </data>
+  <data name="Menu_Footnote" xml:space="preserve">
+    <value>Сноска</value>
+  </data>
+  <data name="Menu_Help" xml:space="preserve">
+    <value>_Справка</value>
+  </data>
+  <data name="Menu_HorizontalLinesOnly" xml:space="preserve">
+    <value>Только горизонтальные линии</value>
+  </data>
+  <data name="Menu_ImageAsFigure" xml:space="preserve">
+    <value>Оформить изображение как рисунок</value>
+  </data>
+  <data name="Menu_ImportXliff" xml:space="preserve">
+    <value>Импортировать перевод из XLIFF…</value>
+  </data>
+  <data name="Menu_InlineCode" xml:space="preserve">
+    <value>Код в строке</value>
+  </data>
+  <data name="Menu_Insert" xml:space="preserve">
+    <value>_Вставка</value>
+  </data>
+  <data name="Menu_InsertColumnLeft" xml:space="preserve">
+    <value>Вставить столбец слева</value>
+  </data>
+  <data name="Menu_InsertColumnRight" xml:space="preserve">
+    <value>Вставить столбец справа</value>
+  </data>
+  <data name="Menu_InsertImage" xml:space="preserve">
+    <value>Изображение…</value>
+  </data>
+  <data name="Menu_InsertRowAbove" xml:space="preserve">
+    <value>Вставить строку выше</value>
+  </data>
+  <data name="Menu_InsertRowBelow" xml:space="preserve">
+    <value>Вставить строку ниже</value>
+  </data>
+  <data name="Menu_InsertTable" xml:space="preserve">
+    <value>Таблица…</value>
+  </data>
+  <data name="Menu_Italic" xml:space="preserve">
+    <value>Курсив</value>
+  </data>
   <data name="Menu_Language" xml:space="preserve">
     <value>_Язык</value>
+  </data>
+  <data name="Menu_LivePreview" xml:space="preserve">
+    <value>Предпросмотр рядом с текстом (листы)</value>
+  </data>
+  <data name="Menu_MarkRevChanged" xml:space="preserve">
+    <value>Отметить как изменённое (rev)</value>
+  </data>
+  <data name="Menu_MergeCellDown" xml:space="preserve">
+    <value>Объединить ячейку со строкой ниже</value>
+  </data>
+  <data name="Menu_MergeCellRight" xml:space="preserve">
+    <value>Объединить ячейку со следующей</value>
+  </data>
+  <data name="Menu_MoveDown" xml:space="preserve">
+    <value>Переместить вниз</value>
+  </data>
+  <data name="Menu_MoveUp" xml:space="preserve">
+    <value>Переместить вверх</value>
+  </data>
+  <data name="Menu_MoveUpOneLevel" xml:space="preserve">
+    <value>Вынести на уровень выше</value>
+  </data>
+  <data name="Menu_NestInPrevious" xml:space="preserve">
+    <value>Вложить в предыдущий</value>
+  </data>
+  <data name="Menu_NewDocument" xml:space="preserve">
+    <value>Создать документ…</value>
+  </data>
+  <data name="Menu_NoBorders" xml:space="preserve">
+    <value>Без границ</value>
+  </data>
+  <data name="Menu_NoNewPage" xml:space="preserve">
+    <value>Не размещать топик на новой странице</value>
+  </data>
+  <data name="Menu_Note" xml:space="preserve">
+    <value>Примечание</value>
+  </data>
+  <data name="Menu_NumberedList" xml:space="preserve">
+    <value>Нумерованный список</value>
+  </data>
+  <data name="Menu_NumberedParagraph" xml:space="preserve">
+    <value>Нумерованный абзац (2.3.1)</value>
+  </data>
+  <data name="Menu_Open" xml:space="preserve">
+    <value>Открыть</value>
+  </data>
+  <data name="Menu_OpenProjectFolder" xml:space="preserve">
+    <value>Открыть папку проекта…</value>
+  </data>
+  <data name="Menu_OuterFrameOnly" xml:space="preserve">
+    <value>Только внешняя рамка</value>
+  </data>
+  <data name="Menu_PageBreakBeforeTitle" xml:space="preserve">
+    <value>Разрыв страницы перед заголовком (печать)</value>
+  </data>
+  <data name="Menu_PagePlacement" xml:space="preserve">
+    <value>Положение на листе (PDF, DOCX)</value>
+  </data>
+  <data name="Menu_PageSetup" xml:space="preserve">
+    <value>Параметры страницы…</value>
+  </data>
+  <data name="Menu_Paragraph" xml:space="preserve">
+    <value>Абзац</value>
+  </data>
+  <data name="Menu_PasteAfter" xml:space="preserve">
+    <value>Вставить после</value>
+  </data>
+  <data name="Menu_PasteAsChild" xml:space="preserve">
+    <value>Вставить как дочерний</value>
+  </data>
+  <data name="Menu_PasteBefore" xml:space="preserve">
+    <value>Вставить перед</value>
+  </data>
+  <data name="Menu_PdfHeaderFooter" xml:space="preserve">
+    <value>Колонтитулы PDF…</value>
+  </data>
+  <data name="Menu_Pin" xml:space="preserve">
+    <value>Закрепить</value>
+  </data>
+  <data name="Menu_PlacementBottomCenter" xml:space="preserve">
+    <value>Внизу по центру</value>
+  </data>
+  <data name="Menu_PlacementBottomLeft" xml:space="preserve">
+    <value>Внизу слева</value>
+  </data>
+  <data name="Menu_PlacementBottomRight" xml:space="preserve">
+    <value>Внизу справа</value>
+  </data>
+  <data name="Menu_PlacementMiddleCenter" xml:space="preserve">
+    <value>По центру листа</value>
+  </data>
+  <data name="Menu_PlacementMiddleLeft" xml:space="preserve">
+    <value>Посередине слева</value>
+  </data>
+  <data name="Menu_PlacementMiddleRight" xml:space="preserve">
+    <value>Посередине справа</value>
+  </data>
+  <data name="Menu_PlacementNormal" xml:space="preserve">
+    <value>Обычное (в тексте)</value>
+  </data>
+  <data name="Menu_PlacementTopCenter" xml:space="preserve">
+    <value>Вверху по центру</value>
+  </data>
+  <data name="Menu_PlacementTopLeft" xml:space="preserve">
+    <value>Вверху слева</value>
+  </data>
+  <data name="Menu_PlacementTopRight" xml:space="preserve">
+    <value>Вверху справа</value>
+  </data>
+  <data name="Menu_PlaceOnNewPage" xml:space="preserve">
+    <value>Размещать топик на новой странице</value>
+  </data>
+  <data name="Menu_PluginCommand" xml:space="preserve">
+    <value>Команда плагина…</value>
+  </data>
+  <data name="Menu_ProductList" xml:space="preserve">
+    <value>Список продуктов…</value>
+  </data>
+  <data name="Menu_Properties" xml:space="preserve">
+    <value>Свойства…</value>
+  </data>
+  <data name="Menu_Publish" xml:space="preserve">
+    <value>_Публикация</value>
+  </data>
+  <data name="Menu_PublishWithPlugin" xml:space="preserve">
+    <value>Публикация плагином…</value>
+  </data>
+  <data name="Menu_RecentProjects" xml:space="preserve">
+    <value>Недавние проекты</value>
+  </data>
+  <data name="Menu_Redo" xml:space="preserve">
+    <value>Повторить</value>
+  </data>
+  <data name="Menu_RemoveFromMap" xml:space="preserve">
+    <value>Убрать из карты</value>
+  </data>
+  <data name="Menu_RemoveKeySourceProjects" xml:space="preserve">
+    <value>Отключить все проекты-источники</value>
+  </data>
+  <data name="Menu_RenameId" xml:space="preserve">
+    <value>Переименовать id…</value>
+  </data>
+  <data name="Menu_RenameMoveFile" xml:space="preserve">
+    <value>Переименовать / переместить файл…</value>
+  </data>
+  <data name="Menu_RowLineRemove" xml:space="preserve">
+    <value>Линия под строкой: убрать</value>
+  </data>
+  <data name="Menu_RowLineShow" xml:space="preserve">
+    <value>Линия под строкой: показать</value>
+  </data>
+  <data name="Menu_Save" xml:space="preserve">
+    <value>Сохранить</value>
+  </data>
+  <data name="Menu_SaveAll" xml:space="preserve">
+    <value>Сохранить всё</value>
+  </data>
+  <data name="Menu_SelectColumn" xml:space="preserve">
+    <value>Выделить столбец</value>
+  </data>
+  <data name="Menu_SelectRow" xml:space="preserve">
+    <value>Выделить строку</value>
+  </data>
+  <data name="Menu_SelectTable" xml:space="preserve">
+    <value>Выделить таблицу</value>
+  </data>
+  <data name="Menu_ShowAttributeNotes" xml:space="preserve">
+    <value>Показывать пометки атрибутов (product, outputclass)</value>
+  </data>
+  <data name="Menu_ShowElementNames" xml:space="preserve">
+    <value>Показывать имена элементов</value>
+  </data>
+  <data name="Menu_SplitCell" xml:space="preserve">
+    <value>Разделить ячейку</value>
+  </data>
+  <data name="Menu_Structure" xml:space="preserve">
+    <value>_Структура</value>
+  </data>
+  <data name="Menu_TableAllowBreak" xml:space="preserve">
+    <value>Таблица: разрешить перенос с повтором шапки (печать)</value>
+  </data>
+  <data name="Menu_TableSubmenu" xml:space="preserve">
+    <value>Таблица</value>
+  </data>
+  <data name="Menu_ToggleCaption" xml:space="preserve">
+    <value>Подпись рисунка / таблицы: добавить или убрать</value>
+  </data>
+  <data name="Menu_TrackAccept" xml:space="preserve">
+    <value>Track changes: принять правку</value>
+  </data>
+  <data name="Menu_TrackDeleted" xml:space="preserve">
+    <value>Track changes: пометить как удалённое</value>
+  </data>
+  <data name="Menu_TrackInserted" xml:space="preserve">
+    <value>Track changes: пометить как вставленное</value>
+  </data>
+  <data name="Menu_TrackReject" xml:space="preserve">
+    <value>Track changes: отклонить правку</value>
+  </data>
+  <data name="Menu_UiControl" xml:space="preserve">
+    <value>Элемент интерфейса</value>
+  </data>
+  <data name="Menu_UndoStructural" xml:space="preserve">
+    <value>Отменить структурное изменение</value>
+  </data>
+  <data name="Menu_UnnumberedTitle" xml:space="preserve">
+    <value>Заголовок без номера (не в оглавлении)</value>
+  </data>
+  <data name="Menu_Unpin" xml:space="preserve">
+    <value>Открепить</value>
+  </data>
+  <data name="Menu_Up" xml:space="preserve">
+    <value>Вверх</value>
+  </data>
+  <data name="Menu_ValidateDocument" xml:space="preserve">
+    <value>Проверить документ</value>
+  </data>
+  <data name="Menu_ValidateProject" xml:space="preserve">
+    <value>Проверить проект</value>
+  </data>
+  <data name="Menu_WrapIn" xml:space="preserve">
+    <value>Обернуть в…</value>
+  </data>
+  <data name="Ph_FontSize" xml:space="preserve">
+    <value>Размер</value>
+  </data>
+  <data name="Tab_Attributes" xml:space="preserve">
+    <value>Атрибуты</value>
+  </data>
+  <data name="Tab_BuildLog" xml:space="preserve">
+    <value>Журнал сборки</value>
+  </data>
+  <data name="Tab_Insert" xml:space="preserve">
+    <value>Вставка</value>
+  </data>
+  <data name="Tab_Keys" xml:space="preserve">
+    <value>Ключи</value>
+  </data>
+  <data name="Tab_Map" xml:space="preserve">
+    <value>Карта</value>
+  </data>
+  <data name="Tab_Project" xml:space="preserve">
+    <value>Проект</value>
+  </data>
+  <data name="Tab_Search" xml:space="preserve">
+    <value>Поиск</value>
+  </data>
+  <data name="Tab_Structure" xml:space="preserve">
+    <value>Структура</value>
+  </data>
+  <data name="Tab_Validation" xml:space="preserve">
+    <value>Проверка</value>
+  </data>
+  <data name="Tip_AddMap" xml:space="preserve">
+    <value>Открыть ещё одну карту активного проекта вкладкой</value>
+  </data>
+  <data name="Tip_AddTopicref" xml:space="preserve">
+    <value>Добавить ссылку на топик</value>
+  </data>
+  <data name="Tip_AlignCenter" xml:space="preserve">
+    <value>По центру</value>
+  </data>
+  <data name="Tip_AlignJustify" xml:space="preserve">
+    <value>По ширине</value>
+  </data>
+  <data name="Tip_AlignLeft" xml:space="preserve">
+    <value>По левому краю</value>
+  </data>
+  <data name="Tip_AlignRight" xml:space="preserve">
+    <value>По правому краю</value>
+  </data>
+  <data name="Tip_Bold" xml:space="preserve">
+    <value>Полужирный (Ctrl+B)</value>
+  </data>
+  <data name="Tip_BuildSite" xml:space="preserve">
+    <value>Собрать сайт HTML (F5)</value>
+  </data>
+  <data name="Tip_CellBorders" xml:space="preserve">
+    <value>Границы выделенных ячеек или ячейки под курсором: нижняя, верхняя, левая, правая, внешние, внутренние…</value>
+  </data>
+  <data name="Tip_CellBordersToolbar" xml:space="preserve">
+    <value>Границы выделенных ячеек (как в Word): нижняя, верхняя, левая, правая, внешние, внутренние…</value>
+  </data>
+  <data name="Tip_ChooseOtherFile" xml:space="preserve">
+    <value>Ссылка указывает на несуществующий файл — заменить на другой файл проекта</value>
+  </data>
+  <data name="Tip_CloseMap" xml:space="preserve">
+    <value>Закрыть карту</value>
+  </data>
+  <data name="Tip_CloseProject" xml:space="preserve">
+    <value>Закрыть активный проект; остальные открытые проекты остаются</value>
+  </data>
+  <data name="Tip_CloseProjectOfNode" xml:space="preserve">
+    <value>Закрыть проект выбранного узла; остальные открытые проекты остаются</value>
+  </data>
+  <data name="Tip_CreateFileForRef" xml:space="preserve">
+    <value>Файла по ссылке нет: создать пустой топик с этим именем</value>
+  </data>
+  <data name="Tip_DeleteAttribute" xml:space="preserve">
+    <value>Удалить атрибут</value>
+  </data>
+  <data name="Tip_DeleteFile" xml:space="preserve">
+    <value>Удалить файл топика с диска и убрать его строки из этой карты</value>
+  </data>
+  <data name="Tip_EnterHints" xml:space="preserve">
+    <value>Enter в конце блока показывает, какой элемент вставить дальше (первая строка — обычное действие Enter)</value>
+  </data>
+  <data name="Tip_ExtractToConref" xml:space="preserve">
+    <value>Переносит элемент в другой топик, оставляя на месте ссылку conref</value>
+  </data>
+  <data name="Tip_FontSize" xml:space="preserve">
+    <value>Размер шрифта выделенного текста или того, что будет набрано дальше (пт)</value>
+  </data>
+  <data name="Tip_FootnoteAtCursor" xml:space="preserve">
+    <value>Сноска у курсора</value>
+  </data>
+  <data name="Tip_Italic" xml:space="preserve">
+    <value>Курсив (Ctrl+I)</value>
+  </data>
+  <data name="Tip_LivePreview" xml:space="preserve">
+    <value>Справа от редактора — листы размера из «Параметры страницы…»; текст разбивается на листы при каждом нажатии клавиши</value>
+  </data>
+  <data name="Tip_MakeNested" xml:space="preserve">
+    <value>Сделать вложенным</value>
+  </data>
+  <data name="Tip_Marker" xml:space="preserve">
+    <value>Маркер: закрасить выделенный текст цветом; без выделения — режим кисти (выделяйте текст мышью, Esc — выключить)</value>
+  </data>
+  <data name="Tip_MarkRevChanged" xml:space="preserve">
+    <value>Полоса на полях при публикации — штатная DITA-пометка ревизии, не полноценная история правок</value>
+  </data>
+  <data name="Tip_MergeDown" xml:space="preserve">
+    <value>Объединить ячейку таблицы со строкой ниже (Ctrl+Alt+↓)</value>
+  </data>
+  <data name="Tip_MergeRight" xml:space="preserve">
+    <value>Объединить ячейку таблицы со следующей (Ctrl+Alt+→)</value>
+  </data>
+  <data name="Tip_MoveElementDown" xml:space="preserve">
+    <value>Переместить элемент вниз (Ctrl+Shift+Down)</value>
+  </data>
+  <data name="Tip_MoveElementUp" xml:space="preserve">
+    <value>Переместить элемент вверх (Ctrl+Shift+Up)</value>
+  </data>
+  <data name="Tip_NewDocument" xml:space="preserve">
+    <value>Создать документ (Ctrl+N)</value>
+  </data>
+  <data name="Tip_NoNewPage" xml:space="preserve">
+    <value>Перекрывает «каждый топик верхнего уровня — с новой страницы» из оформления DOCX</value>
+  </data>
+  <data name="Tip_NumberedParagraph" xml:space="preserve">
+    <value>Курсор в абзаце: при публикации он получит номер по заголовкам — во 2-й главе, 3-м разделе 2.3.1</value>
+  </data>
+  <data name="Tip_NumberedParagraphToolbar" xml:space="preserve">
+    <value>Нумерованный абзац: номер по заголовкам (2.3.1)</value>
+  </data>
+  <data name="Tip_OpenProject" xml:space="preserve">
+    <value>Открыть папку проекта (Ctrl+Shift+O)</value>
+  </data>
+  <data name="Tip_PagePlacement" xml:space="preserve">
+    <value>Абзац, рисунок, таблица или заметка — на отдельной странице в выбранной области листа (outputclass="place-…")</value>
+  </data>
+  <data name="Tip_PageSetup" xml:space="preserve">
+    <value>Размер бумаги, ориентация и поля для DOCX и PDF</value>
+  </data>
+  <data name="Tip_ParagraphAfter" xml:space="preserve">
+    <value>Абзац после текущего блока</value>
+  </data>
+  <data name="Tip_PlaceOnNewPage" xml:space="preserve">
+    <value>DOCX, PDF и единый HTML: топик начинается с новой страницы</value>
+  </data>
+  <data name="Tip_Properties" xml:space="preserve">
+    <value>Открыть карту с выделенной строкой: её атрибуты — на панели «Атрибуты»</value>
+  </data>
+  <data name="Tip_PublishCheckbox" xml:space="preserve">
+    <value>Публиковать: снимите флажок, чтобы топик не попадал в HTML, PDF и DOCX</value>
+  </data>
+  <data name="Tip_Redo" xml:space="preserve">
+    <value>Повторить (Ctrl+Alt+Y)</value>
+  </data>
+  <data name="Tip_RenameId" xml:space="preserve">
+    <value>Обновляет ссылки (href, conref) на этот id по всему проекту</value>
+  </data>
+  <data name="Tip_ReplaceText" xml:space="preserve">
+    <value>Текст замены (для обычного текстового поиска)</value>
+  </data>
+  <data name="Tip_Save" xml:space="preserve">
+    <value>Сохранить (Ctrl+S)</value>
+  </data>
+  <data name="Tip_SectionAfter" xml:space="preserve">
+    <value>Раздел (section) после текущего блока</value>
+  </data>
+  <data name="Tip_SelectRow" xml:space="preserve">
+    <value>Ячейки строки выделяются прямоугольником: дальше строки, столбцы, объединение и границы действуют на них (то же — протяжкой мыши по ячейкам)</value>
+  </data>
+  <data name="Tip_ShowAttributeNotes" xml:space="preserve">
+    <value>У блока с атрибутом product, audience, platform, props или outputclass сверху — серая пометка</value>
+  </data>
+  <data name="Tip_SplitCell" xml:space="preserve">
+    <value>Разделить объединённую ячейку</value>
+  </data>
+  <data name="Tip_TabPinned" xml:space="preserve">
+    <value>Вкладка закреплена</value>
+  </data>
+  <data name="Tip_TextColor" xml:space="preserve">
+    <value>Цвет текста выделения или того, что будет набрано дальше</value>
+  </data>
+  <data name="Tip_Underline" xml:space="preserve">
+    <value>Подчёркнутый (Ctrl+U)</value>
+  </data>
+  <data name="Tip_UndoStructural" xml:space="preserve">
+    <value>Отменить структурное изменение (Ctrl+Alt+Z)</value>
+  </data>
+  <data name="Tip_UnnumberedTitle" xml:space="preserve">
+    <value>Курсор в заголовке: при публикации он не нумеруется и не попадает в оглавление (outputclass="nonumber")</value>
+  </data>
+  <data name="Tip_ValidateProject" xml:space="preserve">
+    <value>Проверить проект (F7)</value>
+  </data>
+  <data name="Tip_WrapIn" xml:space="preserve">
+    <value>Вложить выделенные блоки (или блок под курсором) в другой элемент: примечание, раздел, div… Список — только допустимые обёртки</value>
   </data>
 </root>

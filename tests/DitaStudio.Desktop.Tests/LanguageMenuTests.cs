@@ -8,9 +8,8 @@ using Xunit;
 namespace DitaStudio.Desktop.Tests;
 
 /// <summary>Меню «Язык»: выбор запоминается, подписи в разметке ({loc:Tr …}) меняются без перезапуска.</summary>
-public sealed class LanguageMenuTests : IDisposable
+public sealed class LanguageMenuTests
 {
-    public void Dispose() => Loc.Instance.SetUserLanguage("ru"); // остальные тесты идут на русском
 
     [AvaloniaFact]
     public void MenuListsSystemEnglishRussian_AndMarksUserChoice()
@@ -45,6 +44,8 @@ public sealed class LanguageMenuTests : IDisposable
         Assert.Equal("System default", items[0].Header);
         Assert.Equal(new[] { false, true, false }, items.Select(i => i.IsChecked));
         Assert.Equal("en", LanguageSettings.Load());
+        Loc.Instance.SetUserLanguage("ru"); // остальные тесты идут на русском
+        Dispatcher.UIThread.RunJobs();
         window.Close();
     }
 
@@ -60,6 +61,8 @@ public sealed class LanguageMenuTests : IDisposable
 
         Assert.Null(Loc.Instance.UserChoice);
         Assert.Null(LanguageSettings.Load());
+        Loc.Instance.SetUserLanguage("ru");
+        Dispatcher.UIThread.RunJobs();
         window.Close();
     }
 

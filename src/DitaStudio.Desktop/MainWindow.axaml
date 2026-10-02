@@ -35,269 +35,269 @@
     <DockPanel>
 
         <Menu DockPanel.Dock="Top">
-            <MenuItem Header="_Файл">
-                <MenuItem Header="Открыть папку проекта…" Command="{Binding ProjectPanel.OpenProjectCommand}" InputGesture="Ctrl+Shift+O" />
-                <MenuItem Header="Недавние проекты" Name="RecentProjectsMenu" />
-                <MenuItem Header="Закрыть проект" Command="{Binding ProjectPanel.CloseProjectCommand}"
-                          ToolTip.Tip="Закрыть активный проект; остальные открытые проекты остаются" />
-                <MenuItem Header="Подключить проект-источник ключей…" Command="{Binding ProjectPanel.AddReferencedProjectCommand}" />
-                <MenuItem Header="Отключить все проекты-источники" Command="{Binding ProjectPanel.ClearReferencedProjectsCommand}" />
-                <MenuItem Header="Подключить внешний DTD (кастомная специализация)…" Command="{Binding ProjectPanel.AttachExternalDtdCommand}" />
-                <MenuItem Header="Отключить внешний DTD" Command="{Binding ProjectPanel.DetachExternalDtdCommand}" />
-                <MenuItem Header="Создать документ…" Command="{Binding ProjectPanel.NewDocumentCommand}" InputGesture="Ctrl+N" />
+            <MenuItem Header="{loc:Tr Menu_File}">
+                <MenuItem Header="{loc:Tr Menu_OpenProjectFolder}" Command="{Binding ProjectPanel.OpenProjectCommand}" InputGesture="Ctrl+Shift+O" />
+                <MenuItem Header="{loc:Tr Menu_RecentProjects}" Name="RecentProjectsMenu" />
+                <MenuItem Header="{loc:Tr Menu_CloseProject}" Command="{Binding ProjectPanel.CloseProjectCommand}"
+                          ToolTip.Tip="{loc:Tr Tip_CloseProject}" />
+                <MenuItem Header="{loc:Tr Menu_AddKeySourceProject}" Command="{Binding ProjectPanel.AddReferencedProjectCommand}" />
+                <MenuItem Header="{loc:Tr Menu_RemoveKeySourceProjects}" Command="{Binding ProjectPanel.ClearReferencedProjectsCommand}" />
+                <MenuItem Header="{loc:Tr Menu_AttachExternalDtd}" Command="{Binding ProjectPanel.AttachExternalDtdCommand}" />
+                <MenuItem Header="{loc:Tr Menu_DetachExternalDtd}" Command="{Binding ProjectPanel.DetachExternalDtdCommand}" />
+                <MenuItem Header="{loc:Tr Menu_NewDocument}" Command="{Binding ProjectPanel.NewDocumentCommand}" InputGesture="Ctrl+N" />
                 <Separator />
-                <MenuItem Header="Сохранить" Command="{Binding Documents.SaveCurrentCommand}" InputGesture="Ctrl+S" />
-                <MenuItem Header="Сохранить всё" Command="{Binding Documents.SaveAllCommand}" InputGesture="Ctrl+Shift+S" />
-                <MenuItem Header="Закрыть вкладку" Command="{Binding Documents.CloseCurrentTabCommand}" InputGesture="Ctrl+W" />
-                <MenuItem Header="Закрыть все вкладки" Command="{Binding Documents.CloseAllTabsCommand}" />
+                <MenuItem Header="{loc:Tr Menu_Save}" Command="{Binding Documents.SaveCurrentCommand}" InputGesture="Ctrl+S" />
+                <MenuItem Header="{loc:Tr Menu_SaveAll}" Command="{Binding Documents.SaveAllCommand}" InputGesture="Ctrl+Shift+S" />
+                <MenuItem Header="{loc:Tr Menu_CloseTab}" Command="{Binding Documents.CloseCurrentTabCommand}" InputGesture="Ctrl+W" />
+                <MenuItem Header="{loc:Tr Menu_CloseAllTabs}" Command="{Binding Documents.CloseAllTabsCommand}" />
                 <Separator />
-                <MenuItem Header="Выход" Click="OnExit" />
+                <MenuItem Header="{loc:Tr Menu_Exit}" Click="OnExit" />
             </MenuItem>
 
-            <MenuItem Header="_Правка">
-                <MenuItem Header="Отменить структурное изменение" Command="{Binding Insert.UndoCommand}" InputGesture="Ctrl+Alt+Z" />
-                <MenuItem Header="Повторить" Command="{Binding Insert.RedoCommand}" InputGesture="Ctrl+Alt+Y" />
+            <MenuItem Header="{loc:Tr Menu_Edit}">
+                <MenuItem Header="{loc:Tr Menu_UndoStructural}" Command="{Binding Insert.UndoCommand}" InputGesture="Ctrl+Alt+Z" />
+                <MenuItem Header="{loc:Tr Menu_Redo}" Command="{Binding Insert.RedoCommand}" InputGesture="Ctrl+Alt+Y" />
                 <Separator />
-                <MenuItem Header="Найти в проекте…" Click="OnFocusSearch" InputGesture="Ctrl+Shift+F" />
-                <MenuItem Header="Проверить проект" Command="{Binding Validation.ValidateProjectCommand}" InputGesture="F7" />
-                <MenuItem Header="Проверить документ" Command="{Binding Validation.ValidateDocumentCommand}" />
+                <MenuItem Header="{loc:Tr Menu_FindInProject}" Click="OnFocusSearch" InputGesture="Ctrl+Shift+F" />
+                <MenuItem Header="{loc:Tr Menu_ValidateProject}" Command="{Binding Validation.ValidateProjectCommand}" InputGesture="F7" />
+                <MenuItem Header="{loc:Tr Menu_ValidateDocument}" Command="{Binding Validation.ValidateDocumentCommand}" />
                 <Separator />
-                <MenuItem Header="Сравнить файлы…" Command="{Binding Validation.CompareFilesCommand}" />
-                <MenuItem Header="Сравнить с последним коммитом (git)" Command="{Binding Validation.CompareWithGitHeadCommand}" />
-                <MenuItem Header="Сравнить с версией BASE (svn)" Command="{Binding Validation.CompareWithSvnBaseCommand}" />
+                <MenuItem Header="{loc:Tr Menu_CompareFiles}" Command="{Binding Validation.CompareFilesCommand}" />
+                <MenuItem Header="{loc:Tr Menu_CompareGit}" Command="{Binding Validation.CompareWithGitHeadCommand}" />
+                <MenuItem Header="{loc:Tr Menu_CompareSvn}" Command="{Binding Validation.CompareWithSvnBaseCommand}" />
             </MenuItem>
 
-            <MenuItem Header="_Вставка">
-                <MenuItem Header="Элемент…" Click="OnFocusPalette" InputGesture="Ctrl+E" />
+            <MenuItem Header="{loc:Tr Menu_Insert}">
+                <MenuItem Header="{loc:Tr Menu_Element}" Click="OnFocusPalette" InputGesture="Ctrl+E" />
                 <Separator />
-                <MenuItem Header="Абзац" Command="{Binding Insert.InsertParagraphCommand}" />
-                <MenuItem Header="Маркированный список" Command="{Binding Insert.InsertUlCommand}" />
-                <MenuItem Header="Нумерованный список" Command="{Binding Insert.InsertOlCommand}" />
-                <MenuItem Header="Примечание" Command="{Binding Insert.InsertNoteCommand}" />
-                <MenuItem Header="Блок кода" Command="{Binding Insert.InsertCodeblockCommand}" />
-                <MenuItem Header="Сноска" Command="{Binding Insert.InsertFootnoteCommand}" />
-                <MenuItem Header="Таблица…" Command="{Binding Insert.InsertTableCommand}" />
-                <MenuItem Header="Изображение…" Command="{Binding Insert.InsertImageCommand}" />
-                <MenuItem Header="Оформить изображение как рисунок" Command="{Binding Insert.WrapImageAsFigureCommand}" />
-                <MenuItem Header="Подпись рисунка / таблицы: добавить или убрать" Command="{Binding Insert.ToggleCaptionCommand}" />
-                <MenuItem Header="Перекрёстная ссылка…" Command="{Binding Insert.InsertXrefCommand}" />
+                <MenuItem Header="{loc:Tr Menu_Paragraph}" Command="{Binding Insert.InsertParagraphCommand}" />
+                <MenuItem Header="{loc:Tr Menu_BulletedList}" Command="{Binding Insert.InsertUlCommand}" />
+                <MenuItem Header="{loc:Tr Menu_NumberedList}" Command="{Binding Insert.InsertOlCommand}" />
+                <MenuItem Header="{loc:Tr Menu_Note}" Command="{Binding Insert.InsertNoteCommand}" />
+                <MenuItem Header="{loc:Tr Menu_CodeBlock}" Command="{Binding Insert.InsertCodeblockCommand}" />
+                <MenuItem Header="{loc:Tr Menu_Footnote}" Command="{Binding Insert.InsertFootnoteCommand}" />
+                <MenuItem Header="{loc:Tr Menu_InsertTable}" Command="{Binding Insert.InsertTableCommand}" />
+                <MenuItem Header="{loc:Tr Menu_InsertImage}" Command="{Binding Insert.InsertImageCommand}" />
+                <MenuItem Header="{loc:Tr Menu_ImageAsFigure}" Command="{Binding Insert.WrapImageAsFigureCommand}" />
+                <MenuItem Header="{loc:Tr Menu_ToggleCaption}" Command="{Binding Insert.ToggleCaptionCommand}" />
+                <MenuItem Header="{loc:Tr Menu_CrossReference}" Command="{Binding Insert.InsertXrefCommand}" />
                 <Separator />
-                <MenuItem Header="Полужирный" Command="{Binding Insert.FormatBoldCommand}" InputGesture="Ctrl+B" />
-                <MenuItem Header="Курсив" Command="{Binding Insert.FormatItalicCommand}" InputGesture="Ctrl+I" />
-                <MenuItem Header="Код в строке" Command="{Binding Insert.FormatCodeCommand}" />
-                <MenuItem Header="Элемент интерфейса" Command="{Binding Insert.FormatUicontrolCommand}" />
+                <MenuItem Header="{loc:Tr Menu_Bold}" Command="{Binding Insert.FormatBoldCommand}" InputGesture="Ctrl+B" />
+                <MenuItem Header="{loc:Tr Menu_Italic}" Command="{Binding Insert.FormatItalicCommand}" InputGesture="Ctrl+I" />
+                <MenuItem Header="{loc:Tr Menu_InlineCode}" Command="{Binding Insert.FormatCodeCommand}" />
+                <MenuItem Header="{loc:Tr Menu_UiControl}" Command="{Binding Insert.FormatUicontrolCommand}" />
             </MenuItem>
 
-            <MenuItem Header="_Структура">
-                <MenuItem Header="Переместить вверх" Command="{Binding Insert.MoveUpCommand}" InputGesture="Ctrl+Shift+Up" />
-                <MenuItem Header="Переместить вниз" Command="{Binding Insert.MoveDownCommand}" InputGesture="Ctrl+Shift+Down" />
-                <MenuItem Header="Удалить элемент" Command="{Binding Insert.DeleteElementCommand}" />
-                <MenuItem Name="WrapInMenu" Header="Обернуть в…" Click="OnWrapIn"
-                          ToolTip.Tip="Вложить выделенные блоки (или блок под курсором) в другой элемент: примечание, раздел, div… Список — только допустимые обёртки" />
-                <MenuItem Header="Переименовать id…" Command="{Binding Insert.RenameIdCommand}"
-                          ToolTip.Tip="Обновляет ссылки (href, conref) на этот id по всему проекту" />
-                <MenuItem Header="Вынести в conref…" Command="{Binding Insert.ExtractToConrefCommand}"
-                          ToolTip.Tip="Переносит элемент в другой топик, оставляя на месте ссылку conref" />
+            <MenuItem Header="{loc:Tr Menu_Structure}">
+                <MenuItem Header="{loc:Tr Menu_MoveUp}" Command="{Binding Insert.MoveUpCommand}" InputGesture="Ctrl+Shift+Up" />
+                <MenuItem Header="{loc:Tr Menu_MoveDown}" Command="{Binding Insert.MoveDownCommand}" InputGesture="Ctrl+Shift+Down" />
+                <MenuItem Header="{loc:Tr Menu_DeleteElement}" Command="{Binding Insert.DeleteElementCommand}" />
+                <MenuItem Name="WrapInMenu" Header="{loc:Tr Menu_WrapIn}" Click="OnWrapIn"
+                          ToolTip.Tip="{loc:Tr Tip_WrapIn}" />
+                <MenuItem Header="{loc:Tr Menu_RenameId}" Command="{Binding Insert.RenameIdCommand}"
+                          ToolTip.Tip="{loc:Tr Tip_RenameId}" />
+                <MenuItem Header="{loc:Tr Menu_ExtractToConref}" Command="{Binding Insert.ExtractToConrefCommand}"
+                          ToolTip.Tip="{loc:Tr Tip_ExtractToConref}" />
                 <Separator />
-                <MenuItem Header="Объединить ячейку со следующей" Command="{Binding Insert.MergeCellRightCommand}" InputGesture="Ctrl+Alt+Right" />
-                <MenuItem Header="Объединить ячейку со строкой ниже" Command="{Binding Insert.MergeCellDownCommand}" InputGesture="Ctrl+Alt+Down" />
-                <MenuItem Header="Таблица">
-                    <MenuItem Header="Выделить таблицу" Command="{Binding Insert.SelectTableCommand}" />
-                    <MenuItem Header="Выделить строку" Command="{Binding Insert.SelectTableRowCommand}"
-                              ToolTip.Tip="Ячейки строки выделяются прямоугольником: дальше строки, столбцы, объединение и границы действуют на них (то же — протяжкой мыши по ячейкам)" />
-                    <MenuItem Header="Выделить столбец" Command="{Binding Insert.SelectTableColumnCommand}" />
-                    <MenuItem Name="CellBordersMenu" Header="Границы выделенных ячеек (как в Word)"
-                              ToolTip.Tip="Границы выделенных ячеек или ячейки под курсором: нижняя, верхняя, левая, правая, внешние, внутренние…" />
-                    <MenuItem Header="Удалить таблицу" Command="{Binding Insert.DeleteTableCommand}" />
-                    <MenuItem Header="Границы">
-                        <MenuItem Header="Все границы" Command="{Binding Insert.SetTableBordersCommand}" CommandParameter="{x:Static pub:TableBorderMode.All}" />
-                        <MenuItem Header="Только внешняя рамка" Command="{Binding Insert.SetTableBordersCommand}" CommandParameter="{x:Static pub:TableBorderMode.OuterOnly}" />
-                        <MenuItem Header="Только горизонтальные линии" Command="{Binding Insert.SetTableBordersCommand}" CommandParameter="{x:Static pub:TableBorderMode.HorizontalOnly}" />
-                        <MenuItem Header="Без границ" Command="{Binding Insert.SetTableBordersCommand}" CommandParameter="{x:Static pub:TableBorderMode.None}" />
+                <MenuItem Header="{loc:Tr Menu_MergeCellRight}" Command="{Binding Insert.MergeCellRightCommand}" InputGesture="Ctrl+Alt+Right" />
+                <MenuItem Header="{loc:Tr Menu_MergeCellDown}" Command="{Binding Insert.MergeCellDownCommand}" InputGesture="Ctrl+Alt+Down" />
+                <MenuItem Header="{loc:Tr Menu_TableSubmenu}">
+                    <MenuItem Header="{loc:Tr Menu_SelectTable}" Command="{Binding Insert.SelectTableCommand}" />
+                    <MenuItem Header="{loc:Tr Menu_SelectRow}" Command="{Binding Insert.SelectTableRowCommand}"
+                              ToolTip.Tip="{loc:Tr Tip_SelectRow}" />
+                    <MenuItem Header="{loc:Tr Menu_SelectColumn}" Command="{Binding Insert.SelectTableColumnCommand}" />
+                    <MenuItem Name="CellBordersMenu" Header="{loc:Tr Menu_CellBorders}"
+                              ToolTip.Tip="{loc:Tr Tip_CellBorders}" />
+                    <MenuItem Header="{loc:Tr Menu_DeleteTable}" Command="{Binding Insert.DeleteTableCommand}" />
+                    <MenuItem Header="{loc:Tr Menu_Borders}">
+                        <MenuItem Header="{loc:Tr Menu_AllBorders}" Command="{Binding Insert.SetTableBordersCommand}" CommandParameter="{x:Static pub:TableBorderMode.All}" />
+                        <MenuItem Header="{loc:Tr Menu_OuterFrameOnly}" Command="{Binding Insert.SetTableBordersCommand}" CommandParameter="{x:Static pub:TableBorderMode.OuterOnly}" />
+                        <MenuItem Header="{loc:Tr Menu_HorizontalLinesOnly}" Command="{Binding Insert.SetTableBordersCommand}" CommandParameter="{x:Static pub:TableBorderMode.HorizontalOnly}" />
+                        <MenuItem Header="{loc:Tr Menu_NoBorders}" Command="{Binding Insert.SetTableBordersCommand}" CommandParameter="{x:Static pub:TableBorderMode.None}" />
                         <Separator />
-                        <MenuItem Header="Линия под строкой: убрать" Command="{Binding Insert.SetRowBorderCommand}" CommandParameter="{x:False}" />
-                        <MenuItem Header="Линия под строкой: показать" Command="{Binding Insert.SetRowBorderCommand}" CommandParameter="{x:True}" />
-                        <MenuItem Header="Линия справа от столбца: убрать" Command="{Binding Insert.SetColumnBorderCommand}" CommandParameter="{x:False}" />
-                        <MenuItem Header="Линия справа от столбца: показать" Command="{Binding Insert.SetColumnBorderCommand}" CommandParameter="{x:True}" />
+                        <MenuItem Header="{loc:Tr Menu_RowLineRemove}" Command="{Binding Insert.SetRowBorderCommand}" CommandParameter="{x:False}" />
+                        <MenuItem Header="{loc:Tr Menu_RowLineShow}" Command="{Binding Insert.SetRowBorderCommand}" CommandParameter="{x:True}" />
+                        <MenuItem Header="{loc:Tr Menu_ColumnLineRemove}" Command="{Binding Insert.SetColumnBorderCommand}" CommandParameter="{x:False}" />
+                        <MenuItem Header="{loc:Tr Menu_ColumnLineShow}" Command="{Binding Insert.SetColumnBorderCommand}" CommandParameter="{x:True}" />
                     </MenuItem>
                     <Separator />
-                    <MenuItem Header="Вставить строку выше" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertRowAbove}" />
-                    <MenuItem Header="Вставить строку ниже" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertRowBelow}" />
-                    <MenuItem Header="Удалить строку" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.DeleteRow}" />
+                    <MenuItem Header="{loc:Tr Menu_InsertRowAbove}" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertRowAbove}" />
+                    <MenuItem Header="{loc:Tr Menu_InsertRowBelow}" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertRowBelow}" />
+                    <MenuItem Header="{loc:Tr Menu_DeleteRow}" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.DeleteRow}" />
                     <Separator />
-                    <MenuItem Header="Вставить столбец слева" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertColumnLeft}" />
-                    <MenuItem Header="Вставить столбец справа" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertColumnRight}" />
-                    <MenuItem Header="Удалить столбец" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.DeleteColumn}" />
+                    <MenuItem Header="{loc:Tr Menu_InsertColumnLeft}" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertColumnLeft}" />
+                    <MenuItem Header="{loc:Tr Menu_InsertColumnRight}" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertColumnRight}" />
+                    <MenuItem Header="{loc:Tr Menu_DeleteColumn}" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.DeleteColumn}" />
                     <Separator />
-                    <MenuItem Header="Разделить ячейку" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.SplitCell}" />
+                    <MenuItem Header="{loc:Tr Menu_SplitCell}" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.SplitCell}" />
                 </MenuItem>
                 <Separator />
-                <MenuItem Header="Разрыв страницы перед заголовком (печать)" Command="{Binding Insert.TogglePageBreakBeforeTitleCommand}" />
-                <MenuItem Header="Нумерованный абзац (2.3.1)" Command="{Binding Insert.ToggleNumberedParagraphCommand}"
-                          ToolTip.Tip="Курсор в абзаце: при публикации он получит номер по заголовкам — во 2-й главе, 3-м разделе 2.3.1" />
-                <MenuItem Header="Заголовок без номера (не в оглавлении)" Command="{Binding Insert.ToggleUnnumberedTitleCommand}"
-                          ToolTip.Tip="Курсор в заголовке: при публикации он не нумеруется и не попадает в оглавление (outputclass=&quot;nonumber&quot;)" />
-                <MenuItem Header="Положение на листе (PDF, DOCX)"
-                          ToolTip.Tip="Абзац, рисунок, таблица или заметка — на отдельной странице в выбранной области листа (outputclass=&quot;place-…&quot;)">
-                    <MenuItem Header="Обычное (в тексте)" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="{x:Null}" />
+                <MenuItem Header="{loc:Tr Menu_PageBreakBeforeTitle}" Command="{Binding Insert.TogglePageBreakBeforeTitleCommand}" />
+                <MenuItem Header="{loc:Tr Menu_NumberedParagraph}" Command="{Binding Insert.ToggleNumberedParagraphCommand}"
+                          ToolTip.Tip="{loc:Tr Tip_NumberedParagraph}" />
+                <MenuItem Header="{loc:Tr Menu_UnnumberedTitle}" Command="{Binding Insert.ToggleUnnumberedTitleCommand}"
+                          ToolTip.Tip="{loc:Tr Tip_UnnumberedTitle}" />
+                <MenuItem Header="{loc:Tr Menu_PagePlacement}"
+                          ToolTip.Tip="{loc:Tr Tip_PagePlacement}">
+                    <MenuItem Header="{loc:Tr Menu_PlacementNormal}" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="{x:Null}" />
                     <Separator />
-                    <MenuItem Header="Вверху слева" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-top-left" />
-                    <MenuItem Header="Вверху по центру" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-top-center" />
-                    <MenuItem Header="Вверху справа" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-top-right" />
-                    <MenuItem Header="Посередине слева" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-middle-left" />
-                    <MenuItem Header="По центру листа" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-middle-center" />
-                    <MenuItem Header="Посередине справа" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-middle-right" />
-                    <MenuItem Header="Внизу слева" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-bottom-left" />
-                    <MenuItem Header="Внизу по центру" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-bottom-center" />
-                    <MenuItem Header="Внизу справа" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-bottom-right" />
+                    <MenuItem Header="{loc:Tr Menu_PlacementTopLeft}" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-top-left" />
+                    <MenuItem Header="{loc:Tr Menu_PlacementTopCenter}" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-top-center" />
+                    <MenuItem Header="{loc:Tr Menu_PlacementTopRight}" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-top-right" />
+                    <MenuItem Header="{loc:Tr Menu_PlacementMiddleLeft}" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-middle-left" />
+                    <MenuItem Header="{loc:Tr Menu_PlacementMiddleCenter}" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-middle-center" />
+                    <MenuItem Header="{loc:Tr Menu_PlacementMiddleRight}" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-middle-right" />
+                    <MenuItem Header="{loc:Tr Menu_PlacementBottomLeft}" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-bottom-left" />
+                    <MenuItem Header="{loc:Tr Menu_PlacementBottomCenter}" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-bottom-center" />
+                    <MenuItem Header="{loc:Tr Menu_PlacementBottomRight}" Command="{Binding Insert.SetPagePlacementCommand}" CommandParameter="place-bottom-right" />
                 </MenuItem>
-                <MenuItem Header="Таблица: разрешить перенос с повтором шапки (печать)" Command="{Binding Insert.ToggleTablePageBreakAutoCommand}" />
-                <MenuItem Header="Отметить как изменённое (rev)" Command="{Binding Insert.ToggleRevChangedCommand}"
-                          ToolTip.Tip="Полоса на полях при публикации — штатная DITA-пометка ревизии, не полноценная история правок" />
+                <MenuItem Header="{loc:Tr Menu_TableAllowBreak}" Command="{Binding Insert.ToggleTablePageBreakAutoCommand}" />
+                <MenuItem Header="{loc:Tr Menu_MarkRevChanged}" Command="{Binding Insert.ToggleRevChangedCommand}"
+                          ToolTip.Tip="{loc:Tr Tip_MarkRevChanged}" />
                 <Separator />
-                <MenuItem Header="Track changes: пометить как вставленное" Command="{Binding Insert.MarkTrackedInsertedCommand}" />
-                <MenuItem Header="Track changes: пометить как удалённое" Command="{Binding Insert.MarkTrackedDeletedCommand}" />
-                <MenuItem Header="Track changes: принять правку" Command="{Binding Insert.AcceptTrackedChangeCommand}" />
-                <MenuItem Header="Track changes: отклонить правку" Command="{Binding Insert.RejectTrackedChangeCommand}" />
+                <MenuItem Header="{loc:Tr Menu_TrackInserted}" Command="{Binding Insert.MarkTrackedInsertedCommand}" />
+                <MenuItem Header="{loc:Tr Menu_TrackDeleted}" Command="{Binding Insert.MarkTrackedDeletedCommand}" />
+                <MenuItem Header="{loc:Tr Menu_TrackAccept}" Command="{Binding Insert.AcceptTrackedChangeCommand}" />
+                <MenuItem Header="{loc:Tr Menu_TrackReject}" Command="{Binding Insert.RejectTrackedChangeCommand}" />
                 <Separator />
-                <MenuItem Header="Показывать имена элементов" ToggleType="CheckBox" IsChecked="{Binding Insert.ShowElementTags, Mode=TwoWay}" />
-                <MenuItem Name="AttributeNotesMenu" Header="Показывать пометки атрибутов (product, outputclass)" ToggleType="CheckBox" IsChecked="True" Click="OnToggleAttributeNotes"
-                          ToolTip.Tip="У блока с атрибутом product, audience, platform, props или outputclass сверху — серая пометка" />
-                <MenuItem Name="EnterSuggestionsMenu" Header="Подсказка по Enter" ToggleType="CheckBox" IsChecked="True" Click="OnToggleEnterSuggestions"
-                          ToolTip.Tip="Enter в конце блока показывает, какой элемент вставить дальше (первая строка — обычное действие Enter)" />
-                <MenuItem Name="LivePreviewMenu" Header="Предпросмотр рядом с текстом (листы)" ToggleType="CheckBox" IsChecked="False" Click="OnToggleLivePreview"
-                          ToolTip.Tip="Справа от редактора — листы размера из «Параметры страницы…»; текст разбивается на листы при каждом нажатии клавиши" />
+                <MenuItem Header="{loc:Tr Menu_ShowElementNames}" ToggleType="CheckBox" IsChecked="{Binding Insert.ShowElementTags, Mode=TwoWay}" />
+                <MenuItem Name="AttributeNotesMenu" Header="{loc:Tr Menu_ShowAttributeNotes}" ToggleType="CheckBox" IsChecked="True" Click="OnToggleAttributeNotes"
+                          ToolTip.Tip="{loc:Tr Tip_ShowAttributeNotes}" />
+                <MenuItem Name="EnterSuggestionsMenu" Header="{loc:Tr Menu_EnterHints}" ToggleType="CheckBox" IsChecked="True" Click="OnToggleEnterSuggestions"
+                          ToolTip.Tip="{loc:Tr Tip_EnterHints}" />
+                <MenuItem Name="LivePreviewMenu" Header="{loc:Tr Menu_LivePreview}" ToggleType="CheckBox" IsChecked="False" Click="OnToggleLivePreview"
+                          ToolTip.Tip="{loc:Tr Tip_LivePreview}" />
                 <Separator />
-                <MenuItem Header="Команда плагина…" Command="{Binding Insert.RunAuthorCommandPluginCommand}" />
+                <MenuItem Header="{loc:Tr Menu_PluginCommand}" Command="{Binding Insert.RunAuthorCommandPluginCommand}" />
             </MenuItem>
 
-            <MenuItem Header="_Публикация">
-                <MenuItem Header="Собрать сайт HTML…" Command="{Binding Publish.PublishSiteCommand}" InputGesture="F5" />
-                <MenuItem Header="Собрать один HTML…" Command="{Binding Publish.PublishSingleCommand}" />
-                <MenuItem Header="Экспорт в PDF…" Command="{Binding Publish.PublishPdfCommand}" />
-                <MenuItem Header="Экспорт в DOCX…" Command="{Binding Publish.ExportDocxCommand}" />
-                <MenuItem Header="Параметры страницы…" Command="{Binding Publish.PageSetupCommand}"
-                          ToolTip.Tip="Размер бумаги, ориентация и поля для DOCX и PDF" />
-                <MenuItem Header="Оформление DOCX…" Command="{Binding Publish.DocxLayoutCommand}" />
-                <MenuItem Header="Публикация плагином…" Command="{Binding Publish.PublishWithPluginCommand}" />
+            <MenuItem Header="{loc:Tr Menu_Publish}">
+                <MenuItem Header="{loc:Tr Menu_BuildSite}" Command="{Binding Publish.PublishSiteCommand}" InputGesture="F5" />
+                <MenuItem Header="{loc:Tr Menu_BuildSingleHtml}" Command="{Binding Publish.PublishSingleCommand}" />
+                <MenuItem Header="{loc:Tr Menu_ExportPdf}" Command="{Binding Publish.PublishPdfCommand}" />
+                <MenuItem Header="{loc:Tr Menu_ExportDocx}" Command="{Binding Publish.ExportDocxCommand}" />
+                <MenuItem Header="{loc:Tr Menu_PageSetup}" Command="{Binding Publish.PageSetupCommand}"
+                          ToolTip.Tip="{loc:Tr Tip_PageSetup}" />
+                <MenuItem Header="{loc:Tr Menu_DocxLayout}" Command="{Binding Publish.DocxLayoutCommand}" />
+                <MenuItem Header="{loc:Tr Menu_PublishWithPlugin}" Command="{Binding Publish.PublishWithPluginCommand}" />
                 <Separator />
-                <MenuItem Header="Список продуктов…" Command="{Binding Publish.EditProductsCommand}" />
-                <MenuItem Header="Условия сборки…" Command="{Binding Publish.PublishConditionsCommand}" />
-                <MenuItem Header="Подключить .ditaval…" Command="{Binding Publish.ImportDitavalCommand}" />
-                <MenuItem Header="Редактировать .ditaval…" Command="{Binding Publish.EditDitavalCommand}" />
-                <MenuItem Header="Пользовательский CSS…" Command="{Binding Publish.CustomCssCommand}" />
-                <MenuItem Header="Колонтитулы PDF…" Command="{Binding Publish.PdfHeaderFooterCommand}" />
+                <MenuItem Header="{loc:Tr Menu_ProductList}" Command="{Binding Publish.EditProductsCommand}" />
+                <MenuItem Header="{loc:Tr Menu_BuildConditions}" Command="{Binding Publish.PublishConditionsCommand}" />
+                <MenuItem Header="{loc:Tr Menu_AttachDitaval}" Command="{Binding Publish.ImportDitavalCommand}" />
+                <MenuItem Header="{loc:Tr Menu_EditDitaval}" Command="{Binding Publish.EditDitavalCommand}" />
+                <MenuItem Header="{loc:Tr Menu_CustomCss}" Command="{Binding Publish.CustomCssCommand}" />
+                <MenuItem Header="{loc:Tr Menu_PdfHeaderFooter}" Command="{Binding Publish.PdfHeaderFooterCommand}" />
                 <Separator />
-                <MenuItem Header="Экспорт в XLIFF (для перевода)…" Command="{Binding Publish.ExportXliffCommand}" />
-                <MenuItem Header="Импортировать перевод из XLIFF…" Command="{Binding Publish.ImportXliffCommand}" />
+                <MenuItem Header="{loc:Tr Menu_ExportXliff}" Command="{Binding Publish.ExportXliffCommand}" />
+                <MenuItem Header="{loc:Tr Menu_ImportXliff}" Command="{Binding Publish.ImportXliffCommand}" />
             </MenuItem>
 
-            <MenuItem Header="_Справка">
-                <MenuItem Header="Об элементе под курсором" Command="{Binding Help.ShowElementHelpCommand}" InputGesture="F1" />
-                <MenuItem Name="ThemeMenuItem" Header="Тёмная тема" ToggleType="CheckBox" Click="OnToggleTheme" />
+            <MenuItem Header="{loc:Tr Menu_Help}">
+                <MenuItem Header="{loc:Tr Menu_ElementHelp}" Command="{Binding Help.ShowElementHelpCommand}" InputGesture="F1" />
+                <MenuItem Name="ThemeMenuItem" Header="{loc:Tr Menu_DarkTheme}" ToggleType="CheckBox" Click="OnToggleTheme" />
                 <MenuItem Name="LanguageMenu" Header="{loc:Tr Menu_Language}" />
                 <Separator />
-                <MenuItem Header="О программе" Command="{Binding Help.AboutCommand}" />
+                <MenuItem Header="{loc:Tr Menu_About}" Command="{Binding Help.AboutCommand}" />
             </MenuItem>
         </Menu>
 
         <Border DockPanel.Dock="Top" Classes="toolbar">
             <!-- В узком окне кнопки переносятся на вторую строку, а не обрезаются. -->
             <WrapPanel Name="MainToolbar" Orientation="Horizontal">
-                <Button Classes="tool" Content="📂" Command="{Binding ProjectPanel.OpenProjectCommand}" ToolTip.Tip="Открыть папку проекта (Ctrl+Shift+O)" />
-                <Button Classes="tool" Content="➕" Command="{Binding ProjectPanel.NewDocumentCommand}" ToolTip.Tip="Создать документ (Ctrl+N)" />
-                <Button Classes="tool" Content="💾" Command="{Binding Documents.SaveCurrentCommand}" ToolTip.Tip="Сохранить (Ctrl+S)" />
+                <Button Classes="tool" Content="📂" Command="{Binding ProjectPanel.OpenProjectCommand}" ToolTip.Tip="{loc:Tr Tip_OpenProject}" />
+                <Button Classes="tool" Content="➕" Command="{Binding ProjectPanel.NewDocumentCommand}" ToolTip.Tip="{loc:Tr Tip_NewDocument}" />
+                <Button Classes="tool" Content="💾" Command="{Binding Documents.SaveCurrentCommand}" ToolTip.Tip="{loc:Tr Tip_Save}" />
                 <Rectangle Classes="separator" />
-                <Button Classes="tool" Content="↩" Command="{Binding Insert.UndoCommand}" ToolTip.Tip="Отменить структурное изменение (Ctrl+Alt+Z)" />
-                <Button Classes="tool" Content="↪" Command="{Binding Insert.RedoCommand}" ToolTip.Tip="Повторить (Ctrl+Alt+Y)" />
+                <Button Classes="tool" Content="↩" Command="{Binding Insert.UndoCommand}" ToolTip.Tip="{loc:Tr Tip_UndoStructural}" />
+                <Button Classes="tool" Content="↪" Command="{Binding Insert.RedoCommand}" ToolTip.Tip="{loc:Tr Tip_Redo}" />
                 <Rectangle Classes="separator" />
-                <Button Classes="tool" Content="Ж" FontWeight="Bold" Command="{Binding Insert.FormatBoldCommand}" ToolTip.Tip="Полужирный (Ctrl+B)" />
-                <Button Classes="tool" Content="К" FontStyle="Italic" Command="{Binding Insert.FormatItalicCommand}" ToolTip.Tip="Курсив (Ctrl+I)" />
-                <Button Classes="tool" Command="{Binding Insert.FormatUnderlineCommand}" ToolTip.Tip="Подчёркнутый (Ctrl+U)">
-                    <TextBlock Text="Ч" TextDecorations="Underline" />
+                <Button Classes="tool" Content="{loc:Tr Btn_BoldLetter}" FontWeight="Bold" Command="{Binding Insert.FormatBoldCommand}" ToolTip.Tip="{loc:Tr Tip_Bold}" />
+                <Button Classes="tool" Content="{loc:Tr Btn_ItalicLetter}" FontStyle="Italic" Command="{Binding Insert.FormatItalicCommand}" ToolTip.Tip="{loc:Tr Tip_Italic}" />
+                <Button Classes="tool" Command="{Binding Insert.FormatUnderlineCommand}" ToolTip.Tip="{loc:Tr Tip_Underline}">
+                    <TextBlock Text="{loc:Tr Btn_UnderlineLetter}" TextDecorations="Underline" />
                 </Button>
-                <Button Classes="tool" Content="&lt;/&gt;" FontFamily="{DynamicResource MonoFont}" FontSize="12" Command="{Binding Insert.FormatCodeCommand}" ToolTip.Tip="Код в строке" />
+                <Button Classes="tool" Content="&lt;/&gt;" FontFamily="{DynamicResource MonoFont}" FontSize="12" Command="{Binding Insert.FormatCodeCommand}" ToolTip.Tip="{loc:Tr Menu_InlineCode}" />
                 <Rectangle Classes="separator" />
-                <Button Classes="tool" Content="🔗" Command="{Binding Insert.InsertXrefCommand}" ToolTip.Tip="Перекрёстная ссылка…" />
-                <Button Classes="tool" Content="🖼" Command="{Binding Insert.InsertImageCommand}" ToolTip.Tip="Изображение…" />
-                <Button Classes="tool" Content="¹" FontWeight="Bold" Command="{Binding Insert.InsertFootnoteCommand}" ToolTip.Tip="Сноска у курсора" />
+                <Button Classes="tool" Content="🔗" Command="{Binding Insert.InsertXrefCommand}" ToolTip.Tip="{loc:Tr Menu_CrossReference}" />
+                <Button Classes="tool" Content="🖼" Command="{Binding Insert.InsertImageCommand}" ToolTip.Tip="{loc:Tr Menu_InsertImage}" />
+                <Button Classes="tool" Content="¹" FontWeight="Bold" Command="{Binding Insert.InsertFootnoteCommand}" ToolTip.Tip="{loc:Tr Tip_FootnoteAtCursor}" />
                 <Rectangle Classes="separator" />
-                <Button Classes="tool" Content="§" Command="{Binding Insert.InsertSectionCommand}" ToolTip.Tip="Раздел (section) после текущего блока" />
-                <Button Classes="tool" Content="¶" Command="{Binding Insert.InsertParagraphCommand}" ToolTip.Tip="Абзац после текущего блока" />
-                <Button Classes="tool" Command="{Binding Insert.InsertOlCommand}" ToolTip.Tip="Нумерованный список">
+                <Button Classes="tool" Content="§" Command="{Binding Insert.InsertSectionCommand}" ToolTip.Tip="{loc:Tr Tip_SectionAfter}" />
+                <Button Classes="tool" Content="¶" Command="{Binding Insert.InsertParagraphCommand}" ToolTip.Tip="{loc:Tr Tip_ParagraphAfter}" />
+                <Button Classes="tool" Command="{Binding Insert.InsertOlCommand}" ToolTip.Tip="{loc:Tr Menu_NumberedList}">
                     <Path Classes="icon" Data="M1,2.5 H2.5 V6 M1,6 H4 M7,3.5 H15 M1,10 C1,8.6 4,8.6 4,10 C4,11.2 1,12 1,13.5 H4 M7,11.5 H15" />
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.InsertUlCommand}" ToolTip.Tip="Маркированный список">
+                <Button Classes="tool" Command="{Binding Insert.InsertUlCommand}" ToolTip.Tip="{loc:Tr Menu_BulletedList}">
                     <Path Classes="icon" Data="M2,3.5 H2.2 M7,3.5 H15 M2,8 H2.2 M7,8 H15 M2,12.5 H2.2 M7,12.5 H15" StrokeThickness="2.4" />
                 </Button>
                 <Rectangle Classes="separator" />
-                <ComboBox Name="FontSizeBox" ItemsSource="{Binding Insert.FontSizes}" PlaceholderText="Размер" Width="92"
+                <ComboBox Name="FontSizeBox" ItemsSource="{Binding Insert.FontSizes}" PlaceholderText="{loc:Tr Ph_FontSize}" Width="92"
                           VerticalAlignment="Center" Margin="2,0" SelectionChanged="OnFontSizeSelected"
-                          ToolTip.Tip="Размер шрифта выделенного текста или того, что будет набрано дальше (пт)" />
-                <Button Classes="tool" Name="ColorButton" ToolTip.Tip="Цвет текста выделения или того, что будет набрано дальше">
+                          ToolTip.Tip="{loc:Tr Tip_FontSize}" />
+                <Button Classes="tool" Name="ColorButton" ToolTip.Tip="{loc:Tr Tip_TextColor}">
                     <StackPanel Spacing="1">
-                        <TextBlock Text="А" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        <TextBlock Text="{loc:Tr Btn_TextColorLetter}" FontWeight="SemiBold" HorizontalAlignment="Center" />
                         <Rectangle Height="3" Width="14" Fill="#C00000" />
                     </StackPanel>
                 </Button>
-                <Button Classes="tool" Name="MarkerButton" ToolTip.Tip="Маркер: закрасить выделенный текст цветом; без выделения — режим кисти (выделяйте текст мышью, Esc — выключить)">
+                <Button Classes="tool" Name="MarkerButton" ToolTip.Tip="{loc:Tr Tip_Marker}">
                     <StackPanel Spacing="1">
                         <Border Background="#FFFF00" CornerRadius="2" Padding="3,0" HorizontalAlignment="Center">
-                            <TextBlock Text="А" FontWeight="SemiBold" Foreground="Black" />
+                            <TextBlock Text="{loc:Tr Btn_TextColorLetter}" FontWeight="SemiBold" Foreground="Black" />
                         </Border>
                         <Rectangle Name="MarkerSwatch" Height="3" Width="14" Fill="#FFFF00" />
                     </StackPanel>
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-left" ToolTip.Tip="По левому краю">
+                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-left" ToolTip.Tip="{loc:Tr Tip_AlignLeft}">
                     <Path Classes="icon" Data="M1,3 H15 M1,6.5 H10 M1,10 H15 M1,13.5 H10" />
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-center" ToolTip.Tip="По центру">
+                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-center" ToolTip.Tip="{loc:Tr Tip_AlignCenter}">
                     <Path Classes="icon" Data="M1,3 H15 M3.5,6.5 H12.5 M1,10 H15 M3.5,13.5 H12.5" />
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-right" ToolTip.Tip="По правому краю">
+                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-right" ToolTip.Tip="{loc:Tr Tip_AlignRight}">
                     <Path Classes="icon" Data="M1,3 H15 M6,6.5 H15 M1,10 H15 M6,13.5 H15" />
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-justify" ToolTip.Tip="По ширине">
+                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-justify" ToolTip.Tip="{loc:Tr Tip_AlignJustify}">
                     <Path Classes="icon" Data="M1,3 H15 M1,6.5 H15 M1,10 H15 M1,13.5 H15" />
                 </Button>
-                <Button Classes="tool" Content="№" Command="{Binding Insert.ToggleNumberedParagraphCommand}" ToolTip.Tip="Нумерованный абзац: номер по заголовкам (2.3.1)" />
+                <Button Classes="tool" Content="№" Command="{Binding Insert.ToggleNumberedParagraphCommand}" ToolTip.Tip="{loc:Tr Tip_NumberedParagraphToolbar}" />
                 <Rectangle Classes="separator" />
-                <Button Classes="tool" Name="CellBordersButton" ToolTip.Tip="Границы выделенных ячеек (как в Word): нижняя, верхняя, левая, правая, внешние, внутренние…">
+                <Button Classes="tool" Name="CellBordersButton" ToolTip.Tip="{loc:Tr Tip_CellBordersToolbar}">
                     <Path Classes="icon" Data="M1,2 H15 V14 H1 Z M8,2 V14 M1,8 H15" StrokeDashArray="2,1.5" />
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.InsertTableCommand}" ToolTip.Tip="Таблица…">
+                <Button Classes="tool" Command="{Binding Insert.InsertTableCommand}" ToolTip.Tip="{loc:Tr Menu_InsertTable}">
                     <Path Classes="icon" Data="M1,2 H15 V14 H1 Z M1,6 H15 M1,10 H15 M6,2 V14 M11,2 V14" />
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertRowAbove}" ToolTip.Tip="Вставить строку выше">
+                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertRowAbove}" ToolTip.Tip="{loc:Tr Menu_InsertRowAbove}">
                     <Panel><Path Classes="icon" Data="M1,7 H15 V15 H1 Z M1,11 H15 M8,7 V15" /><Path Classes="icon accent" Data="M8,0.5 V5.5 M5.5,3 H10.5" /></Panel>
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertRowBelow}" ToolTip.Tip="Вставить строку ниже">
+                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertRowBelow}" ToolTip.Tip="{loc:Tr Menu_InsertRowBelow}">
                     <Panel><Path Classes="icon" Data="M1,1 H15 V9 H1 Z M1,5 H15 M8,1 V9" /><Path Classes="icon accent" Data="M8,10.5 V15.5 M5.5,13 H10.5" /></Panel>
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.DeleteRow}" ToolTip.Tip="Удалить строку">
+                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.DeleteRow}" ToolTip.Tip="{loc:Tr Menu_DeleteRow}">
                     <Panel><Path Classes="icon" Data="M1,1 H15 V9 H1 Z M1,5 H15 M8,1 V9" /><Path Classes="icon accent" Data="M5.5,10.5 L10.5,15.5 M10.5,10.5 L5.5,15.5" /></Panel>
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertColumnLeft}" ToolTip.Tip="Вставить столбец слева">
+                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertColumnLeft}" ToolTip.Tip="{loc:Tr Menu_InsertColumnLeft}">
                     <Panel><Path Classes="icon" Data="M7,1 H15 V15 H7 Z M11,1 V15 M7,8 H15" /><Path Classes="icon accent" Data="M3,5.5 V10.5 M0.5,8 H5.5" /></Panel>
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertColumnRight}" ToolTip.Tip="Вставить столбец справа">
+                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.InsertColumnRight}" ToolTip.Tip="{loc:Tr Menu_InsertColumnRight}">
                     <Panel><Path Classes="icon" Data="M1,1 H9 V15 H1 Z M5,1 V15 M1,8 H9" /><Path Classes="icon accent" Data="M13,5.5 V10.5 M10.5,8 H15.5" /></Panel>
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.DeleteColumn}" ToolTip.Tip="Удалить столбец">
+                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.DeleteColumn}" ToolTip.Tip="{loc:Tr Menu_DeleteColumn}">
                     <Panel><Path Classes="icon" Data="M1,1 H9 V15 H1 Z M5,1 V15 M1,8 H9" /><Path Classes="icon accent" Data="M10.5,5.5 L15.5,10.5 M15.5,5.5 L10.5,10.5" /></Panel>
                 </Button>
-                <Button Classes="tool" Content="⇔" Command="{Binding Insert.MergeCellRightCommand}" ToolTip.Tip="Объединить ячейку таблицы со следующей (Ctrl+Alt+→)" />
-                <Button Classes="tool" Content="⇕" Command="{Binding Insert.MergeCellDownCommand}" ToolTip.Tip="Объединить ячейку таблицы со строкой ниже (Ctrl+Alt+↓)" />
-                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.SplitCell}" ToolTip.Tip="Разделить объединённую ячейку">
+                <Button Classes="tool" Content="⇔" Command="{Binding Insert.MergeCellRightCommand}" ToolTip.Tip="{loc:Tr Tip_MergeRight}" />
+                <Button Classes="tool" Content="⇕" Command="{Binding Insert.MergeCellDownCommand}" ToolTip.Tip="{loc:Tr Tip_MergeDown}" />
+                <Button Classes="tool" Command="{Binding Insert.EditTableCommand}" CommandParameter="{x:Static edit:TableOperation.SplitCell}" ToolTip.Tip="{loc:Tr Tip_SplitCell}">
                     <Panel><Path Classes="icon" Data="M1,3 H15 V13 H1 Z M8,3 V13" /><Path Classes="icon accent" Data="M6,8 H3.5 M4.5,6.8 L3.3,8 L4.5,9.2 M10,8 H12.5 M11.5,6.8 L12.7,8 L11.5,9.2" /></Panel>
                 </Button>
                 <Rectangle Classes="separator" />
-                <Button Classes="tool" Content="↑" Command="{Binding Insert.MoveUpCommand}" ToolTip.Tip="Переместить элемент вверх (Ctrl+Shift+Up)" />
-                <Button Classes="tool" Content="↓" Command="{Binding Insert.MoveDownCommand}" ToolTip.Tip="Переместить элемент вниз (Ctrl+Shift+Down)" />
-                <Button Classes="tool" Content="🗑" Command="{Binding Insert.DeleteElementCommand}" ToolTip.Tip="Удалить элемент" />
+                <Button Classes="tool" Content="↑" Command="{Binding Insert.MoveUpCommand}" ToolTip.Tip="{loc:Tr Tip_MoveElementUp}" />
+                <Button Classes="tool" Content="↓" Command="{Binding Insert.MoveDownCommand}" ToolTip.Tip="{loc:Tr Tip_MoveElementDown}" />
+                <Button Classes="tool" Content="🗑" Command="{Binding Insert.DeleteElementCommand}" ToolTip.Tip="{loc:Tr Menu_DeleteElement}" />
                 <Rectangle Classes="separator" />
-                <Button Classes="tool" Content="✔" Command="{Binding Validation.ValidateProjectCommand}" ToolTip.Tip="Проверить проект (F7)" />
-                <Button Classes="tool" Content="▶" Command="{Binding Publish.PublishSiteCommand}" ToolTip.Tip="Собрать сайт HTML (F5)" />
+                <Button Classes="tool" Content="✔" Command="{Binding Validation.ValidateProjectCommand}" ToolTip.Tip="{loc:Tr Tip_ValidateProject}" />
+                <Button Classes="tool" Content="▶" Command="{Binding Publish.PublishSiteCommand}" ToolTip.Tip="{loc:Tr Tip_BuildSite}" />
             </WrapPanel>
         </Border>
 
@@ -311,11 +311,11 @@
         <Grid ColumnDefinitions="300,4,*,4,320">
 
             <TabControl Grid.Column="0" Name="LeftTabs">
-                <TabItem Header="Проект">
+                <TabItem Header="{loc:Tr Tab_Project}">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4">
-                            <Button Content="Обновить" Padding="8,3" Command="{Binding ProjectPanel.RescanProjectCommand}" />
-                            <Button Content="Создать…" Padding="8,3" Margin="4,0,0,0" Command="{Binding ProjectPanel.NewDocumentCommand}" />
+                            <Button Content="{loc:Tr Btn_Refresh}" Padding="8,3" Command="{Binding ProjectPanel.RescanProjectCommand}" />
+                            <Button Content="{loc:Tr Btn_Create}" Padding="8,3" Margin="4,0,0,0" Command="{Binding ProjectPanel.NewDocumentCommand}" />
                         </StackPanel>
                         <TreeView Name="ProjectTree"
                                   ItemsSource="{Binding ProjectPanel.Tree}"
@@ -323,9 +323,9 @@
                                   DoubleTapped="OnProjectTreeDoubleTapped">
                             <TreeView.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="Переименовать / переместить файл…" Command="{Binding ProjectPanel.MoveSelectedFileCommand}" />
-                                    <MenuItem Header="Закрыть проект" Command="{Binding ProjectPanel.CloseProjectCommand}"
-                                              ToolTip.Tip="Закрыть проект выбранного узла; остальные открытые проекты остаются" />
+                                    <MenuItem Header="{loc:Tr Menu_RenameMoveFile}" Command="{Binding ProjectPanel.MoveSelectedFileCommand}" />
+                                    <MenuItem Header="{loc:Tr Menu_CloseProject}" Command="{Binding ProjectPanel.CloseProjectCommand}"
+                                              ToolTip.Tip="{loc:Tr Tip_CloseProjectOfNode}" />
                                 </ContextMenu>
                             </TreeView.ContextMenu>
                             <TreeView.Styles>
@@ -347,11 +347,11 @@
                     </DockPanel>
                 </TabItem>
 
-                <TabItem Header="Карта">
+                <TabItem Header="{loc:Tr Tab_Map}">
                     <DockPanel>
                         <DockPanel DockPanel.Dock="Top" Margin="4,4,4,0">
-                            <Button Name="OpenMapButton" DockPanel.Dock="Right" Content="＋ Карта" Padding="6,3" Margin="4,0,0,0"
-                                    Click="OnOpenMapClick" ToolTip.Tip="Открыть ещё одну карту активного проекта вкладкой" />
+                            <Button Name="OpenMapButton" DockPanel.Dock="Right" Content="{loc:Tr Btn_AddMap}" Padding="6,3" Margin="4,0,0,0"
+                                    Click="OnOpenMapClick" ToolTip.Tip="{loc:Tr Tip_AddMap}" />
                             <ListBox Name="MapTabs" ItemsSource="{Binding Map.OpenMaps}" SelectedItem="{Binding Map.SelectedMapTab}"
                                      ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
                                 <ListBox.ItemsPanel>
@@ -361,8 +361,8 @@
                                 </ListBox.ItemsPanel>
                                 <ListBox.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="Закрыть" Click="OnCloseSelectedMapTabClick" />
-                                        <MenuItem Header="Закрыть остальные" Click="OnCloseOtherMapTabsClick" />
+                                        <MenuItem Header="{loc:Tr Menu_CloseMap}" Click="OnCloseSelectedMapTabClick" />
+                                        <MenuItem Header="{loc:Tr Menu_CloseOtherMaps}" Click="OnCloseOtherMapTabsClick" />
                                     </ContextMenu>
                                 </ListBox.ContextMenu>
                                 <ListBox.ItemTemplate>
@@ -370,78 +370,78 @@
                                         <StackPanel Orientation="Horizontal" ToolTip.Tip="{Binding ToolTip}">
                                             <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
                                             <Button Content="✕" Padding="3,0" Margin="6,0,0,0" FontSize="10" Background="Transparent"
-                                                    BorderThickness="0" Click="OnCloseMapTabClick" ToolTip.Tip="Закрыть карту" />
+                                                    BorderThickness="0" Click="OnCloseMapTabClick" ToolTip.Tip="{loc:Tr Tip_CloseMap}" />
                                         </StackPanel>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
                         </DockPanel>
                         <WrapPanel DockPanel.Dock="Top" Margin="4,0,4,4">
-                            <Button Content="+ Топик" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.AddTopicrefCommand}" ToolTip.Tip="Добавить ссылку на топик" />
-                            <Button Content="+ Раздел" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.AddTopicheadCommand}" />
+                            <Button Content="{loc:Tr Btn_AddTopic}" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.AddTopicrefCommand}" ToolTip.Tip="{loc:Tr Tip_AddTopicref}" />
+                            <Button Content="{loc:Tr Btn_AddSection}" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.AddTopicheadCommand}" />
                             <Button Content="↑" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.MoveUpCommand}" />
                             <Button Content="↓" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.MoveDownCommand}" />
-                            <Button Content="→" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.IndentCommand}" ToolTip.Tip="Сделать вложенным" />
+                            <Button Content="→" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.IndentCommand}" ToolTip.Tip="{loc:Tr Tip_MakeNested}" />
                             <Button Content="←" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.OutdentCommand}" />
                             <Button Content="✕" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.DeleteCommand}" />
-                            <Button Content="Таблица соответствий…" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.EditRelTableCommand}" />
+                            <Button Content="{loc:Tr Btn_Reltable}" Padding="6,3" Margin="0,0,3,3" Command="{Binding Map.EditRelTableCommand}" />
                         </WrapPanel>
                         <TreeView Name="MapTreeView" DragDrop.AllowDrop="True" AutoScrollToSelectedItem="False"
                                   ItemsSource="{Binding Map.Tree}"
                                   SelectedItem="{Binding Map.SelectedNode}">
                             <TreeView.ContextMenu>
                                 <ContextMenu Name="MapContextMenu">
-                                    <MenuItem Header="Открыть" Command="{Binding Map.OpenSelectedCommand}" />
-                                    <MenuItem Header="Создать файл по ссылке" Command="{Binding Map.CreateMissingFileCommand}"
+                                    <MenuItem Header="{loc:Tr Menu_Open}" Command="{Binding Map.OpenSelectedCommand}" />
+                                    <MenuItem Header="{loc:Tr Menu_CreateFileForRef}" Command="{Binding Map.CreateMissingFileCommand}"
                                               IsVisible="{Binding Map.SelectedIsBroken}"
-                                              ToolTip.Tip="Файла по ссылке нет: создать пустой топик с этим именем" />
-                                    <MenuItem Header="Выбрать другой файл…" Command="{Binding Map.ReplaceFileCommand}"
+                                              ToolTip.Tip="{loc:Tr Tip_CreateFileForRef}" />
+                                    <MenuItem Header="{loc:Tr Menu_ChooseOtherFile}" Command="{Binding Map.ReplaceFileCommand}"
                                               IsVisible="{Binding Map.SelectedIsBroken}"
-                                              ToolTip.Tip="Ссылка указывает на несуществующий файл — заменить на другой файл проекта" />
-                                    <MenuItem Header="Свойства…" Command="{Binding Map.ShowPropertiesCommand}"
-                                              ToolTip.Tip="Открыть карту с выделенной строкой: её атрибуты — на панели «Атрибуты»" />
+                                              ToolTip.Tip="{loc:Tr Tip_ChooseOtherFile}" />
+                                    <MenuItem Header="{loc:Tr Menu_Properties}" Command="{Binding Map.ShowPropertiesCommand}"
+                                              ToolTip.Tip="{loc:Tr Tip_Properties}" />
                                     <Separator />
-                                    <MenuItem Header="Добавить топик после…" Command="{Binding Map.AddTopicrefCommand}" />
-                                    <MenuItem Header="Добавить топик перед…" Command="{Binding Map.AddTopicrefBeforeCommand}" />
-                                    <MenuItem Header="Добавить дочерний топик…" Command="{Binding Map.AddChildTopicrefCommand}" />
-                                    <MenuItem Header="Добавить раздел" Command="{Binding Map.AddTopicheadCommand}" />
-                                    <MenuItem Header="Дублировать" Command="{Binding Map.DuplicateCommand}" />
-                                    <MenuItem Header="Размещать топик на новой странице" ToggleType="CheckBox"
+                                    <MenuItem Header="{loc:Tr Menu_AddTopicAfter}" Command="{Binding Map.AddTopicrefCommand}" />
+                                    <MenuItem Header="{loc:Tr Menu_AddTopicBefore}" Command="{Binding Map.AddTopicrefBeforeCommand}" />
+                                    <MenuItem Header="{loc:Tr Menu_AddChildTopic}" Command="{Binding Map.AddChildTopicrefCommand}" />
+                                    <MenuItem Header="{loc:Tr Menu_AddSection}" Command="{Binding Map.AddTopicheadCommand}" />
+                                    <MenuItem Header="{loc:Tr Menu_Duplicate}" Command="{Binding Map.DuplicateCommand}" />
+                                    <MenuItem Header="{loc:Tr Menu_PlaceOnNewPage}" ToggleType="CheckBox"
                                               IsChecked="{Binding Map.SelectedPageBreakBefore, Mode=OneWay}"
                                               Command="{Binding Map.TogglePageBreakBeforeCommand}"
                                               IsVisible="{Binding Map.SelectedHasFile}"
-                                              ToolTip.Tip="DOCX, PDF и единый HTML: топик начинается с новой страницы" />
-                                    <MenuItem Header="Не размещать топик на новой странице" ToggleType="CheckBox"
+                                              ToolTip.Tip="{loc:Tr Tip_PlaceOnNewPage}" />
+                                    <MenuItem Header="{loc:Tr Menu_NoNewPage}" ToggleType="CheckBox"
                                               IsChecked="{Binding Map.SelectedPageBreakNone, Mode=OneWay}"
                                               Command="{Binding Map.ToggleNoPageBreakCommand}"
                                               IsVisible="{Binding Map.SelectedHasFile}"
-                                              ToolTip.Tip="Перекрывает «каждый топик верхнего уровня — с новой страницы» из оформления DOCX" />
+                                              ToolTip.Tip="{loc:Tr Tip_NoNewPage}" />
                                     <!-- Пункты про файл — только у строк с файлом: у раздела (topichead) файла нет -->
                                     <Separator IsVisible="{Binding Map.SelectedHasFile}" />
-                                    <MenuItem Header="Найти ссылки на топик" Command="{Binding Map.FindReferencesCommand}"
+                                    <MenuItem Header="{loc:Tr Menu_FindTopicRefs}" Command="{Binding Map.FindReferencesCommand}"
                                               IsVisible="{Binding Map.SelectedHasFile}" />
-                                    <MenuItem Header="Переименовать / переместить файл…" Command="{Binding Map.RenameFileCommand}"
+                                    <MenuItem Header="{loc:Tr Menu_RenameMoveFile}" Command="{Binding Map.RenameFileCommand}"
                                               IsVisible="{Binding Map.SelectedHasFile}" />
                                     <Separator />
-                                    <MenuItem Header="Вырезать" Command="{Binding Map.CutCommand}" />
-                                    <MenuItem Header="Копировать" Command="{Binding Map.CopyCommand}" />
-                                    <MenuItem Header="Вставить после" Command="{Binding Map.PasteCommand}" IsEnabled="{Binding Map.CanPaste}" />
-                                    <MenuItem Header="Вставить перед" Command="{Binding Map.PasteBeforeCommand}" IsEnabled="{Binding Map.CanPaste}" />
-                                    <MenuItem Header="Вставить как дочерний" Command="{Binding Map.PasteAsChildCommand}" IsEnabled="{Binding Map.CanPaste}" />
+                                    <MenuItem Header="{loc:Tr Menu_Cut}" Command="{Binding Map.CutCommand}" />
+                                    <MenuItem Header="{loc:Tr Menu_Copy}" Command="{Binding Map.CopyCommand}" />
+                                    <MenuItem Header="{loc:Tr Menu_PasteAfter}" Command="{Binding Map.PasteCommand}" IsEnabled="{Binding Map.CanPaste}" />
+                                    <MenuItem Header="{loc:Tr Menu_PasteBefore}" Command="{Binding Map.PasteBeforeCommand}" IsEnabled="{Binding Map.CanPaste}" />
+                                    <MenuItem Header="{loc:Tr Menu_PasteAsChild}" Command="{Binding Map.PasteAsChildCommand}" IsEnabled="{Binding Map.CanPaste}" />
                                     <Separator />
-                                    <MenuItem Header="Упорядочить">
-                                        <MenuItem Header="Вверх" Command="{Binding Map.MoveUpCommand}" />
-                                        <MenuItem Header="Вниз" Command="{Binding Map.MoveDownCommand}" />
-                                        <MenuItem Header="Вложить в предыдущий" Command="{Binding Map.IndentCommand}" />
-                                        <MenuItem Header="Вынести на уровень выше" Command="{Binding Map.OutdentCommand}" />
+                                    <MenuItem Header="{loc:Tr Menu_Arrange}">
+                                        <MenuItem Header="{loc:Tr Menu_Up}" Command="{Binding Map.MoveUpCommand}" />
+                                        <MenuItem Header="{loc:Tr Menu_Down}" Command="{Binding Map.MoveDownCommand}" />
+                                        <MenuItem Header="{loc:Tr Menu_NestInPrevious}" Command="{Binding Map.IndentCommand}" />
+                                        <MenuItem Header="{loc:Tr Menu_MoveUpOneLevel}" Command="{Binding Map.OutdentCommand}" />
                                     </MenuItem>
-                                    <MenuItem Header="Убрать из карты" Command="{Binding Map.DeleteCommand}" />
-                                    <MenuItem Header="Удалить файл…" Command="{Binding Map.DeleteFileCommand}"
+                                    <MenuItem Header="{loc:Tr Menu_RemoveFromMap}" Command="{Binding Map.DeleteCommand}" />
+                                    <MenuItem Header="{loc:Tr Menu_DeleteFile}" Command="{Binding Map.DeleteFileCommand}"
                                               IsVisible="{Binding Map.SelectedHasFile}"
-                                              ToolTip.Tip="Удалить файл топика с диска и убрать его строки из этой карты" />
+                                              ToolTip.Tip="{loc:Tr Tip_DeleteFile}" />
                                     <Separator />
-                                    <MenuItem Header="Развернуть всё" Command="{Binding Map.ExpandAllCommand}" />
-                                    <MenuItem Header="Свернуть всё" Command="{Binding Map.CollapseAllCommand}" />
+                                    <MenuItem Header="{loc:Tr Menu_ExpandAll}" Command="{Binding Map.ExpandAllCommand}" />
+                                    <MenuItem Header="{loc:Tr Menu_CollapseAll}" Command="{Binding Map.CollapseAllCommand}" />
                                 </ContextMenu>
                             </TreeView.ContextMenu>
                             <TreeView.Styles>
@@ -466,7 +466,7 @@
                                     <StackPanel Orientation="Horizontal">
                                         <LayoutTransformControl LayoutTransform="scale(0.8)" IsVisible="{Binding CanExclude}" VerticalAlignment="Center" Margin="0,0,4,0">
                                             <CheckBox Classes="publish" IsChecked="{Binding IsPublished, Mode=OneWay}"
-                                                      ToolTip.Tip="Публиковать: снимите флажок, чтобы топик не попадал в HTML, PDF и DOCX" />
+                                                      ToolTip.Tip="{loc:Tr Tip_PublishCheckbox}" />
                                         </LayoutTransformControl>
                                         <TextBlock Text="{Binding Icon}" Margin="0,0,6,0" VerticalAlignment="Center" />
                                         <TextBlock Text="{Binding Title}" Classes.broken="{Binding IsBroken}" Classes.excluded="{Binding IsExcluded}" VerticalAlignment="Center" ToolTip.Tip="{Binding ToolTip}" />
@@ -479,15 +479,15 @@
                     </DockPanel>
                 </TabItem>
 
-                <TabItem Header="Ключи">
+                <TabItem Header="{loc:Tr Tab_Keys}">
                     <DockPanel>
                         <TextBlock DockPanel.Dock="Bottom" Margin="8,4,8,8" Classes="hint"
                                    Text="{Binding ProjectPanel.ScopedKeysHintText}"
                                    IsVisible="{Binding ProjectPanel.ScopedKeysHintVisible, FallbackValue=False}" />
                         <DataGrid Name="KeysGrid" ItemsSource="{Binding ProjectPanel.Keys}" SelectedItem="{Binding ProjectPanel.SelectedKey}" DoubleTapped="OnKeyDoubleTapped">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Ключ" Width="110" Binding="{Binding Key}" />
-                                <DataGridTextColumn Header="Цель" Width="160" Binding="{Binding Href}" />
+                                <DataGridTextColumn Header="{loc:Tr Col_Key}" Width="110" Binding="{Binding Key}" />
+                                <DataGridTextColumn Header="{loc:Tr Col_Target}" Width="160" Binding="{Binding Href}" />
                             </DataGrid.Columns>
                         </DataGrid>
                     </DockPanel>
@@ -506,17 +506,17 @@
                             <StackPanel Orientation="Horizontal" Background="Transparent">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="Закрепить" Command="{Binding TogglePinCommand}" IsVisible="{Binding CanClose}" />
-                                        <MenuItem Header="Открепить" Command="{Binding TogglePinCommand}" IsVisible="{Binding IsPinned}" />
+                                        <MenuItem Header="{loc:Tr Menu_Pin}" Command="{Binding TogglePinCommand}" IsVisible="{Binding CanClose}" />
+                                        <MenuItem Header="{loc:Tr Menu_Unpin}" Command="{Binding TogglePinCommand}" IsVisible="{Binding IsPinned}" />
                                         <Separator />
-                                        <MenuItem Header="Закрыть" Command="{Binding CloseThisCommand}" />
-                                        <MenuItem Header="Закрыть остальные" Command="{Binding CloseOthersCommand}" />
-                                        <MenuItem Header="Закрыть справа" Command="{Binding CloseToRightCommand}" />
-                                        <MenuItem Header="Закрыть все" Command="{Binding CloseAllCommand}" />
+                                        <MenuItem Header="{loc:Tr Menu_CloseMap}" Command="{Binding CloseThisCommand}" />
+                                        <MenuItem Header="{loc:Tr Menu_CloseOtherMaps}" Command="{Binding CloseOthersCommand}" />
+                                        <MenuItem Header="{loc:Tr Menu_CloseToRight}" Command="{Binding CloseToRightCommand}" />
+                                        <MenuItem Header="{loc:Tr Menu_CloseAll}" Command="{Binding CloseAllCommand}" />
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
                                 <TextBlock Text="📌" FontSize="10" Margin="0,0,4,0" VerticalAlignment="Center" IsVisible="{Binding IsPinned}"
-                                           ToolTip.Tip="Вкладка закреплена" />
+                                           ToolTip.Tip="{loc:Tr Tip_TabPinned}" />
                                 <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
                                 <Button Classes="tabclose" Content="✕" Command="{Binding CloseCommand}" IsVisible="{Binding CanClose}" />
                             </StackPanel>
@@ -532,18 +532,18 @@
                 <GridSplitter Grid.Row="1" ResizeDirection="Rows" />
 
                 <TabControl Grid.Row="2" Name="BottomTabs" SelectedIndex="{Binding BottomTabIndex}">
-                    <TabItem Header="Проверка">
+                    <TabItem Header="{loc:Tr Tab_Validation}">
                         <DataGrid Name="IssuesGrid" ItemsSource="{Binding Validation.Issues}" SelectedItem="{Binding Validation.SelectedIssue}" DoubleTapped="OnIssueDoubleTapped">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Уровень" Width="110" Binding="{Binding SeverityText}" />
-                                <DataGridTextColumn Header="Сообщение" Width="620" Binding="{Binding Message}" />
-                                <DataGridTextColumn Header="Место" Width="220" Binding="{Binding Location}" />
-                                <DataGridTextColumn Header="Файл" Width="260" Binding="{Binding FilePath}" />
+                                <DataGridTextColumn Header="{loc:Tr Col_Level}" Width="110" Binding="{Binding SeverityText}" />
+                                <DataGridTextColumn Header="{loc:Tr Col_Message}" Width="620" Binding="{Binding Message}" />
+                                <DataGridTextColumn Header="{loc:Tr Col_Location}" Width="220" Binding="{Binding Location}" />
+                                <DataGridTextColumn Header="{loc:Tr Col_File}" Width="260" Binding="{Binding FilePath}" />
                             </DataGrid.Columns>
                         </DataGrid>
                     </TabItem>
 
-                    <TabItem Header="Поиск">
+                    <TabItem Header="{loc:Tr Tab_Search}">
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Top" Margin="4">
                                 <StackPanel Orientation="Horizontal">
@@ -552,25 +552,25 @@
                                             <KeyBinding Gesture="Enter" Command="{Binding Search.RunCommand}" />
                                         </TextBox.KeyBindings>
                                     </TextBox>
-                                    <Button Content="Найти" Padding="10,3" Margin="4,0,0,0" Command="{Binding Search.RunCommand}" />
-                                    <CheckBox Content="искать имена элементов" Margin="10,0,0,0" VerticalAlignment="Center" IsChecked="{Binding Search.SearchElements}" />
-                                    <CheckBox Content="регулярное выражение" Margin="10,0,0,0" VerticalAlignment="Center" IsChecked="{Binding Search.SearchRegex}" />
+                                    <Button Content="{loc:Tr Btn_Find}" Padding="10,3" Margin="4,0,0,0" Command="{Binding Search.RunCommand}" />
+                                    <CheckBox Content="{loc:Tr Chk_ElementNames}" Margin="10,0,0,0" VerticalAlignment="Center" IsChecked="{Binding Search.SearchElements}" />
+                                    <CheckBox Content="{loc:Tr Chk_Regex}" Margin="10,0,0,0" VerticalAlignment="Center" IsChecked="{Binding Search.SearchRegex}" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                    <TextBox Width="320" Padding="4,3" ToolTip.Tip="Текст замены (для обычного текстового поиска)" Text="{Binding Search.ReplaceText}" />
-                                    <Button Content="Заменить всё" Padding="10,3" Margin="4,0,0,0" Command="{Binding Search.ReplaceAllCommand}" />
+                                    <TextBox Width="320" Padding="4,3" ToolTip.Tip="{loc:Tr Tip_ReplaceText}" Text="{Binding Search.ReplaceText}" />
+                                    <Button Content="{loc:Tr Btn_ReplaceAll}" Padding="10,3" Margin="4,0,0,0" Command="{Binding Search.ReplaceAllCommand}" />
                                 </StackPanel>
                             </StackPanel>
                             <DataGrid Name="SearchGrid" ItemsSource="{Binding Search.Results}" SelectedItem="{Binding Search.SelectedResult}" DoubleTapped="OnSearchResultDoubleTapped">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Файл" Width="260" Binding="{Binding File.RelativePath}" />
-                                    <DataGridTextColumn Header="Фрагмент" Width="700" Binding="{Binding Context}" />
+                                    <DataGridTextColumn Header="{loc:Tr Col_File}" Width="260" Binding="{Binding File.RelativePath}" />
+                                    <DataGridTextColumn Header="{loc:Tr Col_Fragment}" Width="700" Binding="{Binding Context}" />
                                 </DataGrid.Columns>
                             </DataGrid>
                         </DockPanel>
                     </TabItem>
 
-                    <TabItem Header="Журнал сборки">
+                    <TabItem Header="{loc:Tr Tab_BuildLog}">
                         <TextBox Classes="log" Text="{Binding Publish.BuildLogText, Mode=OneWay}"
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  ScrollViewer.HorizontalScrollBarVisibility="Auto" />
@@ -581,7 +581,7 @@
             <GridSplitter Grid.Column="3" ResizeDirection="Columns" />
 
             <TabControl Grid.Column="4" Name="RightTabs">
-                <TabItem Header="Атрибуты">
+                <TabItem Header="{loc:Tr Tab_Attributes}">
                     <DockPanel>
                         <TextBlock Name="AttributeContext" DockPanel.Dock="Top" Margin="8,6,8,4"
                                    Text="{Binding SidePanels.AttributeContext}" TextWrapping="Wrap"
@@ -595,7 +595,7 @@
                                             <StackPanel Margin="0,8,0,0">
                                                 <DockPanel>
                                                     <Button DockPanel.Dock="Right" Classes="tabclose" Margin="0" Content="✕"
-                                                            ToolTip.Tip="Удалить атрибут" Command="{Binding RemoveCommand}" />
+                                                            ToolTip.Tip="{loc:Tr Tip_DeleteAttribute}" Command="{Binding RemoveCommand}" />
                                                     <TextBlock Text="{Binding Label}" FontFamily="{DynamicResource MonoFont}" FontSize="11.5"
                                                                Foreground="{DynamicResource AttributeNameBrush}" />
                                                 </DockPanel>
@@ -609,7 +609,7 @@
                                                     </TextBox.KeyBindings>
                                                 </TextBox>
                                                 <!-- @product: продукты проекта флажками — можно выбрать несколько -->
-                                                <Expander IsVisible="{Binding HasProductChoices}" Header="Продукты проекта" Margin="0,4,0,0" IsExpanded="True">
+                                                <Expander IsVisible="{Binding HasProductChoices}" Header="{loc:Tr Hdr_ProjectProducts}" Margin="0,4,0,0" IsExpanded="True">
                                                     <ItemsControl ItemsSource="{Binding ProductChoices}">
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate DataType="vm:ProductChoice">
@@ -625,7 +625,7 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <StackPanel IsVisible="{Binding !!SidePanels.MissingAttributes.Count}">
-                                    <TextBlock Text="Добавить атрибут" FontSize="11" Foreground="{DynamicResource TextMuted}" Margin="0,14,0,2" />
+                                    <TextBlock Text="{loc:Tr Btn_AddAttribute}" FontSize="11" Foreground="{DynamicResource TextMuted}" Margin="0,14,0,2" />
                                     <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding SidePanels.MissingAttributes}"
                                               SelectedItem="{Binding SidePanels.AttributeToAdd}" />
                                 </StackPanel>
@@ -634,7 +634,7 @@
                     </DockPanel>
                 </TabItem>
 
-                <TabItem Header="Вставка">
+                <TabItem Header="{loc:Tr Tab_Insert}">
                     <DockPanel>
                         <TextBox Name="PaletteFilter" DockPanel.Dock="Top" Margin="6" Padding="4,3"
                                  Text="{Binding SidePanels.PaletteFilter}" />
@@ -656,7 +656,7 @@
                     </DockPanel>
                 </TabItem>
 
-                <TabItem Header="Структура">
+                <TabItem Header="{loc:Tr Tab_Structure}">
                     <TreeView Name="OutlineTree" ItemsSource="{Binding SidePanels.Outline}"
                               SelectedItem="{Binding SidePanels.SelectedOutlineNode}">
                         <TreeView.Styles>

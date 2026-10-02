@@ -58,10 +58,724 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Btn_AddAttribute" xml:space="preserve">
+    <value>Add attribute</value>
+  </data>
+  <data name="Btn_AddMap" xml:space="preserve">
+    <value>＋ Map</value>
+  </data>
+  <data name="Btn_AddSection" xml:space="preserve">
+    <value>+ Section</value>
+  </data>
+  <data name="Btn_AddTopic" xml:space="preserve">
+    <value>+ Topic</value>
+  </data>
+  <data name="Btn_BoldLetter" xml:space="preserve">
+    <value>B</value>
+  </data>
+  <data name="Btn_Create" xml:space="preserve">
+    <value>Create…</value>
+  </data>
+  <data name="Btn_Find" xml:space="preserve">
+    <value>Find</value>
+  </data>
+  <data name="Btn_ItalicLetter" xml:space="preserve">
+    <value>I</value>
+  </data>
+  <data name="Btn_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Btn_Reltable" xml:space="preserve">
+    <value>Relationship table…</value>
+  </data>
+  <data name="Btn_ReplaceAll" xml:space="preserve">
+    <value>Replace all</value>
+  </data>
+  <data name="Btn_TextColorLetter" xml:space="preserve">
+    <value>A</value>
+  </data>
+  <data name="Btn_UnderlineLetter" xml:space="preserve">
+    <value>U</value>
+  </data>
+  <data name="Chk_ElementNames" xml:space="preserve">
+    <value>search element names</value>
+  </data>
+  <data name="Chk_Regex" xml:space="preserve">
+    <value>regular expression</value>
+  </data>
+  <data name="Col_File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Col_Fragment" xml:space="preserve">
+    <value>Fragment</value>
+  </data>
+  <data name="Col_Key" xml:space="preserve">
+    <value>Key</value>
+  </data>
+  <data name="Col_Level" xml:space="preserve">
+    <value>Level</value>
+  </data>
+  <data name="Col_Location" xml:space="preserve">
+    <value>Location</value>
+  </data>
+  <data name="Col_Message" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="Col_Target" xml:space="preserve">
+    <value>Target</value>
+  </data>
+  <data name="Hdr_ProjectProducts" xml:space="preserve">
+    <value>Project products</value>
+  </data>
   <data name="Language_Auto" xml:space="preserve">
     <value>System default</value>
   </data>
+  <data name="Menu_About" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="Menu_AddChildTopic" xml:space="preserve">
+    <value>Add child topic…</value>
+  </data>
+  <data name="Menu_AddKeySourceProject" xml:space="preserve">
+    <value>Connect key source project…</value>
+  </data>
+  <data name="Menu_AddSection" xml:space="preserve">
+    <value>Add section</value>
+  </data>
+  <data name="Menu_AddTopicAfter" xml:space="preserve">
+    <value>Add topic after…</value>
+  </data>
+  <data name="Menu_AddTopicBefore" xml:space="preserve">
+    <value>Add topic before…</value>
+  </data>
+  <data name="Menu_AllBorders" xml:space="preserve">
+    <value>All borders</value>
+  </data>
+  <data name="Menu_Arrange" xml:space="preserve">
+    <value>Arrange</value>
+  </data>
+  <data name="Menu_AttachDitaval" xml:space="preserve">
+    <value>Connect .ditaval…</value>
+  </data>
+  <data name="Menu_AttachExternalDtd" xml:space="preserve">
+    <value>Connect external DTD (custom specialization)…</value>
+  </data>
+  <data name="Menu_Bold" xml:space="preserve">
+    <value>Bold</value>
+  </data>
+  <data name="Menu_Borders" xml:space="preserve">
+    <value>Borders</value>
+  </data>
+  <data name="Menu_BuildConditions" xml:space="preserve">
+    <value>Build conditions…</value>
+  </data>
+  <data name="Menu_BuildSingleHtml" xml:space="preserve">
+    <value>Build single HTML…</value>
+  </data>
+  <data name="Menu_BuildSite" xml:space="preserve">
+    <value>Build HTML site…</value>
+  </data>
+  <data name="Menu_BulletedList" xml:space="preserve">
+    <value>Bulleted list</value>
+  </data>
+  <data name="Menu_CellBorders" xml:space="preserve">
+    <value>Borders of selected cells (like Word)</value>
+  </data>
+  <data name="Menu_ChooseOtherFile" xml:space="preserve">
+    <value>Choose another file…</value>
+  </data>
+  <data name="Menu_CloseAll" xml:space="preserve">
+    <value>Close all</value>
+  </data>
+  <data name="Menu_CloseAllTabs" xml:space="preserve">
+    <value>Close all tabs</value>
+  </data>
+  <data name="Menu_CloseMap" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Menu_CloseOtherMaps" xml:space="preserve">
+    <value>Close others</value>
+  </data>
+  <data name="Menu_CloseProject" xml:space="preserve">
+    <value>Close project</value>
+  </data>
+  <data name="Menu_CloseTab" xml:space="preserve">
+    <value>Close tab</value>
+  </data>
+  <data name="Menu_CloseToRight" xml:space="preserve">
+    <value>Close to the right</value>
+  </data>
+  <data name="Menu_CodeBlock" xml:space="preserve">
+    <value>Code block</value>
+  </data>
+  <data name="Menu_CollapseAll" xml:space="preserve">
+    <value>Collapse all</value>
+  </data>
+  <data name="Menu_ColumnLineRemove" xml:space="preserve">
+    <value>Line right of column: remove</value>
+  </data>
+  <data name="Menu_ColumnLineShow" xml:space="preserve">
+    <value>Line right of column: show</value>
+  </data>
+  <data name="Menu_CompareFiles" xml:space="preserve">
+    <value>Compare files…</value>
+  </data>
+  <data name="Menu_CompareGit" xml:space="preserve">
+    <value>Compare with last commit (git)</value>
+  </data>
+  <data name="Menu_CompareSvn" xml:space="preserve">
+    <value>Compare with BASE version (svn)</value>
+  </data>
+  <data name="Menu_Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Menu_CreateFileForRef" xml:space="preserve">
+    <value>Create file for the reference</value>
+  </data>
+  <data name="Menu_CrossReference" xml:space="preserve">
+    <value>Cross-reference…</value>
+  </data>
+  <data name="Menu_CustomCss" xml:space="preserve">
+    <value>Custom CSS…</value>
+  </data>
+  <data name="Menu_Cut" xml:space="preserve">
+    <value>Cut</value>
+  </data>
+  <data name="Menu_DarkTheme" xml:space="preserve">
+    <value>Dark theme</value>
+  </data>
+  <data name="Menu_DeleteColumn" xml:space="preserve">
+    <value>Delete column</value>
+  </data>
+  <data name="Menu_DeleteElement" xml:space="preserve">
+    <value>Delete element</value>
+  </data>
+  <data name="Menu_DeleteFile" xml:space="preserve">
+    <value>Delete file…</value>
+  </data>
+  <data name="Menu_DeleteRow" xml:space="preserve">
+    <value>Delete row</value>
+  </data>
+  <data name="Menu_DeleteTable" xml:space="preserve">
+    <value>Delete table</value>
+  </data>
+  <data name="Menu_DetachExternalDtd" xml:space="preserve">
+    <value>Disconnect external DTD</value>
+  </data>
+  <data name="Menu_DocxLayout" xml:space="preserve">
+    <value>DOCX layout…</value>
+  </data>
+  <data name="Menu_Down" xml:space="preserve">
+    <value>Down</value>
+  </data>
+  <data name="Menu_Duplicate" xml:space="preserve">
+    <value>Duplicate</value>
+  </data>
+  <data name="Menu_Edit" xml:space="preserve">
+    <value>_Edit</value>
+  </data>
+  <data name="Menu_EditDitaval" xml:space="preserve">
+    <value>Edit .ditaval…</value>
+  </data>
+  <data name="Menu_Element" xml:space="preserve">
+    <value>Element…</value>
+  </data>
+  <data name="Menu_ElementHelp" xml:space="preserve">
+    <value>About the element under the cursor</value>
+  </data>
+  <data name="Menu_EnterHints" xml:space="preserve">
+    <value>Hint on Enter</value>
+  </data>
+  <data name="Menu_Exit" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="Menu_ExpandAll" xml:space="preserve">
+    <value>Expand all</value>
+  </data>
+  <data name="Menu_ExportDocx" xml:space="preserve">
+    <value>Export to DOCX…</value>
+  </data>
+  <data name="Menu_ExportPdf" xml:space="preserve">
+    <value>Export to PDF…</value>
+  </data>
+  <data name="Menu_ExportXliff" xml:space="preserve">
+    <value>Export to XLIFF (for translation)…</value>
+  </data>
+  <data name="Menu_ExtractToConref" xml:space="preserve">
+    <value>Extract to conref…</value>
+  </data>
+  <data name="Menu_File" xml:space="preserve">
+    <value>_File</value>
+  </data>
+  <data name="Menu_FindInProject" xml:space="preserve">
+    <value>Find in project…</value>
+  </data>
+  <data name="Menu_FindTopicRefs" xml:space="preserve">
+    <value>Find references to topic</value>
+  </data>
+  <data name="Menu_Footnote" xml:space="preserve">
+    <value>Footnote</value>
+  </data>
+  <data name="Menu_Help" xml:space="preserve">
+    <value>_Help</value>
+  </data>
+  <data name="Menu_HorizontalLinesOnly" xml:space="preserve">
+    <value>Horizontal lines only</value>
+  </data>
+  <data name="Menu_ImageAsFigure" xml:space="preserve">
+    <value>Make image a figure</value>
+  </data>
+  <data name="Menu_ImportXliff" xml:space="preserve">
+    <value>Import translation from XLIFF…</value>
+  </data>
+  <data name="Menu_InlineCode" xml:space="preserve">
+    <value>Inline code</value>
+  </data>
+  <data name="Menu_Insert" xml:space="preserve">
+    <value>_Insert</value>
+  </data>
+  <data name="Menu_InsertColumnLeft" xml:space="preserve">
+    <value>Insert column left</value>
+  </data>
+  <data name="Menu_InsertColumnRight" xml:space="preserve">
+    <value>Insert column right</value>
+  </data>
+  <data name="Menu_InsertImage" xml:space="preserve">
+    <value>Image…</value>
+  </data>
+  <data name="Menu_InsertRowAbove" xml:space="preserve">
+    <value>Insert row above</value>
+  </data>
+  <data name="Menu_InsertRowBelow" xml:space="preserve">
+    <value>Insert row below</value>
+  </data>
+  <data name="Menu_InsertTable" xml:space="preserve">
+    <value>Table…</value>
+  </data>
+  <data name="Menu_Italic" xml:space="preserve">
+    <value>Italic</value>
+  </data>
   <data name="Menu_Language" xml:space="preserve">
     <value>_Language</value>
+  </data>
+  <data name="Menu_LivePreview" xml:space="preserve">
+    <value>Preview next to the text (sheets)</value>
+  </data>
+  <data name="Menu_MarkRevChanged" xml:space="preserve">
+    <value>Mark as changed (rev)</value>
+  </data>
+  <data name="Menu_MergeCellDown" xml:space="preserve">
+    <value>Merge cell with row below</value>
+  </data>
+  <data name="Menu_MergeCellRight" xml:space="preserve">
+    <value>Merge cell with next</value>
+  </data>
+  <data name="Menu_MoveDown" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="Menu_MoveUp" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="Menu_MoveUpOneLevel" xml:space="preserve">
+    <value>Move up one level</value>
+  </data>
+  <data name="Menu_NestInPrevious" xml:space="preserve">
+    <value>Nest in previous</value>
+  </data>
+  <data name="Menu_NewDocument" xml:space="preserve">
+    <value>New document…</value>
+  </data>
+  <data name="Menu_NoBorders" xml:space="preserve">
+    <value>No borders</value>
+  </data>
+  <data name="Menu_NoNewPage" xml:space="preserve">
+    <value>Do not start topic on a new page</value>
+  </data>
+  <data name="Menu_Note" xml:space="preserve">
+    <value>Note</value>
+  </data>
+  <data name="Menu_NumberedList" xml:space="preserve">
+    <value>Numbered list</value>
+  </data>
+  <data name="Menu_NumberedParagraph" xml:space="preserve">
+    <value>Numbered paragraph (2.3.1)</value>
+  </data>
+  <data name="Menu_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Menu_OpenProjectFolder" xml:space="preserve">
+    <value>Open project folder…</value>
+  </data>
+  <data name="Menu_OuterFrameOnly" xml:space="preserve">
+    <value>Outer frame only</value>
+  </data>
+  <data name="Menu_PageBreakBeforeTitle" xml:space="preserve">
+    <value>Page break before title (print)</value>
+  </data>
+  <data name="Menu_PagePlacement" xml:space="preserve">
+    <value>Position on page (PDF, DOCX)</value>
+  </data>
+  <data name="Menu_PageSetup" xml:space="preserve">
+    <value>Page setup…</value>
+  </data>
+  <data name="Menu_Paragraph" xml:space="preserve">
+    <value>Paragraph</value>
+  </data>
+  <data name="Menu_PasteAfter" xml:space="preserve">
+    <value>Paste after</value>
+  </data>
+  <data name="Menu_PasteAsChild" xml:space="preserve">
+    <value>Paste as child</value>
+  </data>
+  <data name="Menu_PasteBefore" xml:space="preserve">
+    <value>Paste before</value>
+  </data>
+  <data name="Menu_PdfHeaderFooter" xml:space="preserve">
+    <value>PDF headers and footers…</value>
+  </data>
+  <data name="Menu_Pin" xml:space="preserve">
+    <value>Pin</value>
+  </data>
+  <data name="Menu_PlacementBottomCenter" xml:space="preserve">
+    <value>Bottom center</value>
+  </data>
+  <data name="Menu_PlacementBottomLeft" xml:space="preserve">
+    <value>Bottom left</value>
+  </data>
+  <data name="Menu_PlacementBottomRight" xml:space="preserve">
+    <value>Bottom right</value>
+  </data>
+  <data name="Menu_PlacementMiddleCenter" xml:space="preserve">
+    <value>Center of the page</value>
+  </data>
+  <data name="Menu_PlacementMiddleLeft" xml:space="preserve">
+    <value>Middle left</value>
+  </data>
+  <data name="Menu_PlacementMiddleRight" xml:space="preserve">
+    <value>Middle right</value>
+  </data>
+  <data name="Menu_PlacementNormal" xml:space="preserve">
+    <value>Normal (in text)</value>
+  </data>
+  <data name="Menu_PlacementTopCenter" xml:space="preserve">
+    <value>Top center</value>
+  </data>
+  <data name="Menu_PlacementTopLeft" xml:space="preserve">
+    <value>Top left</value>
+  </data>
+  <data name="Menu_PlacementTopRight" xml:space="preserve">
+    <value>Top right</value>
+  </data>
+  <data name="Menu_PlaceOnNewPage" xml:space="preserve">
+    <value>Start topic on a new page</value>
+  </data>
+  <data name="Menu_PluginCommand" xml:space="preserve">
+    <value>Plugin command…</value>
+  </data>
+  <data name="Menu_ProductList" xml:space="preserve">
+    <value>Product list…</value>
+  </data>
+  <data name="Menu_Properties" xml:space="preserve">
+    <value>Properties…</value>
+  </data>
+  <data name="Menu_Publish" xml:space="preserve">
+    <value>_Publish</value>
+  </data>
+  <data name="Menu_PublishWithPlugin" xml:space="preserve">
+    <value>Publish with plugin…</value>
+  </data>
+  <data name="Menu_RecentProjects" xml:space="preserve">
+    <value>Recent projects</value>
+  </data>
+  <data name="Menu_Redo" xml:space="preserve">
+    <value>Redo</value>
+  </data>
+  <data name="Menu_RemoveFromMap" xml:space="preserve">
+    <value>Remove from map</value>
+  </data>
+  <data name="Menu_RemoveKeySourceProjects" xml:space="preserve">
+    <value>Disconnect all source projects</value>
+  </data>
+  <data name="Menu_RenameId" xml:space="preserve">
+    <value>Rename id…</value>
+  </data>
+  <data name="Menu_RenameMoveFile" xml:space="preserve">
+    <value>Rename / move file…</value>
+  </data>
+  <data name="Menu_RowLineRemove" xml:space="preserve">
+    <value>Line below row: remove</value>
+  </data>
+  <data name="Menu_RowLineShow" xml:space="preserve">
+    <value>Line below row: show</value>
+  </data>
+  <data name="Menu_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Menu_SaveAll" xml:space="preserve">
+    <value>Save all</value>
+  </data>
+  <data name="Menu_SelectColumn" xml:space="preserve">
+    <value>Select column</value>
+  </data>
+  <data name="Menu_SelectRow" xml:space="preserve">
+    <value>Select row</value>
+  </data>
+  <data name="Menu_SelectTable" xml:space="preserve">
+    <value>Select table</value>
+  </data>
+  <data name="Menu_ShowAttributeNotes" xml:space="preserve">
+    <value>Show attribute notes (product, outputclass)</value>
+  </data>
+  <data name="Menu_ShowElementNames" xml:space="preserve">
+    <value>Show element names</value>
+  </data>
+  <data name="Menu_SplitCell" xml:space="preserve">
+    <value>Split cell</value>
+  </data>
+  <data name="Menu_Structure" xml:space="preserve">
+    <value>_Structure</value>
+  </data>
+  <data name="Menu_TableAllowBreak" xml:space="preserve">
+    <value>Table: allow page break with repeated header (print)</value>
+  </data>
+  <data name="Menu_TableSubmenu" xml:space="preserve">
+    <value>Table</value>
+  </data>
+  <data name="Menu_ToggleCaption" xml:space="preserve">
+    <value>Figure / table caption: add or remove</value>
+  </data>
+  <data name="Menu_TrackAccept" xml:space="preserve">
+    <value>Track changes: accept change</value>
+  </data>
+  <data name="Menu_TrackDeleted" xml:space="preserve">
+    <value>Track changes: mark as deleted</value>
+  </data>
+  <data name="Menu_TrackInserted" xml:space="preserve">
+    <value>Track changes: mark as inserted</value>
+  </data>
+  <data name="Menu_TrackReject" xml:space="preserve">
+    <value>Track changes: reject change</value>
+  </data>
+  <data name="Menu_UiControl" xml:space="preserve">
+    <value>UI control</value>
+  </data>
+  <data name="Menu_UndoStructural" xml:space="preserve">
+    <value>Undo structural change</value>
+  </data>
+  <data name="Menu_UnnumberedTitle" xml:space="preserve">
+    <value>Title without number (not in table of contents)</value>
+  </data>
+  <data name="Menu_Unpin" xml:space="preserve">
+    <value>Unpin</value>
+  </data>
+  <data name="Menu_Up" xml:space="preserve">
+    <value>Up</value>
+  </data>
+  <data name="Menu_ValidateDocument" xml:space="preserve">
+    <value>Validate document</value>
+  </data>
+  <data name="Menu_ValidateProject" xml:space="preserve">
+    <value>Validate project</value>
+  </data>
+  <data name="Menu_WrapIn" xml:space="preserve">
+    <value>Wrap in…</value>
+  </data>
+  <data name="Ph_FontSize" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="Tab_Attributes" xml:space="preserve">
+    <value>Attributes</value>
+  </data>
+  <data name="Tab_BuildLog" xml:space="preserve">
+    <value>Build log</value>
+  </data>
+  <data name="Tab_Insert" xml:space="preserve">
+    <value>Insert</value>
+  </data>
+  <data name="Tab_Keys" xml:space="preserve">
+    <value>Keys</value>
+  </data>
+  <data name="Tab_Map" xml:space="preserve">
+    <value>Map</value>
+  </data>
+  <data name="Tab_Project" xml:space="preserve">
+    <value>Project</value>
+  </data>
+  <data name="Tab_Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Tab_Structure" xml:space="preserve">
+    <value>Structure</value>
+  </data>
+  <data name="Tab_Validation" xml:space="preserve">
+    <value>Validation</value>
+  </data>
+  <data name="Tip_AddMap" xml:space="preserve">
+    <value>Open another map of the active project in a tab</value>
+  </data>
+  <data name="Tip_AddTopicref" xml:space="preserve">
+    <value>Add a topic reference</value>
+  </data>
+  <data name="Tip_AlignCenter" xml:space="preserve">
+    <value>Center</value>
+  </data>
+  <data name="Tip_AlignJustify" xml:space="preserve">
+    <value>Justify</value>
+  </data>
+  <data name="Tip_AlignLeft" xml:space="preserve">
+    <value>Align left</value>
+  </data>
+  <data name="Tip_AlignRight" xml:space="preserve">
+    <value>Align right</value>
+  </data>
+  <data name="Tip_Bold" xml:space="preserve">
+    <value>Bold (Ctrl+B)</value>
+  </data>
+  <data name="Tip_BuildSite" xml:space="preserve">
+    <value>Build HTML site (F5)</value>
+  </data>
+  <data name="Tip_CellBorders" xml:space="preserve">
+    <value>Borders of the selected cells or the cell under the cursor: bottom, top, left, right, outside, inside…</value>
+  </data>
+  <data name="Tip_CellBordersToolbar" xml:space="preserve">
+    <value>Borders of selected cells (like Word): bottom, top, left, right, outside, inside…</value>
+  </data>
+  <data name="Tip_ChooseOtherFile" xml:space="preserve">
+    <value>The reference points to a file that does not exist — replace it with another project file</value>
+  </data>
+  <data name="Tip_CloseMap" xml:space="preserve">
+    <value>Close map</value>
+  </data>
+  <data name="Tip_CloseProject" xml:space="preserve">
+    <value>Close the active project; other open projects stay open</value>
+  </data>
+  <data name="Tip_CloseProjectOfNode" xml:space="preserve">
+    <value>Close the project of the selected node; other open projects stay open</value>
+  </data>
+  <data name="Tip_CreateFileForRef" xml:space="preserve">
+    <value>There is no file for the reference: create an empty topic with this name</value>
+  </data>
+  <data name="Tip_DeleteAttribute" xml:space="preserve">
+    <value>Delete attribute</value>
+  </data>
+  <data name="Tip_DeleteFile" xml:space="preserve">
+    <value>Delete the topic file from disk and remove its rows from this map</value>
+  </data>
+  <data name="Tip_EnterHints" xml:space="preserve">
+    <value>Enter at the end of a block shows which element to insert next (the first line is the usual Enter action)</value>
+  </data>
+  <data name="Tip_ExtractToConref" xml:space="preserve">
+    <value>Moves the element to another topic, leaving a conref reference in its place</value>
+  </data>
+  <data name="Tip_FontSize" xml:space="preserve">
+    <value>Font size of the selected text or of what is typed next (pt)</value>
+  </data>
+  <data name="Tip_FootnoteAtCursor" xml:space="preserve">
+    <value>Footnote at the cursor</value>
+  </data>
+  <data name="Tip_Italic" xml:space="preserve">
+    <value>Italic (Ctrl+I)</value>
+  </data>
+  <data name="Tip_LivePreview" xml:space="preserve">
+    <value>To the right of the editor — sheets of the size set in “Page setup…”; the text is split into sheets on every keystroke</value>
+  </data>
+  <data name="Tip_MakeNested" xml:space="preserve">
+    <value>Make nested</value>
+  </data>
+  <data name="Tip_Marker" xml:space="preserve">
+    <value>Marker: highlight the selected text in color; with no selection — brush mode (select text with the mouse, Esc turns it off)</value>
+  </data>
+  <data name="Tip_MarkRevChanged" xml:space="preserve">
+    <value>A bar in the margin when published — the standard DITA revision mark, not a full change history</value>
+  </data>
+  <data name="Tip_MergeDown" xml:space="preserve">
+    <value>Merge table cell with the row below (Ctrl+Alt+↓)</value>
+  </data>
+  <data name="Tip_MergeRight" xml:space="preserve">
+    <value>Merge table cell with the next one (Ctrl+Alt+→)</value>
+  </data>
+  <data name="Tip_MoveElementDown" xml:space="preserve">
+    <value>Move element down (Ctrl+Shift+Down)</value>
+  </data>
+  <data name="Tip_MoveElementUp" xml:space="preserve">
+    <value>Move element up (Ctrl+Shift+Up)</value>
+  </data>
+  <data name="Tip_NewDocument" xml:space="preserve">
+    <value>New document (Ctrl+N)</value>
+  </data>
+  <data name="Tip_NoNewPage" xml:space="preserve">
+    <value>Overrides “every top-level topic on a new page” from the DOCX layout</value>
+  </data>
+  <data name="Tip_NumberedParagraph" xml:space="preserve">
+    <value>Cursor in a paragraph: when published it gets a number from the headings — 2.3.1 in chapter 2, section 3</value>
+  </data>
+  <data name="Tip_NumberedParagraphToolbar" xml:space="preserve">
+    <value>Numbered paragraph: number from the headings (2.3.1)</value>
+  </data>
+  <data name="Tip_OpenProject" xml:space="preserve">
+    <value>Open project folder (Ctrl+Shift+O)</value>
+  </data>
+  <data name="Tip_PagePlacement" xml:space="preserve">
+    <value>A paragraph, figure, table or note on a separate page in the chosen area of the sheet (outputclass="place-…")</value>
+  </data>
+  <data name="Tip_PageSetup" xml:space="preserve">
+    <value>Paper size, orientation and margins for DOCX and PDF</value>
+  </data>
+  <data name="Tip_ParagraphAfter" xml:space="preserve">
+    <value>Paragraph after the current block</value>
+  </data>
+  <data name="Tip_PlaceOnNewPage" xml:space="preserve">
+    <value>DOCX, PDF and single HTML: the topic starts on a new page</value>
+  </data>
+  <data name="Tip_Properties" xml:space="preserve">
+    <value>Open the map with the selected row: its attributes are on the “Attributes” panel</value>
+  </data>
+  <data name="Tip_PublishCheckbox" xml:space="preserve">
+    <value>Publish: clear the check box to keep the topic out of HTML, PDF and DOCX</value>
+  </data>
+  <data name="Tip_Redo" xml:space="preserve">
+    <value>Redo (Ctrl+Alt+Y)</value>
+  </data>
+  <data name="Tip_RenameId" xml:space="preserve">
+    <value>Updates references (href, conref) to this id across the whole project</value>
+  </data>
+  <data name="Tip_ReplaceText" xml:space="preserve">
+    <value>Replacement text (for plain text search)</value>
+  </data>
+  <data name="Tip_Save" xml:space="preserve">
+    <value>Save (Ctrl+S)</value>
+  </data>
+  <data name="Tip_SectionAfter" xml:space="preserve">
+    <value>Section after the current block</value>
+  </data>
+  <data name="Tip_SelectRow" xml:space="preserve">
+    <value>The row's cells are selected as a rectangle: rows, columns, merging and borders then apply to them (same as dragging the mouse over cells)</value>
+  </data>
+  <data name="Tip_ShowAttributeNotes" xml:space="preserve">
+    <value>A block with a product, audience, platform, props or outputclass attribute gets a gray note on top</value>
+  </data>
+  <data name="Tip_SplitCell" xml:space="preserve">
+    <value>Split merged cell</value>
+  </data>
+  <data name="Tip_TabPinned" xml:space="preserve">
+    <value>The tab is pinned</value>
+  </data>
+  <data name="Tip_TextColor" xml:space="preserve">
+    <value>Color of the selected text or of what is typed next</value>
+  </data>
+  <data name="Tip_Underline" xml:space="preserve">
+    <value>Underline (Ctrl+U)</value>
+  </data>
+  <data name="Tip_UndoStructural" xml:space="preserve">
+    <value>Undo structural change (Ctrl+Alt+Z)</value>
+  </data>
+  <data name="Tip_UnnumberedTitle" xml:space="preserve">
+    <value>Cursor in a title: when published it is not numbered and is left out of the table of contents (outputclass="nonumber")</value>
+  </data>
+  <data name="Tip_ValidateProject" xml:space="preserve">
+    <value>Validate project (F7)</value>
+  </data>
+  <data name="Tip_WrapIn" xml:space="preserve">
+    <value>Nest the selected blocks (or the block under the cursor) in another element: note, section, div… The list shows only valid wrappers</value>
   </data>
 </root>
