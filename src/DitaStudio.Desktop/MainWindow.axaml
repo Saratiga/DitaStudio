@@ -3,6 +3,7 @@
         xmlns:vm="using:DitaStudio.Presentation.ViewModels"
         xmlns:edit="using:DitaStudio.Core.Editing"
         xmlns:pub="using:DitaStudio.Core.Publishing"
+        xmlns:loc="using:DitaStudio.Desktop.Localization"
         x:Class="DitaStudio.Desktop.MainWindow"
         Title="{Binding WindowTitle, FallbackValue='DITA Studio'}"
         Width="1440" Height="820"
@@ -194,6 +195,7 @@
             <MenuItem Header="_Справка">
                 <MenuItem Header="Об элементе под курсором" Command="{Binding Help.ShowElementHelpCommand}" InputGesture="F1" />
                 <MenuItem Name="ThemeMenuItem" Header="Тёмная тема" ToggleType="CheckBox" Click="OnToggleTheme" />
+                <MenuItem Name="LanguageMenu" Header="{loc:Tr Menu_Language}" />
                 <Separator />
                 <MenuItem Header="О программе" Command="{Binding Help.AboutCommand}" />
             </MenuItem>

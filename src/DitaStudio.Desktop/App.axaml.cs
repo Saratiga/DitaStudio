@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using DitaStudio.Core.Localization;
 using DitaStudio.Presentation;
 using DitaStudio.Presentation.Plugins;
 
@@ -14,6 +15,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        Loc.Instance.Initialize(); // язык интерфейса: выбор пользователя, иначе язык системы, иначе английский
         RequestedThemeVariant = ThemeSettings.LoadDark() ? ThemeVariant.Dark : ThemeVariant.Light;
 
         var pluginsDir = Path.Combine(AppContext.BaseDirectory, "plugins");

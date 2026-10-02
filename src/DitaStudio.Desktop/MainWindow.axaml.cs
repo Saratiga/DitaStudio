@@ -7,6 +7,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DitaStudio.Core.Editing;
+using DitaStudio.Core.Localization;
 using DitaStudio.Desktop.Services;
 using DitaStudio.Desktop.Preview;
 using DitaStudio.Desktop.Views;
@@ -62,6 +63,8 @@ public partial class MainWindow : Window
 
         ThemeMenuItem.IsChecked = Application.Current?.RequestedThemeVariant == ThemeVariant.Dark;
         RefreshRecentProjectsMenu();
+        BuildLanguageMenu();
+        Loc.Instance.LanguageChanged += (_, _) => BuildLanguageMenu();
         ViewModel.StatusText = "Откройте папку с проектом DITA: Файл → Открыть папку проекта.";
 
         AddHandler(KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
@@ -140,6 +143,27 @@ public partial class MainWindow : Window
         }
 
         ThemeSettings.SaveDark(dark);
+    }
+
+    /// <summary>Меню «Язык»: «как в системе», English, Русский — отмечен выбор пользователя. Выбор запоминается.</summary>
+    private void BuildLanguageMenu()
+    {
+        var items = new List<MenuItem> { LanguageItem(null, Loc.T("Language_Auto")) };
+        items.AddRange(UiLanguages.Supported.Select(code => LanguageItem(code, UiLanguages.NativeName(code))));
+        LanguageMenu.ItemsSource = items;
+    }
+
+    private MenuItem LanguageItem(string? code, string title)
+    {
+        var item = new MenuItem
+        {
+            Header = title,
+            ToggleType = MenuItemToggleType.Radio,
+            IsChecked = string.Equals(Loc.Instance.UserChoice, code, StringComparison.Ordinal),
+            GroupName = "UiLanguage"
+        };
+        item.Click += (_, _) => Loc.Instance.SetUserLanguage(code);
+        return item;
     }
 
     private void RefreshRecentProjectsMenu()
