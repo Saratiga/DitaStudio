@@ -138,7 +138,9 @@ public sealed class ParityTests : IDisposable
         width.Text = "120" + separator + "5";
         height.Text = "300";
         Dispatcher.UIThread.RunJobs();
-        Assert.Contains("Свой размер, книжная: 120" + separator + "5 × 300 мм", AllText(dialog));
+        // вводится по региональным настройкам, а показывается по языку интерфейса (русский — запятая)
+        var shown = System.Globalization.CultureInfo.GetCultureInfo(DitaStudio.Core.Localization.Loc.Instance.Language).NumberFormat.NumberDecimalSeparator;
+        Assert.Contains("Свой размер, книжная: 120" + shown + "5 × 300 мм", AllText(dialog));
 
         ClickButton(dialog, "ОК");
         Dispatcher.UIThread.RunJobs();
