@@ -65,7 +65,7 @@ public partial class MainWindow : Window
         RefreshRecentProjectsMenu();
         BuildLanguageMenu();
         Loc.Instance.LanguageChanged += (_, _) => BuildLanguageMenu();
-        ViewModel.StatusText = "Откройте папку с проектом DITA: Файл → Открыть папку проекта.";
+        ViewModel.StatusText = Loc.T("Win_OpenADITAProjectFolderFile");
 
         AddHandler(KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
         MapTreeView.AddHandler(PointerPressedEvent, OnMapPointerPressed, RoutingStrategies.Tunnel);
@@ -178,7 +178,7 @@ public partial class MainWindow : Window
 
         if (items.Count == 0)
         {
-            items.Add(new MenuItem { Header = "(пусто)", IsEnabled = false });
+            items.Add(new MenuItem { Header = Loc.T("Win_Empty"), IsEnabled = false });
         }
 
         RecentProjectsMenu.ItemsSource = items;
@@ -226,7 +226,7 @@ public partial class MainWindow : Window
 
         if (flyout.Items.Count == 0)
         {
-            flyout.Items.Add(new MenuItem { Header = "В проекте нет карт", IsEnabled = false });
+            flyout.Items.Add(new MenuItem { Header = Loc.T("Win_TheProjectHasNoMaps"), IsEnabled = false });
         }
 
         flyout.ShowAt(anchor);
@@ -304,7 +304,7 @@ public partial class MainWindow : Window
         if (ViewModel.Panes.Values.OfType<DocumentView>().FirstOrDefault(p => ReferenceEquals(p.Author, ViewModel.Current?.Author)) is not { } pane ||
             !pane.AuthorEditor.ShowWrapMenu())
         {
-            ViewModel.StatusText = "Выделите блоки (протяжкой мыши от блока к блоку) или поставьте курсор в блок — обернуть нечего или нет допустимых обёрток.";
+            ViewModel.StatusText = Loc.T("Win_SelectBlocksDragTheMouseFrom");
         }
     }
 
@@ -456,9 +456,9 @@ public partial class MainWindow : Window
         e.DragEffects = DragDropEffects.Move;
         ViewModel.StatusText = drop.Position switch
         {
-            DropPosition.Before => $"Перед «{drop.Node.Title}»",
-            DropPosition.After => $"После «{drop.Node.Title}»",
-            _ => $"Внутрь «{drop.Node.Title}»"
+            DropPosition.Before => Loc.T("Win_Before0", drop.Node.Title),
+            DropPosition.After => Loc.T("Win_After0", drop.Node.Title),
+            _ => Loc.T("Win_Inside0", drop.Node.Title)
         };
     }
 

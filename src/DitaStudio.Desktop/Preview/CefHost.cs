@@ -1,5 +1,6 @@
 using Xilium.CefGlue;
 using Xilium.CefGlue.Common;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Preview;
 
@@ -26,7 +27,7 @@ public static class CefHost
     {
         if (Disabled)
         {
-            return "встроенный браузер отключён";
+            return Loc.T("Preview_TheBuiltInBrowserIsDisabled");
         }
 
         if (_attempted)
@@ -49,7 +50,7 @@ public static class CefHost
         }
         catch (Exception ex)
         {
-            _error = "не удалось запустить встроенный браузер: " + ex.Message;
+            _error = Loc.T("Preview_CouldNotStartTheBuiltIn") + ex.Message;
         }
 
         return _error;

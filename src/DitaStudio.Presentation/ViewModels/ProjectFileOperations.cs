@@ -2,6 +2,7 @@ using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -96,9 +97,9 @@ public sealed class ProjectFileOperations
             return;
         }
 
-        var agreed = await _ui.Dialogs.ConfirmAsync("Название топика",
-            $"Заголовок топика изменён.\n\nПереименовать файл «{file.RelativePath}» в «{newRelative}»? " +
-            "Ссылки на него в проекте будут обновлены.");
+        var agreed = await _ui.Dialogs.ConfirmAsync(Loc.T("Msg_TopicTitle"),
+            Loc.T("Msg_TheTopicTitleWasChangedRename", file.RelativePath, newRelative) +
+            Loc.T("Msg_ReferencesToItInTheProject"));
         if (!agreed)
         {
             _renameDeclined[path] = newRelative;
@@ -125,7 +126,7 @@ public sealed class ProjectFileOperations
 
         if (File.Exists(newFull))
         {
-            if (!await _ui.Dialogs.ConfirmAsync("Перенос файла", $"Файл {newRelative} уже существует. Заменить?"))
+            if (!await _ui.Dialogs.ConfirmAsync(Loc.T("Msg_MoveFile"), Loc.T("Msg_TheFile0AlreadyExistsReplace", newRelative)))
             {
                 return;
             }
@@ -145,7 +146,7 @@ public sealed class ProjectFileOperations
         }
         catch (IOException ex)
         {
-            await _ui.Dialogs.MessageAsync("Перенос файла", ex.Message);
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_MoveFile"), ex.Message);
             return;
         }
 
@@ -163,7 +164,7 @@ public sealed class ProjectFileOperations
         _hooks.RefreshProjectTree?.Invoke();
         _hooks.RefreshMapSelector?.Invoke();
         _workspace.NotifyKeysChanged();
-        _shell.StatusText = $"Файл перенесён: {file.RelativePath} → {newRelative}. Обновлено ссылок: {result.UpdatedReferences}.";
+        _shell.StatusText = Loc.T("Msg_FileMoved01ReferencesUpdated", file.RelativePath, newRelative, result.UpdatedReferences);
     }
 
     /// <summary>
@@ -175,7 +176,7 @@ public sealed class ProjectFileOperations
         var project = _workspace.ProjectOf(file.FullPath) ?? _workspace.Project;
         if (project is null)
         {
-            return "Проект не открыт.";
+            return Loc.T("Msg_NoProjectIsOpen");
         }
 
         try

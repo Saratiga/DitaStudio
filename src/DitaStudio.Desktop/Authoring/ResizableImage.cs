@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Authoring;
 
@@ -43,7 +44,7 @@ public sealed class ResizableImage : Panel
             IsVisible = false
         };
         _thumb.Bind(Border.BorderBrushProperty, _thumb.GetResourceObservable("Accent"));
-        ToolTip.SetTip(_thumb, "Потяните, чтобы изменить размер");
+        ToolTip.SetTip(_thumb, Loc.T("Author_DragToResize"));
 
         Children.Add(_image);
         Children.Add(_thumb);
@@ -109,7 +110,7 @@ public sealed class ResizableImage : Panel
     }
 
     private void UpdateTip() =>
-        ToolTip.SetTip(_image, $"{Math.Round(_image.Width)} × {Math.Round(_image.Width * _aspect)} px — потяните за угол, чтобы изменить");
+        ToolTip.SetTip(_image, Loc.T("Author_01PxDragTheCorner", Math.Round(_image.Width), Math.Round(_image.Width * _aspect)));
 
     private void OnThumbPressed(object? sender, PointerPressedEventArgs e)
     {

@@ -9,6 +9,7 @@ using DitaStudio.Core.Schema;
 using DitaStudio.Desktop.Views;
 using DitaStudio.Presentation.Services;
 using DitaStudio.Presentation.ViewModels;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop;
 
@@ -36,7 +37,7 @@ public partial class MainWindow
             {
                 items.Add(new MenuItem
                 {
-                    Header = "Заголовок без номера (не в оглавлении)",
+                    Header = Loc.T("Menu_UnnumberedTitle"),
                     ToggleType = MenuItemToggleType.CheckBox,
                     IsChecked = TocRules.IsUnnumbered(title),
                     Command = ViewModel.Insert.ToggleUnnumberedTitleCommand
@@ -44,7 +45,7 @@ public partial class MainWindow
                 items.Add(new Separator());
             }
 
-            var wrap = new MenuItem { Header = "Обернуть в…", IsEnabled = view.AuthorEditor.WrapOptions().Count > 0 };
+            var wrap = new MenuItem { Header = Loc.T("Menu_WrapIn"), IsEnabled = view.AuthorEditor.WrapOptions().Count > 0 };
             wrap.Click += (_, _) => view.AuthorEditor.ShowWrapMenu();
             items.Add(wrap);
             items.Add(BuildFormatMenu());
@@ -60,9 +61,9 @@ public partial class MainWindow
         MenuItem Table(string header, TableOperation operation) =>
             new() { Header = header, Command = insert.EditTableCommand, CommandParameter = operation };
 
-        var cellAttributes = new MenuItem { Header = "Атрибуты ячейки…" };
+        var cellAttributes = new MenuItem { Header = Loc.T("Win_CellAttributes") };
         cellAttributes.Click += (_, _) => RightTabs.SelectedIndex = 0;
-        var tableProperties = new MenuItem { Header = "Свойства таблицы…" };
+        var tableProperties = new MenuItem { Header = Loc.T("Win_TableProperties") };
         tableProperties.Click += (_, _) =>
         {
             if (ViewModel.Current is { } pane && pane.Author.CurrentNode is { } node &&
@@ -77,21 +78,21 @@ public partial class MainWindow
         {
             cellAttributes,
             new Separator(),
-            Table("Вставить строку выше", TableOperation.InsertRowAbove),
-            Table("Вставить строку ниже", TableOperation.InsertRowBelow),
-            Table("Удалить строку", TableOperation.DeleteRow),
+            Table(Loc.T("Menu_InsertRowAbove"), TableOperation.InsertRowAbove),
+            Table(Loc.T("Menu_InsertRowBelow"), TableOperation.InsertRowBelow),
+            Table(Loc.T("Menu_DeleteRow"), TableOperation.DeleteRow),
             new Separator(),
-            Table("Вставить столбец слева", TableOperation.InsertColumnLeft),
-            Table("Вставить столбец справа", TableOperation.InsertColumnRight),
-            Table("Удалить столбец", TableOperation.DeleteColumn),
+            Table(Loc.T("Menu_InsertColumnLeft"), TableOperation.InsertColumnLeft),
+            Table(Loc.T("Menu_InsertColumnRight"), TableOperation.InsertColumnRight),
+            Table(Loc.T("Menu_DeleteColumn"), TableOperation.DeleteColumn),
             new Separator(),
-            new MenuItem { Header = "Объединить с ячейкой справа", Command = insert.MergeCellRightCommand, InputGesture = new KeyGesture(Key.Right, KeyModifiers.Control | KeyModifiers.Alt) },
-            new MenuItem { Header = "Объединить с ячейкой снизу", Command = insert.MergeCellDownCommand, InputGesture = new KeyGesture(Key.Down, KeyModifiers.Control | KeyModifiers.Alt) },
-            Table("Разделить ячейку", TableOperation.SplitCell),
+            new MenuItem { Header = Loc.T("Win_MergeWithTheCellOnThe"), Command = insert.MergeCellRightCommand, InputGesture = new KeyGesture(Key.Right, KeyModifiers.Control | KeyModifiers.Alt) },
+            new MenuItem { Header = Loc.T("Win_MergeWithTheCellBelow"), Command = insert.MergeCellDownCommand, InputGesture = new KeyGesture(Key.Down, KeyModifiers.Control | KeyModifiers.Alt) },
+            Table(Loc.T("Menu_SplitCell"), TableOperation.SplitCell),
             new Separator(),
-            new MenuItem { Header = "Выделить строку", Command = insert.SelectTableRowCommand },
-            new MenuItem { Header = "Выделить столбец", Command = insert.SelectTableColumnCommand },
-            new MenuItem { Header = "Границы", ItemsSource = Authoring.AuthorView.BorderMenuItems((edges, _) => insert.SetCellBordersCommand.Execute(edges)) },
+            new MenuItem { Header = Loc.T("Menu_SelectRow"), Command = insert.SelectTableRowCommand },
+            new MenuItem { Header = Loc.T("Menu_SelectColumn"), Command = insert.SelectTableColumnCommand },
+            new MenuItem { Header = Loc.T("Menu_Borders"), ItemsSource = Authoring.AuthorView.BorderMenuItems((edges, _) => insert.SetCellBordersCommand.Execute(edges)) },
             new Separator(),
             tableProperties
         };
@@ -113,7 +114,7 @@ public partial class MainWindow
 
         var sizes = ViewModel.Insert.FontSizes.Select(size => (Control)new MenuItem
         {
-            Header = size is InsertViewModel.NormalSize or InsertViewModel.CustomSize ? size : size + " пт",
+            Header = size == InsertViewModel.NormalSize || size == InsertViewModel.CustomSize ? size : size + Loc.T("Win_Pt"),
             Command = ViewModel.Insert.SetFontSizeCommand,
             CommandParameter = size
         }).ToList();
@@ -125,7 +126,7 @@ public partial class MainWindow
             Command = ViewModel.Insert.SetTextColorCommand,
             CommandParameter = c.Token
         }).Append(new Separator())
-          .Append(new MenuItem { Header = "Без цвета", Command = ViewModel.Insert.SetTextColorCommand, CommandParameter = null })
+          .Append(new MenuItem { Header = Loc.T("Win_NoColor"), Command = ViewModel.Insert.SetTextColorCommand, CommandParameter = null })
           .ToList();
 
         var marks = MarkerMenuItems();
@@ -136,7 +137,7 @@ public partial class MainWindow
         {
             new MenuItem
             {
-                Header = "Обычное (в тексте)",
+                Header = Loc.T("Menu_PlacementNormal"),
                 ToggleType = MenuItemToggleType.Radio,
                 IsChecked = place is null,
                 Command = ViewModel.Insert.SetPagePlacementCommand,
@@ -155,17 +156,17 @@ public partial class MainWindow
 
         return new MenuItem
         {
-            Header = "Оформление",
+            Header = Loc.T("Win_Formatting"),
             ItemsSource = new List<Control>
             {
-                new MenuItem { Header = "Выравнивание", ItemsSource = align },
-                new MenuItem { Header = "Размер шрифта", ItemsSource = sizes },
-                new MenuItem { Header = "Цвет текста", ItemsSource = colors },
-                new MenuItem { Header = "Маркер", ItemsSource = marks },
+                new MenuItem { Header = Loc.T("Win_Alignment"), ItemsSource = align },
+                new MenuItem { Header = Loc.T("Win_FontSize"), ItemsSource = sizes },
+                new MenuItem { Header = Loc.T("Win_TextColor"), ItemsSource = colors },
+                new MenuItem { Header = Loc.T("Win_Marker"), ItemsSource = marks },
                 new Separator(),
                 new MenuItem
                 {
-                    Header = "Нумерованный абзац (2.3.1)",
+                    Header = Loc.T("Menu_NumberedParagraph"),
                     ToggleType = MenuItemToggleType.CheckBox,
                     IsChecked = node is { Name: "p" } && HeadingNumbering.IsNumbered(node),
                     IsEnabled = node is { Name: "p" },
@@ -173,7 +174,7 @@ public partial class MainWindow
                 },
                 new MenuItem
                 {
-                    Header = "Положение на листе (PDF, DOCX)",
+                    Header = Loc.T("Menu_PagePlacement"),
                     ItemsSource = positions,
                     IsEnabled = placeable is not null
                 }
@@ -191,9 +192,9 @@ public partial class MainWindow
             Command = ViewModel.Insert.SetMarkerCommand,
             CommandParameter = m.Token
         }).ToList();
-        items.Add(new MenuItem { Header = "Другой цвет…", Command = ViewModel.Insert.SetMarkerCommand, CommandParameter = InsertViewModel.CustomMarker });
+        items.Add(new MenuItem { Header = Loc.T("Win_MoreColors"), Command = ViewModel.Insert.SetMarkerCommand, CommandParameter = InsertViewModel.CustomMarker });
         items.Add(new Separator());
-        items.Add(new MenuItem { Header = "Нет цвета", Command = ViewModel.Insert.SetMarkerCommand, CommandParameter = null });
+        items.Add(new MenuItem { Header = Loc.T("Win_NoColor2"), Command = ViewModel.Insert.SetMarkerCommand, CommandParameter = null });
         return items;
     }
 
@@ -228,7 +229,7 @@ public partial class MainWindow
         panel.Children.Add(swatches);
         var custom = new Button
         {
-            Content = "Другой цвет…",
+            Content = Loc.T("Win_MoreColors"),
             Margin = new Avalonia.Thickness(2, 6, 2, 0),
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
             Command = ViewModel.Insert.SetMarkerCommand,
@@ -238,7 +239,7 @@ public partial class MainWindow
         panel.Children.Add(custom);
         var none = new Button
         {
-            Content = "Нет цвета",
+            Content = Loc.T("Win_NoColor2"),
             Margin = new Avalonia.Thickness(2, 4, 2, 2),
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
             Command = ViewModel.Insert.SetMarkerCommand,
@@ -290,7 +291,7 @@ public partial class MainWindow
 
         var none = new Button
         {
-            Content = "Без цвета",
+            Content = Loc.T("Win_NoColor"),
             Margin = new Avalonia.Thickness(2, 6, 2, 2),
             Command = ViewModel.Insert.SetTextColorCommand,
             CommandParameter = null
@@ -320,22 +321,22 @@ public partial class MainWindow
         var (inline, after) = insert.InsertCandidates();
         var items = new List<Control>
         {
-            CommandItem("Сноска", insert.InsertFootnoteCommand),
-            CommandItem("Изображение…", insert.InsertImageCommand),
-            CommandItem("Оформить изображение как рисунок", insert.WrapImageAsFigureCommand),
-            CommandItem("Подпись рисунка / таблицы: добавить или убрать", insert.ToggleCaptionCommand),
-            CommandItem("Перекрёстная ссылка…", insert.InsertXrefCommand),
-            CommandItem("Таблица…", insert.InsertTableCommand),
+            CommandItem(Loc.T("Menu_Footnote"), insert.InsertFootnoteCommand),
+            CommandItem(Loc.T("Menu_InsertImage"), insert.InsertImageCommand),
+            CommandItem(Loc.T("Menu_ImageAsFigure"), insert.WrapImageAsFigureCommand),
+            CommandItem(Loc.T("Menu_ToggleCaption"), insert.ToggleCaptionCommand),
+            CommandItem(Loc.T("Menu_CrossReference"), insert.InsertXrefCommand),
+            CommandItem(Loc.T("Menu_InsertTable"), insert.InsertTableCommand),
             new Separator(),
-            ElementsItem("В строку текста", inline),
-            ElementsItem("Блок после текущего", after),
+            ElementsItem(Loc.T("Win_IntoTheLineOfText"), inline),
+            ElementsItem(Loc.T("Win_BlockAfterTheCurrentOne"), after),
             new Separator()
         };
 
-        var all = new MenuItem { Header = "Все элементы…", InputGesture = new KeyGesture(Key.E, KeyModifiers.Control) };
+        var all = new MenuItem { Header = Loc.T("Win_AllElements"), InputGesture = new KeyGesture(Key.E, KeyModifiers.Control) };
         all.Click += (_, _) => FocusPalette();
         items.Add(all);
-        return new MenuItem { Header = "Вставить элемент", ItemsSource = items };
+        return new MenuItem { Header = Loc.T("Win_InsertElement"), ItemsSource = items };
     }
 
     private static MenuItem CommandItem(string header, ICommand command) => new() { Header = header, Command = command };

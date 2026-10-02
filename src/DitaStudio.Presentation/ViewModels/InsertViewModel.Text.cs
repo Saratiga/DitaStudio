@@ -8,6 +8,7 @@ using DitaStudio.Core.Schema;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Plugins;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -20,7 +21,7 @@ public partial class InsertViewModel
         var node = _docs.Current?.Author.CurrentNode;
         if (node is null || node.Name != "title")
         {
-            _shell.StatusText = "Выделите заголовок (title) — например, заголовок раздела или топика.";
+            _shell.StatusText = Loc.T("Msg_SelectATitleForExampleA");
             return;
         }
 
@@ -28,8 +29,8 @@ public partial class InsertViewModel
         _docs.RefreshAllTabTitles();
         _hooks.RefreshAttributePanel?.Invoke();
         _shell.StatusText = enabled == true
-            ? "Разрыв страницы перед заголовком включён."
-            : "Разрыв страницы перед заголовком выключен.";
+            ? Loc.T("Msg_PageBreakBeforeTheTitleIs")
+            : Loc.T("Msg_PageBreakBeforeTheTitleIs2");
     }
 
     /// <summary>Выравнивание текущего блока: align-left (по умолчанию — класс снимается), -center, -right, -justify.</summary>
@@ -39,7 +40,7 @@ public partial class InsertViewModel
         var author = _docs.Current?.Author;
         if (author?.CurrentNode is null)
         {
-            _shell.StatusText = "Поставьте курсор в абзац, заголовок или ячейку.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInAParagraph2");
             return;
         }
 
@@ -48,17 +49,17 @@ public partial class InsertViewModel
         {
             _docs.RefreshAllTabTitles();
             _hooks.RefreshAttributePanel?.Invoke();
-            _shell.StatusText = "Выравнивание: " + TextFormatting.Alignments.First(a => a.Token == (value ?? "align-left")).Label.ToLowerInvariant() + ".";
+            _shell.StatusText = Loc.T("Msg_Alignment") + TextFormatting.Alignments.First(a => a.Token == (value ?? "align-left")).Label.ToLowerInvariant() + ".";
         }
     }
 
     /// <summary>Размеры шрифта для списка на панели: «Обычный» и размеры в пт.</summary>
-    public IReadOnlyList<string> FontSizes { get; } = new[] { NormalSize }.Concat(TextFormatting.Sizes.Select(s => s.ToString())).Append(CustomSize).ToList();
+    public IReadOnlyList<string> FontSizes => new[] { NormalSize }.Concat(TextFormatting.Sizes.Select(s => s.ToString())).Append(CustomSize).ToList();
 
     /// <summary>Пункт списка размеров: спросить число пунктов (дробные — через точку или запятую).</summary>
-    public const string CustomSize = "Другой…";
+    public static string CustomSize => Loc.T("Msg_Other");
 
-    public const string NormalSize = "Обычный";
+    public static string NormalSize => Loc.T("Msg_Normal");
 
     /// <summary>Размер шрифта выделения или дальнейшего набора: "10" (пт) или «Обычный»/null — снять.</summary>
     [RelayCommand]
@@ -66,9 +67,9 @@ public partial class InsertViewModel
     {
         if (size == CustomSize)
         {
-            var typed = await _ui.Dialogs.PromptTextAsync("Свой размер шрифта", "Размер, пт",
+            var typed = await _ui.Dialogs.PromptTextAsync(Loc.T("Msg_CustomFontSize"), Loc.T("Msg_SizePt"),
                 (_docs.Current?.Author.CurrentNode is { } node && TextFormatting.SizeOf(node) is { } current ? current : 11).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture),
-                $"От {TextFormatting.MinCustomSize:0} до {TextFormatting.MaxCustomSize:0} пт; дробные значения — через точку или запятую (например, 13,5).");
+                Loc.T("Msg_From00To10", TextFormatting.MinCustomSize, TextFormatting.MaxCustomSize));
             if (typed is null)
             {
                 return;
@@ -77,7 +78,7 @@ public partial class InsertViewModel
             if (!double.TryParse(typed.Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var custom) ||
                 custom < TextFormatting.MinCustomSize || custom > TextFormatting.MaxCustomSize)
             {
-                _shell.StatusText = $"Размер должен быть числом от {TextFormatting.MinCustomSize:0} до {TextFormatting.MaxCustomSize:0} пт.";
+                _shell.StatusText = Loc.T("Msg_TheSizeMustBeANumber", TextFormatting.MinCustomSize, TextFormatting.MaxCustomSize);
                 return;
             }
 
@@ -86,7 +87,7 @@ public partial class InsertViewModel
 
         var parsed = double.TryParse(size?.Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var points);
         var token = parsed ? TextFormatting.SizeToken(points) : null;
-        ApplyTextFormat(TextFormatting.SizePrefix, token, token is null ? "Размер шрифта снят." : $"Размер шрифта {TextFormatting.ParseSizeToken(token):0.#} пт.");
+        ApplyTextFormat(TextFormatting.SizePrefix, token, token is null ? Loc.T("Msg_FontSizeCleared") : Loc.T("Msg_FontSize00Pt", TextFormatting.ParseSizeToken(token)));
     }
 
     /// <summary>Цвет выделения или дальнейшего набора: color-red… или null — снять.</summary>
@@ -95,7 +96,7 @@ public partial class InsertViewModel
     {
         var color = TextFormatting.Colors.FirstOrDefault(c => c.Token == token);
         ApplyTextFormat(TextFormatting.ColorPrefix, color.Token,
-            color.Token is null ? "Цвет текста снят." : $"Цвет текста: {color.Label.ToLowerInvariant()}.");
+            color.Token is null ? Loc.T("Msg_TextColorCleared") : Loc.T("Msg_TextColor0", color.Label.ToLowerInvariant()));
     }
 
     /// <summary>
@@ -109,14 +110,14 @@ public partial class InsertViewModel
         var author = _docs.Current?.Author;
         if (author is null)
         {
-            _shell.StatusText = "Откройте документ и выделите текст.";
+            _shell.StatusText = Loc.T("Msg_OpenADocumentAndSelectText");
             return;
         }
 
         if (token == CustomMarker)
         {
             var current = author.MarkerPenToken is { } pen ? TextFormatting.ParseMarkToken(pen) : null;
-            var picked = await _ui.Dialogs.PickColorAsync("Цвет маркера", current);
+            var picked = await _ui.Dialogs.PickColorAsync(Loc.T("Msg_MarkerColor"), current);
             if (picked is null || TextFormatting.MarkToken(picked) is not { } custom)
             {
                 return;
@@ -127,7 +128,7 @@ public partial class InsertViewModel
 
         if (author.HasTextSelection)
         {
-            ApplyTextFormat(TextFormatting.MarkPrefix, token, token is null ? "Маркер снят." : $"Маркер: {MarkerLabel(token)}.");
+            ApplyTextFormat(TextFormatting.MarkPrefix, token, token is null ? Loc.T("Msg_MarkerRemoved") : Loc.T("Msg_Marker0", MarkerLabel(token)));
             return;
         }
 
@@ -135,19 +136,19 @@ public partial class InsertViewModel
         if (author.MarkerPenActive && author.MarkerPenToken == token)
         {
             author.StopMarkerPen();
-            _shell.StatusText = "Маркер выключен.";
+            _shell.StatusText = Loc.T("Msg_MarkerModeOff");
             return;
         }
 
         if (author.StartMarkerPen(token))
         {
             _shell.StatusText = token is null
-                ? "Режим маркера: ластик — выделите текст мышью, чтобы снять маркер. Esc — выключить."
-                : $"Режим маркера: {MarkerLabel(token)} — выделяйте текст мышью, он закрашивается. Esc — выключить.";
+                ? Loc.T("Msg_MarkerModeEraserSelectTextWith")
+                : Loc.T("Msg_MarkerMode0SelectTextWith", MarkerLabel(token));
         }
         else
         {
-            _shell.StatusText = "Здесь маркер недоступен.";
+            _shell.StatusText = Loc.T("Msg_TheMarkerIsNotAvailableHere");
         }
     }
 
@@ -164,7 +165,7 @@ public partial class InsertViewModel
         var author = _docs.Current?.Author;
         if (author?.CurrentNode is null)
         {
-            _shell.StatusText = "Поставьте курсор в текст или выделите его.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInTheText2");
             return;
         }
 
@@ -176,7 +177,7 @@ public partial class InsertViewModel
         }
         else
         {
-            _shell.StatusText = "Здесь оформление текста недоступно.";
+            _shell.StatusText = Loc.T("Msg_TextFormattingIsNotAvailableHere");
         }
     }
 
@@ -190,7 +191,7 @@ public partial class InsertViewModel
         var author = _docs.Current?.Author;
         if (author?.CurrentNode is null || PagePlacement.PlaceableFor(author.CurrentNode) is null)
         {
-            _shell.StatusText = "Поставьте курсор в абзац, рисунок, таблицу или заметку прямо в тексте топика (не в списке).";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInAParagraph3");
             return;
         }
 
@@ -199,8 +200,8 @@ public partial class InsertViewModel
             _docs.RefreshAllTabTitles();
             _hooks.RefreshAttributePanel?.Invoke();
             _shell.StatusText = PagePlacement.LabelOf(token) is { } label
-                ? $"Блок на отдельном листе PDF и DOCX: {label.ToLowerInvariant()}."
-                : "Блок снова идёт в тексте.";
+                ? Loc.T("Msg_TheBlockIsOnASeparate", label.ToLowerInvariant())
+                : Loc.T("Msg_TheBlockIsInTheText");
         }
     }
 
@@ -211,7 +212,7 @@ public partial class InsertViewModel
         var node = _docs.Current?.Author.CurrentNode;
         if (node is null || node.Name != "p")
         {
-            _shell.StatusText = "Поставьте курсор в абзац.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInAParagraph4");
             return;
         }
 
@@ -219,8 +220,8 @@ public partial class InsertViewModel
         _docs.RefreshAllTabTitles();
         _hooks.RefreshAttributePanel?.Invoke();
         _shell.StatusText = enabled == true
-            ? "Абзац нумерованный: при публикации получит номер по заголовкам (например, 2.3.1)."
-            : "Абзац больше не нумеруется.";
+            ? Loc.T("Msg_TheParagraphIsNumberedWhenPublished")
+            : Loc.T("Msg_TheParagraphIsNoLongerNumbered");
     }
 
     /// <summary>Заголовок «без номера»: не нумеруется и не попадает в оглавление (outputclass nonumber).</summary>
@@ -230,7 +231,7 @@ public partial class InsertViewModel
         var node = _docs.Current?.Author.CurrentNode;
         if (node is null || node.Name != "title")
         {
-            _shell.StatusText = "Поставьте курсор в заголовок топика или раздела.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInATopic");
             return;
         }
 
@@ -238,8 +239,8 @@ public partial class InsertViewModel
         _docs.RefreshAllTabTitles();
         _hooks.RefreshAttributePanel?.Invoke();
         _shell.StatusText = enabled == true
-            ? "Заголовок без номера: при публикации не нумеруется и не попадает в оглавление."
-            : "Заголовок снова нумеруется и попадает в оглавление.";
+            ? Loc.T("Msg_TitleWithoutNumberWhenPublishedIt")
+            : Loc.T("Msg_TheTitleIsNumberedAgainAnd");
     }
 
     [RelayCommand]
@@ -248,7 +249,7 @@ public partial class InsertViewModel
         var node = _docs.Current?.Author.CurrentNode;
         if (node is null)
         {
-            _shell.StatusText = "Поставьте курсор в элемент, который нужно отметить как изменённый.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInTheElement");
             return;
         }
 
@@ -256,8 +257,8 @@ public partial class InsertViewModel
         _docs.RefreshAllTabTitles();
         _hooks.RefreshAttributePanel?.Invoke();
         _shell.StatusText = enabled == true
-            ? "Элемент отмечен как изменённый (rev) — при публикации появится полоса на полях."
-            : "Отметка об изменении снята.";
+            ? Loc.T("Msg_TheElementIsMarkedAsChanged")
+            : Loc.T("Msg_TheChangeMarkWasRemoved");
     }
 
     [RelayCommand]
@@ -266,14 +267,14 @@ public partial class InsertViewModel
         var node = _docs.Current?.Author.CurrentNode;
         if (node is null)
         {
-            _shell.StatusText = "Поставьте курсор в элемент, который нужно пометить как вставленный.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInTheElement2");
             return;
         }
 
         _docs.Current!.Author.MarkCurrentInserted();
         _docs.RefreshAllTabTitles();
         _hooks.RefreshAttributePanel?.Invoke();
-        _shell.StatusText = "Элемент помечен как вставленный (track changes).";
+        _shell.StatusText = Loc.T("Msg_TheElementIsMarkedAsInserted");
     }
 
     [RelayCommand]
@@ -282,14 +283,14 @@ public partial class InsertViewModel
         var node = _docs.Current?.Author.CurrentNode;
         if (node is null)
         {
-            _shell.StatusText = "Поставьте курсор в элемент, который нужно пометить как удалённый.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInTheElement3");
             return;
         }
 
         _docs.Current!.Author.MarkCurrentDeleted();
         _docs.RefreshAllTabTitles();
         _hooks.RefreshAttributePanel?.Invoke();
-        _shell.StatusText = "Элемент помечен как удалённый (track changes) — скрыт из публикации, виден зачёркнутым в предпросмотре.";
+        _shell.StatusText = Loc.T("Msg_TheElementIsMarkedAsDeleted");
     }
 
     [RelayCommand]
@@ -298,14 +299,14 @@ public partial class InsertViewModel
         var node = _docs.Current?.Author.CurrentNode;
         if (node is null || !TrackChanges.IsTracked(node))
         {
-            _shell.StatusText = "Поставьте курсор в элемент с отслеживаемой правкой.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInAnElement2");
             return;
         }
 
         _docs.Current!.Author.AcceptCurrentTrackedChange();
         _docs.RefreshAllTabTitles();
         _hooks.RefreshAttributePanel?.Invoke();
-        _shell.StatusText = "Правка принята.";
+        _shell.StatusText = Loc.T("Msg_ChangeAccepted");
     }
 
     [RelayCommand]
@@ -314,13 +315,13 @@ public partial class InsertViewModel
         var node = _docs.Current?.Author.CurrentNode;
         if (node is null || !TrackChanges.IsTracked(node))
         {
-            _shell.StatusText = "Поставьте курсор в элемент с отслеживаемой правкой.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInAnElement2");
             return;
         }
 
         _docs.Current!.Author.RejectCurrentTrackedChange();
         _docs.RefreshAllTabTitles();
         _hooks.RefreshAttributePanel?.Invoke();
-        _shell.StatusText = "Правка отклонена.";
+        _shell.StatusText = Loc.T("Msg_ChangeRejected");
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DitaStudio.Core.Project;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -70,7 +71,7 @@ public partial class SearchViewModel : ObservableObject
             Results.Add(hit);
         }
 
-        _shell.StatusText = $"Найдено совпадений: {hits.Count}";
+        _shell.StatusText = Loc.T("Msg_MatchesFound0", hits.Count);
     }
 
     [RelayCommand]
@@ -84,7 +85,7 @@ public partial class SearchViewModel : ObservableObject
 
         if (SearchElements)
         {
-            await _ui.Dialogs.MessageAsync("Замена", "Замена работает только для текстового поиска, не для поиска по именам элементов.");
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_Replace"), Loc.T("Msg_ReplaceWorksOnlyForTextSearch"));
             return;
         }
 
@@ -98,9 +99,9 @@ public partial class SearchViewModel : ObservableObject
             pane.CommitPendingEdits();
         }
 
-        var confirmed = await _ui.Dialogs.ConfirmAsync("Замена",
-            $"Заменить все вхождения «{SearchText}» на «{ReplaceText}» по всему проекту?\n" +
-            "Изменённые документы будут помечены как несохранённые.");
+        var confirmed = await _ui.Dialogs.ConfirmAsync(Loc.T("Msg_Replace"),
+            Loc.T("Msg_ReplaceAllOccurrencesOf0With", SearchText, ReplaceText) +
+            Loc.T("Msg_TheChangedDocumentsWillBeMarked"));
         if (!confirmed)
         {
             return;
@@ -117,7 +118,7 @@ public partial class SearchViewModel : ObservableObject
 
         _docs.RefreshAllTabTitles();
         Run();
-        _shell.StatusText = $"Заменено вхождений: {result.ReplacementCount} в файлах: {result.ChangedFiles.Count}. Не забудьте сохранить (Ctrl+Shift+S).";
+        _shell.StatusText = Loc.T("Msg_OccurrencesReplaced0InFiles1", result.ReplacementCount, result.ChangedFiles.Count);
     }
 
     [RelayCommand]

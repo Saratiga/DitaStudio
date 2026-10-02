@@ -6,6 +6,7 @@ using DitaStudio.Core.Project;
 using DitaStudio.Core.Validation;
 using DitaStudio.Presentation.Plugins;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -46,8 +47,8 @@ public partial class ValidationViewModel : ObservableObject
 
         var issues = project.ValidateAll(PluginRegistry.ValidationRules);
         ShowIssues(issues);
-        _shell.StatusText = $"Проверка проекта: ошибок {issues.Count(i => i.Severity == IssueSeverity.Error)}, " +
-                            $"предупреждений {issues.Count(i => i.Severity == IssueSeverity.Warning)}.";
+        _shell.StatusText = Loc.T("Msg_ProjectCheckErrors0", issues.Count(i => i.Severity == IssueSeverity.Error)) +
+                            Loc.T("Msg_Warnings03", issues.Count(i => i.Severity == IssueSeverity.Warning));
     }
 
     [RelayCommand]
@@ -63,7 +64,7 @@ public partial class ValidationViewModel : ObservableObject
         var error = pane.CommitPendingEdits();
         if (error is not null)
         {
-            await _ui.Dialogs.MessageAsync("Проверка", $"Документ не разбирается как XML:\n\n{error}");
+            await _ui.Dialogs.MessageAsync(Loc.T("Tab_Validation"), Loc.T("Msg_TheDocumentCannotBeParsedAs", error));
             return;
         }
 
@@ -79,25 +80,25 @@ public partial class ValidationViewModel : ObservableObject
             }
             catch (Exception ex)
             {
-                issues.Add(new ValidationIssue(IssueSeverity.Warning, $"Плагин \"{plugin.Name}\" упал при проверке: {ex.Message}", null, pane.FilePath));
+                issues.Add(new ValidationIssue(IssueSeverity.Warning, Loc.T("Msg_ThePlugin0FailedDuringValidation", plugin.Name, ex.Message), null, pane.FilePath));
             }
         }
 
         ShowIssues(issues);
-        _shell.StatusText = $"Проверка документа: {issues.Count} замечаний.";
+        _shell.StatusText = Loc.T("Msg_DocumentCheck0Remarks", issues.Count);
     }
 
     [RelayCommand]
     private async Task CompareFiles()
     {
-        var filters = new[] { new FileFilter("Файлы DITA", "*.dita", "*.ditamap", "*.xml"), FileFilter.All };
-        var left = await _ui.Files.OpenFileAsync("Сравнить — первый файл", filters);
+        var filters = new[] { new FileFilter(Loc.T("Msg_DITAFiles"), "*.dita", "*.ditamap", "*.xml"), FileFilter.All };
+        var left = await _ui.Files.OpenFileAsync(Loc.T("Msg_CompareFirstFile"), filters);
         if (left is null)
         {
             return;
         }
 
-        var right = await _ui.Files.OpenFileAsync("Сравнить — второй файл", filters, Path.GetDirectoryName(left));
+        var right = await _ui.Files.OpenFileAsync(Loc.T("Msg_CompareSecondFile"), filters, Path.GetDirectoryName(left));
         if (right is null)
         {
             return;
@@ -111,15 +112,15 @@ public partial class ValidationViewModel : ObservableObject
     /// без библиотеки libgit2. Требует git в PATH и файл внутри репозитория.</summary>
     [RelayCommand]
     private Task CompareWithGitHeadAsync() =>
-        CompareWithHistoryAsync("git", "Сравнение с git", "git-head", path => GitHistory.ReadRevision(path),
-            "Файл не найден в истории git: нет репозитория, файл не отслеживается, или git не установлен.");
+        CompareWithHistoryAsync("git", Loc.T("Msg_CompareWithGit"), "git-head", path => GitHistory.ReadRevision(path),
+            Loc.T("Msg_TheFileWasNotFoundIn"));
 
     /// <summary>Сравнивает открытый документ с версией BASE из SVN — через `svn cat`, без
     /// клиентской библиотеки. Требует svn в PATH и файл под версионным контролем.</summary>
     [RelayCommand]
     private Task CompareWithSvnBaseAsync() =>
-        CompareWithHistoryAsync("svn", "Сравнение с SVN", "svn-base", path => SvnHistory.ReadRevision(path),
-            "Файл не найден в истории SVN: не под версионным контролем, или svn не установлен.");
+        CompareWithHistoryAsync("svn", Loc.T("Msg_CompareWithSVN"), "svn-base", path => SvnHistory.ReadRevision(path),
+            Loc.T("Msg_TheFileWasNotFoundIn2"));
 
     /// <summary>Общая часть сравнения с историей VCS. Клиент (git/svn) запускается в фоне: на
     /// большом репозитории или сетевом диске он отвечает секундами, окно при этом не замирает.
@@ -131,11 +132,11 @@ public partial class ValidationViewModel : ObservableObject
         var path = _docs.Current?.FilePath;
         if (path is null)
         {
-            await _ui.Dialogs.MessageAsync(title, "Откройте документ.");
+            await _ui.Dialogs.MessageAsync(title, Loc.T("Msg_OpenADocument"));
             return;
         }
 
-        _shell.StatusText = $"Чтение версии из {client}…";
+        _shell.StatusText = Loc.T("Msg_ReadingTheVersionFrom0", client);
         var content = await Task.Run(() => readRevision(path));
         if (content is null)
         {
@@ -153,7 +154,7 @@ public partial class ValidationViewModel : ObservableObject
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             _shell.StatusText = string.Empty;
-            await _ui.Dialogs.MessageAsync(title, $"Не удалось записать временный файл: {ex.Message}");
+            await _ui.Dialogs.MessageAsync(title, Loc.T("Msg_CouldNotWriteTheTemporaryFile", ex.Message));
             return;
         }
 

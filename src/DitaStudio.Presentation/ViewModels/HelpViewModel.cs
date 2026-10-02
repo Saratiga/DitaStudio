@@ -2,6 +2,7 @@ using DitaStudio.Presentation.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -24,14 +25,14 @@ public partial class HelpViewModel : ObservableObject
         var node = _docs.Current?.Author.CurrentNode;
         if (node is null)
         {
-            _shell.StatusText = "Поставьте курсор в элемент.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInAnElement");
             return;
         }
 
         var def = DitaCatalog.Default.Get(node.Name);
         if (def is null)
         {
-            await _ui.Dialogs.MessageAsync("Справка", $"Элемент <{node.Name}> отсутствует в словаре DITA 1.3.");
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_Help"), Loc.T("Msg_TheElement0IsNotIn", node.Name));
             return;
         }
 
@@ -40,12 +41,12 @@ public partial class HelpViewModel : ObservableObject
 
         await _ui.Dialogs.MessageAsync($"<{def.Name}>",
             $"{def.Description}\n\n" +
-            $"Модуль: {def.Domain}\n" +
+            Loc.T("Msg_Module0", def.Domain) +
             $"@class: {def.ClassAttr}\n\n" +
-            $"Содержимое: {def.ModelText}\n\n" +
-            $"Допустимые дочерние элементы ({allowed.Count}): {string.Join(", ", allowed.Take(40))}" +
+            Loc.T("Msg_Content0", def.ModelText) +
+            Loc.T("Msg_AllowedChildElements01", allowed.Count, string.Join(", ", allowed.Take(40))) +
             (allowed.Count > 40 ? "…" : string.Empty) +
-            $"\n\nАтрибуты: {string.Join(", ", attributes)}");
+            Loc.T("Msg_Attributes0", string.Join(", ", attributes)));
     }
 
     [RelayCommand]

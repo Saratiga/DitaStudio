@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using DitaStudio.Presentation;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Authoring;
 
@@ -24,7 +25,7 @@ public sealed class ElementSuggestions : Popup
 {
     private readonly IReadOnlyList<ElementSuggestion> _all;
     private readonly Action<ElementSuggestion> _apply;
-    private readonly TextBox _filter = new() { Watermark = "Фильтр…", Padding = new Thickness(4, 3, 4, 3), Margin = new Thickness(0, 0, 0, 4) };
+    private readonly TextBox _filter = new() { Watermark = Loc.T("Author_Filter"), Padding = new Thickness(4, 3, 4, 3), Margin = new Thickness(0, 0, 0, 4) };
     private readonly ListBox _list = new();
     private readonly TextBlock _description = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(10, 2, 2, 2) };
     private readonly Grid _grid = new();
@@ -179,7 +180,7 @@ public sealed class ElementSuggestions : Popup
             }),
             Tag = corner
         };
-        ToolTip.SetTip(grip, "Потяните, чтобы изменить размер окна");
+        ToolTip.SetTip(grip, Loc.T("Author_DragToResizeTheWindow"));
 
         PixelPoint? last = null;
         PixelPoint Screen(PointerEventArgs e)

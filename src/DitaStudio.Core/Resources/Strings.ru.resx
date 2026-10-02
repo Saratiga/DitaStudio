@@ -58,6 +58,286 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Author_01Content2" xml:space="preserve">
+    <value>&lt;{0}&gt;
+
+{1}
+
+Содержимое: {2}</value>
+  </data>
+  <data name="Author_01InTheCell" xml:space="preserve">
+    <value>{0}  &lt;{1}&gt; — в ячейке</value>
+  </data>
+  <data name="Author_01PxDragTheCorner" xml:space="preserve">
+    <value>{0} × {1} px — потяните за угол, чтобы изменить</value>
+  </data>
+  <data name="Author_0ATableEdgeIsSet" xml:space="preserve">
+    <value>{0}: край таблицы задаётся для всей его длины сразу — выделите всю строку или весь столбец; остальные линии применены.</value>
+  </data>
+  <data name="Author_0Done" xml:space="preserve">
+    <value>{0} — выполнено.</value>
+  </data>
+  <data name="Author_0Metadata" xml:space="preserve">
+    <value>{0} — метаданные</value>
+  </data>
+  <data name="Author_After0" xml:space="preserve">
+    <value> — после &lt;{0}&gt;</value>
+  </data>
+  <data name="Author_After02" xml:space="preserve">
+    <value>после &lt;{0}&gt;</value>
+  </data>
+  <data name="Author_AfterThisBlock" xml:space="preserve">
+    <value>после этого блока</value>
+  </data>
+  <data name="Author_Align" xml:space="preserve">
+    <value>Выровнять</value>
+  </data>
+  <data name="Author_AsUsual" xml:space="preserve">
+    <value> — как обычно</value>
+  </data>
+  <data name="Author_BlocksCopied0PasteWithCtrl" xml:space="preserve">
+    <value>Скопировано блоков: {0}. Вставка — Ctrl+V у выделенного блока или в абзаце: блоки встанут после него.</value>
+  </data>
+  <data name="Author_BlocksCut0" xml:space="preserve">
+    <value>Вырезано блоков: {0}.</value>
+  </data>
+  <data name="Author_BlocksPasted0" xml:space="preserve">
+    <value>Вставлено блоков: {0}</value>
+  </data>
+  <data name="Author_BordersTheCursorMustBeIn" xml:space="preserve">
+    <value>Границы: курсор должен быть в ячейке обычной таблицы.</value>
+  </data>
+  <data name="Author_BottomBorder" xml:space="preserve">
+    <value>Нижняя граница</value>
+  </data>
+  <data name="Author_CaptionWhenPublishedTheNumberRuns" xml:space="preserve">
+    <value>Подпись при публикации. Номер сквозной по изданию и зависит от настройки «Нумеровать рисунки и таблицы»; здесь — по порядку в этом топике.</value>
+  </data>
+  <data name="Author_CellAlignment" xml:space="preserve">
+    <value>Выравнивание ячеек: </value>
+  </data>
+  <data name="Author_CellContentsCleared" xml:space="preserve">
+    <value>Содержимое ячеек удалено.</value>
+  </data>
+  <data name="Author_CellsMerged" xml:space="preserve">
+    <value>Ячейки объединены.</value>
+  </data>
+  <data name="Author_CellSplit" xml:space="preserve">
+    <value>Ячейка разделена.</value>
+  </data>
+  <data name="Author_ClearCell" xml:space="preserve">
+    <value>Очистка ячейки</value>
+  </data>
+  <data name="Author_ClearContents" xml:space="preserve">
+    <value>Очистить содержимое</value>
+  </data>
+  <data name="Author_ClearSelection" xml:space="preserve">
+    <value>Снять выделение</value>
+  </data>
+  <data name="Author_ColumnInsertedToTheLeft" xml:space="preserve">
+    <value>Столбец вставлен слева.</value>
+  </data>
+  <data name="Author_ColumnInsertedToTheRight" xml:space="preserve">
+    <value>Столбец вставлен справа.</value>
+  </data>
+  <data name="Author_ColumnsDeleted" xml:space="preserve">
+    <value>Столбцы удалены.</value>
+  </data>
+  <data name="Author_ColumnsInsertedToTheLeft0" xml:space="preserve">
+    <value>Столбцов вставлено слева: {0}.</value>
+  </data>
+  <data name="Author_ColumnsInsertedToTheRight0" xml:space="preserve">
+    <value>Столбцов вставлено справа: {0}.</value>
+  </data>
+  <data name="Author_ColumnWidth" xml:space="preserve">
+    <value>Ширина столбцов</value>
+  </data>
+  <data name="Author_DecreaseLevel" xml:space="preserve">
+    <value>Уменьшение уровня</value>
+  </data>
+  <data name="Author_DeleteColumns0" xml:space="preserve">
+    <value>Удалить столбцы: {0}</value>
+  </data>
+  <data name="Author_DeleteEmptyBlock" xml:space="preserve">
+    <value>Удаление пустого блока</value>
+  </data>
+  <data name="Author_DeleteRows0" xml:space="preserve">
+    <value>Удалить строки: {0}</value>
+  </data>
+  <data name="Author_DeleteSelected" xml:space="preserve">
+    <value>Удалить выделенное</value>
+  </data>
+  <data name="Author_DoubleClickOpensATopicEdit" xml:space="preserve">
+    <value>. Двойной щелчок открывает топик; структуру правьте на вкладке «Карта» слева.</value>
+  </data>
+  <data name="Author_DragToChangeTheColumnWidth" xml:space="preserve">
+    <value>Потяните, чтобы изменить ширину столбцов</value>
+  </data>
+  <data name="Author_DragToChangeTheRowHeight" xml:space="preserve">
+    <value>Потяните, чтобы изменить высоту строки; двойной щелчок — высота по содержимому</value>
+  </data>
+  <data name="Author_DragToResize" xml:space="preserve">
+    <value>Потяните, чтобы изменить размер</value>
+  </data>
+  <data name="Author_DragToResizeTheWindow" xml:space="preserve">
+    <value>Потяните, чтобы изменить размер окна</value>
+  </data>
+  <data name="Author_DuplicateIdsReplaced0" xml:space="preserve">
+    <value>; повторяющихся id заменено: {0}.</value>
+  </data>
+  <data name="Author_EditOnTheAttributesPanelTo" xml:space="preserve">
+    <value>Правка — панель «Атрибуты». Показ пометок: «Структура → Показывать пометки атрибутов».</value>
+  </data>
+  <data name="Author_ElementAttributesInAConditionalBuild" xml:space="preserve">
+    <value>Атрибуты элемента: при условной сборке (product, audience…) он попадает в публикацию только для выбранных значений. </value>
+  </data>
+  <data name="Author_FilesNotFound0" xml:space="preserve">
+    <value> · не найдено файлов: {0}</value>
+  </data>
+  <data name="Author_Filter" xml:space="preserve">
+    <value>Фильтр…</value>
+  </data>
+  <data name="Author_Footnotes" xml:space="preserve">
+    <value>Сноски</value>
+  </data>
+  <data name="Author_Formatting0" xml:space="preserve">
+    <value>Оформление &lt;{0}&gt;</value>
+  </data>
+  <data name="Author_ImageSize" xml:space="preserve">
+    <value>Размер изображения</value>
+  </data>
+  <data name="Author_IncreaseLevel" xml:space="preserve">
+    <value>Увеличение уровня</value>
+  </data>
+  <data name="Author_InPDFAndDOCXTheBlock" xml:space="preserve">
+    <value>В PDF и DOCX блок стоит на своей странице в выбранной области листа; на сайте — в тексте. </value>
+  </data>
+  <data name="Author_Insert0" xml:space="preserve">
+    <value>Вставка &lt;{0}&gt;</value>
+  </data>
+  <data name="Author_Insert0InCell" xml:space="preserve">
+    <value>Вставка &lt;{0}&gt; в ячейку</value>
+  </data>
+  <data name="Author_Inside0" xml:space="preserve">
+    <value>внутрь &lt;{0}&gt;</value>
+  </data>
+  <data name="Author_InsideBorders" xml:space="preserve">
+    <value>Внутренние границы</value>
+  </data>
+  <data name="Author_InsideHorizontalBorder" xml:space="preserve">
+    <value>Внутренняя горизонтальная граница</value>
+  </data>
+  <data name="Author_InsideVerticalBorder" xml:space="preserve">
+    <value>Внутренняя вертикальная граница</value>
+  </data>
+  <data name="Author_LeftBorder" xml:space="preserve">
+    <value>Левая граница</value>
+  </data>
+  <data name="Author_MergeBlocks" xml:space="preserve">
+    <value>Объединение блоков</value>
+  </data>
+  <data name="Author_MergeCells" xml:space="preserve">
+    <value>Объединить ячейки</value>
+  </data>
+  <data name="Author_NewParagraphInTheCell" xml:space="preserve">
+    <value>Новый абзац в ячейке</value>
+  </data>
+  <data name="Author_NewStep" xml:space="preserve">
+    <value>Новый шаг</value>
+  </data>
+  <data name="Author_NextStep" xml:space="preserve">
+    <value>Следующий шаг</value>
+  </data>
+  <data name="Author_NoBorder" xml:space="preserve">
+    <value>Нет границы</value>
+  </data>
+  <data name="Author_NoNumberNotInTableOf" xml:space="preserve">
+    <value>без номера · не в оглавлении</value>
+  </data>
+  <data name="Author_NoSuggestions" xml:space="preserve">
+    <value>(нет вариантов)</value>
+  </data>
+  <data name="Author_NumberedParagraphNumberFromTheHeadings" xml:space="preserve">
+    <value>Нумерованный абзац: номер по заголовкам (например, 2.3.1) — при публикации</value>
+  </data>
+  <data name="Author_OutsideBorders" xml:space="preserve">
+    <value>Внешние границы</value>
+  </data>
+  <data name="Author_Paste" xml:space="preserve">
+    <value>Вставить</value>
+  </data>
+  <data name="Author_RightBorder" xml:space="preserve">
+    <value>Правая граница</value>
+  </data>
+  <data name="Author_RowHeight" xml:space="preserve">
+    <value>Высота строки</value>
+  </data>
+  <data name="Author_RowInsertedAbove" xml:space="preserve">
+    <value>Строка вставлена выше.</value>
+  </data>
+  <data name="Author_RowInsertedBelow" xml:space="preserve">
+    <value>Строка вставлена ниже.</value>
+  </data>
+  <data name="Author_RowsDeleted" xml:space="preserve">
+    <value>Строки удалены.</value>
+  </data>
+  <data name="Author_RowsInsertedAbove0" xml:space="preserve">
+    <value>Строк вставлено выше: {0}.</value>
+  </data>
+  <data name="Author_RowsInsertedBelow0" xml:space="preserve">
+    <value>Строк вставлено ниже: {0}.</value>
+  </data>
+  <data name="Author_SeparateSheet" xml:space="preserve">
+    <value>▣ Отдельный лист · </value>
+  </data>
+  <data name="Author_SkipAll" xml:space="preserve">
+    <value>Пропустить все</value>
+  </data>
+  <data name="Author_SplitBlock" xml:space="preserve">
+    <value>Разделение блока</value>
+  </data>
+  <data name="Author_Text" xml:space="preserve">
+    <value>текст</value>
+  </data>
+  <data name="Author_TextFormatting" xml:space="preserve">
+    <value>Оформление текста</value>
+  </data>
+  <data name="Author_TheClipboardHasNoDITABlocks" xml:space="preserve">
+    <value>В буфере обмена нет блоков DITA: выделите блоки и скопируйте их (Ctrl+C).</value>
+  </data>
+  <data name="Author_TheContentIsSubstitutedByConref" xml:space="preserve">
+    <value>Содержимое подставляется по conref при публикации; правится в исходном топике.</value>
+  </data>
+  <data name="Author_TheMapCannotBeRead" xml:space="preserve">
+    <value>Карта не читается: </value>
+  </data>
+  <data name="Author_TheMapIsNotSaved" xml:space="preserve">
+    <value>Карта не сохранена.</value>
+  </data>
+  <data name="Author_TheseBlocksCannotBePastedHere" xml:space="preserve">
+    <value>Сюда эти блоки вставить нельзя: контент-модель родителя их не допускает ни здесь, ни выше. Выберите другое место.</value>
+  </data>
+  <data name="Author_TheseCellsCannotBeMergedA" xml:space="preserve">
+    <value>Эти ячейки объединить нельзя: строка таблицы должна сохранить хотя бы одну ячейку, шапка и тело не объединяются.</value>
+  </data>
+  <data name="Author_ThisIsNotPossibleTheTable" xml:space="preserve">
+    <value>Так сделать нельзя: в таблице должна остаться хотя бы одна строка и один столбец.</value>
+  </data>
+  <data name="Author_ToChangeContextMenuFormattingPosition" xml:space="preserve">
+    <value>Изменить: контекстное меню → Оформление → Положение на листе.</value>
+  </data>
+  <data name="Author_TopBorder" xml:space="preserve">
+    <value>Верхняя граница</value>
+  </data>
+  <data name="Author_TopicsInTheMap0" xml:space="preserve">
+    <value>Топиков в карте: {0}</value>
+  </data>
+  <data name="Author_WhatEnterDidWithoutTheHint" xml:space="preserve">
+    <value>То, что Enter делал без подсказки: следующий блок того же вида. Двойной Enter — сразу он.</value>
+  </data>
+  <data name="Author_WhenPublishedTheTitleIsNot" xml:space="preserve">
+    <value>При публикации заголовок не нумеруется и не попадает в оглавление (outputclass="nonumber").</value>
+  </data>
   <data name="Btn_AddAttribute" xml:space="preserve">
     <value>Добавить атрибут</value>
   </data>
@@ -123,6 +403,658 @@
   </data>
   <data name="Col_Target" xml:space="preserve">
     <value>Цель</value>
+  </data>
+  <data name="Dlg_0010Mm" xml:space="preserve">
+    <value>{0:0.#} × {1:0.#} мм</value>
+  </data>
+  <data name="Dlg_Add" xml:space="preserve">
+    <value>Добавить</value>
+  </data>
+  <data name="Dlg_Added0" xml:space="preserve">
+    <value>Добавлен: {0}.</value>
+  </data>
+  <data name="Dlg_AndTickedInBuildConditionsA" xml:space="preserve">
+    <value>и отмечаются в «Условиях сборки». Имя — одно слово: пробел заменяется на «_».</value>
+  </data>
+  <data name="Dlg_AnElementWithSeveralProductsIs" xml:space="preserve">
+    <value>элемент с несколькими продуктами — если отмечен хотя бы один.</value>
+  </data>
+  <data name="Dlg_AnImageForExampleALogo" xml:space="preserve">
+    <value>Картинка (например, логотип; PNG, JPEG, GIF, BMP) ставится слева, по центру или справа, </value>
+  </data>
+  <data name="Dlg_ASeparateTitlePageWithThe" xml:space="preserve">
+    <value>Отдельная титульная страница с названием карты (снимите флажок — титула не будет)</value>
+  </data>
+  <data name="Dlg_AsInTheProjectCSSUsually" xml:space="preserve">
+    <value>Как в CSS проекта (обычно A4)</value>
+  </data>
+  <data name="Dlg_ASixDigitCodeIsRequired" xml:space="preserve">
+    <value>Нужен код из шести цифр</value>
+  </data>
+  <data name="Dlg_ATechnicalDocumentationEditorForDITA" xml:space="preserve">
+    <value>Редактор технической документации на DITA 1.3.
+</value>
+  </data>
+  <data name="Dlg_AttachedFile" xml:space="preserve">
+    <value>Подключённый файл</value>
+  </data>
+  <data name="Dlg_AttachExisting" xml:space="preserve">
+    <value>Подключить существующий…</value>
+  </data>
+  <data name="Dlg_AuthorOrOrganization" xml:space="preserve">
+    <value>Автор или организация</value>
+  </data>
+  <data name="Dlg_AuthorOrOrganizationOnTheTitle" xml:space="preserve">
+    <value>Автор или организация (на титуле и в свойствах файла)</value>
+  </data>
+  <data name="Dlg_AuthorSourceAndPreviewModesPublication" xml:space="preserve">
+    <value>Режимы «Автор», «Исходный код» и «Предпросмотр», карты публикации, </value>
+  </data>
+  <data name="Dlg_AutomaticallyIfYouSetYourOwn" xml:space="preserve">
+    <value>автоматически, если задан свой текст или если в системе не установлен Edge/Chrome. </value>
+  </data>
+  <data name="Dlg_AutomaticHyphenation" xml:space="preserve">
+    <value>Автоматическая расстановка переносов</value>
+  </data>
+  <data name="Dlg_BindingMarginMm" xml:space="preserve">
+    <value>Поле переплёта, мм</value>
+  </data>
+  <data name="Dlg_BindingMarginMm2" xml:space="preserve">
+    <value>Поле переплёта, мм:</value>
+  </data>
+  <data name="Dlg_Bottom" xml:space="preserve">
+    <value>Снизу</value>
+  </data>
+  <data name="Dlg_BottomMarginMm" xml:space="preserve">
+    <value>Поле снизу, мм</value>
+  </data>
+  <data name="Dlg_Browse" xml:space="preserve">
+    <value>Обзор…</value>
+  </data>
+  <data name="Dlg_BuildConditions" xml:space="preserve">
+    <value>Условия сборки</value>
+  </data>
+  <data name="Dlg_Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Dlg_CaptionFormat" xml:space="preserve">
+    <value>Формат подписи</value>
+  </data>
+  <data name="Dlg_CaptionFormat2" xml:space="preserve">
+    <value>Формат подписи:</value>
+  </data>
+  <data name="Dlg_ChooseAColorInThePalette" xml:space="preserve">
+    <value>Выберите цвет в палитре или введите код в виде #RRGGBB.</value>
+  </data>
+  <data name="Dlg_ChooseAStyleFile" xml:space="preserve">
+    <value>Выберите файл стилей</value>
+  </data>
+  <data name="Dlg_ChooseTopic" xml:space="preserve">
+    <value>+ выбрать топик</value>
+  </data>
+  <data name="Dlg_ClearCell" xml:space="preserve">
+    <value>Очистить ячейку</value>
+  </data>
+  <data name="Dlg_Color" xml:space="preserve">
+    <value>Цвет #</value>
+  </data>
+  <data name="Dlg_ColorCode" xml:space="preserve">
+    <value>Код цвета</value>
+  </data>
+  <data name="Dlg_ColorSample" xml:space="preserve">
+    <value>Образец цвета</value>
+  </data>
+  <data name="Dlg_Column" xml:space="preserve">
+    <value>+ Столбец</value>
+  </data>
+  <data name="Dlg_Column2" xml:space="preserve">
+    <value>− Столбец</value>
+  </data>
+  <data name="Dlg_Columns" xml:space="preserve">
+    <value>Колонок</value>
+  </data>
+  <data name="Dlg_Comparison" xml:space="preserve">
+    <value>Сравнение</value>
+  </data>
+  <data name="Dlg_Comparison01" xml:space="preserve">
+    <value>Сравнение: {0} ↔ {1}</value>
+  </data>
+  <data name="Dlg_CopyLeftToRight" xml:space="preserve">
+    <value>Скопировать слева направо</value>
+  </data>
+  <data name="Dlg_CopyRightToLeft" xml:space="preserve">
+    <value>Скопировать справа налево</value>
+  </data>
+  <data name="Dlg_CouldNotCreateTheFile0" xml:space="preserve">
+    <value>Не удалось создать файл: {0}</value>
+  </data>
+  <data name="Dlg_CouldNotReadTheLinkedFile" xml:space="preserve">
+    <value>Не удалось прочитать связанный файл: {0}</value>
+  </data>
+  <data name="Dlg_CouldNotReadTheList" xml:space="preserve">
+    <value>Не удалось прочитать список: </value>
+  </data>
+  <data name="Dlg_CouldNotSave" xml:space="preserve">
+    <value>Не удалось сохранить: </value>
+  </data>
+  <data name="Dlg_CouldNotWrite01" xml:space="preserve">
+    <value>Не удалось записать {0}: {1}</value>
+  </data>
+  <data name="Dlg_CouldNotWriteTheFile0" xml:space="preserve">
+    <value>Не удалось записать файл: {0}</value>
+  </data>
+  <data name="Dlg_Create" xml:space="preserve">
+    <value>Создать</value>
+  </data>
+  <data name="Dlg_CreateNewFile" xml:space="preserve">
+    <value>Создать новый файл…</value>
+  </data>
+  <data name="Dlg_CreateStyleFile" xml:space="preserve">
+    <value>Создать файл стилей</value>
+  </data>
+  <data name="Dlg_CSSFiles" xml:space="preserve">
+    <value>Файлы CSS</value>
+  </data>
+  <data name="Dlg_CSSWithPageMarginBoxesPage" xml:space="preserve">
+    <value>проекта — полями страницы @page { @top-left { content: … } }: они перекрывают эти настройки.</value>
+  </data>
+  <data name="Dlg_CurrentId" xml:space="preserve">
+    <value>Текущий id</value>
+  </data>
+  <data name="Dlg_CurrentPathRelativeToTheProject" xml:space="preserve">
+    <value>Текущий путь (относительно проекта)</value>
+  </data>
+  <data name="Dlg_CustomCSS" xml:space="preserve">
+    <value>Пользовательский CSS</value>
+  </data>
+  <data name="Dlg_CustomSize" xml:space="preserve">
+    <value>Свой размер…</value>
+  </data>
+  <data name="Dlg_DatePublicationDateForExamplePage" xml:space="preserve">
+    <value>{date} — дата публикации. Например: «Стр. {page} из {pages}». Пусто — колонтитула нет. </value>
+  </data>
+  <data name="Dlg_DeleteSelected" xml:space="preserve">
+    <value>Удалить выбранный</value>
+  </data>
+  <data name="Dlg_DescriptionOptional" xml:space="preserve">
+    <value>Описание (необязательно)</value>
+  </data>
+  <data name="Dlg_Detach" xml:space="preserve">
+    <value>Отключить</value>
+  </data>
+  <data name="Dlg_DocumentType" xml:space="preserve">
+    <value>Тип документа</value>
+  </data>
+  <data name="Dlg_DOCXLayout" xml:space="preserve">
+    <value>Оформление DOCX</value>
+  </data>
+  <data name="Dlg_DoNotShowHeadersAndFooters" xml:space="preserve">
+    <value>Не показывать колонтитулы на первой странице</value>
+  </data>
+  <data name="Dlg_EachRowLinksTheTopicsFrom" xml:space="preserve">
+    <value>Каждая строка связывает между собой топики из разных столбцов — при публикации </value>
+  </data>
+  <data name="Dlg_EditDitaval" xml:space="preserve">
+    <value>Редактирование .ditaval</value>
+  </data>
+  <data name="Dlg_ElementsInTheDictionary0" xml:space="preserve">
+    <value>Элементов в словаре: {0}</value>
+  </data>
+  <data name="Dlg_EnterTheSheetWidthAndHeight" xml:space="preserve">
+    <value>Укажите ширину и высоту листа: от {0:0} до {1:0} мм.</value>
+  </data>
+  <data name="Dlg_EveryTopLevelTopicOnA" xml:space="preserve">
+    <value>Каждый топик верхнего уровня — с новой страницы</value>
+  </data>
+  <data name="Dlg_ExportToFile" xml:space="preserve">
+    <value>Экспорт в файл…</value>
+  </data>
+  <data name="Dlg_Extract" xml:space="preserve">
+    <value>Вынести</value>
+  </data>
+  <data name="Dlg_ExtractToConref" xml:space="preserve">
+    <value>Вынести в conref</value>
+  </data>
+  <data name="Dlg_FieldsPagePageNumberPagesPage" xml:space="preserve">
+    <value>Поля: {page} — номер страницы, {pages} — число страниц, {title} — название карты, </value>
+  </data>
+  <data name="Dlg_File0TickTheValuesTo" xml:space="preserve">
+    <value>Файл: {0}. Отметьте значения, которые нужно исключить из сборки — </value>
+  </data>
+  <data name="Dlg_FileName" xml:space="preserve">
+    <value>Имя файла</value>
+  </data>
+  <data name="Dlg_FirstConnectADitavalFileVia" xml:space="preserve">
+    <value>Сначала подключите файл .ditaval через «Публикация → Подключить .ditaval…».</value>
+  </data>
+  <data name="Dlg_FitImagesToTheHeaderOr" xml:space="preserve">
+    <value>Подгонять картинки под колонтитул (высота — по полю страницы, пропорции сохраняются)</value>
+  </data>
+  <data name="Dlg_Folder" xml:space="preserve">
+    <value>Папка</value>
+  </data>
+  <data name="Dlg_Footer" xml:space="preserve">
+    <value>Нижний колонтитул</value>
+  </data>
+  <data name="Dlg_Footer2" xml:space="preserve">
+    <value>нижнего</value>
+  </data>
+  <data name="Dlg_FooterAlignment" xml:space="preserve">
+    <value>Выравнивание нижнего колонтитула</value>
+  </data>
+  <data name="Dlg_FooterText" xml:space="preserve">
+    <value>Текст в подвале</value>
+  </data>
+  <data name="Dlg_FooterText2" xml:space="preserve">
+    <value>Текст нижнего колонтитула</value>
+  </data>
+  <data name="Dlg_FromCSS" xml:space="preserve">
+    <value>по CSS</value>
+  </data>
+  <data name="Dlg_FromTheProjectCSSIfIt" xml:space="preserve">
+    <value>из CSS проекта (если оно там не задано — 20 мм).</value>
+  </data>
+  <data name="Dlg_Header" xml:space="preserve">
+    <value>Верхний колонтитул</value>
+  </data>
+  <data name="Dlg_Header2" xml:space="preserve">
+    <value>верхнего</value>
+  </data>
+  <data name="Dlg_HeaderAlignment" xml:space="preserve">
+    <value>Выравнивание верхнего колонтитула</value>
+  </data>
+  <data name="Dlg_HeaderOrFooterImage" xml:space="preserve">
+    <value>Картинка колонтитула</value>
+  </data>
+  <data name="Dlg_HeaderRow" xml:space="preserve">
+    <value>Строка заголовков</value>
+  </data>
+  <data name="Dlg_HeadersAndFooters" xml:space="preserve">
+    <value>Колонтитулы</value>
+  </data>
+  <data name="Dlg_HeadersAndFootersAreSupportedOnly" xml:space="preserve">
+    <value>Колонтитулы поддерживаются только при печати встроенным браузером редактора — это происходит </value>
+  </data>
+  <data name="Dlg_HeaderText" xml:space="preserve">
+    <value>Текст в шапке</value>
+  </data>
+  <data name="Dlg_HeaderText2" xml:space="preserve">
+    <value>Текст верхнего колонтитула</value>
+  </data>
+  <data name="Dlg_HeadingLevelsInTheTableOf" xml:space="preserve">
+    <value>Уровней заголовков в оглавлении:</value>
+  </data>
+  <data name="Dlg_HeadingsAndCaptions" xml:space="preserve">
+    <value>Заголовки и подписи</value>
+  </data>
+  <data name="Dlg_Height" xml:space="preserve">
+    <value>Высота</value>
+  </data>
+  <data name="Dlg_HeightOfImage0OfThe" xml:space="preserve">
+    <value>Высота картинки {0} колонтитула, мм</value>
+  </data>
+  <data name="Dlg_IdOfTheExtractedElement" xml:space="preserve">
+    <value>id вынесенного элемента</value>
+  </data>
+  <data name="Dlg_Image" xml:space="preserve">
+    <value>Картинка:</value>
+  </data>
+  <data name="Dlg_Image0OfTheHeaderOr" xml:space="preserve">
+    <value>Картинка {0} колонтитула</value>
+  </data>
+  <data name="Dlg_Images" xml:space="preserve">
+    <value>Изображения</value>
+  </data>
+  <data name="Dlg_ImportFromFile" xml:space="preserve">
+    <value>Импорт из файла…</value>
+  </data>
+  <data name="Dlg_ImportProductList" xml:space="preserve">
+    <value>Импорт списка продуктов</value>
+  </data>
+  <data name="Dlg_IncludeDraftCommentsDraftComment" xml:space="preserve">
+    <value>Включать черновые комментарии (draft-comment)</value>
+  </data>
+  <data name="Dlg_InDOCXTheRulesBecomeWord" xml:space="preserve">
+    <value>В DOCX правила становятся стилями Word; правила только для Word — в @media docx { … }.</value>
+  </data>
+  <data name="Dlg_InsertLink" xml:space="preserve">
+    <value>Вставить ссылку</value>
+  </data>
+  <data name="Dlg_InsertTable" xml:space="preserve">
+    <value>Вставить таблицу</value>
+  </data>
+  <data name="Dlg_IntoANewFile" xml:space="preserve">
+    <value>В новый файл</value>
+  </data>
+  <data name="Dlg_IntoAnExistingTopic" xml:space="preserve">
+    <value>В существующий топик</value>
+  </data>
+  <data name="Dlg_Landscape" xml:space="preserve">
+    <value>Альбомная</value>
+  </data>
+  <data name="Dlg_LanguageAndHyphenation" xml:space="preserve">
+    <value>Язык и переносы</value>
+  </data>
+  <data name="Dlg_Left" xml:space="preserve">
+    <value>Слева</value>
+  </data>
+  <data name="Dlg_LeftMarginMm" xml:space="preserve">
+    <value>Поле слева, мм</value>
+  </data>
+  <data name="Dlg_LevelsInTheTableOfContents" xml:space="preserve">
+    <value>Уровней в оглавлении</value>
+  </data>
+  <data name="Dlg_LevelsToNumber" xml:space="preserve">
+    <value>Нумеровать уровней</value>
+  </data>
+  <data name="Dlg_LevelsToNumber2" xml:space="preserve">
+    <value>Нумеровать уровней:</value>
+  </data>
+  <data name="Dlg_LinesAdded0Removed1" xml:space="preserve">
+    <value>Добавлено строк: {0}, удалено: {1}.</value>
+  </data>
+  <data name="Dlg_ListReplaced0Products" xml:space="preserve">
+    <value>Список заменён: {0} продуктов.</value>
+  </data>
+  <data name="Dlg_ListSaved" xml:space="preserve">
+    <value>Список сохранён: </value>
+  </data>
+  <data name="Dlg_MarginsMm" xml:space="preserve">
+    <value>Поля, мм</value>
+  </data>
+  <data name="Dlg_MirrorMarginsDoubleSidedPrinting" xml:space="preserve">
+    <value>Зеркальные поля (двусторонняя печать)</value>
+  </data>
+  <data name="Dlg_Mm" xml:space="preserve">
+    <value>мм</value>
+  </data>
+  <data name="Dlg_Mm0010" xml:space="preserve">
+    <value>мм ({0:0}–{1:0})</value>
+  </data>
+  <data name="Dlg_Move" xml:space="preserve">
+    <value>Перенести</value>
+  </data>
+  <data name="Dlg_NewDocument" xml:space="preserve">
+    <value>Создать документ</value>
+  </data>
+  <data name="Dlg_NewId" xml:space="preserve">
+    <value>Новый id</value>
+  </data>
+  <data name="Dlg_NewPath" xml:space="preserve">
+    <value>Новый путь</value>
+  </data>
+  <data name="Dlg_NewProduct" xml:space="preserve">
+    <value>Новый продукт</value>
+  </data>
+  <data name="Dlg_NewProductDescription" xml:space="preserve">
+    <value>Описание нового продукта</value>
+  </data>
+  <data name="Dlg_NewProductName" xml:space="preserve">
+    <value>Имя нового продукта</value>
+  </data>
+  <data name="Dlg_No" xml:space="preserve">
+    <value>Нет</value>
+  </data>
+  <data name="Dlg_NoImage" xml:space="preserve">
+    <value>без картинки</value>
+  </data>
+  <data name="Dlg_NoPluginsOfThisKindAre" xml:space="preserve">
+    <value>Нет подключённых плагинов этого вида — положите .dll в папку plugins рядом с приложением.</value>
+  </data>
+  <data name="Dlg_NotAttached" xml:space="preserve">
+    <value>не подключён</value>
+  </data>
+  <data name="Dlg_NumberFiguresAndTablesInCaptions" xml:space="preserve">
+    <value>Нумеровать рисунки и таблицы в подписях</value>
+  </data>
+  <data name="Dlg_NumberHeadings1111" xml:space="preserve">
+    <value>Нумеровать заголовки: 1, 1.1, 1.1.1…</value>
+  </data>
+  <data name="Dlg_OfTheTitlePage" xml:space="preserve">
+    <value>титульной страницы</value>
+  </data>
+  <data name="Dlg_OK" xml:space="preserve">
+    <value>ОК</value>
+  </data>
+  <data name="Dlg_Orientation" xml:space="preserve">
+    <value>Ориентация</value>
+  </data>
+  <data name="Dlg_OrientationAndMarginsAreInPublish" xml:space="preserve">
+    <value>бумаги, ориентация и поля — «Публикация → Параметры страницы…». Здесь — то, чего CSS не умеет: </value>
+  </data>
+  <data name="Dlg_OtherConditionalAttributesTickTheValues" xml:space="preserve">
+    <value>Остальные условные атрибуты: отметьте значения, которые нужно исключить из сборки.</value>
+  </data>
+  <data name="Dlg_OtherwiseThePDFIsPrintedWithout" xml:space="preserve">
+    <value>Иначе PDF печатается без колонтитулов, как и раньше.</value>
+  </data>
+  <data name="Dlg_Page" xml:space="preserve">
+    <value>Страница</value>
+  </data>
+  <data name="Dlg_PaperSize" xml:space="preserve">
+    <value>Размер бумаги</value>
+  </data>
+  <data name="Dlg_PaperSizeOrientationAndMarginsApply" xml:space="preserve">
+    <value>Размер бумаги, ориентация и поля действуют на экспорт в DOCX и PDF. Пустое поле — значение </value>
+  </data>
+  <data name="Dlg_PDFHeadersAndFooters" xml:space="preserve">
+    <value>Колонтитулы PDF</value>
+  </data>
+  <data name="Dlg_Portrait" xml:space="preserve">
+    <value>Книжная</value>
+  </data>
+  <data name="Dlg_PositionOfImage0OfThe" xml:space="preserve">
+    <value>Место картинки {0} колонтитула</value>
+  </data>
+  <data name="Dlg_Printing" xml:space="preserve">
+    <value>Печать</value>
+  </data>
+  <data name="Dlg_Product" xml:space="preserve">
+    <value>Продукт </value>
+  </data>
+  <data name="Dlg_Product0IsAlreadyInThe" xml:space="preserve">
+    <value>Продукт «{0}» уже есть в списке.</value>
+  </data>
+  <data name="Dlg_ProductList" xml:space="preserve">
+    <value>Список продуктов</value>
+  </data>
+  <data name="Dlg_ProductListOfAnotherProject" xml:space="preserve">
+    <value>Список продуктов другого проекта</value>
+  </data>
+  <data name="Dlg_ProductName" xml:space="preserve">
+    <value>Имя продукта</value>
+  </data>
+  <data name="Dlg_ProductsAdded0" xml:space="preserve">
+    <value>Добавлено продуктов: {0}.</value>
+  </data>
+  <data name="Dlg_ProductsInTheFile0Yes" xml:space="preserve">
+    <value>В файле продуктов: {0}. Да — добавить недостающие к текущему списку, Нет — заменить текущий список списком из файла.</value>
+  </data>
+  <data name="Dlg_ProductsWhatGoesIntoThePublication" xml:space="preserve">
+    <value>Продукты: что войдёт в публикацию</value>
+  </data>
+  <data name="Dlg_ProjectProductsAreTheValuesOf" xml:space="preserve">
+    <value>Продукты проекта — значения атрибута product. Они выбираются из списка на панели «Атрибуты» (можно несколько) </value>
+  </data>
+  <data name="Dlg_PublicationDateOnTheTitlePage" xml:space="preserve">
+    <value>Дата публикации на титуле</value>
+  </data>
+  <data name="Dlg_PublishCustomCSSAndWorksThe" xml:space="preserve">
+    <value>проекта («Публикация → Пользовательский CSS…») и одинаково действует на HTML, PDF и DOCX. Размер </value>
+  </data>
+  <data name="Dlg_ReferencesToThisFileHrefConref" xml:space="preserve">
+    <value>Ссылки на этот файл (href, conref) во всём проекте будут пересчитаны автоматически.</value>
+  </data>
+  <data name="Dlg_ReferencesToThisIdHrefConref" xml:space="preserve">
+    <value>Ссылки на этот id (href, conref) во всём проекте будут обновлены автоматически.</value>
+  </data>
+  <data name="Dlg_RelationshipTable" xml:space="preserve">
+    <value>Таблица соответствий</value>
+  </data>
+  <data name="Dlg_Remove" xml:space="preserve">
+    <value>Убрать</value>
+  </data>
+  <data name="Dlg_RemovedFromTheList0The" xml:space="preserve">
+    <value>Удалён из списка: {0}. Значения product в топиках не меняются.</value>
+  </data>
+  <data name="Dlg_Rename" xml:space="preserve">
+    <value>Переименовать</value>
+  </data>
+  <data name="Dlg_RenameId" xml:space="preserve">
+    <value>Переименовать id</value>
+  </data>
+  <data name="Dlg_RenameMoveFile" xml:space="preserve">
+    <value>Переименовать / переместить файл</value>
+  </data>
+  <data name="Dlg_Right" xml:space="preserve">
+    <value>Справа</value>
+  </data>
+  <data name="Dlg_RightMarginMm" xml:space="preserve">
+    <value>Поле справа, мм</value>
+  </data>
+  <data name="Dlg_Row" xml:space="preserve">
+    <value>+ Строка</value>
+  </data>
+  <data name="Dlg_Row2" xml:space="preserve">
+    <value>− Строка</value>
+  </data>
+  <data name="Dlg_Rows" xml:space="preserve">
+    <value>Строк</value>
+  </data>
+  <data name="Dlg_SaveProductList" xml:space="preserve">
+    <value>Сохранить список продуктов</value>
+  </data>
+  <data name="Dlg_SheetHeightMm" xml:space="preserve">
+    <value>Высота листа, мм</value>
+  </data>
+  <data name="Dlg_SheetWidthMm" xml:space="preserve">
+    <value>Ширина листа, мм</value>
+  </data>
+  <data name="Dlg_ShowHeadersAndFooters" xml:space="preserve">
+    <value>Показывать колонтитулы</value>
+  </data>
+  <data name="Dlg_StaysInItsPlaceEditThe" xml:space="preserve">
+    <value>остаётся пустая ссылка conref — редактировать текст затем нужно в целевом топике.</value>
+  </data>
+  <data name="Dlg_Subtitle" xml:space="preserve">
+    <value>Подзаголовок</value>
+  </data>
+  <data name="Dlg_SubtitleText" xml:space="preserve">
+    <value>Текст подзаголовка</value>
+  </data>
+  <data name="Dlg_TableOfContents" xml:space="preserve">
+    <value>Оглавление</value>
+  </data>
+  <data name="Dlg_TableOfContentsAtTheBeginning" xml:space="preserve">
+    <value>Оглавление в начале документа</value>
+  </data>
+  <data name="Dlg_TableOfContentsTitle" xml:space="preserve">
+    <value>Заголовок оглавления</value>
+  </data>
+  <data name="Dlg_TableOfContentsTitleAndIn" xml:space="preserve">
+    <value>Заголовок оглавления (и в PDF):</value>
+  </data>
+  <data name="Dlg_TableTitle" xml:space="preserve">
+    <value>Заголовок таблицы</value>
+  </data>
+  <data name="Dlg_TextLanguage" xml:space="preserve">
+    <value>Язык текста</value>
+  </data>
+  <data name="Dlg_TextLanguageSpellCheckingInWord" xml:space="preserve">
+    <value>Язык текста (проверка правописания в Word):</value>
+  </data>
+  <data name="Dlg_TheBuiltInStylesItsRules" xml:space="preserve">
+    <value>встроенным стилям — его правила применяются последними и могут их переопределять. </value>
+  </data>
+  <data name="Dlg_TheElementSContentIsMoved" xml:space="preserve">
+    <value>Содержимое элемента переносится в целевой топик целиком, а на исходном месте </value>
+  </data>
+  <data name="Dlg_TheFileHasNoProducts" xml:space="preserve">
+    <value>В файле нет продуктов.</value>
+  </data>
+  <data name="Dlg_TheFilesAreIdentical" xml:space="preserve">
+    <value>Файлы идентичны.</value>
+  </data>
+  <data name="Dlg_TheFlaggingRules0InThe" xml:space="preserve">
+    <value>правила подсветки ({0}) в файле не тронутся.</value>
+  </data>
+  <data name="Dlg_TheHeightIsInMillimetersIt" xml:space="preserve">
+    <value>высота — в миллиметрах; она появится и в колонтитулах PDF. Колонтитулы можно задать и в CSS </value>
+  </data>
+  <data name="Dlg_TheLookOfTheTextFonts" xml:space="preserve">
+    <value>Внешний вид текста — шрифты, цвета, отступы, рамки, таблицы — задаётся пользовательским CSS </value>
+  </data>
+  <data name="Dlg_ThePageNumberAndTotalPage" xml:space="preserve">
+    <value>Номер страницы и общее число страниц добавляются автоматически справа в подвале.</value>
+  </data>
+  <data name="Dlg_TheProductListIsEmptyAdd" xml:space="preserve">
+    <value>Список продуктов пуст — добавьте продукты кнопкой ниже.</value>
+  </data>
+  <data name="Dlg_TheProjectHasNoConditionalAttributes" xml:space="preserve">
+    <value>В проекте нет условных атрибутов.</value>
+  </data>
+  <data name="Dlg_ThereAreNoFlaggingRulesIn" xml:space="preserve">
+    <value>правил подсветки в файле нет.</value>
+  </data>
+  <data name="Dlg_TheStructureOfTheWordDocument" xml:space="preserve">
+    <value>устройство документа Word.</value>
+  </data>
+  <data name="Dlg_TheStyleFileIsAttachedTo" xml:space="preserve">
+    <value>Файл стилей подключается к каждой публикации (HTML, PDF и DOCX) в дополнение к </value>
+  </data>
+  <data name="Dlg_TheyAppearInEachOtherS" xml:space="preserve">
+    <value>они попадут друг другу в «Смотрите также». Топики одного столбца друг с другом не связываются.</value>
+  </data>
+  <data name="Dlg_TickTheProductsThePublicationIs" xml:space="preserve">
+    <value>Отметьте продукты, для которых собирается публикация. Элементы без атрибута product входят всегда; </value>
+  </data>
+  <data name="Dlg_Title" xml:space="preserve">
+    <value>Заголовок</value>
+  </data>
+  <data name="Dlg_TitlePage" xml:space="preserve">
+    <value>Титульная страница</value>
+  </data>
+  <data name="Dlg_TitlePageImageAboveTheTitle" xml:space="preserve">
+    <value>Картинка на титуле (над названием): место и высота в мм</value>
+  </data>
+  <data name="Dlg_Top" xml:space="preserve">
+    <value>Сверху</value>
+  </data>
+  <data name="Dlg_TopMarginMm" xml:space="preserve">
+    <value>Поле сверху, мм</value>
+  </data>
+  <data name="Dlg_Untitled" xml:space="preserve">
+    <value>Без названия</value>
+  </data>
+  <data name="Dlg_ValidationAgainstContentModelsHTMLAnd" xml:space="preserve">
+    <value>проверка по контент-моделям, сборка HTML и PDF.</value>
+  </data>
+  <data name="Dlg_Width" xml:space="preserve">
+    <value>Ширина</value>
+  </data>
+  <data name="Dlg_Yes" xml:space="preserve">
+    <value>Да</value>
+  </data>
+  <data name="Dlg_YouCanGiveAnotherFolderWith" xml:space="preserve">
+    <value>Можно указать другую папку через «/» — она будет создана при необходимости. </value>
+  </data>
+  <data name="Doc_Author" xml:space="preserve">
+    <value>Автор</value>
+  </data>
+  <data name="Doc_Preview" xml:space="preserve">
+    <value>Предпросмотр</value>
+  </data>
+  <data name="Doc_RecoveryAfterACrash" xml:space="preserve">
+    <value>Восстановление после сбоя</value>
+  </data>
+  <data name="Doc_ReloadFromDisk" xml:space="preserve">
+    <value>Перезагрузка с диска</value>
+  </data>
+  <data name="Doc_Source" xml:space="preserve">
+    <value>Исходный код</value>
+  </data>
+  <data name="Doc_SourceEdit" xml:space="preserve">
+    <value>Правка исходного кода</value>
   </data>
   <data name="Hdr_ProjectProducts" xml:space="preserve">
     <value>Продукты проекта</value>
@@ -580,8 +1512,1074 @@
   <data name="Menu_WrapIn" xml:space="preserve">
     <value>Обернуть в…</value>
   </data>
+  <data name="Msg_0IsNotPublishedNotIn" xml:space="preserve">
+    <value>«{0}» не публикуется (ни в HTML, ни в PDF, ни в DOCX); ссылки и ключи из него работают.</value>
+  </data>
+  <data name="Msg_0IsNowNestedIn1" xml:space="preserve">
+    <value>«{0}» теперь вложен в «{1}».</value>
+  </data>
+  <data name="Msg_0IsPublishedAgain" xml:space="preserve">
+    <value>«{0}» снова публикуется.</value>
+  </data>
+  <data name="Msg_0MoreReferencesInOtherFiles" xml:space="preserve">
+    <value>
+
+Ещё {0} ссыл. в других файлах ({1}) станут битыми.</value>
+  </data>
+  <data name="Msg_0WasCreatedAndAddedTo" xml:space="preserve">
+    <value>Создан {0} и добавлен в карту {1} (не забудьте сохранить карту).</value>
+  </data>
+  <data name="Msg_0WasMoved" xml:space="preserve">
+    <value>«{0}» перенесён.</value>
+  </data>
+  <data name="Msg_AcceptChangeTrackChanges" xml:space="preserve">
+    <value>Принятие правки (track changes)</value>
+  </data>
+  <data name="Msg_AddNewTopicToTheMap" xml:space="preserve">
+    <value>Добавление нового топика в карту</value>
+  </data>
+  <data name="Msg_AddReferenceToTheMap" xml:space="preserve">
+    <value>Добавление ссылки в карту</value>
+  </data>
+  <data name="Msg_AddSectionToTheMap" xml:space="preserve">
+    <value>Добавление раздела в карту</value>
+  </data>
+  <data name="Msg_AFileForTheReferenceCannot" xml:space="preserve">
+    <value>Файл по ссылке создать нельзя: у строки нет пути к файлу (ключ не определён). Выберите другой файл.</value>
+  </data>
+  <data name="Msg_Alignment" xml:space="preserve">
+    <value>Выравнивание: </value>
+  </data>
+  <data name="Msg_AllFiles" xml:space="preserve">
+    <value>Все файлы</value>
+  </data>
+  <data name="Msg_AllKeySourceProjectsDisconnected" xml:space="preserve">
+    <value>Все проекты-источники ключей отключены.</value>
+  </data>
+  <data name="Msg_AllowedChildElements01" xml:space="preserve">
+    <value>Допустимые дочерние элементы ({0}): {1}</value>
+  </data>
+  <data name="Msg_AllowedNextTo01Elements" xml:space="preserve">
+    <value>Допустимо рядом с &lt;{0}&gt;: {1} элементов. Двойной щелчок — вставить.</value>
+  </data>
+  <data name="Msg_AProjectCannotBeConnectedTo" xml:space="preserve">
+    <value>Нельзя подключить проект сам к себе.</value>
+  </data>
+  <data name="Msg_ATableCannotBeInsertedHere" xml:space="preserve">
+    <value>Таблицу здесь вставить нельзя.</value>
+  </data>
+  <data name="Msg_Attribute0" xml:space="preserve">
+    <value>Атрибут @{0}</value>
+  </data>
+  <data name="Msg_Attributes0" xml:space="preserve">
+    <value>
+
+Атрибуты: {0}</value>
+  </data>
+  <data name="Msg_BlockFormatting" xml:space="preserve">
+    <value>Оформление блока</value>
+  </data>
+  <data name="Msg_BordersOfSelectedCells" xml:space="preserve">
+    <value>Границы выделенных ячеек</value>
+  </data>
+  <data name="Msg_BordersPutTheCursorInA" xml:space="preserve">
+    <value>Границы: поставьте курсор в ячейку или выделите ячейки обычной таблицы (CALS).</value>
+  </data>
+  <data name="Msg_BuildConditionsUpdatedValuesExcluded0" xml:space="preserve">
+    <value>Условия сборки обновлены: исключено значений {0}.</value>
+  </data>
+  <data name="Msg_BuildingDOCXFromTheMap0" xml:space="preserve">
+    <value>Сборка DOCX по карте {0}…
+</value>
+  </data>
+  <data name="Msg_BuildingTheMap0" xml:space="preserve">
+    <value>Сборка карты {0}…
+</value>
+  </data>
+  <data name="Msg_BuiltInBrowser0PrintingWith" xml:space="preserve">
+    <value>Встроенный браузер: {0} — печатаем через установленный браузер без колонтитулов.
+</value>
+  </data>
+  <data name="Msg_ButAreAvailableThroughKeyrefConref" xml:space="preserve">
+    <value>но доступны через keyref/conref, если не найдены в этом проекте.</value>
+  </data>
+  <data name="Msg_CancelDecideLaterTheCopiesStay" xml:space="preserve">
+    <value>Отмена — решить позже (копии останутся до следующего открытия проекта).</value>
+  </data>
+  <data name="Msg_CaptionAdd" xml:space="preserve">
+    <value>Подпись: добавить</value>
+  </data>
+  <data name="Msg_CaptionAddedWhenPublishedFigureN" xml:space="preserve">
+    <value>Подпись добавлена: при публикации — «Рисунок N» / «Таблица N»; впишите название в заголовок.</value>
+  </data>
+  <data name="Msg_CaptionRemove" xml:space="preserve">
+    <value>Подпись: убрать</value>
+  </data>
+  <data name="Msg_CaptionRemovedThisFigureTableWill" xml:space="preserve">
+    <value>Подпись убрана: у этого рисунка (таблицы) подписи и номера не будет.</value>
+  </data>
+  <data name="Msg_CellAlignment" xml:space="preserve">
+    <value>Выравнивание ячеек</value>
+  </data>
+  <data name="Msg_CellBorders" xml:space="preserve">
+    <value>Границы ячеек</value>
+  </data>
+  <data name="Msg_CellBordersChanged" xml:space="preserve">
+    <value>Границы ячеек изменены.</value>
+  </data>
+  <data name="Msg_CellsMergedHorizontally" xml:space="preserve">
+    <value>Ячейки объединены по горизонтали.</value>
+  </data>
+  <data name="Msg_CellsMergedVertically" xml:space="preserve">
+    <value>Ячейки объединены по вертикали.</value>
+  </data>
+  <data name="Msg_Change0" xml:space="preserve">
+    <value>Изменение @{0}</value>
+  </data>
+  <data name="Msg_ChangeAccepted" xml:space="preserve">
+    <value>Правка принята.</value>
+  </data>
+  <data name="Msg_ChangeMarkRev" xml:space="preserve">
+    <value>Отметка изменения (rev)</value>
+  </data>
+  <data name="Msg_ChangeOutputFormatting" xml:space="preserve">
+    <value>Изменение оформления вывода</value>
+  </data>
+  <data name="Msg_ChangeRejected" xml:space="preserve">
+    <value>Правка отклонена.</value>
+  </data>
+  <data name="Msg_ChooseACommand" xml:space="preserve">
+    <value>Выберите команду:</value>
+  </data>
+  <data name="Msg_ChooseADITAProjectFolder" xml:space="preserve">
+    <value>Выберите папку с проектом DITA</value>
+  </data>
+  <data name="Msg_ChooseAFileForTheRow" xml:space="preserve">
+    <value>Выберите файл для строки «</value>
+  </data>
+  <data name="Msg_ChooseAMapOnTheMap" xml:space="preserve">
+    <value>Выберите карту на вкладке «Карта».</value>
+  </data>
+  <data name="Msg_ChooseAnImage" xml:space="preserve">
+    <value>Выберите изображение</value>
+  </data>
+  <data name="Msg_ChooseAPublicationFormat" xml:space="preserve">
+    <value>Выберите формат публикации:</value>
+  </data>
+  <data name="Msg_ClearCells" xml:space="preserve">
+    <value>Очистка ячеек</value>
+  </data>
+  <data name="Msg_Comment" xml:space="preserve">
+    <value>комментарий</value>
+  </data>
+  <data name="Msg_CompareFirstFile" xml:space="preserve">
+    <value>Сравнить — первый файл</value>
+  </data>
+  <data name="Msg_CompareSecondFile" xml:space="preserve">
+    <value>Сравнить — второй файл</value>
+  </data>
+  <data name="Msg_CompareWithGit" xml:space="preserve">
+    <value>Сравнение с git</value>
+  </data>
+  <data name="Msg_CompareWithSVN" xml:space="preserve">
+    <value>Сравнение с SVN</value>
+  </data>
+  <data name="Msg_ConnectAConditionsFileDitaval" xml:space="preserve">
+    <value>Подключить файл условий (.ditaval)</value>
+  </data>
+  <data name="Msg_ConnectAProjectAsAKey" xml:space="preserve">
+    <value>Подключить проект как источник ключей</value>
+  </data>
+  <data name="Msg_ConnectedDitaval0Exclusions1Flagging" xml:space="preserve">
+    <value>Подключён .ditaval: {0} (исключений: {1}, правил подсветки: {2}). Изменения файла подхватываются автоматически.</value>
+  </data>
+  <data name="Msg_ConnectedInTotal0" xml:space="preserve">
+    <value>(всего подключено: {0}).</value>
+  </data>
+  <data name="Msg_ConnectExternalDTD" xml:space="preserve">
+    <value>Подключить внешний DTD</value>
+  </data>
+  <data name="Msg_Content0" xml:space="preserve">
+    <value>Содержимое: {0}
+
+</value>
+  </data>
+  <data name="Msg_Copied0" xml:space="preserve">
+    <value>Скопировано: {0}</value>
+  </data>
+  <data name="Msg_CouldNotCreate01" xml:space="preserve">
+    <value>Не удалось создать {0}: {1}</value>
+  </data>
+  <data name="Msg_CouldNotMoveTheElementCheck" xml:space="preserve">
+    <value>Не удалось перенести элемент — проверьте цель.</value>
+  </data>
+  <data name="Msg_CouldNotOpenTheFileIs" xml:space="preserve">
+    <value>Не удалось открыть (файла нет или он не разбирается): </value>
+  </data>
+  <data name="Msg_CouldNotParse01" xml:space="preserve">
+    <value>Не удалось разобрать {0}:
+
+{1}</value>
+  </data>
+  <data name="Msg_CouldNotReadTheFile0" xml:space="preserve">
+    <value>Не удалось прочитать файл: {0}</value>
+  </data>
+  <data name="Msg_CouldNotReadTheFolder0" xml:space="preserve">
+    <value>Не удалось прочитать папку: {0}</value>
+  </data>
+  <data name="Msg_CouldNotReload01" xml:space="preserve">
+    <value>Не удалось перечитать {0}: {1}</value>
+  </data>
+  <data name="Msg_CouldNotSaveTheFile" xml:space="preserve">
+    <value>Не удалось сохранить файл.</value>
+  </data>
+  <data name="Msg_CouldNotSaveTheSettings0" xml:space="preserve">
+    <value>Не удалось сохранить настройки: {0}</value>
+  </data>
+  <data name="Msg_CouldNotWriteTheRecoveryCopy" xml:space="preserve">
+    <value>Не удалось записать копию для восстановления ({0}): {1}</value>
+  </data>
+  <data name="Msg_CouldNotWriteTheTemporaryFile" xml:space="preserve">
+    <value>Не удалось записать временный файл: {0}</value>
+  </data>
+  <data name="Msg_CreateDocument" xml:space="preserve">
+    <value>Создание документа</value>
+  </data>
+  <data name="Msg_CreateFile" xml:space="preserve">
+    <value>Создание файла</value>
+  </data>
+  <data name="Msg_CustomCSS0" xml:space="preserve">
+    <value>Пользовательский CSS: {0}</value>
+  </data>
+  <data name="Msg_CustomCSSIsOff" xml:space="preserve">
+    <value>Пользовательский CSS отключён.</value>
+  </data>
+  <data name="Msg_CustomFontSize" xml:space="preserve">
+    <value>Свой размер шрифта</value>
+  </data>
+  <data name="Msg_CutFromTheMap" xml:space="preserve">
+    <value>Вырезание из карты</value>
+  </data>
+  <data name="Msg_Delete" xml:space="preserve">
+    <value>Удаление</value>
+  </data>
+  <data name="Msg_Delete0" xml:space="preserve">
+    <value>Удаление &lt;{0}&gt;</value>
+  </data>
+  <data name="Msg_Delete02" xml:space="preserve">
+    <value>Удаление @{0}</value>
+  </data>
+  <data name="Msg_DeleteAFileFromTheMap" xml:space="preserve">
+    <value>Удаление файла из карты</value>
+  </data>
+  <data name="Msg_DeleteBlocks0" xml:space="preserve">
+    <value>Удаление блоков: {0}</value>
+  </data>
+  <data name="Msg_DeleteFile" xml:space="preserve">
+    <value>Удаление файла</value>
+  </data>
+  <data name="Msg_DeleteTheElement0WithIts" xml:space="preserve">
+    <value>Удалить элемент &lt;{0}&gt; вместе с содержимым?</value>
+  </data>
+  <data name="Msg_DeleteTheFile0FromDisk" xml:space="preserve">
+    <value>Удалить файл {0} с диска? Отменить это будет нельзя. Строки этой карты, которые на него ссылаются, будут убраны.{1}</value>
+  </data>
+  <data name="Msg_DITAFiles" xml:space="preserve">
+    <value>Файлы DITA</value>
+  </data>
+  <data name="Msg_DITATopicsAndMaps" xml:space="preserve">
+    <value>Топики и карты DITA</value>
+  </data>
+  <data name="Msg_DITAVALFiles" xml:space="preserve">
+    <value>Файлы DITAVAL</value>
+  </data>
+  <data name="Msg_DocumentCheck0Remarks" xml:space="preserve">
+    <value>Проверка документа: {0} замечаний.</value>
+  </data>
+  <data name="Msg_DocumentsRecovered0SaveThemTo" xml:space="preserve">
+    <value>Восстановлено документов: {0}. Сохраните их, чтобы записать правки в файлы.</value>
+  </data>
+  <data name="Msg_DOCXBuilt" xml:space="preserve">
+    <value>DOCX собран: </value>
+  </data>
+  <data name="Msg_Done" xml:space="preserve">
+    <value> — выполнено.</value>
+  </data>
+  <data name="Msg_DTDFiles" xml:space="preserve">
+    <value>Файлы DTD</value>
+  </data>
+  <data name="Msg_DuplicateInTheMap" xml:space="preserve">
+    <value>Дублирование в карте</value>
+  </data>
+  <data name="Msg_ElementsConnectedFromTheExternalDTD" xml:space="preserve">
+    <value> Из внешнего DTD подключено элементов: {0}{1}.</value>
+  </data>
+  <data name="Msg_Error" xml:space="preserve">
+    <value>Ошибка: </value>
+  </data>
+  <data name="Msg_ExcludeTheTopicFromThePublication" xml:space="preserve">
+    <value>Исключение топика из публикации</value>
+  </data>
+  <data name="Msg_ExportedToXLIFF0" xml:space="preserve">
+    <value>Экспортировано в XLIFF: {0}</value>
+  </data>
+  <data name="Msg_ExportToDOCX" xml:space="preserve">
+    <value>Экспорт в DOCX</value>
+  </data>
+  <data name="Msg_ExportToPDF" xml:space="preserve">
+    <value>Экспорт в PDF</value>
+  </data>
+  <data name="Msg_ExportToXLIFF" xml:space="preserve">
+    <value>Экспорт в XLIFF</value>
+  </data>
+  <data name="Msg_ExternalDTD" xml:space="preserve">
+    <value>Внешний DTD</value>
+  </data>
+  <data name="Msg_ExternalDTDConnected0" xml:space="preserve">
+    <value>Подключён внешний DTD: {0}.</value>
+  </data>
+  <data name="Msg_ExternalDTDConnected0ElementsConnected" xml:space="preserve">
+    <value>Подключён внешний DTD: {0}. Элементов подключено: {1}{2}.</value>
+  </data>
+  <data name="Msg_ExternalDTDWarnings" xml:space="preserve">
+    <value>Внешний DTD — предупреждения</value>
+  </data>
+  <data name="Msg_ExtractToConref" xml:space="preserve">
+    <value>Вынесение в conref</value>
+  </data>
+  <data name="Msg_FigureInsertedReplaceTheTitleUnder" xml:space="preserve">
+    <value>Рисунок вставлен: замените название под ним. Подпись «Рисунок N» появится при публикации.</value>
+  </data>
+  <data name="Msg_FigureTitle" xml:space="preserve">
+    <value>Название рисунка</value>
+  </data>
+  <data name="Msg_FileChangedExternally" xml:space="preserve">
+    <value>Файл изменён извне</value>
+  </data>
+  <data name="Msg_FileCreatedForTheReference0" xml:space="preserve">
+    <value>Создан файл по ссылке: {0}.</value>
+  </data>
+  <data name="Msg_FileMoved01ReferencesUpdated" xml:space="preserve">
+    <value>Файл перенесён: {0} → {1}. Обновлено ссылок: {2}.</value>
+  </data>
+  <data name="Msg_FilesSaved0" xml:space="preserve">
+    <value>Сохранено файлов: {0}</value>
+  </data>
+  <data name="Msg_FilesWritten0" xml:space="preserve">
+    <value>Файлов записано: {0}
+</value>
+  </data>
+  <data name="Msg_FontSize00Pt" xml:space="preserve">
+    <value>Размер шрифта {0:0.#} пт.</value>
+  </data>
+  <data name="Msg_FontSizeCleared" xml:space="preserve">
+    <value>Размер шрифта снят.</value>
+  </data>
+  <data name="Msg_Footnote0" xml:space="preserve">
+    <value>сноска {0}</value>
+  </data>
+  <data name="Msg_FootnoteText" xml:space="preserve">
+    <value>Текст сноски</value>
+  </data>
+  <data name="Msg_From00To10" xml:space="preserve">
+    <value>От {0:0} до {1:0} пт; дробные значения — через точку или запятую (например, 13,5).</value>
+  </data>
+  <data name="Msg_Help" xml:space="preserve">
+    <value>Справка</value>
+  </data>
+  <data name="Msg_Id0RenamedTo1References" xml:space="preserve">
+    <value>id «{0}» переименован в «{1}». Обновлено ссылок: {2}.</value>
+  </data>
+  <data name="Msg_ImportFromXLIFF" xml:space="preserve">
+    <value>Импорт из XLIFF</value>
+  </data>
+  <data name="Msg_ImportFromXLIFFWarnings" xml:space="preserve">
+    <value>Импорт из XLIFF — предупреждения</value>
+  </data>
+  <data name="Msg_ImportTranslationFromXLIFF" xml:space="preserve">
+    <value>Импортировать перевод из XLIFF</value>
+  </data>
+  <data name="Msg_IncludeTheTopicInThePublication" xml:space="preserve">
+    <value>Включение топика в публикацию</value>
+  </data>
+  <data name="Msg_Inserted0" xml:space="preserve">
+    <value>Вставлен &lt;{0}&gt;</value>
+  </data>
+  <data name="Msg_InsertFigure" xml:space="preserve">
+    <value>Вставка рисунка</value>
+  </data>
+  <data name="Msg_InsertTable" xml:space="preserve">
+    <value>Вставка таблицы</value>
+  </data>
+  <data name="Msg_InThisTableTheNumberOf" xml:space="preserve">
+    <value>В этой таблице число столбцов задано её типом.</value>
+  </data>
+  <data name="Msg_KeptYourVersionOf0When" xml:space="preserve">
+    <value>Оставлена своя версия {0}; при сохранении она заменит файл на диске.</value>
+  </data>
+  <data name="Msg_KeySourceProjectConnected0" xml:space="preserve">
+    <value>Подключён проект-источник ключей: {0} </value>
+  </data>
+  <data name="Msg_KeySourceProjectsConnected0Their" xml:space="preserve">
+    <value>Подключено проектов-источников ключей: {0} — их ключи в списке не показаны, </value>
+  </data>
+  <data name="Msg_LineBelowRow" xml:space="preserve">
+    <value>Линия под строкой</value>
+  </data>
+  <data name="Msg_LineRightOfColumn" xml:space="preserve">
+    <value>Линия справа от столбца</value>
+  </data>
+  <data name="Msg_MakeImageAFigure" xml:space="preserve">
+    <value>Оформление изображения как рисунка</value>
+  </data>
+  <data name="Msg_MarkAsDeletedTrackChanges" xml:space="preserve">
+    <value>Пометка удаления (track changes)</value>
+  </data>
+  <data name="Msg_MarkAsInsertedTrackChanges" xml:space="preserve">
+    <value>Пометка вставки (track changes)</value>
+  </data>
+  <data name="Msg_Marker0" xml:space="preserve">
+    <value>Маркер: {0}.</value>
+  </data>
+  <data name="Msg_MarkerColor" xml:space="preserve">
+    <value>Цвет маркера</value>
+  </data>
+  <data name="Msg_MarkerMode0SelectTextWith" xml:space="preserve">
+    <value>Режим маркера: {0} — выделяйте текст мышью, он закрашивается. Esc — выключить.</value>
+  </data>
+  <data name="Msg_MarkerModeEraserSelectTextWith" xml:space="preserve">
+    <value>Режим маркера: ластик — выделите текст мышью, чтобы снять маркер. Esc — выключить.</value>
+  </data>
+  <data name="Msg_MarkerModeOff" xml:space="preserve">
+    <value>Маркер выключен.</value>
+  </data>
+  <data name="Msg_MarkerRemoved" xml:space="preserve">
+    <value>Маркер снят.</value>
+  </data>
+  <data name="Msg_MatchesFound0" xml:space="preserve">
+    <value>Найдено совпадений: {0}</value>
+  </data>
+  <data name="Msg_MergeCellsHorizontally" xml:space="preserve">
+    <value>Объединение ячеек по горизонтали</value>
+  </data>
+  <data name="Msg_MergeCellsVertically" xml:space="preserve">
+    <value>Объединение ячеек по вертикали</value>
+  </data>
+  <data name="Msg_MergeSelectedCells" xml:space="preserve">
+    <value>Объединение выделенных ячеек</value>
+  </data>
+  <data name="Msg_Module0" xml:space="preserve">
+    <value>Модуль: {0}
+</value>
+  </data>
+  <data name="Msg_MoveDown" xml:space="preserve">
+    <value>Перемещение вниз</value>
+  </data>
+  <data name="Msg_MoveFile" xml:space="preserve">
+    <value>Перенос файла</value>
+  </data>
+  <data name="Msg_MoveInTheMap" xml:space="preserve">
+    <value>Перемещение в карте</value>
+  </data>
+  <data name="Msg_MoveOutOfTheNesting" xml:space="preserve">
+    <value>Вынос из вложения</value>
+  </data>
+  <data name="Msg_MoveUp" xml:space="preserve">
+    <value>Перемещение вверх</value>
+  </data>
+  <data name="Msg_NestInTheMap" xml:space="preserve">
+    <value>Вложение в карте</value>
+  </data>
+  <data name="Msg_NewSection" xml:space="preserve">
+    <value>Новый раздел</value>
+  </data>
+  <data name="Msg_NoDeleteTheCopies" xml:space="preserve">
+    <value>Нет — удалить копии.</value>
+  </data>
+  <data name="Msg_NoElementSelected" xml:space="preserve">
+    <value>Элемент не выбран</value>
+  </data>
+  <data name="Msg_NoKeepYourVersionWhenSaved" xml:space="preserve">
+    <value>Нет — оставить свою версию (при сохранении она заменит файл на диске).</value>
+  </data>
+  <data name="Msg_NoProjectIsOpen" xml:space="preserve">
+    <value>Проект не открыт.</value>
+  </data>
+  <data name="Msg_Normal" xml:space="preserve">
+    <value>Обычный</value>
+  </data>
+  <data name="Msg_OccurrencesReplaced0InFiles1" xml:space="preserve">
+    <value>Заменено вхождений: {0} в файлах: {1}. Не забудьте сохранить (Ctrl+Shift+S).</value>
+  </data>
+  <data name="Msg_OnlyTheKeysOfTheRoot" xml:space="preserve">
+    <value>Показаны только ключи корневой области. Ещё {0} — внутри keyscope-областей карты.</value>
+  </data>
+  <data name="Msg_OpenADocument" xml:space="preserve">
+    <value>Откройте документ.</value>
+  </data>
+  <data name="Msg_OpenADocumentAndSelectText" xml:space="preserve">
+    <value>Откройте документ и выделите текст.</value>
+  </data>
+  <data name="Msg_OpenAProjectFolderFirst" xml:space="preserve">
+    <value>Сначала откройте папку проекта.</value>
+  </data>
+  <data name="Msg_Opened0" xml:space="preserve">
+    <value>Открыт {0}</value>
+  </data>
+  <data name="Msg_OpenFile" xml:space="preserve">
+    <value>Открытие файла</value>
+  </data>
+  <data name="Msg_OpenProjects0" xml:space="preserve">
+    <value> Открыто проектов: {0}.</value>
+  </data>
+  <data name="Msg_OpenTheDocumentToPutThe" xml:space="preserve">
+    <value>Откройте документ, в который нужно подставить перевод.</value>
+  </data>
+  <data name="Msg_Other" xml:space="preserve">
+    <value>Другой…</value>
+  </data>
+  <data name="Msg_PageBreakBeforeTheTitleIs" xml:space="preserve">
+    <value>Разрыв страницы перед заголовком включён.</value>
+  </data>
+  <data name="Msg_PageBreakBeforeTheTitleIs2" xml:space="preserve">
+    <value>Разрыв страницы перед заголовком выключен.</value>
+  </data>
+  <data name="Msg_PageBreakBeforeTheTopic" xml:space="preserve">
+    <value>Разрыв страницы перед топиком</value>
+  </data>
+  <data name="Msg_PageSetup" xml:space="preserve">
+    <value>Параметры страницы</value>
+  </data>
+  <data name="Msg_PageSetupSavedItAppliesAt" xml:space="preserve">
+    <value>Параметры страницы сохранены — применятся при следующем экспорте в DOCX и PDF.</value>
+  </data>
+  <data name="Msg_PasteBlocks0" xml:space="preserve">
+    <value>Вставка блоков: {0}</value>
+  </data>
+  <data name="Msg_PasteIntoTheMap" xml:space="preserve">
+    <value>Вставка в карту</value>
+  </data>
+  <data name="Msg_PDFBuilt" xml:space="preserve">
+    <value>PDF собран: </value>
+  </data>
+  <data name="Msg_PDFHeadersAndFootersAreOff" xml:space="preserve">
+    <value>Колонтитулы PDF отключены.</value>
+  </data>
+  <data name="Msg_PDFHeadersAndFootersAreOn" xml:space="preserve">
+    <value>Колонтитулы PDF включены.</value>
+  </data>
+  <data name="Msg_PDFReady" xml:space="preserve">
+    <value>PDF готов: </value>
+  </data>
+  <data name="Msg_PluginCommand" xml:space="preserve">
+    <value>Команда плагина</value>
+  </data>
+  <data name="Msg_PluginCommand0Completed" xml:space="preserve">
+    <value>Выполнена команда плагина «{0}».</value>
+  </data>
+  <data name="Msg_PrintingToPDF" xml:space="preserve">
+    <value>Печать в PDF…
+</value>
+  </data>
+  <data name="Msg_ProductList0" xml:space="preserve">
+    <value>Список продуктов: {0}.</value>
+  </data>
+  <data name="Msg_ProjectCheckErrors0" xml:space="preserve">
+    <value>Проверка проекта: ошибок {0}, </value>
+  </data>
+  <data name="Msg_ProjectOpened0Files1Keys" xml:space="preserve">
+    <value>Проект открыт: {0} файлов, {1} ключей.{2}</value>
+  </data>
+  <data name="Msg_ProjectRefreshed0Files1" xml:space="preserve">
+    <value>Проект обновлён: {0} файлов.{1}</value>
+  </data>
+  <data name="Msg_ProjectSettings" xml:space="preserve">
+    <value>Настройки проекта</value>
+  </data>
+  <data name="Msg_Publication" xml:space="preserve">
+    <value>Публикация</value>
+  </data>
+  <data name="Msg_Publication0" xml:space="preserve">
+    <value>Публикация: {0}</value>
+  </data>
+  <data name="Msg_PublicationReady" xml:space="preserve">
+    <value>Публикация готова: </value>
+  </data>
+  <data name="Msg_PublishedWithThePlugin01" xml:space="preserve">
+    <value>Опубликовано плагином «{0}»: {1}</value>
+  </data>
+  <data name="Msg_PublishingWithThePlugin0From" xml:space="preserve">
+    <value>Публикация плагином «{0}» по карте {1}…
+</value>
+  </data>
+  <data name="Msg_PublishWithAPlugin" xml:space="preserve">
+    <value>Публикация плагином</value>
+  </data>
+  <data name="Msg_PutTheCursorInACell" xml:space="preserve">
+    <value>Поставьте курсор в ячейку таблицы (обычной, CALS).</value>
+  </data>
+  <data name="Msg_PutTheCursorInACell2" xml:space="preserve">
+    <value>Поставьте курсор в ячейку обычной таблицы.</value>
+  </data>
+  <data name="Msg_PutTheCursorInAFigure" xml:space="preserve">
+    <value>Поставьте курсор в рисунок или таблицу, чтобы добавить или убрать подпись.</value>
+  </data>
+  <data name="Msg_PutTheCursorInAnElement" xml:space="preserve">
+    <value>Поставьте курсор в элемент.</value>
+  </data>
+  <data name="Msg_PutTheCursorInAnElement2" xml:space="preserve">
+    <value>Поставьте курсор в элемент с отслеживаемой правкой.</value>
+  </data>
+  <data name="Msg_PutTheCursorInAParagraph" xml:space="preserve">
+    <value>Поставьте курсор в абзац с изображением (вне рисунка), чтобы оформить его как рисунок.</value>
+  </data>
+  <data name="Msg_PutTheCursorInAParagraph2" xml:space="preserve">
+    <value>Поставьте курсор в абзац, заголовок или ячейку.</value>
+  </data>
+  <data name="Msg_PutTheCursorInAParagraph3" xml:space="preserve">
+    <value>Поставьте курсор в абзац, рисунок, таблицу или заметку прямо в тексте топика (не в списке).</value>
+  </data>
+  <data name="Msg_PutTheCursorInAParagraph4" xml:space="preserve">
+    <value>Поставьте курсор в абзац.</value>
+  </data>
+  <data name="Msg_PutTheCursorInATable" xml:space="preserve">
+    <value>Поставьте курсор в ячейку таблицы.</value>
+  </data>
+  <data name="Msg_PutTheCursorInATopic" xml:space="preserve">
+    <value>Поставьте курсор в заголовок топика или раздела.</value>
+  </data>
+  <data name="Msg_PutTheCursorInTheElement" xml:space="preserve">
+    <value>Поставьте курсор в элемент, который нужно отметить как изменённый.</value>
+  </data>
+  <data name="Msg_PutTheCursorInTheElement2" xml:space="preserve">
+    <value>Поставьте курсор в элемент, который нужно пометить как вставленный.</value>
+  </data>
+  <data name="Msg_PutTheCursorInTheElement3" xml:space="preserve">
+    <value>Поставьте курсор в элемент, который нужно пометить как удалённый.</value>
+  </data>
+  <data name="Msg_PutTheCursorInTheParagraph" xml:space="preserve">
+    <value>Поставьте курсор в абзац, куда вставить изображение.</value>
+  </data>
+  <data name="Msg_PutTheCursorInTheText" xml:space="preserve">
+    <value>Поставьте курсор в текст, куда вставить ссылку.</value>
+  </data>
+  <data name="Msg_PutTheCursorInTheText2" xml:space="preserve">
+    <value>Поставьте курсор в текст или выделите его.</value>
+  </data>
+  <data name="Msg_PutTheCursorInTheText3" xml:space="preserve">
+    <value>Поставьте курсор в текст, чтобы увидеть допустимые элементы.</value>
+  </data>
+  <data name="Msg_ReadingTheVersionFrom0" xml:space="preserve">
+    <value>Чтение версии из {0}…</value>
+  </data>
+  <data name="Msg_Ready" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="Msg_Redone" xml:space="preserve">
+    <value>Повторено.</value>
+  </data>
+  <data name="Msg_ReferencesTo01" xml:space="preserve">
+    <value>Ссылок на {0}: {1}</value>
+  </data>
+  <data name="Msg_ReferencesToItInTheProject" xml:space="preserve">
+    <value>Ссылки на него в проекте будут обновлены.</value>
+  </data>
+  <data name="Msg_RejectChangeTrackChanges" xml:space="preserve">
+    <value>Отклонение правки (track changes)</value>
+  </data>
+  <data name="Msg_Remove0FromTheMap" xml:space="preserve">
+    <value>Убрать «{0}» из карты?</value>
+  </data>
+  <data name="Msg_RemoveARowFromTheMap" xml:space="preserve">
+    <value>Удаление строки из карты</value>
+  </data>
+  <data name="Msg_RemoveFromTheMap" xml:space="preserve">
+    <value>Удаление из карты</value>
+  </data>
+  <data name="Msg_RemoveTheRowFromTheMap" xml:space="preserve">
+    <value>Убрать строку из карты</value>
+  </data>
+  <data name="Msg_ReorderInTheMap" xml:space="preserve">
+    <value>Перестановка в карте</value>
+  </data>
+  <data name="Msg_Replace" xml:space="preserve">
+    <value>Замена</value>
+  </data>
+  <data name="Msg_ReplaceAllOccurrencesOf0With" xml:space="preserve">
+    <value>Заменить все вхождения «{0}» на «{1}» по всему проекту?
+</value>
+  </data>
+  <data name="Msg_ReplaceTheFileOfAMap" xml:space="preserve">
+    <value>Замена файла строки карты</value>
+  </data>
+  <data name="Msg_ReplaceWorksOnlyForTextSearch" xml:space="preserve">
+    <value>Замена работает только для текстового поиска, не для поиска по именам элементов.</value>
+  </data>
+  <data name="Msg_Result" xml:space="preserve">
+    <value>Результат: </value>
+  </data>
+  <data name="Msg_Save" xml:space="preserve">
+    <value>Сохранение</value>
+  </data>
+  <data name="Msg_SaveChangesTo0" xml:space="preserve">
+    <value>Сохранить изменения в «{0}»?</value>
+  </data>
+  <data name="Msg_Saved0" xml:space="preserve">
+    <value>Сохранено: {0}</value>
+  </data>
+  <data name="Msg_SelectAMapRow" xml:space="preserve">
+    <value>Выберите строку карты.</value>
+  </data>
+  <data name="Msg_SelectATableCellThatHas" xml:space="preserve">
+    <value>Выделите ячейку таблицы, у которой есть соседняя справа.</value>
+  </data>
+  <data name="Msg_SelectATableCellThatHas2" xml:space="preserve">
+    <value>Выделите ячейку таблицы, у которой есть соседняя снизу.</value>
+  </data>
+  <data name="Msg_SelectATitleForExampleA" xml:space="preserve">
+    <value>Выделите заголовок (title) — например, заголовок раздела или топика.</value>
+  </data>
+  <data name="Msg_Selected" xml:space="preserve">
+    <value> (выделенные)</value>
+  </data>
+  <data name="Msg_SelectTextInAuthorMode" xml:space="preserve">
+    <value>Выделите текст в режиме «Автор».</value>
+  </data>
+  <data name="Msg_SelectTheWholeTableNotA" xml:space="preserve">
+    <value>Выделите таблицу целиком (не отдельную ячейку).</value>
+  </data>
+  <data name="Msg_SizePt" xml:space="preserve">
+    <value>Размер, пт</value>
+  </data>
+  <data name="Msg_TableBorders" xml:space="preserve">
+    <value>Границы таблицы</value>
+  </data>
+  <data name="Msg_TableBordersAllLines" xml:space="preserve">
+    <value>Границы таблицы: все линии.</value>
+  </data>
+  <data name="Msg_TableBordersHorizontalLinesOnly" xml:space="preserve">
+    <value>Границы таблицы: только горизонтальные линии.</value>
+  </data>
+  <data name="Msg_TableBordersOuterFrameOnly" xml:space="preserve">
+    <value>Границы таблицы: только внешняя рамка.</value>
+  </data>
+  <data name="Msg_TableBordersRemoved" xml:space="preserve">
+    <value>Границы таблицы убраны.</value>
+  </data>
+  <data name="Msg_TableDeletedUndoCtrlAltZ" xml:space="preserve">
+    <value>Таблица удалена (отмена — Ctrl+Alt+Z).</value>
+  </data>
+  <data name="Msg_TableEdgesAreSetForA" xml:space="preserve">
+    <value>Края таблицы заданы для всей стороны сразу: выделите всю строку или весь столбец. Линии между ячейками применены.</value>
+  </data>
+  <data name="Msg_TableSelectedDeleteRemovesItEntirely" xml:space="preserve">
+    <value>Таблица выделена: Delete удаляет её целиком, Esc снимает выделение.</value>
+  </data>
+  <data name="Msg_TextColor0" xml:space="preserve">
+    <value>Цвет текста: {0}.</value>
+  </data>
+  <data name="Msg_TextColorCleared" xml:space="preserve">
+    <value>Цвет текста снят.</value>
+  </data>
+  <data name="Msg_TextFormattingIsNotAvailableHere" xml:space="preserve">
+    <value>Здесь оформление текста недоступно.</value>
+  </data>
+  <data name="Msg_TheBlockIsInTheText" xml:space="preserve">
+    <value>Блок снова идёт в тексте.</value>
+  </data>
+  <data name="Msg_TheBlockIsOnASeparate" xml:space="preserve">
+    <value>Блок на отдельном листе PDF и DOCX: {0}.</value>
+  </data>
+  <data name="Msg_TheCellIsNotMergedNothing" xml:space="preserve">
+    <value>Ячейка не объединена — делить нечего.</value>
+  </data>
+  <data name="Msg_TheChangedDocumentsWillBeMarked" xml:space="preserve">
+    <value>Изменённые документы будут помечены как несохранённые.</value>
+  </data>
+  <data name="Msg_TheChangeMarkWasRemoved" xml:space="preserve">
+    <value>Отметка об изменении снята.</value>
+  </data>
+  <data name="Msg_TheColumnCannotBeDeletedIt" xml:space="preserve">
+    <value>Столбец удалить нельзя: он последний или число столбцов задано типом таблицы.</value>
+  </data>
+  <data name="Msg_TheCopiesWereLeftInThe" xml:space="preserve">
+    <value>.
+
+Копии оставлены в папке:
+{0}</value>
+  </data>
+  <data name="Msg_TheDitavalFileWasUpdated0" xml:space="preserve">
+    <value>Файл .ditaval обновлён: {0}.</value>
+  </data>
+  <data name="Msg_TheDocumentCannotBeParsedAs" xml:space="preserve">
+    <value>Документ не разбирается как XML:
+
+{0}</value>
+  </data>
+  <data name="Msg_TheDOCXLayoutWasSavedIt" xml:space="preserve">
+    <value>Оформление DOCX сохранено — применится при следующем экспорте в DOCX.</value>
+  </data>
+  <data name="Msg_TheElement0IsNotAllowed" xml:space="preserve">
+    <value>Элемент &lt;{0}&gt; здесь недопустим.</value>
+  </data>
+  <data name="Msg_TheElement0IsNotIn" xml:space="preserve">
+    <value>Элемент &lt;{0}&gt; отсутствует в словаре DITA 1.3.</value>
+  </data>
+  <data name="Msg_TheElementHasNoIdSet" xml:space="preserve">
+    <value>У элемента нет id — задайте его в панели «Атрибуты», затем переименовывайте.</value>
+  </data>
+  <data name="Msg_TheElementIsMarkedAsChanged" xml:space="preserve">
+    <value>Элемент отмечен как изменённый (rev) — при публикации появится полоса на полях.</value>
+  </data>
+  <data name="Msg_TheElementIsMarkedAsDeleted" xml:space="preserve">
+    <value>Элемент помечен как удалённый (track changes) — скрыт из публикации, виден зачёркнутым в предпросмотре.</value>
+  </data>
+  <data name="Msg_TheElementIsMarkedAsInserted" xml:space="preserve">
+    <value>Элемент помечен как вставленный (track changes).</value>
+  </data>
+  <data name="Msg_TheElementWasExtractedToConref" xml:space="preserve">
+    <value>Элемент вынесен в conref (id «{0}»).</value>
+  </data>
+  <data name="Msg_TheExternalDTDWasDisconnectedIts" xml:space="preserve">
+    <value>Внешний DTD отключён — его элементы убраны из каталога проекта.</value>
+  </data>
+  <data name="Msg_TheFile0AlreadyExistsOverwrite" xml:space="preserve">
+    <value>Файл {0} уже существует. Перезаписать?</value>
+  </data>
+  <data name="Msg_TheFile0AlreadyExistsReplace" xml:space="preserve">
+    <value>Файл {0} уже существует. Заменить?</value>
+  </data>
+  <data name="Msg_TheFile0WasChangedBy" xml:space="preserve">
+    <value>Файл {0} изменён другой программой — перечитан с диска.</value>
+  </data>
+  <data name="Msg_TheFile0WasChangedBy2" xml:space="preserve">
+    <value>Файл «{0}» изменён другой программой, а во вкладке есть несохранённые правки.
+
+</value>
+  </data>
+  <data name="Msg_TheFile0WasDeleted" xml:space="preserve">
+    <value>Файл {0} удалён.</value>
+  </data>
+  <data name="Msg_TheFile0WasDeletedOr" xml:space="preserve">
+    <value>Файл {0} удалён или переименован другой программой. Сохраните вкладку, чтобы записать его заново.</value>
+  </data>
+  <data name="Msg_TheFile0WasReloadedFrom" xml:space="preserve">
+    <value>Файл {0} перечитан с диска.</value>
+  </data>
+  <data name="Msg_TheFileHasChangedSince" xml:space="preserve">
+    <value> — файл с тех пор менялся</value>
+  </data>
+  <data name="Msg_TheFileNoLongerExists" xml:space="preserve">
+    <value> — файла больше нет</value>
+  </data>
+  <data name="Msg_TheFileWasNotFoundIn" xml:space="preserve">
+    <value>Файл не найден в истории git: нет репозитория, файл не отслеживается, или git не установлен.</value>
+  </data>
+  <data name="Msg_TheFileWasNotFoundIn2" xml:space="preserve">
+    <value>Файл не найден в истории SVN: не под версионным контролем, или svn не установлен.</value>
+  </data>
+  <data name="Msg_TheFileWillBeDeletedWhen" xml:space="preserve">
+    <value>Файл будет удалён, когда вы уберёте последнюю ссылку на него командой «Удалить файл…».</value>
+  </data>
+  <data name="Msg_TheImageIsNowAFigure" xml:space="preserve">
+    <value>Изображение оформлено как рисунок: замените название под ним.</value>
+  </data>
+  <data name="Msg_TheLineBelowTheRowIs" xml:space="preserve">
+    <value>Линия под строкой показана.</value>
+  </data>
+  <data name="Msg_TheLineBelowTheRowIs2" xml:space="preserve">
+    <value>Линия под строкой убрана.</value>
+  </data>
+  <data name="Msg_TheLineRightOfTheColumn" xml:space="preserve">
+    <value>Линия справа от столбца показана.</value>
+  </data>
+  <data name="Msg_TheLineRightOfTheColumn2" xml:space="preserve">
+    <value>Линия справа от столбца убрана.</value>
+  </data>
+  <data name="Msg_TheMap0WasClosed" xml:space="preserve">
+    <value>Карта {0} закрыта.</value>
+  </data>
+  <data name="Msg_TheMapCannotBeRead0" xml:space="preserve">
+    <value>Карта не читается: {0}</value>
+  </data>
+  <data name="Msg_TheMarkerIsNotAvailableHere" xml:space="preserve">
+    <value>Здесь маркер недоступен.</value>
+  </data>
+  <data name="Msg_ThePageBreakBeforeTheTopic" xml:space="preserve">
+    <value>Разрыв страницы перед топиком снят: как задано в оформлении DOCX.</value>
+  </data>
+  <data name="Msg_TheParagraphIsNoLongerNumbered" xml:space="preserve">
+    <value>Абзац больше не нумеруется.</value>
+  </data>
+  <data name="Msg_TheParagraphIsNumberedWhenPublished" xml:space="preserve">
+    <value>Абзац нумерованный: при публикации получит номер по заголовкам (например, 2.3.1).</value>
+  </data>
+  <data name="Msg_ThePlugin0Failed1" xml:space="preserve">
+    <value>Плагин «{0}» упал: {1}</value>
+  </data>
+  <data name="Msg_ThePlugin0FailedDuringValidation" xml:space="preserve">
+    <value>Плагин "{0}" упал при проверке: {1}</value>
+  </data>
+  <data name="Msg_ThePreviousSessionEndedWithoutSaving" xml:space="preserve">
+    <value>Прошлый сеанс завершился, не сохранив правки. Найдены копии документов:</value>
+  </data>
+  <data name="Msg_TheProject0IsAlreadyOpen" xml:space="preserve">
+    <value>Проект «{0}» уже открыт — он стал активным.</value>
+  </data>
+  <data name="Msg_TheProject0WasClosed" xml:space="preserve">
+    <value>Проект «{0}» закрыт.</value>
+  </data>
+  <data name="Msg_TheRelationshipTableWasUpdated" xml:space="preserve">
+    <value>Таблица соответствий обновлена.</value>
+  </data>
+  <data name="Msg_TheRow0HasNoFile" xml:space="preserve">
+    <value>У строки «{0}» нет файла. Чтобы убрать её из карты, выберите «Убрать из карты».</value>
+  </data>
+  <data name="Msg_TheRow0NowRefersTo" xml:space="preserve">
+    <value>Строка «{0}» теперь ссылается на {1}.</value>
+  </data>
+  <data name="Msg_TheRow0WasRemovedFrom" xml:space="preserve">
+    <value>Строка «{0}» убрана из карты; файл {1} оставлен — ссылок на него из карт — ещё {2}.</value>
+  </data>
+  <data name="Msg_TheRow0WillBeRemoved" xml:space="preserve">
+    <value>Строка «{0}» будет убрана из карты. Файл {1} остаётся на диске: ссылок на него из карт — ещё {2}. </value>
+  </data>
+  <data name="Msg_TheRowCannotBeDeletedThe" xml:space="preserve">
+    <value>Строку удалить нельзя: в таблице должна остаться хотя бы одна строка.</value>
+  </data>
+  <data name="Msg_TheSizeMustBeANumber" xml:space="preserve">
+    <value>Размер должен быть числом от {0:0} до {1:0} пт.</value>
+  </data>
+  <data name="Msg_TheTableCanNowBreakAcross" xml:space="preserve">
+    <value>Таблица теперь может переноситься на страницы с повтором шапки.</value>
+  </data>
+  <data name="Msg_TheTablePrintsAsASingle" xml:space="preserve">
+    <value>Таблица снова печатается как единый блок.</value>
+  </data>
+  <data name="Msg_TheTitleIsNumberedAgainAnd" xml:space="preserve">
+    <value>Заголовок снова нумеруется и попадает в оглавление.</value>
+  </data>
+  <data name="Msg_TheTopicTitleWasChangedRename" xml:space="preserve">
+    <value>Заголовок топика изменён.
+
+Переименовать файл «{0}» в «{1}»? </value>
+  </data>
+  <data name="Msg_TheTopicWillNotStartOn" xml:space="preserve">
+    <value>Топик не будет начинаться с новой страницы, даже если так задано в оформлении DOCX.</value>
+  </data>
+  <data name="Msg_TheTopicWillStartOnA" xml:space="preserve">
+    <value>Топик будет начинаться с новой страницы (DOCX, PDF, единый HTML).</value>
+  </data>
+  <data name="Msg_TitleWithoutNumberWhenPublishedIt" xml:space="preserve">
+    <value>Заголовок без номера: при публикации не нумеруется и не попадает в оглавление.</value>
+  </data>
+  <data name="Msg_TopicNotFound" xml:space="preserve">
+    <value>Топик не найден</value>
+  </data>
+  <data name="Msg_TopicTitle" xml:space="preserve">
+    <value>Название топика</value>
+  </data>
+  <data name="Msg_TranslationImportedSegmentsApplied0" xml:space="preserve">
+    <value>Перевод импортирован: применено сегментов {0}</value>
+  </data>
+  <data name="Msg_Undone" xml:space="preserve">
+    <value>Отменено.</value>
+  </data>
+  <data name="Msg_UnsavedDocuments0SaveBeforeExit" xml:space="preserve">
+    <value>Не сохранено документов: {0}. Сохранить перед выходом?</value>
+  </data>
+  <data name="Msg_Warning" xml:space="preserve">
+    <value>Предупреждение: </value>
+  </data>
+  <data name="Msg_Warnings0" xml:space="preserve">
+    <value>, предупреждений {0}</value>
+  </data>
+  <data name="Msg_Warnings02" xml:space="preserve">
+    <value>, предупреждений {0}.</value>
+  </data>
+  <data name="Msg_Warnings03" xml:space="preserve">
+    <value>предупреждений {0}.</value>
+  </data>
+  <data name="Msg_WhatToDoWithTheRow" xml:space="preserve">
+    <value>
+
+Что сделать со строкой «</value>
+  </data>
+  <data name="Msg_WhereToSaveThePublication" xml:space="preserve">
+    <value>Куда сохранить публикацию</value>
+  </data>
+  <data name="Msg_WordDocument" xml:space="preserve">
+    <value>Документ Word</value>
+  </data>
+  <data name="Msg_WrapIn0" xml:space="preserve">
+    <value>Обернуть в &lt;{0}&gt;</value>
+  </data>
+  <data name="Msg_XLIFFFiles" xml:space="preserve">
+    <value>Файлы XLIFF</value>
+  </data>
+  <data name="Msg_YesLoadTheVersionFromDisk" xml:space="preserve">
+    <value>Да — загрузить версию с диска (ваши правки можно вернуть через «Правка → Отменить структурное изменение», Ctrl+Alt+Z).
+</value>
+  </data>
+  <data name="Msg_YesOpenTheDocumentsWithThe" xml:space="preserve">
+    <value>Да — открыть документы с восстановленными правками (они не сохранены, проверьте и сохраните).</value>
+  </data>
   <data name="Ph_FontSize" xml:space="preserve">
     <value>Размер</value>
+  </data>
+  <data name="Preview_CouldNotStartTheBuiltIn" xml:space="preserve">
+    <value>не удалось запустить встроенный браузер: </value>
+  </data>
+  <data name="Preview_CouldNotUpdateThePreview" xml:space="preserve">
+    <value>Не удалось обновить предпросмотр: </value>
+  </data>
+  <data name="Preview_CouldNotWriteTheTemporaryPreview" xml:space="preserve">
+    <value>Не удалось записать временный файл предпросмотра: </value>
+  </data>
+  <data name="Preview_DOCXApproximate" xml:space="preserve">
+    <value>DOCX (приближённо)</value>
+  </data>
+  <data name="Preview_HtmlBodyStyleFontFamilySans" xml:space="preserve">
+    <value>&lt;html&gt;&lt;body style='font-family:sans-serif'&gt;&lt;p&gt;Не удалось построить предпросмотр:&lt;/p&gt;&lt;pre&gt;</value>
+  </data>
+  <data name="Preview_Open" xml:space="preserve">
+    <value>Открыть </value>
+  </data>
+  <data name="Preview_OpenInExternalApplication" xml:space="preserve">
+    <value>Открыть внешним приложением</value>
+  </data>
+  <data name="Preview_PagesLive" xml:space="preserve">
+    <value>Страницы (живой)</value>
+  </data>
+  <data name="Preview_PDFPrintingError" xml:space="preserve">
+    <value>Ошибка печати в PDF: </value>
+  </data>
+  <data name="Preview_PrintingToPDFDidNotFinish" xml:space="preserve">
+    <value>печать в PDF не закончилась за минуту</value>
+  </data>
+  <data name="Preview_PrintToPDF" xml:space="preserve">
+    <value>Печать в PDF…</value>
+  </data>
+  <data name="Preview_TheBuiltInBrowserCouldNot" xml:space="preserve">
+    <value>встроенный браузер не смог загрузить HTML для печати</value>
+  </data>
+  <data name="Preview_TheBuiltInBrowserCouldNot2" xml:space="preserve">
+    <value>встроенный браузер не смог напечатать PDF</value>
+  </data>
+  <data name="Preview_TheBuiltInBrowserIsDisabled" xml:space="preserve">
+    <value>встроенный браузер отключён</value>
+  </data>
+  <data name="Preview_TheBuiltInBrowserIsNot" xml:space="preserve">
+    <value>встроенный браузер не готов к печати</value>
+  </data>
+  <data name="Preview_TheBuiltInBrowserIsUnavailable" xml:space="preserve">
+    <value>Встроенный браузер недоступен (</value>
+  </data>
+  <data name="Preview_ThePreviewIsBuiltItCan" xml:space="preserve">
+    <value>). Предпросмотр построен — его можно открыть внешним приложением.</value>
+  </data>
+  <data name="Preview_UnknownReason" xml:space="preserve">
+    <value>неизвестная причина</value>
   </data>
   <data name="Tab_Attributes" xml:space="preserve">
     <value>Атрибуты</value>
@@ -777,5 +2775,84 @@
   </data>
   <data name="Tip_WrapIn" xml:space="preserve">
     <value>Вложить выделенные блоки (или блок под курсором) в другой элемент: примечание, раздел, div… Список — только допустимые обёртки</value>
+  </data>
+  <data name="Win_After0" xml:space="preserve">
+    <value>После «{0}»</value>
+  </data>
+  <data name="Win_Alignment" xml:space="preserve">
+    <value>Выравнивание</value>
+  </data>
+  <data name="Win_AllElements" xml:space="preserve">
+    <value>Все элементы…</value>
+  </data>
+  <data name="Win_Before0" xml:space="preserve">
+    <value>Перед «{0}»</value>
+  </data>
+  <data name="Win_BlockAfterTheCurrentOne" xml:space="preserve">
+    <value>Блок после текущего</value>
+  </data>
+  <data name="Win_CellAttributes" xml:space="preserve">
+    <value>Атрибуты ячейки…</value>
+  </data>
+  <data name="Win_Empty" xml:space="preserve">
+    <value>(пусто)</value>
+  </data>
+  <data name="Win_FontSize" xml:space="preserve">
+    <value>Размер шрифта</value>
+  </data>
+  <data name="Win_Formatting" xml:space="preserve">
+    <value>Оформление</value>
+  </data>
+  <data name="Win_InsertElement" xml:space="preserve">
+    <value>Вставить элемент</value>
+  </data>
+  <data name="Win_Inside0" xml:space="preserve">
+    <value>Внутрь «{0}»</value>
+  </data>
+  <data name="Win_IntoTheLineOfText" xml:space="preserve">
+    <value>В строку текста</value>
+  </data>
+  <data name="Win_Marker" xml:space="preserve">
+    <value>Маркер</value>
+  </data>
+  <data name="Win_MergeWithTheCellBelow" xml:space="preserve">
+    <value>Объединить с ячейкой снизу</value>
+  </data>
+  <data name="Win_MergeWithTheCellOnThe" xml:space="preserve">
+    <value>Объединить с ячейкой справа</value>
+  </data>
+  <data name="Win_MoreColors" xml:space="preserve">
+    <value>Другой цвет…</value>
+  </data>
+  <data name="Win_NoColor" xml:space="preserve">
+    <value>Без цвета</value>
+  </data>
+  <data name="Win_NoColor2" xml:space="preserve">
+    <value>Нет цвета</value>
+  </data>
+  <data name="Win_OpenADITAProjectFolderFile" xml:space="preserve">
+    <value>Откройте папку с проектом DITA: Файл → Открыть папку проекта.</value>
+  </data>
+  <data name="Win_Pt" xml:space="preserve">
+    <value> пт</value>
+  </data>
+  <data name="Win_SelectBlocksDragTheMouseFrom" xml:space="preserve">
+    <value>Выделите блоки (протяжкой мыши от блока к блоку) или поставьте курсор в блок — обернуть нечего или нет допустимых обёрток.</value>
+  </data>
+  <data name="Win_TableProperties" xml:space="preserve">
+    <value>Свойства таблицы…</value>
+  </data>
+  <data name="Win_TextColor" xml:space="preserve">
+    <value>Цвет текста</value>
+  </data>
+  <data name="Win_TheProjectHasNoMaps" xml:space="preserve">
+    <value>В проекте нет карт</value>
+  </data>
+  <data name="Win_UnexpectedError01" xml:space="preserve">
+    <value>Непредвиденная ошибка:
+
+{0}
+
+{1}</value>
   </data>
 </root>

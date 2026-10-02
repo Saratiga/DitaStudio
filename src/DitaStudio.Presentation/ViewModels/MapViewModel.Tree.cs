@@ -7,6 +7,7 @@ using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -41,7 +42,7 @@ public partial class MapViewModel
         }
         catch (Exception ex)
         {
-            _shell.StatusText = $"Карта не читается: {ex.Message}";
+            _shell.StatusText = Loc.T("Msg_TheMapCannotBeRead0", ex.Message);
             return;
         }
 
@@ -83,7 +84,7 @@ public partial class MapViewModel
 
         var publish = !node.IsPublished;
         var element = node.Item.Node;
-        pane.PushUndo(publish ? "Включение топика в публикацию" : "Исключение топика из публикации");
+        pane.PushUndo(publish ? Loc.T("Msg_IncludeTheTopicInThePublication") : Loc.T("Msg_ExcludeTheTopicFromThePublication"));
         if (publish)
         {
             element.RemoveAttribute("processing-role");
@@ -99,8 +100,8 @@ public partial class MapViewModel
 
         AfterMapEdit(pane);
         _shell.StatusText = publish
-            ? $"«{node.Title}» снова публикуется."
-            : $"«{node.Title}» не публикуется (ни в HTML, ни в PDF, ни в DOCX); ссылки и ключи из него работают.";
+            ? Loc.T("Msg_0IsPublishedAgain", node.Title)
+            : Loc.T("Msg_0IsNotPublishedNotIn", node.Title);
     }
 
     [RelayCommand]

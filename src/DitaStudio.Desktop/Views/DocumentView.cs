@@ -10,6 +10,7 @@ using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Presentation.Authoring;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Views;
 
@@ -64,9 +65,9 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
 
         _tabs.ItemsSource = new[]
         {
-            new TabItem { Header = "Автор", Content = (Control?)_outline ?? _author },
-            new TabItem { Header = "Исходный код", Content = _source },
-            new TabItem { Header = "Предпросмотр", Content = _preview }
+            new TabItem { Header = Loc.T("Doc_Author"), Content = (Control?)_outline ?? _author },
+            new TabItem { Header = Loc.T("Doc_Source"), Content = _source },
+            new TabItem { Header = Loc.T("Doc_Preview"), Content = _preview }
         };
         _tabs.SelectionChanged += OnTabChanged;
         _layout.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
@@ -256,7 +257,7 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
                 return null;
             }
 
-            Undo.Push(Document, "Правка исходного кода");
+            Undo.Push(Document, Loc.T("Doc_SourceEdit"));
             Document.Root = parsed.Root;
             Document.DoctypeName = parsed.DoctypeName;
             Document.DoctypePublicId = parsed.DoctypePublicId;
@@ -350,7 +351,7 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
         CommitPendingEdits();
         if (Document.IsDirty)
         {
-            Undo.Push(Document, "Перезагрузка с диска");
+            Undo.Push(Document, Loc.T("Doc_ReloadFromDisk"));
         }
 
         Document.Reload();
@@ -380,7 +381,7 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
             return;
         }
 
-        Undo.Push(Document, "Восстановление после сбоя");
+        Undo.Push(Document, Loc.T("Doc_RecoveryAfterACrash"));
         Document.Root = parsed.Root;
         Document.DoctypeName = parsed.DoctypeName;
         Document.DoctypePublicId = parsed.DoctypePublicId;

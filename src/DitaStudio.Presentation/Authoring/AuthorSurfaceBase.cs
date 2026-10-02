@@ -3,6 +3,7 @@ using DitaStudio.Core.Model;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.Authoring;
 
@@ -102,7 +103,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         }
 
         FlushPendingEdits();
-        BeforeStructuralEdit($"Вставка <{name}>");
+        BeforeStructuralEdit(Loc.T("Author_Insert0", name));
 
         var created = PlaceBlock(CurrentNode, name);
         if (created is null)
@@ -135,7 +136,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
     }
 
     /// <summary>Заготовка названия нового рисунка — сразу видна и выделена для замены.</summary>
-    public const string FigureTitlePlaceholder = "Название рисунка";
+    public static string FigureTitlePlaceholder => Loc.T("Msg_FigureTitle");
 
     /// <summary>
     /// Вставляет рисунок: блок <c>fig</c> с названием и изображением после текущего блока (подпись
@@ -156,7 +157,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         }
 
         FlushPendingEdits();
-        BeforeStructuralEdit("Вставка рисунка");
+        BeforeStructuralEdit(Loc.T("Msg_InsertFigure"));
         var figure = PlaceBlock(CurrentNode, "fig");
         if (figure is null)
         {
@@ -227,7 +228,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         }
 
         FlushPendingEdits();
-        BeforeStructuralEdit("Границы таблицы");
+        BeforeStructuralEdit(Loc.T("Msg_TableBorders"));
         CalsBorders.SetMode(table, mode);
         Changed(FirstEditable(table), table.Parent, table);
         return true;
@@ -248,7 +249,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         }
 
         FlushPendingEdits();
-        BeforeStructuralEdit("Линия под строкой");
+        BeforeStructuralEdit(Loc.T("Msg_LineBelowRow"));
         CalsBorders.SetRowSeparator(row, visible);
         Changed(FirstEditable(row), table.Parent, table);
         return true;
@@ -275,7 +276,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         }
 
         FlushPendingEdits();
-        BeforeStructuralEdit("Линия справа от столбца");
+        BeforeStructuralEdit(Loc.T("Msg_LineRightOfColumn"));
         CalsBorders.SetColumnSeparator(tgroup, column, visible);
         Changed(FirstEditable(entry), table.Parent, table);
         return true;
@@ -313,7 +314,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         }
 
         FlushPendingEdits();
-        BeforeStructuralEdit(captioned.FirstElement("title") is null ? "Подпись: добавить" : "Подпись: убрать");
+        BeforeStructuralEdit(captioned.FirstElement("title") is null ? Loc.T("Msg_CaptionAdd") : Loc.T("Msg_CaptionRemove"));
         if (captioned.FirstElement("title") is { } existing)
         {
             var focus = FirstEditable(captioned);
@@ -349,7 +350,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         }
 
         FlushPendingEdits();
-        BeforeStructuralEdit("Оформление изображения как рисунка");
+        BeforeStructuralEdit(Loc.T("Msg_MakeImageAFigure"));
         var figure = DitaCatalog.Default.CreateElement("fig");
         image.RemoveSelf();
         image.RemoveAttribute("placement");
@@ -385,9 +386,9 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
     /// <summary>Заготовка текста нового фразового элемента — выделена, набор её заменяет.</summary>
     public static string PlaceholderFor(ElementDef def) => def.Name switch
     {
-        "fn" => "Текст сноски",
+        "fn" => Loc.T("Msg_FootnoteText"),
         _ when def.Description.Length is > 0 and <= 40 => def.Description,
-        _ => "текст"
+        _ => Loc.T("Author_Text")
     };
 
     public bool DeleteCurrent()
@@ -397,7 +398,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
             return false;
         }
 
-        BeforeStructuralEdit($"Удаление <{CurrentNode.Name}>");
+        BeforeStructuralEdit(Loc.T("Msg_Delete0", CurrentNode.Name));
         var focus = EditCommands.PreviousElement(CurrentNode) ?? parent;
         EditCommands.Delete(CurrentNode);
         CurrentNode = null;
@@ -414,7 +415,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         }
 
         FlushPendingEdits();
-        BeforeStructuralEdit($"Удаление блоков: {nodes.Count}");
+        BeforeStructuralEdit(Loc.T("Msg_DeleteBlocks0", nodes.Count));
         var focus = EditCommands.PreviousElement(nodes[0]) ?? parent;
         foreach (var node in nodes)
         {
@@ -435,7 +436,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         }
 
         FlushPendingEdits();
-        BeforeStructuralEdit($"Вставка блоков: {blocks.Count}");
+        BeforeStructuralEdit(Loc.T("Msg_PasteBlocks0", blocks.Count));
         for (var i = 0; i < blocks.Count; i++)
         {
             parent.Insert(Math.Min(index + i, parent.Children.Count), blocks[i]);
@@ -457,7 +458,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         }
 
         FlushPendingEdits();
-        BeforeStructuralEdit($"Обернуть в <{name}>");
+        BeforeStructuralEdit(Loc.T("Msg_WrapIn0", name));
         if (EditCommands.Wrap(parent, first, last, name) is not { } wrapper)
         {
             return null;
@@ -474,7 +475,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
             return false;
         }
 
-        BeforeStructuralEdit(up ? "Перемещение вверх" : "Перемещение вниз");
+        BeforeStructuralEdit(up ? Loc.T("Msg_MoveUp") : Loc.T("Msg_MoveDown"));
         if (!(up ? EditCommands.MoveUp(CurrentNode) : EditCommands.MoveDown(CurrentNode)))
         {
             return false;
@@ -484,9 +485,9 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         return true;
     }
 
-    public bool MergeCurrentCellRight() => MergeSelectedCells() ?? MergeCell(EditCommands.MergeTableCellRight, "Объединение ячеек по горизонтали");
+    public bool MergeCurrentCellRight() => MergeSelectedCells() ?? MergeCell(EditCommands.MergeTableCellRight, Loc.T("Msg_MergeCellsHorizontally"));
 
-    public bool MergeCurrentCellDown() => MergeSelectedCells() ?? MergeCell(EditCommands.MergeTableCellDown, "Объединение ячеек по вертикали");
+    public bool MergeCurrentCellDown() => MergeSelectedCells() ?? MergeCell(EditCommands.MergeTableCellDown, Loc.T("Msg_MergeCellsVertically"));
 
     public bool EditCurrentTable(TableOperation operation)
     {
@@ -538,7 +539,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
             return null;
         }
 
-        BeforeStructuralEdit("Изменение оформления вывода");
+        BeforeStructuralEdit(Loc.T("Msg_ChangeOutputFormatting"));
         var enabled = EditCommands.ToggleOutputClassToken(CurrentNode, className);
         Changed(FirstEditable(CurrentNode), CurrentNode.Parent, CurrentNode);
         return enabled;
@@ -561,7 +562,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         {
             var cells = selectedGrid.CellsIn(selected.Range).Select(c => c.Entry).ToList();
             FlushPendingEdits();
-            BeforeStructuralEdit("Выравнивание ячеек");
+            BeforeStructuralEdit(Loc.T("Msg_CellAlignment"));
             TableRanges.SetAlign(cells, TextFormatting.Alignments.FirstOrDefault(a => a.Token == token).Css);
             Changed(FirstEditable(cells[0]), selected.Table.Parent, selected.Table);
             ReselectCells(selected.Table, selected.Range);
@@ -582,7 +583,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         }
 
         FlushPendingEdits();
-        BeforeStructuralEdit("Оформление блока");
+        BeforeStructuralEdit(Loc.T("Msg_BlockFormatting"));
         if (prefix == PagePlacement.Prefix)
         {
             PagePlacement.Set(node, token);
@@ -617,16 +618,16 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
             return null;
         }
 
-        BeforeStructuralEdit("Отметка изменения (rev)");
+        BeforeStructuralEdit(Loc.T("Msg_ChangeMarkRev"));
         var hasRev = !string.IsNullOrWhiteSpace(CurrentNode.GetAttribute("rev"));
         CurrentNode.SetAttribute("rev", hasRev ? null : "changed");
         Changed(FirstEditable(CurrentNode), CurrentNode.Parent, CurrentNode);
         return !hasRev;
     }
 
-    public void MarkCurrentInserted() => Track("Пометка вставки (track changes)", node => TrackChanges.MarkInserted(node, Environment.UserName));
+    public void MarkCurrentInserted() => Track(Loc.T("Msg_MarkAsInsertedTrackChanges"), node => TrackChanges.MarkInserted(node, Environment.UserName));
 
-    public void MarkCurrentDeleted() => Track("Пометка удаления (track changes)", node => TrackChanges.MarkDeleted(node, Environment.UserName));
+    public void MarkCurrentDeleted() => Track(Loc.T("Msg_MarkAsDeletedTrackChanges"), node => TrackChanges.MarkDeleted(node, Environment.UserName));
 
     private void Track(string description, Action<DitaNode> mark)
     {
@@ -647,7 +648,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
             return;
         }
 
-        BeforeStructuralEdit("Принятие правки (track changes)");
+        BeforeStructuralEdit(Loc.T("Msg_AcceptChangeTrackChanges"));
         var wasDeleted = TrackChanges.IsDeleted(node);
         var parent = node.Parent;
         TrackChanges.Accept(node);
@@ -661,7 +662,7 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
             return;
         }
 
-        BeforeStructuralEdit("Отклонение правки (track changes)");
+        BeforeStructuralEdit(Loc.T("Msg_RejectChangeTrackChanges"));
         var wasInserted = TrackChanges.IsInserted(node);
         var parent = node.Parent;
         TrackChanges.Reject(node);

@@ -7,6 +7,7 @@ using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -38,9 +39,9 @@ public partial class MapViewModel
         }
     }
 
-    private const string ChooseCreate = "Создать файл по ссылке";
-    private const string ChooseReplace = "Выбрать другой файл…";
-    private const string ChooseRemove = "Убрать строку из карты";
+    private static string ChooseCreate => Loc.T("Menu_CreateFileForRef");
+    private static string ChooseReplace => Loc.T("Menu_ChooseOtherFile");
+    private static string ChooseRemove => Loc.T("Msg_RemoveTheRowFromTheMap");
 
     /// <summary>Диалог исправления «битой» строки: причина ошибки и три способа её убрать.</summary>
     private async Task FixBrokenAsync()
@@ -58,18 +59,18 @@ public partial class MapViewModel
 
         options.Add(ChooseReplace);
         options.Add(ChooseRemove);
-        var choice = await _ui.Dialogs.PickOneAsync("Топик не найден", item.BrokenReason + "\n\nЧто сделать со строкой «" + item.Title + "»?", options, o => o);
-        switch (choice)
+        var choice = await _ui.Dialogs.PickOneAsync(Loc.T("Msg_TopicNotFound"), item.BrokenReason + Loc.T("Msg_WhatToDoWithTheRow") + item.Title + "»?", options, o => o);
+        if (choice == ChooseCreate)
         {
-            case ChooseCreate:
-                await CreateMissingFileAsync();
-                break;
-            case ChooseReplace:
-                await ReplaceFileAsync();
-                break;
-            case ChooseRemove:
-                await DeleteCommand.ExecuteAsync(null);
-                break;
+            await CreateMissingFileAsync();
+        }
+        else if (choice == ChooseReplace)
+        {
+            await ReplaceFileAsync();
+        }
+        else if (choice == ChooseRemove)
+        {
+            await DeleteCommand.ExecuteAsync(null);
         }
     }
 
@@ -80,7 +81,7 @@ public partial class MapViewModel
         var project = _workspace.Project;
         if (project is null || SelectedNode?.Item is not { IsBroken: true, TargetPath: { } target } item || File.Exists(target))
         {
-            await _ui.Dialogs.MessageAsync("Создание файла", "Файл по ссылке создать нельзя: у строки нет пути к файлу (ключ не определён). Выберите другой файл.");
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_CreateFile"), Loc.T("Msg_AFileForTheReferenceCannot"));
             return;
         }
 
@@ -95,14 +96,14 @@ public partial class MapViewModel
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            await _ui.Dialogs.MessageAsync("Создание файла", $"Не удалось создать {target}: {ex.Message}");
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_CreateFile"), Loc.T("Msg_CouldNotCreate01", target, ex.Message));
             return;
         }
 
         project.AddFile(target);
         RebuildTree();
         _hooks.RefreshProjectTree?.Invoke();
-        _shell.StatusText = $"Создан файл по ссылке: {Path.GetFileName(target)}.";
+        _shell.StatusText = Loc.T("Msg_FileCreatedForTheReference0", Path.GetFileName(target));
         _documents.OpenDocument(target);
     }
 
@@ -116,8 +117,8 @@ public partial class MapViewModel
             return;
         }
 
-        var file = await _ui.Files.OpenFileAsync("Выберите файл для строки «" + item.Title + "»",
-            new[] { new FileFilter("Топики и карты DITA", "*.dita", "*.xml", "*.ditamap"), FileFilter.All }, project.RootPath);
+        var file = await _ui.Files.OpenFileAsync(Loc.T("Msg_ChooseAFileForTheRow") + item.Title + "»",
+            new[] { new FileFilter(Loc.T("Msg_DITATopicsAndMaps"), "*.dita", "*.xml", "*.ditamap"), FileFilter.All }, project.RootPath);
         if (file is null)
         {
             return;
@@ -129,8 +130,8 @@ public partial class MapViewModel
             node.SetAttribute("href", RefResolver.MakeRelative(ownerMap, file));
             node.RemoveAttribute("keyref");
             return true;
-        }, "Замена файла строки карты");
-        _shell.StatusText = $"Строка «{item.Title}» теперь ссылается на {Path.GetFileName(file)}.";
+        }, Loc.T("Msg_ReplaceTheFileOfAMap"));
+        _shell.StatusText = Loc.T("Msg_TheRow0NowRefersTo", item.Title, Path.GetFileName(file));
     }
 
     /// <param name="activate">false — карта открывается во вкладке, но вкладка не выбирается: правка
@@ -183,15 +184,15 @@ public partial class MapViewModel
         var hits = project.FindReferencesTo(target);
         _search.ShowResults(hits);
         _shell.BottomTabIndex = 1;
-        _shell.StatusText = $"Ссылок на {Path.GetFileName(target)}: {hits.Count}";
+        _shell.StatusText = Loc.T("Msg_ReferencesTo01", Path.GetFileName(target), hits.Count);
     }
 
     /// <summary>Команда, которой нужен файл, запущена на строке без файла (не из меню — там она
     /// недоступна): объясняем, а не молчим.</summary>
     private void NoFileMessage() =>
         _shell.StatusText = SelectedNode is null
-            ? "Выберите строку карты."
-            : $"У строки «{SelectedNode.Title}» нет файла. Чтобы убрать её из карты, выберите «Убрать из карты».";
+            ? Loc.T("Msg_SelectAMapRow")
+            : Loc.T("Msg_TheRow0HasNoFile", SelectedNode.Title);
 
     [RelayCommand(CanExecute = nameof(SelectedHasFile))]
     private async Task RenameFile()
@@ -237,22 +238,22 @@ public partial class MapViewModel
         if (remaining > 0)
         {
             // Дубликат или несколько строк на один файл: убираем только выбранную, файл остаётся.
-            if (!await _ui.Dialogs.ConfirmAsync("Убрать строку из карты",
-                    $"Строка «{rowTitle}» будет убрана из карты. Файл {file.RelativePath} остаётся на диске: ссылок на него из карт — ещё {remaining}. " +
-                    "Файл будет удалён, когда вы уберёте последнюю ссылку на него командой «Удалить файл…»."))
+            if (!await _ui.Dialogs.ConfirmAsync(Loc.T("Msg_RemoveTheRowFromTheMap"),
+                    Loc.T("Msg_TheRow0WillBeRemoved", rowTitle, file.RelativePath, remaining) +
+                    Loc.T("Msg_TheFileWillBeDeletedWhen")))
             {
                 return;
             }
 
             if (pane is not null && selectedRow is not null && rows.Contains(selectedRow))
             {
-                pane.PushUndo("Удаление строки из карты");
+                pane.PushUndo(Loc.T("Msg_RemoveARowFromTheMap"));
                 RemoveMapRows(new[] { selectedRow });
                 AfterMapEdit(pane);
             }
 
             RebuildTree();
-            _shell.StatusText = $"Строка «{rowTitle}» убрана из карты; файл {file.RelativePath} оставлен — ссылок на него из карт — ещё {remaining}.";
+            _shell.StatusText = Loc.T("Msg_TheRow0WasRemovedFrom", rowTitle, file.RelativePath, remaining);
             return;
         }
 
@@ -261,28 +262,28 @@ public partial class MapViewModel
             .ToList();
         var warning = elsewhere.Count == 0
             ? string.Empty
-            : $"\n\nЕщё {elsewhere.Count} ссыл. в других файлах ({string.Join(", ", elsewhere.Select(h => h.File.RelativePath).Distinct().Take(5))}) станут битыми.";
-        if (!await _ui.Dialogs.ConfirmAsync("Удаление файла",
-                $"Удалить файл {file.RelativePath} с диска? Отменить это будет нельзя. Строки этой карты, которые на него ссылаются, будут убраны.{warning}"))
+            : Loc.T("Msg_0MoreReferencesInOtherFiles", elsewhere.Count, string.Join(", ", elsewhere.Select(h => h.File.RelativePath).Distinct().Take(5)));
+        if (!await _ui.Dialogs.ConfirmAsync(Loc.T("Msg_DeleteFile"),
+                Loc.T("Msg_DeleteTheFile0FromDisk", file.RelativePath, warning)))
         {
             return;
         }
 
         if (pane is not null && rows.Count > 0)
         {
-            pane.PushUndo("Удаление файла из карты");
+            pane.PushUndo(Loc.T("Msg_DeleteAFileFromTheMap"));
             RemoveMapRows(rows);
             AfterMapEdit(pane);
         }
 
         if (_fileOps.DeleteFile(file) is { } error)
         {
-            await _ui.Dialogs.MessageAsync("Удаление файла", error);
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_DeleteFile"), error);
             return;
         }
 
         RebuildTree();
-        _shell.StatusText = $"Файл {file.RelativePath} удалён.";
+        _shell.StatusText = Loc.T("Msg_TheFile0WasDeleted", file.RelativePath);
     }
 
     /// <summary>Убирает строки карты; дочерние строки удаляемой не теряются — поднимаются на её место.</summary>

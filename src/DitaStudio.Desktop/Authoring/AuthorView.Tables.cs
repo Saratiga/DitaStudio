@@ -4,6 +4,7 @@ using Avalonia.Media;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Presentation.Authoring;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Authoring;
 
@@ -74,8 +75,8 @@ public sealed partial class AuthorView
         }
 
         TableResizeHandles.Attach(grid,
-            weights => ResizeTable("Ширина столбцов", () => TableLayout.SetCalsWidths(tgroup, weights)),
-            (row, height) => ResizeTable("Высота строки", () => TableLayout.SetRowHeight(rows[row], ToMm(height))));
+            weights => ResizeTable(Loc.T("Author_ColumnWidth"), () => TableLayout.SetCalsWidths(tgroup, weights)),
+            (row, height) => ResizeTable(Loc.T("Author_RowHeight"), () => TableLayout.SetRowHeight(rows[row], ToMm(height))));
         return grid;
     }
 
@@ -251,8 +252,8 @@ public sealed partial class AuthorView
         }
 
         TableResizeHandles.Attach(grid,
-            weights => ResizeTable("Ширина столбцов", () => TableLayout.SetSimpleWidths(node, weights)),
-            (row, height) => ResizeTable("Высота строки", () => TableLayout.SetRowHeight(rows[row], ToMm(height))));
+            weights => ResizeTable(Loc.T("Author_ColumnWidth"), () => TableLayout.SetSimpleWidths(node, weights)),
+            (row, height) => ResizeTable(Loc.T("Author_RowHeight"), () => TableLayout.SetRowHeight(rows[row], ToMm(height))));
 
         var border = new Border { Child = grid, Margin = new Thickness(0, 10, 0, 10) };
         AttachSelection(border, node);

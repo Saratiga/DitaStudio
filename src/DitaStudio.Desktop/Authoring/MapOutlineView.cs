@@ -7,6 +7,7 @@ using Avalonia.Media;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Presentation.ViewModels;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Authoring;
 
@@ -63,12 +64,12 @@ public sealed class MapOutlineView : UserControl
         MapTree tree;
         try
         {
-            tree = _document.FilePath is { } path ? MapTree.Build(_project, path) : throw new InvalidOperationException("Карта не сохранена.");
+            tree = _document.FilePath is { } path ? MapTree.Build(_project, path) : throw new InvalidOperationException(Loc.T("Author_TheMapIsNotSaved"));
         }
         catch (Exception ex)
         {
             _tree.ItemsSource = null;
-            _summary.Text = "Карта не читается: " + ex.Message;
+            _summary.Text = Loc.T("Author_TheMapCannotBeRead") + ex.Message;
             return;
         }
 
@@ -79,8 +80,8 @@ public sealed class MapOutlineView : UserControl
         var items = tree.Items.Where(i => !i.IsResourceOnly).ToList();
         var topics = items.Count(i => i.TargetPath is not null);
         var broken = items.Count(i => i.IsBroken);
-        _summary.Text = $"Топиков в карте: {topics}" + (broken > 0 ? $" · не найдено файлов: {broken}" : string.Empty) +
-                        ". Двойной щелчок открывает топик; структуру правьте на вкладке «Карта» слева.";
+        _summary.Text = Loc.T("Author_TopicsInTheMap0", topics) + (broken > 0 ? Loc.T("Author_FilesNotFound0", broken) : string.Empty) +
+                        Loc.T("Author_DoubleClickOpensATopicEdit");
         if (selected is not null)
         {
             _tree.SelectedItem = Flatten(root).FirstOrDefault(n => ReferenceEquals(n.Item.Node, selected));

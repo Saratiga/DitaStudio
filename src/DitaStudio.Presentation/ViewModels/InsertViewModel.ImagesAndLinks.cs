@@ -8,6 +8,7 @@ using DitaStudio.Core.Schema;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Plugins;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -23,8 +24,8 @@ public partial class InsertViewModel
             return;
         }
 
-        var file = await _ui.Files.OpenFileAsync("Выберите изображение",
-            new[] { new FileFilter("Изображения", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.svg", "*.bmp"), FileFilter.All },
+        var file = await _ui.Files.OpenFileAsync(Loc.T("Msg_ChooseAnImage"),
+            new[] { new FileFilter(Loc.T("Dlg_Images"), "*.png", "*.jpg", "*.jpeg", "*.gif", "*.svg", "*.bmp"), FileFilter.All },
             Path.GetDirectoryName(pane.FilePath));
         if (file is null)
         {
@@ -43,7 +44,7 @@ public partial class InsertViewModel
         // Там, где fig недопустим (например, в середине заголовка), изображение идёт в строку.
         if (pane.Author.InsertFigure(image))
         {
-            _shell.StatusText = "Рисунок вставлен: замените название под ним. Подпись «Рисунок N» появится при публикации.";
+            _shell.StatusText = Loc.T("Msg_FigureInsertedReplaceTheTitleUnder");
             _docs.RefreshAllTabTitles();
             return;
         }
@@ -51,7 +52,7 @@ public partial class InsertViewModel
         image.SetAttribute("placement", "break");
         if (!pane.Author.InsertInlineNode(image))
         {
-            _shell.StatusText = "Поставьте курсор в абзац, куда вставить изображение.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInTheParagraph");
             return;
         }
 
@@ -70,15 +71,15 @@ public partial class InsertViewModel
         switch (pane.Author.ToggleCaption())
         {
             case true:
-                _shell.StatusText = "Подпись добавлена: при публикации — «Рисунок N» / «Таблица N»; впишите название в заголовок.";
+                _shell.StatusText = Loc.T("Msg_CaptionAddedWhenPublishedFigureN");
                 _docs.RefreshAllTabTitles();
                 break;
             case false:
-                _shell.StatusText = "Подпись убрана: у этого рисунка (таблицы) подписи и номера не будет.";
+                _shell.StatusText = Loc.T("Msg_CaptionRemovedThisFigureTableWill");
                 _docs.RefreshAllTabTitles();
                 break;
             default:
-                _shell.StatusText = "Поставьте курсор в рисунок или таблицу, чтобы добавить или убрать подпись.";
+                _shell.StatusText = Loc.T("Msg_PutTheCursorInAFigure");
                 break;
         }
     }
@@ -94,11 +95,11 @@ public partial class InsertViewModel
 
         if (!pane.Author.WrapImageAsFigure())
         {
-            _shell.StatusText = "Поставьте курсор в абзац с изображением (вне рисунка), чтобы оформить его как рисунок.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInAParagraph");
             return;
         }
 
-        _shell.StatusText = "Изображение оформлено как рисунок: замените название под ним.";
+        _shell.StatusText = Loc.T("Msg_TheImageIsNowAFigure");
         _docs.RefreshAllTabTitles();
     }
 
@@ -134,7 +135,7 @@ public partial class InsertViewModel
 
         if (!pane.Author.InsertInlineNode(xref))
         {
-            _shell.StatusText = "Поставьте курсор в текст, куда вставить ссылку.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInTheText");
             return;
         }
 
@@ -149,14 +150,14 @@ public partial class InsertViewModel
         var project = _workspace.Project;
         if (project is null || pane?.FilePath is null || node is null)
         {
-            _shell.StatusText = "Поставьте курсор в элемент.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInAnElement");
             return;
         }
 
         var oldId = node.GetAttribute("id");
         if (string.IsNullOrWhiteSpace(oldId))
         {
-            _shell.StatusText = "У элемента нет id — задайте его в панели «Атрибуты», затем переименовывайте.";
+            _shell.StatusText = Loc.T("Msg_TheElementHasNoIdSet");
             return;
         }
 
@@ -173,7 +174,7 @@ public partial class InsertViewModel
 
         var result = RefactorService.RenameId(project, pane.FilePath, oldId!, newId!);
         _docs.ApplyRefactorResult(result);
-        _shell.StatusText = $"id «{oldId}» переименован в «{newId}». Обновлено ссылок: {result.UpdatedReferences}.";
+        _shell.StatusText = Loc.T("Msg_Id0RenamedTo1References", oldId, newId, result.UpdatedReferences);
     }
 
     [RelayCommand]
@@ -184,7 +185,7 @@ public partial class InsertViewModel
         var project = _workspace.Project;
         if (project is null || pane?.FilePath is null || node is null || node.Parent is null)
         {
-            _shell.StatusText = "Поставьте курсор в элемент.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInAnElement");
             return;
         }
 
@@ -214,13 +215,13 @@ public partial class InsertViewModel
         }
         catch (IOException ex)
         {
-            await _ui.Dialogs.MessageAsync("Вынесение в conref", ex.Message);
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_ExtractToConref"), ex.Message);
             return;
         }
 
         if (result.UpdatedReferences == 0)
         {
-            await _ui.Dialogs.MessageAsync("Вынесение в conref", "Не удалось перенести элемент — проверьте цель.");
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_ExtractToConref"), Loc.T("Msg_CouldNotMoveTheElementCheck"));
             return;
         }
 
@@ -231,6 +232,6 @@ public partial class InsertViewModel
             _hooks.RefreshProjectTree?.Invoke();
         }
 
-        _shell.StatusText = $"Элемент вынесен в conref (id «{dialogResult.ElementId}»).";
+        _shell.StatusText = Loc.T("Msg_TheElementWasExtractedToConref", dialogResult.ElementId);
     }
 }

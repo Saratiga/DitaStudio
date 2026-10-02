@@ -8,6 +8,7 @@ using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Services;
 
@@ -63,26 +64,26 @@ public sealed partial class AvaloniaDialogService
         titleBox.TextChanged += (_, _) => SuggestFileName();
         templates.SelectionChanged += (_, _) => SuggestFileName();
 
-        panel.Children.Add(Label("Тип документа"));
+        panel.Children.Add(Label(Loc.T("Dlg_DocumentType")));
         panel.Children.Add(templates);
-        panel.Children.Add(Label("Заголовок"));
+        panel.Children.Add(Label(Loc.T("Dlg_Title")));
         panel.Children.Add(titleBox);
-        panel.Children.Add(Label("Имя файла"));
+        panel.Children.Add(Label(Loc.T("Dlg_FileName")));
         panel.Children.Add(fileBox);
-        panel.Children.Add(Label("Папка"));
+        panel.Children.Add(Label(Loc.T("Dlg_Folder")));
         panel.Children.Add(folderBox);
 
         NewDocumentResult? result = null;
-        var window = Shell("Создать документ", new ScrollViewer { Content = panel }, 520, 560);
+        var window = Shell(Loc.T("Dlg_NewDocument"), new ScrollViewer { Content = panel }, 520, 560);
         panel.Children.Add(Buttons(window, () =>
         {
             var template = templates.SelectedItem as DocumentTemplate ?? DocumentTemplates.All[0];
-            var title = string.IsNullOrWhiteSpace(titleBox.Text) ? "Без названия" : titleBox.Text.Trim();
+            var title = string.IsNullOrWhiteSpace(titleBox.Text) ? Loc.T("Dlg_Untitled") : titleBox.Text.Trim();
             var fileName = string.IsNullOrWhiteSpace(fileBox.Text)
                 ? DocumentTemplates.SuggestId(title, template.RootElement) + template.Extension
                 : fileBox.Text.Trim();
             result = new NewDocumentResult(template, title, fileName, folderBox.SelectedItem as string ?? projectRoot);
-        }, "Создать"));
+        }, Loc.T("Dlg_Create")));
 
         window.Opened += (_, _) => titleBox.Focus();
         return await ShowAsync(window) ? result : null;
@@ -95,25 +96,25 @@ public sealed partial class AvaloniaDialogService
         var panel = new StackPanel { Margin = new Thickness(16) };
         var rows = Input("3");
         var cols = Input("3");
-        var header = new CheckBox { Content = "Строка заголовков", IsChecked = true, Margin = new Thickness(0, 12, 0, 0) };
+        var header = new CheckBox { Content = Loc.T("Dlg_HeaderRow"), IsChecked = true, Margin = new Thickness(0, 12, 0, 0) };
         var title = Input();
 
-        panel.Children.Add(Label("Заголовок таблицы"));
+        panel.Children.Add(Label(Loc.T("Dlg_TableTitle")));
         panel.Children.Add(title);
-        panel.Children.Add(Label("Строк"));
+        panel.Children.Add(Label(Loc.T("Dlg_Rows")));
         panel.Children.Add(rows);
-        panel.Children.Add(Label("Колонок"));
+        panel.Children.Add(Label(Loc.T("Dlg_Columns")));
         panel.Children.Add(cols);
         panel.Children.Add(header);
 
         TableResult? result = null;
-        var window = Shell("Вставить таблицу", panel, 380, 380);
+        var window = Shell(Loc.T("Dlg_InsertTable"), panel, 380, 380);
         panel.Children.Add(Buttons(window, () =>
         {
             var r = int.TryParse(rows.Text, out var rv) ? Math.Clamp(rv, 1, 100) : 3;
             var c = int.TryParse(cols.Text, out var cv) ? Math.Clamp(cv, 1, 30) : 3;
             result = new TableResult(r, c, header.IsChecked == true, (title.Text ?? string.Empty).Trim());
-        }, "Вставить"));
+        }, Loc.T("Author_Paste")));
 
         return await ShowAsync(window) ? result : null;
     }
@@ -155,7 +156,7 @@ public sealed partial class AvaloniaDialogService
 
         XrefResult? result = null;
         var root = new DockPanel { Margin = new Thickness(16) };
-        var window = Shell("Вставить ссылку", root, 560, 520, autoHeight: false);
+        var window = Shell(Loc.T("Dlg_InsertLink"), root, 560, 520, autoHeight: false);
         var buttons = Buttons(window, () =>
         {
             if (list.SelectedItem is ProjectFile file)
@@ -163,7 +164,7 @@ public sealed partial class AvaloniaDialogService
                 var doc = project.TryGetDocument(file.FullPath);
                 result = new XrefResult(file, doc?.Id, (text.Text ?? string.Empty).Trim());
             }
-        }, "Вставить");
+        }, Loc.T("Author_Paste"));
         AcceptOnDoubleTap(list, buttons);
 
         DockPanel.SetDock(filter, Dock.Top);
@@ -189,8 +190,8 @@ public sealed partial class AvaloniaDialogService
 
         var panel = new StackPanel { Margin = new Thickness(16) };
         panel.Children.Add(Muted(Wrapped(
-            "Каждая строка связывает между собой топики из разных столбцов — при публикации " +
-            "они попадут друг другу в «Смотрите также». Топики одного столбца друг с другом не связываются.", 10)));
+            Loc.T("Dlg_EachRowLinksTheTopicsFrom") +
+            Loc.T("Dlg_TheyAppearInEachOtherS"), 10)));
 
         var grid = new Grid();
         var scroller = new ScrollViewer
@@ -231,7 +232,7 @@ public sealed partial class AvaloniaDialogService
                             BorderThickness = new Thickness(0),
                             Background = Brushes.Transparent
                         };
-                        ToolTip.SetTip(clear, "Очистить ячейку");
+                        ToolTip.SetTip(clear, Loc.T("Dlg_ClearCell"));
                         clear.Click += (_, _) =>
                         {
                             cell.File = null;
@@ -244,7 +245,7 @@ public sealed partial class AvaloniaDialogService
 
                     var pick = new Button
                     {
-                        Content = cell.File?.Title ?? "+ выбрать топик",
+                        Content = cell.File?.Title ?? Loc.T("Dlg_ChooseTopic"),
                         Padding = new Thickness(6, 4, 6, 4),
                         HorizontalContentAlignment = HorizontalAlignment.Left,
                         HorizontalAlignment = HorizontalAlignment.Stretch
@@ -278,13 +279,13 @@ public sealed partial class AvaloniaDialogService
         }
 
         var toolbar = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
-        toolbar.Children.Add(ToolbarButton("+ Строка", () =>
+        toolbar.Children.Add(ToolbarButton(Loc.T("Dlg_Row"), () =>
         {
             var width = rows.Count > 0 ? rows[0].Count : 2;
             rows.Add(Enumerable.Range(0, width).Select(_ => new RelTableCell()).ToList());
             Rebuild();
         }, first: true));
-        toolbar.Children.Add(ToolbarButton("+ Столбец", () =>
+        toolbar.Children.Add(ToolbarButton(Loc.T("Dlg_Column"), () =>
         {
             foreach (var row in rows)
             {
@@ -293,7 +294,7 @@ public sealed partial class AvaloniaDialogService
 
             Rebuild();
         }));
-        toolbar.Children.Add(ToolbarButton("− Строка", () =>
+        toolbar.Children.Add(ToolbarButton(Loc.T("Dlg_Row2"), () =>
         {
             if (rows.Count > 1)
             {
@@ -301,7 +302,7 @@ public sealed partial class AvaloniaDialogService
                 Rebuild();
             }
         }));
-        toolbar.Children.Add(ToolbarButton("− Столбец", () =>
+        toolbar.Children.Add(ToolbarButton(Loc.T("Dlg_Column2"), () =>
         {
             if (rows.Count > 0 && rows[0].Count > 1)
             {
@@ -318,7 +319,7 @@ public sealed partial class AvaloniaDialogService
         panel.Children.Add(scroller);
 
         List<List<RelTableCell>>? result = null;
-        var window = Shell("Таблица соответствий", panel, 640, 560, autoHeight: false);
+        var window = Shell(Loc.T("Dlg_RelationshipTable"), panel, 640, 560, autoHeight: false);
         panel.Children.Add(Buttons(window, () => result = rows));
         return await ShowAsync(window) ? result : null;
     }
@@ -330,7 +331,7 @@ public sealed partial class AvaloniaDialogService
         var panel = new StackPanel { Margin = new Thickness(16) };
         panel.Children.Add(Label(currentLabel));
         panel.Children.Add(new SelectableTextBlock { Text = current, FontFamily = Mono, Margin = new Thickness(0, 0, 0, 8) });
-        panel.Children.Add(Label(title == "Переименовать id" ? "Новый id" : "Новый путь"));
+        panel.Children.Add(Label(title == Loc.T("Dlg_RenameId") ? Loc.T("Dlg_NewId") : Loc.T("Dlg_NewPath")));
         var box = Input(current);
         panel.Children.Add(box);
         panel.Children.Add(Muted(new TextBlock { Text = hint, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) }));
@@ -354,7 +355,7 @@ public sealed partial class AvaloniaDialogService
         return await ShowAsync(window) ? result : null;
     }
 
-    public async Task<string?> PromptTextAsync(string title, string label, string initial, string hint, string okText = "ОК")
+    public async Task<string?> PromptTextAsync(string title, string label, string initial, string hint, string? okText = null)
     {
         var panel = new StackPanel { Margin = new Thickness(16) };
         panel.Children.Add(Label(label));
@@ -381,26 +382,26 @@ public sealed partial class AvaloniaDialogService
     }
 
     public Task<string?> RenameIdAsync(string currentId) => RenameAsync(
-        "Переименовать id", "Текущий id", currentId,
-        "Ссылки на этот id (href, conref) во всём проекте будут обновлены автоматически.",
-        "Переименовать", 260);
+        Loc.T("Dlg_RenameId"), Loc.T("Dlg_CurrentId"), currentId,
+        Loc.T("Dlg_ReferencesToThisIdHrefConref"),
+        Loc.T("Dlg_Rename"), 260);
 
     public Task<string?> RenameFileAsync(string currentRelativePath) => RenameAsync(
-        "Переименовать / переместить файл", "Текущий путь (относительно проекта)", currentRelativePath,
-        "Можно указать другую папку через «/» — она будет создана при необходимости. " +
-        "Ссылки на этот файл (href, conref) во всём проекте будут пересчитаны автоматически.",
-        "Перенести", 300);
+        Loc.T("Dlg_RenameMoveFile"), Loc.T("Dlg_CurrentPathRelativeToTheProject"), currentRelativePath,
+        Loc.T("Dlg_YouCanGiveAnotherFolderWith") +
+        Loc.T("Dlg_ReferencesToThisFileHrefConref"),
+        Loc.T("Dlg_Move"), 300);
 
     public async Task<ExtractToConrefResult?> ExtractToConrefAsync(DitaProject project, string suggestedId)
     {
         var root = new DockPanel { Margin = new Thickness(16) };
 
-        var intro = Wrapped("Содержимое элемента переносится в целевой топик целиком, а на исходном месте " +
-                            "остаётся пустая ссылка conref — редактировать текст затем нужно в целевом топике.", 10);
-        var idLabel = Label("id вынесенного элемента");
+        var intro = Wrapped(Loc.T("Dlg_TheElementSContentIsMoved") +
+                            Loc.T("Dlg_StaysInItsPlaceEditThe"), 10);
+        var idLabel = Label(Loc.T("Dlg_IdOfTheExtractedElement"));
         var idBox = new TextBox { Text = suggestedId, Padding = new Thickness(4, 3, 4, 3), Margin = new Thickness(0, 0, 0, 10) };
-        var existingRadio = new RadioButton { Content = "В существующий топик", IsChecked = true, GroupName = "target" };
-        var newRadio = new RadioButton { Content = "В новый файл", GroupName = "target", Margin = new Thickness(0, 4, 0, 0) };
+        var existingRadio = new RadioButton { Content = Loc.T("Dlg_IntoAnExistingTopic"), IsChecked = true, GroupName = "target" };
+        var newRadio = new RadioButton { Content = Loc.T("Dlg_IntoANewFile"), GroupName = "target", Margin = new Thickness(0, 4, 0, 0) };
         var newFileBox = new TextBox
         {
             Text = "reusable/shared.dita",
@@ -425,7 +426,7 @@ public sealed partial class AvaloniaDialogService
         }
 
         ExtractToConrefResult? result = null;
-        var window = Shell("Вынести в conref", root, 520, 560, autoHeight: false);
+        var window = Shell(Loc.T("Dlg_ExtractToConref"), root, 520, 560, autoHeight: false);
         var buttons = Buttons(window, () =>
         {
             var id = (idBox.Text ?? string.Empty).Trim();
@@ -445,7 +446,7 @@ public sealed partial class AvaloniaDialogService
             {
                 result = new ExtractToConrefResult { NewFileName = name, ElementId = id };
             }
-        }, "Вынести");
+        }, Loc.T("Dlg_Extract"));
         DockPanel.SetDock(buttons, Dock.Bottom);
 
         root.Children.Add(intro);

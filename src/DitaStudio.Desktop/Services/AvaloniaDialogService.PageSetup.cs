@@ -7,14 +7,15 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Services;
 
 // Диалог «Параметры страницы»: размер бумаги, ориентация и поля — для DOCX и PDF, со схемой листа.
 public sealed partial class AvaloniaDialogService
 {
-    private const string PaperFromCss = "Как в CSS проекта (обычно A4)";
-    private const string PaperCustom = "Свой размер…";
+    private static string PaperFromCss => Loc.T("Dlg_AsInTheProjectCSSUsually");
+    private static string PaperCustom => Loc.T("Dlg_CustomSize");
 
     public Task<DocxLayout?> PageSetupAsync(DitaProject project) => LayoutDialogAsync(project, 1);
 
@@ -51,14 +52,14 @@ public sealed partial class AvaloniaDialogService
             Name = "LayoutTabs",
             ItemsSource = new[]
             {
-                new TabItem { Header = "Оформление", Content = format.Content },
-                new TabItem { Header = "Страница", Content = page.Content }
+                new TabItem { Header = Loc.T("Win_Formatting"), Content = format.Content },
+                new TabItem { Header = Loc.T("Dlg_Page"), Content = page.Content }
             }
         };
 
         DocxLayout? result = null;
         var root = new DockPanel { Margin = new Thickness(8) };
-        var window = Shell("Оформление DOCX", root, 640, 700, autoHeight: false);
+        var window = Shell(Loc.T("Dlg_DOCXLayout"), root, 640, 700, autoHeight: false);
         var buttons = Buttons(window, () =>
         {
             result = current.Clone();
@@ -78,8 +79,8 @@ public sealed partial class AvaloniaDialogService
     {
         var panel = new StackPanel { Margin = new Thickness(20) };
         panel.Children.Add(Muted(Wrapped(
-            "Размер бумаги, ориентация и поля действуют на экспорт в DOCX и PDF. Пустое поле — значение " +
-            "из CSS проекта (если оно там не задано — 20 мм).")));
+            Loc.T("Dlg_PaperSizeOrientationAndMarginsApply") +
+            Loc.T("Dlg_FromTheProjectCSSIfIt"))));
 
         var paper = new ComboBox
         {
@@ -87,8 +88,8 @@ public sealed partial class AvaloniaDialogService
             SelectedItem = current.HasCustomPaper ? PaperCustom : current.PaperSize.Length > 0 ? current.PaperSize : PaperFromCss,
             MinWidth = 220
         };
-        AutomationProperties.SetName(paper, "Размер бумаги");
-        panel.Children.Add(Label("Размер бумаги"));
+        AutomationProperties.SetName(paper, Loc.T("Dlg_PaperSize"));
+        panel.Children.Add(Label(Loc.T("Dlg_PaperSize")));
         panel.Children.Add(paper);
 
         // Свой размер: ширина и высота книжной страницы, мм — поля видны, только когда выбран пункт.
@@ -104,30 +105,30 @@ public sealed partial class AvaloniaDialogService
             return box;
         }
 
-        var paperWidth = PaperBox(current.PaperWidthMm, "Ширина листа, мм");
-        var paperHeight = PaperBox(current.PaperHeightMm, "Высота листа, мм");
+        var paperWidth = PaperBox(current.PaperWidthMm, Loc.T("Dlg_SheetWidthMm"));
+        var paperHeight = PaperBox(current.PaperHeightMm, Loc.T("Dlg_SheetHeightMm"));
         var customPaper = new StackPanel
         {
             Orientation = Orientation.Horizontal,
             Margin = new Thickness(0, 6, 0, 0),
             Children =
             {
-                new TextBlock { Text = "Ширина", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) },
+                new TextBlock { Text = Loc.T("Dlg_Width"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) },
                 paperWidth,
-                new TextBlock { Text = "Высота", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 8, 0) },
+                new TextBlock { Text = Loc.T("Dlg_Height"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 8, 0) },
                 paperHeight,
                 new TextBlock
                 {
-                    Text = $"мм ({DocxLayout.MinPaperMm:0}–{DocxLayout.MaxPaperMm:0})", VerticalAlignment = VerticalAlignment.Center,
+                    Text = Loc.T("Dlg_Mm0010", DocxLayout.MinPaperMm, DocxLayout.MaxPaperMm), VerticalAlignment = VerticalAlignment.Center,
                     Margin = new Thickness(8, 0, 0, 0)
                 }
             }
         };
         panel.Children.Add(customPaper);
 
-        var portrait = new RadioButton { Content = "Книжная", GroupName = "orientation", IsChecked = !current.Landscape };
-        var landscape = new RadioButton { Content = "Альбомная", GroupName = "orientation", IsChecked = current.Landscape, Margin = new Thickness(16, 0, 0, 0) };
-        panel.Children.Add(Label("Ориентация"));
+        var portrait = new RadioButton { Content = Loc.T("Dlg_Portrait"), GroupName = "orientation", IsChecked = !current.Landscape };
+        var landscape = new RadioButton { Content = Loc.T("Dlg_Landscape"), GroupName = "orientation", IsChecked = current.Landscape, Margin = new Thickness(16, 0, 0, 0) };
+        panel.Children.Add(Label(Loc.T("Dlg_Orientation")));
         panel.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { portrait, landscape } });
 
         TextBox Margin(double? value, string name)
@@ -135,7 +136,7 @@ public sealed partial class AvaloniaDialogService
             var box = new TextBox
             {
                 Text = value?.ToString("0.#", CultureInfo.CurrentCulture) ?? string.Empty,
-                Watermark = "по CSS",
+                Watermark = Loc.T("Dlg_FromCSS"),
                 Width = 80,
                 Padding = new Thickness(4, 3, 4, 3)
             };
@@ -143,10 +144,10 @@ public sealed partial class AvaloniaDialogService
             return box;
         }
 
-        var top = Margin(current.MarginTopMm, "Поле сверху, мм");
-        var bottom = Margin(current.MarginBottomMm, "Поле снизу, мм");
-        var left = Margin(current.MarginLeftMm, "Поле слева, мм");
-        var right = Margin(current.MarginRightMm, "Поле справа, мм");
+        var top = Margin(current.MarginTopMm, Loc.T("Dlg_TopMarginMm"));
+        var bottom = Margin(current.MarginBottomMm, Loc.T("Dlg_BottomMarginMm"));
+        var left = Margin(current.MarginLeftMm, Loc.T("Dlg_LeftMarginMm"));
+        var right = Margin(current.MarginRightMm, Loc.T("Dlg_RightMarginMm"));
         var margins = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("Auto,Auto,16,Auto,Auto"),
@@ -164,11 +165,11 @@ public sealed partial class AvaloniaDialogService
             margins.Children.Add(box);
         }
 
-        Place("Сверху", top, 0, 0);
-        Place("Снизу", bottom, 2, 0);
-        Place("Слева", left, 0, 3);
-        Place("Справа", right, 2, 3);
-        panel.Children.Add(Label("Поля, мм"));
+        Place(Loc.T("Dlg_Top"), top, 0, 0);
+        Place(Loc.T("Dlg_Bottom"), bottom, 2, 0);
+        Place(Loc.T("Dlg_Left"), left, 0, 3);
+        Place(Loc.T("Dlg_Right"), right, 2, 3);
+        panel.Children.Add(Label(Loc.T("Dlg_MarginsMm")));
         panel.Children.Add(margins);
 
         // Схема листа: пропорции бумаги и область текста внутри полей — видно, что выбрано.
@@ -212,9 +213,9 @@ public sealed partial class AvaloniaDialogService
             double M(TextBox box) => Math.Clamp(Parse(box) ?? 20, 0, 100) * scale;
             textArea.Margin = new Thickness(M(left), M(top), M(right), M(bottom));
             caption.Text = isCustom && custom is null
-                ? $"Укажите ширину и высоту листа: от {DocxLayout.MinPaperMm:0} до {DocxLayout.MaxPaperMm:0} мм."
+                ? Loc.T("Dlg_EnterTheSheetWidthAndHeight", DocxLayout.MinPaperMm, DocxLayout.MaxPaperMm)
                 : $"{(name == PaperFromCss ? "A4" : isCustom ? "Свой размер" : name)}, {(landscape.IsChecked == true ? "альбомная" : "книжная")}: " +
-                  $"{width:0.#} × {height:0.#} мм";
+                  Loc.T("Dlg_0010Mm", width, height);
         }
 
         paper.SelectionChanged += (_, _) => Update();
@@ -231,7 +232,7 @@ public sealed partial class AvaloniaDialogService
         {
             var selectedPaper = paper.SelectedItem as string ?? PaperFromCss;
             var customSize = selectedPaper == PaperCustom ? CustomSize() : null;
-            result.PaperSize = selectedPaper is PaperFromCss or PaperCustom ? string.Empty : selectedPaper;
+            result.PaperSize = selectedPaper == PaperFromCss || selectedPaper == PaperCustom ? string.Empty : selectedPaper;
             result.PaperWidthMm = customSize?.Width;
             result.PaperHeightMm = customSize?.Height;
             result.Landscape = landscape.IsChecked == true;

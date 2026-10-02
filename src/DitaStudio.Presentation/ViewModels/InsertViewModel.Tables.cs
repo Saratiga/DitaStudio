@@ -8,6 +8,7 @@ using DitaStudio.Core.Schema;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Plugins;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -30,14 +31,14 @@ public partial class InsertViewModel
             return;
         }
 
-        pane.PushUndo("Вставка таблицы");
+        pane.PushUndo(Loc.T("Msg_InsertTable"));
         var table = TableNodeBuilder.Build(options);
 
         var parent = node.Parent;
         var index = EditCommands.ElementIndexOf(parent, node) + 1;
         if (!DitaCatalog.Default.CanInsert(parent, "table", index))
         {
-            _shell.StatusText = "Таблицу здесь вставить нельзя.";
+            _shell.StatusText = Loc.T("Msg_ATableCannotBeInsertedHere");
             return;
         }
 
@@ -61,12 +62,12 @@ public partial class InsertViewModel
         _shell.StatusText = ok
             ? mode switch
             {
-                TableBorderMode.All => "Границы таблицы: все линии.",
-                TableBorderMode.OuterOnly => "Границы таблицы: только внешняя рамка.",
-                TableBorderMode.HorizontalOnly => "Границы таблицы: только горизонтальные линии.",
-                _ => "Границы таблицы убраны."
+                TableBorderMode.All => Loc.T("Msg_TableBordersAllLines"),
+                TableBorderMode.OuterOnly => Loc.T("Msg_TableBordersOuterFrameOnly"),
+                TableBorderMode.HorizontalOnly => Loc.T("Msg_TableBordersHorizontalLinesOnly"),
+                _ => Loc.T("Msg_TableBordersRemoved")
             }
-            : "Поставьте курсор в ячейку таблицы (обычной, CALS).";
+            : Loc.T("Msg_PutTheCursorInACell");
     }
 
     /// <summary>Линия под строкой таблицы, в которой стоит курсор: true — показать, false — убрать.</summary>
@@ -79,7 +80,7 @@ public partial class InsertViewModel
             _docs.RefreshAllTabTitles();
         }
 
-        _shell.StatusText = ok ? (visible ? "Линия под строкой показана." : "Линия под строкой убрана.") : "Поставьте курсор в ячейку таблицы.";
+        _shell.StatusText = ok ? (visible ? Loc.T("Msg_TheLineBelowTheRowIs") : Loc.T("Msg_TheLineBelowTheRowIs2")) : Loc.T("Msg_PutTheCursorInATable");
     }
 
     /// <summary>Линия справа от столбца, в котором стоит курсор: true — показать, false — убрать.</summary>
@@ -92,7 +93,7 @@ public partial class InsertViewModel
             _docs.RefreshAllTabTitles();
         }
 
-        _shell.StatusText = ok ? (visible ? "Линия справа от столбца показана." : "Линия справа от столбца убрана.") : "Поставьте курсор в ячейку таблицы.";
+        _shell.StatusText = ok ? (visible ? Loc.T("Msg_TheLineRightOfTheColumn") : Loc.T("Msg_TheLineRightOfTheColumn2")) : Loc.T("Msg_PutTheCursorInATable");
     }
 
     /// <summary>Выделить целиком таблицу под курсором (контур; затем Delete удаляет её).</summary>
@@ -100,8 +101,8 @@ public partial class InsertViewModel
     private void SelectTable()
     {
         _shell.StatusText = _docs.Current?.Author.SelectCurrentTable() == true
-            ? "Таблица выделена: Delete удаляет её целиком, Esc снимает выделение."
-            : "Поставьте курсор в ячейку таблицы.";
+            ? Loc.T("Msg_TableSelectedDeleteRemovesItEntirely")
+            : Loc.T("Msg_PutTheCursorInATable");
     }
 
     /// <summary>Удалить таблицу под курсором целиком.</summary>
@@ -112,11 +113,11 @@ public partial class InsertViewModel
         {
             _docs.RefreshAllTabTitles();
             _hooks.RefreshOutline?.Invoke();
-            _shell.StatusText = "Таблица удалена (отмена — Ctrl+Alt+Z).";
+            _shell.StatusText = Loc.T("Msg_TableDeletedUndoCtrlAltZ");
         }
         else
         {
-            _shell.StatusText = "Поставьте курсор в ячейку таблицы.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInATable");
         }
     }
 
@@ -129,17 +130,17 @@ public partial class InsertViewModel
             _docs.RefreshAllTabTitles();
             _hooks.RefreshAttributePanel?.Invoke();
             _hooks.RefreshOutline?.Invoke();
-            _shell.StatusText = TableCommands.Describe(operation) + " — выполнено.";
+            _shell.StatusText = TableCommands.Describe(operation) + Loc.T("Msg_Done");
         }
         else
         {
             _shell.StatusText = operation switch
             {
-                TableOperation.DeleteRow => "Строку удалить нельзя: в таблице должна остаться хотя бы одна строка.",
-                TableOperation.DeleteColumn => "Столбец удалить нельзя: он последний или число столбцов задано типом таблицы.",
-                TableOperation.SplitCell => "Ячейка не объединена — делить нечего.",
-                TableOperation.InsertColumnLeft or TableOperation.InsertColumnRight => "В этой таблице число столбцов задано её типом.",
-                _ => "Поставьте курсор в ячейку таблицы."
+                TableOperation.DeleteRow => Loc.T("Msg_TheRowCannotBeDeletedThe"),
+                TableOperation.DeleteColumn => Loc.T("Msg_TheColumnCannotBeDeletedIt"),
+                TableOperation.SplitCell => Loc.T("Msg_TheCellIsNotMergedNothing"),
+                TableOperation.InsertColumnLeft or TableOperation.InsertColumnRight => Loc.T("Msg_InThisTableTheNumberOf"),
+                _ => Loc.T("Msg_PutTheCursorInATable")
             };
         }
     }
@@ -154,13 +155,13 @@ public partial class InsertViewModel
         switch (_docs.Current?.Author.SetCellBorders(edges))
         {
             case null:
-                _shell.StatusText = "Границы: поставьте курсор в ячейку или выделите ячейки обычной таблицы (CALS).";
+                _shell.StatusText = Loc.T("Msg_BordersPutTheCursorInA");
                 return;
             case false:
-                _shell.StatusText = "Края таблицы заданы для всей стороны сразу: выделите всю строку или весь столбец. Линии между ячейками применены.";
+                _shell.StatusText = Loc.T("Msg_TableEdgesAreSetForA");
                 break;
             default:
-                _shell.StatusText = "Границы ячеек изменены.";
+                _shell.StatusText = Loc.T("Msg_CellBordersChanged");
                 break;
         }
 
@@ -174,7 +175,7 @@ public partial class InsertViewModel
     {
         if (_docs.Current?.Author.SelectCurrentRow() != true)
         {
-            _shell.StatusText = "Поставьте курсор в ячейку обычной таблицы.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInACell2");
         }
     }
 
@@ -184,7 +185,7 @@ public partial class InsertViewModel
     {
         if (_docs.Current?.Author.SelectCurrentColumn() != true)
         {
-            _shell.StatusText = "Поставьте курсор в ячейку обычной таблицы.";
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInACell2");
         }
     }
 
@@ -195,11 +196,11 @@ public partial class InsertViewModel
         {
             _docs.RefreshAllTabTitles();
             _hooks.RefreshAttributePanel?.Invoke();
-            _shell.StatusText = "Ячейки объединены по горизонтали.";
+            _shell.StatusText = Loc.T("Msg_CellsMergedHorizontally");
         }
         else
         {
-            _shell.StatusText = "Выделите ячейку таблицы, у которой есть соседняя справа.";
+            _shell.StatusText = Loc.T("Msg_SelectATableCellThatHas");
         }
     }
 
@@ -210,11 +211,11 @@ public partial class InsertViewModel
         {
             _docs.RefreshAllTabTitles();
             _hooks.RefreshAttributePanel?.Invoke();
-            _shell.StatusText = "Ячейки объединены по вертикали.";
+            _shell.StatusText = Loc.T("Msg_CellsMergedVertically");
         }
         else
         {
-            _shell.StatusText = "Выделите ячейку таблицы, у которой есть соседняя снизу.";
+            _shell.StatusText = Loc.T("Msg_SelectATableCellThatHas2");
         }
     }
 
@@ -224,7 +225,7 @@ public partial class InsertViewModel
         var node = _docs.Current?.Author.CurrentNode;
         if (node is null || node.Name != "table")
         {
-            _shell.StatusText = "Выделите таблицу целиком (не отдельную ячейку).";
+            _shell.StatusText = Loc.T("Msg_SelectTheWholeTableNotA");
             return;
         }
 
@@ -232,7 +233,7 @@ public partial class InsertViewModel
         _docs.RefreshAllTabTitles();
         _hooks.RefreshAttributePanel?.Invoke();
         _shell.StatusText = enabled == true
-            ? "Таблица теперь может переноситься на страницы с повтором шапки."
-            : "Таблица снова печатается как единый блок.";
+            ? Loc.T("Msg_TheTableCanNowBreakAcross")
+            : Loc.T("Msg_TheTablePrintsAsASingle");
     }
 }

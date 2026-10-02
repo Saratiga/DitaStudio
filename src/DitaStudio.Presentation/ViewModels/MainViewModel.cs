@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DitaStudio.Core.Project;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -13,7 +14,7 @@ namespace DitaStudio.Presentation.ViewModels;
 public partial class MainViewModel : ObservableObject, IShellState
 {
     [ObservableProperty]
-    private string statusText = "Готово";
+    private string statusText = Loc.T("Msg_Ready");
 
     // Заголовок окна: «DITA Studio» или «DITA Studio — проект».
     [ObservableProperty]

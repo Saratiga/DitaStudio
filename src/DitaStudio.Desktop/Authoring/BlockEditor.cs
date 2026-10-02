@@ -15,6 +15,7 @@ using DitaStudio.Core.Model;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Authoring;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Authoring;
 
@@ -414,7 +415,7 @@ public sealed class BlockEditor : TextEditor
         {
             var ph = DitaNode.Element("ph");
             ph.SetAttribute("outputclass", token);
-            InsertInlineElement(ph, "текст");
+            InsertInlineElement(ph, Loc.T("Author_Text"));
             return;
         }
 
@@ -723,21 +724,21 @@ public sealed class BlockEditor : TextEditor
 
             if (suggestions.Count == 0)
             {
-                items.Add(new MenuItem { Header = "(нет вариантов)", IsEnabled = false });
+                items.Add(new MenuItem { Header = Loc.T("Author_NoSuggestions"), IsEnabled = false });
             }
 
-            var ignore = new MenuItem { Header = "Пропустить все" };
+            var ignore = new MenuItem { Header = Loc.T("Author_SkipAll") };
             ignore.Click += (_, _) => SpellChecker.Default.Ignore(text);
             items.Add(ignore);
             items.Add(new Separator());
         }
 
         var hasSelection = !TextArea.Selection.IsEmpty;
-        var cut = new MenuItem { Header = "Вырезать", InputGesture = new KeyGesture(Key.X, KeyModifiers.Control), IsEnabled = hasSelection };
+        var cut = new MenuItem { Header = Loc.T("Menu_Cut"), InputGesture = new KeyGesture(Key.X, KeyModifiers.Control), IsEnabled = hasSelection };
         cut.Click += (_, _) => Cut();
-        var copy = new MenuItem { Header = "Копировать", InputGesture = new KeyGesture(Key.C, KeyModifiers.Control), IsEnabled = hasSelection };
+        var copy = new MenuItem { Header = Loc.T("Menu_Copy"), InputGesture = new KeyGesture(Key.C, KeyModifiers.Control), IsEnabled = hasSelection };
         copy.Click += (_, _) => Copy();
-        var paste = new MenuItem { Header = "Вставить", InputGesture = new KeyGesture(Key.V, KeyModifiers.Control) };
+        var paste = new MenuItem { Header = Loc.T("Author_Paste"), InputGesture = new KeyGesture(Key.V, KeyModifiers.Control) };
         paste.Click += (_, _) => _ = PastePlainTextAsync();
         items.Add(cut);
         items.Add(copy);

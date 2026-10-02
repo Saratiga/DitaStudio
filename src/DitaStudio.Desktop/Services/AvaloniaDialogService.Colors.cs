@@ -3,6 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Services;
 
@@ -28,15 +29,15 @@ public sealed partial class AvaloniaDialogService
     public async Task<string?> PickColorAsync(string title, string? initialHex)
     {
         var panel = new StackPanel { Margin = new Thickness(16) };
-        panel.Children.Add(Wrapped("Выберите цвет в палитре или введите код в виде #RRGGBB."));
+        panel.Children.Add(Wrapped(Loc.T("Dlg_ChooseAColorInThePalette")));
 
         var hexBox = Input(NormalizeHex(initialHex) ?? "#FFFF00");
         hexBox.Watermark = "#RRGGBB";
         hexBox.Width = 120;
         hexBox.HorizontalAlignment = HorizontalAlignment.Left;
-        AutomationProperties.SetName(hexBox, "Код цвета");
+        AutomationProperties.SetName(hexBox, Loc.T("Dlg_ColorCode"));
         var preview = new Border { Width = 56, Height = 28, CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-        AutomationProperties.SetName(preview, "Образец цвета");
+        AutomationProperties.SetName(preview, Loc.T("Dlg_ColorSample"));
         preview.Bind(Border.BorderBrushProperty, preview.GetResourceObservable("Line"));
         var status = Muted(new TextBlock { Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center });
 
@@ -44,7 +45,7 @@ public sealed partial class AvaloniaDialogService
         {
             var hex = NormalizeHex(hexBox.Text);
             preview.Background = hex is null ? Brushes.Transparent : new SolidColorBrush(Color.Parse(hex));
-            status.Text = hex is null ? "Нужен код из шести цифр" : string.Empty;
+            status.Text = hex is null ? Loc.T("Dlg_ASixDigitCodeIsRequired") : string.Empty;
         }
 
         hexBox.TextChanged += (_, _) => Update();
@@ -63,7 +64,7 @@ public sealed partial class AvaloniaDialogService
             };
             swatch.Bind(Button.BorderBrushProperty, swatch.GetResourceObservable("Line"));
             ToolTip.SetTip(swatch, "#" + hex);
-            AutomationProperties.SetName(swatch, "Цвет #" + hex);
+            AutomationProperties.SetName(swatch, Loc.T("Dlg_Color") + hex);
             swatch.Click += (_, _) => hexBox.Text = "#" + hex;
             grid.Children.Add(swatch);
         }

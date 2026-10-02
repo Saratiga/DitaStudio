@@ -7,6 +7,7 @@ using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -57,7 +58,7 @@ public partial class MapViewModel
             return;
         }
 
-        pane.PushUndo("Добавление ссылки в карту");
+        pane.PushUndo(Loc.T("Msg_AddReferenceToTheMap"));
         var topicref = DitaNode.Element("topicref");
         topicref.SetAttribute("href", RefResolver.MakeRelative(ownerMap, result.File.FullPath));
         InsertAtSelection(pane, topicref, place);
@@ -83,7 +84,7 @@ public partial class MapViewModel
             return false;
         }
 
-        pane.PushUndo("Добавление нового топика в карту");
+        pane.PushUndo(Loc.T("Msg_AddNewTopicToTheMap"));
         var topicref = DitaNode.Element("topicref");
         topicref.SetAttribute("href", RefResolver.MakeRelative(ownerMap, path));
         InsertAtSelection(pane, topicref);
@@ -111,11 +112,11 @@ public partial class MapViewModel
             return;
         }
 
-        pane.PushUndo("Добавление раздела в карту");
+        pane.PushUndo(Loc.T("Msg_AddSectionToTheMap"));
         var topichead = DitaNode.Element("topichead");
         var meta = DitaNode.Element("topicmeta");
         var navtitle = DitaNode.Element("navtitle");
-        navtitle.SetText("Новый раздел");
+        navtitle.SetText(Loc.T("Msg_NewSection"));
         meta.Add(navtitle);
         topichead.Add(meta);
         InsertAtSelection(pane, topichead);
@@ -180,21 +181,21 @@ public partial class MapViewModel
     }
 
     [RelayCommand(CanExecute = nameof(HasStructureSelection))]
-    private void MoveUp() => StructureOperation(EditCommands.MoveUp, "Перемещение в карте");
+    private void MoveUp() => StructureOperation(EditCommands.MoveUp, Loc.T("Msg_MoveInTheMap"));
 
     [RelayCommand(CanExecute = nameof(HasStructureSelection))]
-    private void MoveDown() => StructureOperation(EditCommands.MoveDown, "Перемещение в карте");
+    private void MoveDown() => StructureOperation(EditCommands.MoveDown, Loc.T("Msg_MoveInTheMap"));
 
     [RelayCommand(CanExecute = nameof(HasStructureSelection))]
     private async Task Delete()
     {
         if (SelectedNode?.Item is not { } item ||
-            !await _ui.Dialogs.ConfirmAsync("Карта", $"Убрать «{item.Title}» из карты?"))
+            !await _ui.Dialogs.ConfirmAsync(Loc.T("Tab_Map"), Loc.T("Msg_Remove0FromTheMap", item.Title)))
         {
             return;
         }
 
-        StructureOperation(EditCommands.Delete, "Удаление из карты");
+        StructureOperation(EditCommands.Delete, Loc.T("Msg_RemoveFromTheMap"));
     }
 
     /// <summary>Выбранный топик начинается с новой страницы (отметка в меню).</summary>
@@ -215,12 +216,12 @@ public partial class MapViewModel
         {
             TopicPageBreak.Set(node, value);
             return true;
-        }, "Разрыв страницы перед топиком");
+        }, Loc.T("Msg_PageBreakBeforeTheTopic"));
         _shell.StatusText = value switch
         {
-            true => "Топик будет начинаться с новой страницы (DOCX, PDF, единый HTML).",
-            false => "Топик не будет начинаться с новой страницы, даже если так задано в оформлении DOCX.",
-            _ => "Разрыв страницы перед топиком снят: как задано в оформлении DOCX."
+            true => Loc.T("Msg_TheTopicWillStartOnA"),
+            false => Loc.T("Msg_TheTopicWillNotStartOn"),
+            _ => Loc.T("Msg_ThePageBreakBeforeTheTopic")
         };
     }
 
@@ -234,7 +235,7 @@ public partial class MapViewModel
 
         node.Parent.Insert(node.IndexInParent + 1, node.CloneDeep());
         return true;
-    }, "Дублирование в карте");
+    }, Loc.T("Msg_DuplicateInTheMap"));
 
     [RelayCommand(CanExecute = nameof(HasStructureSelection))]
     private void Indent() => StructureOperation(node =>
@@ -248,7 +249,7 @@ public partial class MapViewModel
         node.RemoveSelf();
         previous.Add(node);
         return true;
-    }, "Вложение в карте");
+    }, Loc.T("Msg_NestInTheMap"));
 
     [RelayCommand(CanExecute = nameof(HasStructureSelection))]
     private void Outdent() => StructureOperation(node =>
@@ -264,7 +265,7 @@ public partial class MapViewModel
         node.RemoveSelf();
         grand.Insert(index, node);
         return true;
-    }, "Вынос из вложения");
+    }, Loc.T("Msg_MoveOutOfTheNesting"));
 
     /// <summary>Можно ли бросить <paramref name="dragged"/> на <paramref name="target"/> в указанное
     /// место — по контент-модели, без переноса в собственную ветку и между разными файлами карты.
@@ -298,7 +299,7 @@ public partial class MapViewModel
 
         var moved = dragged.Item.Node;
         var container = target.Item.Node;
-        pane.PushUndo("Перестановка в карте");
+        pane.PushUndo(Loc.T("Msg_ReorderInTheMap"));
         MapMoves.Move(moved, container, position);
         AfterMapEdit(pane);
         if (position == DropPosition.Child && Tree.SelectMany(Flatten).FirstOrDefault(n => ReferenceEquals(n.Item.Node, container)) is { } parent)
@@ -308,7 +309,7 @@ public partial class MapViewModel
 
         Select(moved);
         _shell.StatusText = position == DropPosition.Child
-            ? $"«{dragged.Title}» теперь вложен в «{target.Title}»."
-            : $"«{dragged.Title}» перенесён.";
+            ? Loc.T("Msg_0IsNowNestedIn1", dragged.Title, target.Title)
+            : Loc.T("Msg_0WasMoved", dragged.Title);
     }
 }

@@ -10,6 +10,7 @@ using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Authoring;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Authoring;
 
@@ -51,7 +52,7 @@ public sealed partial class AuthorView
         {
             var mark = new TextBlock { Text = "№", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 1, 6, 0) };
             Themed(mark, TextBlock.ForegroundProperty, "Accent");
-            ToolTip.SetTip(mark, "Нумерованный абзац: номер по заголовкам (например, 2.3.1) — при публикации");
+            ToolTip.SetTip(mark, Loc.T("Author_NumberedParagraphNumberFromTheHeadings"));
             var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
             Grid.SetColumn(editor, 1);
             row.Children.Add(mark);
@@ -70,7 +71,7 @@ public sealed partial class AuthorView
                 Margin = new Thickness(0, 1, 6, 0)
             };
             Themed(mark, TextBlock.ForegroundProperty, "Accent");
-            ToolTip.SetTip(mark, "Подпись при публикации. Номер сквозной по изданию и зависит от настройки «Нумеровать рисунки и таблицы»; здесь — по порядку в этом топике.");
+            ToolTip.SetTip(mark, Loc.T("Author_CaptionWhenPublishedTheNumberRuns"));
             var row = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*") };
             Grid.SetColumn(editor, 1);
             row.Children.Add(mark);
@@ -85,13 +86,13 @@ public sealed partial class AuthorView
 
         var badge = new TextBlock
         {
-            Text = "без номера · не в оглавлении",
+            Text = Loc.T("Author_NoNumberNotInTableOf"),
             FontSize = 11,
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(10, 0, 0, 0)
         };
         Themed(badge, TextBlock.ForegroundProperty, "EditorTag");
-        ToolTip.SetTip(badge, "При публикации заголовок не нумеруется и не попадает в оглавление (outputclass=\"nonumber\").");
+        ToolTip.SetTip(badge, Loc.T("Author_WhenPublishedTheTitleIsNot"));
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         Grid.SetColumn(badge, 1);
         grid.Children.Add(editor);

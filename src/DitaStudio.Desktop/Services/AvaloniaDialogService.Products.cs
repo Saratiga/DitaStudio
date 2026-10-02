@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using DitaStudio.Core.Project;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Services;
 
@@ -19,11 +20,11 @@ public sealed partial class AvaloniaDialogService
     {
         var products = project.Products.ToList();
         var panel = new StackPanel { Margin = new Thickness(16) };
-        panel.Children.Add(Wrapped("Продукты проекта — значения атрибута product. Они выбираются из списка на панели «Атрибуты» (можно несколько) " +
-                                   "и отмечаются в «Условиях сборки». Имя — одно слово: пробел заменяется на «_»."));
+        panel.Children.Add(Wrapped(Loc.T("Dlg_ProjectProductsAreTheValuesOf") +
+                                   Loc.T("Dlg_AndTickedInBuildConditionsA")));
 
         var list = new ListBox { Height = 200, Margin = new Thickness(0, 8, 0, 0) };
-        AutomationProperties.SetName(list, "Продукты проекта");
+        AutomationProperties.SetName(list, Loc.T("Hdr_ProjectProducts"));
         panel.Children.Add(list);
 
         void Refresh()
@@ -34,13 +35,13 @@ public sealed partial class AvaloniaDialogService
         Refresh();
 
         var nameBox = Input(string.Empty);
-        nameBox.Watermark = "Имя продукта";
-        AutomationProperties.SetName(nameBox, "Имя нового продукта");
+        nameBox.Watermark = Loc.T("Dlg_ProductName");
+        AutomationProperties.SetName(nameBox, Loc.T("Dlg_NewProductName"));
         var descriptionBox = Input(string.Empty);
-        descriptionBox.Watermark = "Описание (необязательно)";
-        AutomationProperties.SetName(descriptionBox, "Описание нового продукта");
-        var add = new Button { Content = "Добавить", Padding = new Thickness(12, 3), Margin = new Thickness(0, 6, 0, 0) };
-        var remove = new Button { Content = "Удалить выбранный", Padding = new Thickness(12, 3), Margin = new Thickness(8, 6, 0, 0) };
+        descriptionBox.Watermark = Loc.T("Dlg_DescriptionOptional");
+        AutomationProperties.SetName(descriptionBox, Loc.T("Dlg_NewProductDescription"));
+        var add = new Button { Content = Loc.T("Dlg_Add"), Padding = new Thickness(12, 3), Margin = new Thickness(0, 6, 0, 0) };
+        var remove = new Button { Content = Loc.T("Dlg_DeleteSelected"), Padding = new Thickness(12, 3), Margin = new Thickness(8, 6, 0, 0) };
         var status = Muted(new TextBlock { Margin = new Thickness(0, 6, 0, 0), TextWrapping = TextWrapping.Wrap });
 
         void AddCurrent()
@@ -53,14 +54,14 @@ public sealed partial class AvaloniaDialogService
 
             if (products.Any(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)))
             {
-                status.Text = $"Продукт «{name}» уже есть в списке.";
+                status.Text = Loc.T("Dlg_Product0IsAlreadyInThe", name);
                 return;
             }
 
             products.Add(new ProductInfo(name, (descriptionBox.Text ?? string.Empty).Trim()));
             nameBox.Text = string.Empty;
             descriptionBox.Text = string.Empty;
-            status.Text = $"Добавлен: {name}.";
+            status.Text = Loc.T("Dlg_Added0", name);
             Refresh();
         }
 
@@ -77,18 +78,18 @@ public sealed partial class AvaloniaDialogService
         {
             if (list.SelectedIndex is >= 0 and var index && index < products.Count)
             {
-                status.Text = $"Удалён из списка: {products[index].Name}. Значения product в топиках не меняются.";
+                status.Text = Loc.T("Dlg_RemovedFromTheList0The", products[index].Name);
                 products.RemoveAt(index);
                 Refresh();
             }
         };
 
-        var import = new Button { Content = "Импорт из файла…", Padding = new Thickness(12, 3), Margin = new Thickness(0, 6, 0, 0) };
-        var export = new Button { Content = "Экспорт в файл…", Padding = new Thickness(12, 3), Margin = new Thickness(8, 6, 0, 0) };
-        var filters = new[] { new FileFilter("Список продуктов", "*.ditastudio-products", "*.json", "*.txt"), FileFilter.All };
+        var import = new Button { Content = Loc.T("Dlg_ImportFromFile"), Padding = new Thickness(12, 3), Margin = new Thickness(0, 6, 0, 0) };
+        var export = new Button { Content = Loc.T("Dlg_ExportToFile"), Padding = new Thickness(12, 3), Margin = new Thickness(8, 6, 0, 0) };
+        var filters = new[] { new FileFilter(Loc.T("Dlg_ProductList"), "*.ditastudio-products", "*.json", "*.txt"), FileFilter.All };
         import.Click += async (_, _) =>
         {
-            var file = await _files.OpenFileAsync("Список продуктов другого проекта", filters, project.RootPath);
+            var file = await _files.OpenFileAsync(Loc.T("Dlg_ProductListOfAnotherProject"), filters, project.RootPath);
             if (file is null)
             {
                 return;
@@ -101,20 +102,20 @@ public sealed partial class AvaloniaDialogService
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                status.Text = "Не удалось прочитать список: " + ex.Message;
+                status.Text = Loc.T("Dlg_CouldNotReadTheList") + ex.Message;
                 return;
             }
 
             if (imported.Count == 0)
             {
-                status.Text = "В файле нет продуктов.";
+                status.Text = Loc.T("Dlg_TheFileHasNoProducts");
                 return;
             }
 
             var answer = products.Count == 0
                 ? AskResult.Yes
-                : await AskAsync("Импорт списка продуктов",
-                    $"В файле продуктов: {imported.Count}. Да — добавить недостающие к текущему списку, Нет — заменить текущий список списком из файла.",
+                : await AskAsync(Loc.T("Dlg_ImportProductList"),
+                    Loc.T("Dlg_ProductsInTheFile0Yes", imported.Count),
                     AskButtons.YesNoCancel);
             if (answer == AskResult.Cancel)
             {
@@ -123,12 +124,12 @@ public sealed partial class AvaloniaDialogService
 
             var before = products.Count;
             products = answer == AskResult.Yes ? ProductList.Merge(products, imported) : imported;
-            status.Text = answer == AskResult.Yes ? $"Добавлено продуктов: {products.Count - before}." : $"Список заменён: {products.Count} продуктов.";
+            status.Text = answer == AskResult.Yes ? Loc.T("Dlg_ProductsAdded0", products.Count - before) : Loc.T("Dlg_ListReplaced0Products", products.Count);
             Refresh();
         };
         export.Click += async (_, _) =>
         {
-            var file = await _files.SaveFileAsync("Сохранить список продуктов", filters, "products.ditastudio-products", project.RootPath);
+            var file = await _files.SaveFileAsync(Loc.T("Dlg_SaveProductList"), filters, "products.ditastudio-products", project.RootPath);
             if (file is null)
             {
                 return;
@@ -137,15 +138,15 @@ public sealed partial class AvaloniaDialogService
             try
             {
                 ProductList.Write(file, products);
-                status.Text = "Список сохранён: " + file;
+                status.Text = Loc.T("Dlg_ListSaved") + file;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                status.Text = "Не удалось сохранить: " + ex.Message;
+                status.Text = Loc.T("Dlg_CouldNotSave") + ex.Message;
             }
         };
 
-        panel.Children.Add(Label("Новый продукт"));
+        panel.Children.Add(Label(Loc.T("Dlg_NewProduct")));
         panel.Children.Add(nameBox);
         panel.Children.Add(descriptionBox);
         panel.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { add, remove } });
@@ -153,7 +154,7 @@ public sealed partial class AvaloniaDialogService
         panel.Children.Add(status);
 
         IReadOnlyList<ProductInfo>? result = null;
-        var window = Shell("Список продуктов", new ScrollViewer { Content = panel }, 520, 640);
+        var window = Shell(Loc.T("Dlg_ProductList"), new ScrollViewer { Content = panel }, 520, 640);
         panel.Children.Add(Buttons(window, () => result = ProductList.Clean(products)));
         return await ShowAsync(window) ? result : null;
     }
@@ -169,11 +170,11 @@ public sealed partial class AvaloniaDialogService
         var found = CollectConditionValues(project);
 
         // ---- продукты: отмечены — входят в публикацию
-        panel.Children.Add(Label("Продукты: что войдёт в публикацию"));
+        panel.Children.Add(Label(Loc.T("Dlg_ProductsWhatGoesIntoThePublication")));
         panel.Children.Add(Muted(new TextBlock
         {
-            Text = "Отметьте продукты, для которых собирается публикация. Элементы без атрибута product входят всегда; " +
-                   "элемент с несколькими продуктами — если отмечен хотя бы один.",
+            Text = Loc.T("Dlg_TickTheProductsThePublicationIs") +
+                   Loc.T("Dlg_AnElementWithSeveralProductsIs"),
             TextWrapping = TextWrapping.Wrap
         }));
         var productPanel = new StackPanel();
@@ -189,14 +190,14 @@ public sealed partial class AvaloniaDialogService
             foreach (var name in all)
             {
                 var box = new CheckBox { Content = name, Margin = new Thickness(8, 2, 0, 2), IsChecked = isIncluded(name) };
-                AutomationProperties.SetName(box, "Продукт " + name);
+                AutomationProperties.SetName(box, Loc.T("Dlg_Product") + name);
                 productChecks.Add((name, box));
                 productPanel.Children.Add(box);
             }
 
             if (all.Count == 0)
             {
-                productPanel.Children.Add(Muted(new TextBlock { Text = "Список продуктов пуст — добавьте продукты кнопкой ниже.", Margin = new Thickness(0, 4, 0, 0) }));
+                productPanel.Children.Add(Muted(new TextBlock { Text = Loc.T("Dlg_TheProductListIsEmptyAdd"), Margin = new Thickness(0, 4, 0, 0) }));
             }
         }
 
@@ -206,7 +207,7 @@ public sealed partial class AvaloniaDialogService
         BuildProductChecks(ProductNames(), name => !excludedNow.Contains(name));
         panel.Children.Add(productPanel);
 
-        var editProducts = new Button { Content = "Список продуктов…", Padding = new Thickness(12, 3), Margin = new Thickness(0, 6, 0, 0) };
+        var editProducts = new Button { Content = Loc.T("Menu_ProductList"), Padding = new Thickness(12, 3), Margin = new Thickness(0, 6, 0, 0) };
         editProducts.Click += async (_, _) =>
         {
             var edited = await EditProductsAsync(project);
@@ -223,20 +224,20 @@ public sealed partial class AvaloniaDialogService
 
         // ---- остальные условные атрибуты: отметка исключает значение
         panel.Children.Add(new Border { Height = 1, Margin = new Thickness(0, 14, 0, 0) });
-        panel.Children.Add(Wrapped("Остальные условные атрибуты: отметьте значения, которые нужно исключить из сборки."));
+        panel.Children.Add(Wrapped(Loc.T("Dlg_OtherConditionalAttributesTickTheValues")));
         var others = ConditionChecks(panel, project, (attribute, value) =>
             current is not null && current.Exclude.TryGetValue(attribute, out var excluded) && excluded.Contains(value), skipAttribute: "product");
 
         var drafts = new CheckBox
         {
-            Content = "Включать черновые комментарии (draft-comment)",
+            Content = Loc.T("Dlg_IncludeDraftCommentsDraftComment"),
             Margin = new Thickness(0, 14, 0, 0),
             IsChecked = current?.ShowDraftComments ?? false
         };
         panel.Children.Add(drafts);
 
         ConditionsResult? result = null;
-        var window = Shell("Условия сборки", new ScrollViewer { Content = panel }, 500, 640);
+        var window = Shell(Loc.T("Dlg_BuildConditions"), new ScrollViewer { Content = panel }, 500, 640);
         panel.Children.Add(Buttons(window, () =>
         {
             var exclude = CheckedExclusions(others);

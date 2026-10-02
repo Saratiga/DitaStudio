@@ -48,7 +48,7 @@ public partial class App : Application
                 }
 
                 _ = window.ViewModel.Dialogs.MessageAsync("DITA Studio",
-                    $"Непредвиденная ошибка:\n\n{e.Exception.Message}\n\n{e.Exception.StackTrace}");
+                    Loc.T("Win_UnexpectedError01", e.Exception.Message, e.Exception.StackTrace));
                 e.Handled = true;
             };
         }

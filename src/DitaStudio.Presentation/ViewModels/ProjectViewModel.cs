@@ -5,6 +5,7 @@ using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -66,7 +67,7 @@ public partial class ProjectViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenProject()
     {
-        var folder = await _ui.Files.OpenFolderAsync("Выберите папку с проектом DITA");
+        var folder = await _ui.Files.OpenFolderAsync(Loc.T("Msg_ChooseADITAProjectFolder"));
         if (folder is null)
         {
             return;
@@ -85,14 +86,14 @@ public partial class ProjectViewModel : ObservableObject
         if (_workspace.Projects.FirstOrDefault(p => string.Equals(Path.GetFullPath(p.RootPath).TrimEnd('\\', '/'), full.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase)) is { } open)
         {
             _workspace.ActivateProject(open);
-            _shell.StatusText = $"Проект «{open.Name}» уже открыт — он стал активным.";
+            _shell.StatusText = Loc.T("Msg_TheProject0IsAlreadyOpen", open.Name);
             return;
         }
 
         var project = new DitaProject(path);
         // Сбой записи настройки проекта (.ditastudio-*) — сразу сообщаем: иначе пользователь
         // считает, что условия/CSS/DTD сохранены, а после перезапуска их не окажется.
-        project.SettingsWarning += message => _ = _ui.Dialogs.MessageAsync("Настройки проекта", message);
+        project.SettingsWarning += message => _ = _ui.Dialogs.MessageAsync(Loc.T("Msg_ProjectSettings"), message);
 
         // Каталог проекта активируем до Scan: тип документа (топик/карта) определяется по нему,
         // и корневые элементы специализации из внешнего DTD должны уже быть известны.
@@ -104,7 +105,7 @@ public partial class ProjectViewModel : ObservableObject
         catch (Exception ex)
         {
             DitaCatalog.Activate(_workspace.Project?.Catalog); // каталог прежнего активного проекта возвращается
-            await _ui.Dialogs.MessageAsync("Проект", $"Не удалось прочитать папку: {ex.Message}");
+            await _ui.Dialogs.MessageAsync(Loc.T("Tab_Project"), Loc.T("Msg_CouldNotReadTheFolder0", ex.Message));
             return;
         }
 
@@ -115,12 +116,12 @@ public partial class ProjectViewModel : ObservableObject
         RecentProjects.Add(path);
         _hooks.RefreshRecentProjectsMenu?.Invoke();
 
-        _shell.StatusText = $"Проект открыт: {project.Files.Count} файлов, {project.Keys.Count} ключей.{dtdNote}" +
-                           (_workspace.Projects.Count > 1 ? $" Открыто проектов: {_workspace.Projects.Count}." : string.Empty);
+        _shell.StatusText = Loc.T("Msg_ProjectOpened0Files1Keys", project.Files.Count, project.Keys.Count, dtdNote) +
+                           (_workspace.Projects.Count > 1 ? Loc.T("Msg_OpenProjects0", _workspace.Projects.Count) : string.Empty);
 
         if (project.SettingsWarnings.Count > 0)
         {
-            await _ui.Dialogs.MessageAsync("Настройки проекта", string.Join("\n", project.SettingsWarnings));
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_ProjectSettings"), string.Join("\n", project.SettingsWarnings));
         }
 
         _recovery.Attach(project);
@@ -171,7 +172,7 @@ public partial class ProjectViewModel : ObservableObject
         }
 
         _hooks.RefreshProjectTree?.Invoke();
-        _shell.StatusText = $"Проект «{project.Name}» закрыт." + (_workspace.Projects.Count > 0 ? $" Открыто проектов: {_workspace.Projects.Count}." : string.Empty);
+        _shell.StatusText = Loc.T("Msg_TheProject0WasClosed", project.Name) + (_workspace.Projects.Count > 0 ? Loc.T("Msg_OpenProjects0", _workspace.Projects.Count) : string.Empty);
         return true;
     }
 
@@ -188,8 +189,8 @@ public partial class ProjectViewModel : ObservableObject
             return string.Empty;
         }
 
-        var warningsNote = result.Warnings.Count > 0 ? $", предупреждений {result.Warnings.Count}" : string.Empty;
-        return $" Из внешнего DTD подключено элементов: {result.Elements.Count}{warningsNote}.";
+        var warningsNote = result.Warnings.Count > 0 ? Loc.T("Msg_Warnings0", result.Warnings.Count) : string.Empty;
+        return Loc.T("Msg_ElementsConnectedFromTheExternalDTD", result.Elements.Count, warningsNote);
     }
 
     [RelayCommand]
@@ -213,7 +214,7 @@ public partial class ProjectViewModel : ObservableObject
         _hooks.RefreshMapSelector?.Invoke();
         RefreshKeysList();
         _hooks.RefreshEditorContext?.Invoke();
-        _shell.StatusText = $"Проект обновлён: {project.Files.Count} файлов.{dtdNote}";
+        _shell.StatusText = Loc.T("Msg_ProjectRefreshed0Files1", project.Files.Count, dtdNote);
     }
 
     public void RefreshKeysList()
@@ -234,13 +235,13 @@ public partial class ProjectViewModel : ObservableObject
         var hints = new List<string>();
         if (hidden > 0)
         {
-            hints.Add($"Показаны только ключи корневой области. Ещё {hidden} — внутри keyscope-областей карты.");
+            hints.Add(Loc.T("Msg_OnlyTheKeysOfTheRoot", hidden));
         }
 
         if (referencedCount > 0)
         {
-            hints.Add($"Подключено проектов-источников ключей: {referencedCount} — их ключи в списке не показаны, " +
-                      "но доступны через keyref/conref, если не найдены в этом проекте.");
+            hints.Add(Loc.T("Msg_KeySourceProjectsConnected0Their", referencedCount) +
+                      Loc.T("Msg_ButAreAvailableThroughKeyrefConref"));
         }
 
         ScopedKeysHintVisible = hints.Count > 0;
@@ -265,11 +266,11 @@ public partial class ProjectViewModel : ObservableObject
         var project = _workspace.Project;
         if (project is null)
         {
-            await _ui.Dialogs.MessageAsync("Проект", "Сначала откройте папку проекта.");
+            await _ui.Dialogs.MessageAsync(Loc.T("Tab_Project"), Loc.T("Msg_OpenAProjectFolderFirst"));
             return;
         }
 
-        var folder = await _ui.Files.OpenFolderAsync("Подключить проект как источник ключей");
+        var folder = await _ui.Files.OpenFolderAsync(Loc.T("Msg_ConnectAProjectAsAKey"));
         if (folder is null)
         {
             return;
@@ -277,14 +278,14 @@ public partial class ProjectViewModel : ObservableObject
 
         if (string.Equals(Path.GetFullPath(folder), Path.GetFullPath(project.RootPath), StringComparison.OrdinalIgnoreCase))
         {
-            await _ui.Dialogs.MessageAsync("Проект", "Нельзя подключить проект сам к себе.");
+            await _ui.Dialogs.MessageAsync(Loc.T("Tab_Project"), Loc.T("Msg_AProjectCannotBeConnectedTo"));
             return;
         }
 
         project.AddReferencedProject(folder);
         RefreshKeysList();
-        _shell.StatusText = $"Подключён проект-источник ключей: {folder} " +
-                            $"(всего подключено: {project.ReferencedProjectPaths.Count}).";
+        _shell.StatusText = Loc.T("Msg_KeySourceProjectConnected0", folder) +
+                            Loc.T("Msg_ConnectedInTotal0", project.ReferencedProjectPaths.Count);
     }
 
     [RelayCommand]
@@ -302,7 +303,7 @@ public partial class ProjectViewModel : ObservableObject
         }
 
         RefreshKeysList();
-        _shell.StatusText = "Все проекты-источники ключей отключены.";
+        _shell.StatusText = Loc.T("Msg_AllKeySourceProjectsDisconnected");
     }
 
     /// <summary>Подключает внешний .dtd (кастомная специализация DITA) — его элементы попадают в
@@ -315,11 +316,11 @@ public partial class ProjectViewModel : ObservableObject
         var project = _workspace.Project;
         if (project is null)
         {
-            await _ui.Dialogs.MessageAsync("Внешний DTD", "Сначала откройте папку проекта.");
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_ExternalDTD"), Loc.T("Msg_OpenAProjectFolderFirst"));
             return;
         }
 
-        var file = await _ui.Files.OpenFileAsync("Подключить внешний DTD", new[] { new FileFilter("Файлы DTD", "*.dtd"), FileFilter.All }, project.RootPath);
+        var file = await _ui.Files.OpenFileAsync(Loc.T("Msg_ConnectExternalDTD"), new[] { new FileFilter(Loc.T("Msg_DTDFiles"), "*.dtd"), FileFilter.All }, project.RootPath);
         if (file is null)
         {
             return;
@@ -333,16 +334,16 @@ public partial class ProjectViewModel : ObservableObject
         _hooks.RefreshEditorContext?.Invoke();
         if (result is null)
         {
-            _shell.StatusText = $"Подключён внешний DTD: {relativePath}.";
+            _shell.StatusText = Loc.T("Msg_ExternalDTDConnected0", relativePath);
             return;
         }
 
-        var warningsNote = result.Warnings.Count > 0 ? $", предупреждений {result.Warnings.Count}" : string.Empty;
-        _shell.StatusText = $"Подключён внешний DTD: {relativePath}. Элементов подключено: {result.Elements.Count}{warningsNote}.";
+        var warningsNote = result.Warnings.Count > 0 ? Loc.T("Msg_Warnings0", result.Warnings.Count) : string.Empty;
+        _shell.StatusText = Loc.T("Msg_ExternalDTDConnected0ElementsConnected", relativePath, result.Elements.Count, warningsNote);
 
         if (result.Warnings.Count > 0)
         {
-            await _ui.Dialogs.MessageAsync("Внешний DTD — предупреждения", string.Join("\n", result.Warnings));
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_ExternalDTDWarnings"), string.Join("\n", result.Warnings));
         }
     }
 
@@ -358,7 +359,7 @@ public partial class ProjectViewModel : ObservableObject
         project.SetExternalDtdPath(null);
         DitaCatalog.Activate(project.LoadCatalog().Catalog);
         _hooks.RefreshEditorContext?.Invoke();
-        _shell.StatusText = "Внешний DTD отключён — его элементы убраны из каталога проекта.";
+        _shell.StatusText = Loc.T("Msg_TheExternalDTDWasDisconnectedIts");
     }
 
     // ------------------------------------------------------------ дерево файлов
@@ -445,7 +446,7 @@ public partial class ProjectViewModel : ObservableObject
         var project = _workspace.Project;
         if (project is null)
         {
-            await _ui.Dialogs.MessageAsync("Создание документа", "Сначала откройте папку проекта.");
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_CreateDocument"), Loc.T("Msg_OpenAProjectFolderFirst"));
             return;
         }
 
@@ -468,7 +469,7 @@ public partial class ProjectViewModel : ObservableObject
         }
 
         var path = Path.Combine(result.Folder, result.FileName);
-        if (File.Exists(path) && !await _ui.Dialogs.ConfirmAsync("Создание документа", $"Файл {result.FileName} уже существует. Перезаписать?"))
+        if (File.Exists(path) && !await _ui.Dialogs.ConfirmAsync(Loc.T("Msg_CreateDocument"), Loc.T("Msg_TheFile0AlreadyExistsOverwrite", result.FileName)))
         {
             return;
         }
@@ -482,7 +483,7 @@ public partial class ProjectViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            await _ui.Dialogs.MessageAsync("Создание документа", ex.Message);
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_CreateDocument"), ex.Message);
             return;
         }
 
@@ -500,7 +501,7 @@ public partial class ProjectViewModel : ObservableObject
         _documents.OpenDocument(path);
         if (added)
         {
-            _shell.StatusText = $"Создан {result.FileName} и добавлен в карту {_map.SelectedMap!.RelativePath} (не забудьте сохранить карту).";
+            _shell.StatusText = Loc.T("Msg_0WasCreatedAndAddedTo", result.FileName, _map.SelectedMap!.RelativePath);
         }
     }
 }

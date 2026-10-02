@@ -10,6 +10,7 @@ using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Presentation.Services;
 using Xilium.CefGlue.Avalonia;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Preview;
 
@@ -60,17 +61,17 @@ public sealed class PreviewPane : UserControl
 
         _format = new ComboBox
         {
-            ItemsSource = new[] { "HTML", "PDF", "DOCX (приближённо)", "Страницы (живой)" },
+            ItemsSource = new[] { "HTML", "PDF", Loc.T("Preview_DOCXApproximate"), Loc.T("Preview_PagesLive") },
             SelectedIndex = 0,
             Margin = new Thickness(6, 4, 4, 4),
             VerticalAlignment = VerticalAlignment.Center
         };
         _format.SelectionChanged += (_, _) => _ = RefreshAsync();
 
-        var refresh = new Button { Content = "Обновить", Margin = new Thickness(4) };
+        var refresh = new Button { Content = Loc.T("Btn_Refresh"), Margin = new Thickness(4) };
         refresh.Click += (_, _) => _ = RefreshAsync();
 
-        var external = _external = new Button { Content = "Открыть внешним приложением", Margin = new Thickness(0, 4, 4, 4) };
+        var external = _external = new Button { Content = Loc.T("Preview_OpenInExternalApplication"), Margin = new Thickness(0, 4, 4, 4) };
         external.Click += async (_, _) =>
         {
             if (await RefreshAsync() is { } file)
@@ -168,7 +169,7 @@ public sealed class PreviewPane : UserControl
         }
         catch (Exception ex)
         {
-            html = "<html><body style='font-family:sans-serif'><p>Не удалось построить предпросмотр:</p><pre>" +
+            html = Loc.T("Preview_HtmlBodyStyleFontFamilySans") +
                    System.Net.WebUtility.HtmlEncode(ex.Message) + "</pre></body></html>";
             mapEntry = null;
         }
@@ -185,7 +186,7 @@ public sealed class PreviewPane : UserControl
             var shown = htmlPath;
             if (format == PreviewFormat.Pdf)
             {
-                _status.Text = "Печать в PDF…";
+                _status.Text = Loc.T("Preview_PrintToPDF");
                 var pdfPath = Path.Combine(dir, baseName + ".pdf");
                 var error = await _pdfPrinter.ExportAsync(htmlPath, pdfPath, PdfPageDecoration.For(_project));
                 if (requestId != _requestId)
@@ -200,7 +201,7 @@ public sealed class PreviewPane : UserControl
                 }
                 else
                 {
-                    _status.Text = "Ошибка печати в PDF: " + error;
+                    _status.Text = Loc.T("Preview_PDFPrintingError") + error;
                 }
             }
             else
@@ -214,7 +215,7 @@ public sealed class PreviewPane : UserControl
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _status.Text = "Не удалось записать временный файл предпросмотра: " + ex.Message;
+            _status.Text = Loc.T("Preview_CouldNotWriteTheTemporaryPreview") + ex.Message;
             return null;
         }
     }
@@ -245,7 +246,7 @@ public sealed class PreviewPane : UserControl
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _status.Text = "Не удалось записать временный файл предпросмотра: " + ex.Message;
+            _status.Text = Loc.T("Preview_CouldNotWriteTheTemporaryPreview") + ex.Message;
             return null;
         }
     }
@@ -290,7 +291,7 @@ public sealed class PreviewPane : UserControl
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            _status.Text = "Не удалось обновить предпросмотр: " + ex.Message;
+            _status.Text = Loc.T("Preview_CouldNotUpdateThePreview") + ex.Message;
             return false;
         }
     }
@@ -344,12 +345,12 @@ public sealed class PreviewPane : UserControl
         }
 
         // Без встроенного браузера — подсказка и кнопка открыть файл снаружи.
-        var open = new Button { Content = "Открыть " + Path.GetFileName(path), HorizontalAlignment = HorizontalAlignment.Left };
+        var open = new Button { Content = Loc.T("Preview_Open") + Path.GetFileName(path), HorizontalAlignment = HorizontalAlignment.Left };
         open.Click += (_, _) => OpenExternally(path);
         var note = new TextBlock
         {
-            Text = "Встроенный браузер недоступен (" + (CefHost.EnsureStarted() ?? "неизвестная причина") +
-                   "). Предпросмотр построен — его можно открыть внешним приложением.",
+            Text = Loc.T("Preview_TheBuiltInBrowserIsUnavailable") + (CefHost.EnsureStarted() ?? Loc.T("Preview_UnknownReason")) +
+                   Loc.T("Preview_ThePreviewIsBuiltItCan"),
             TextWrapping = TextWrapping.Wrap
         };
         note.Bind(TextBlock.ForegroundProperty, note.GetResourceObservable("TextMuted"));

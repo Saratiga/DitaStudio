@@ -8,6 +8,7 @@ using DitaStudio.Core.Schema;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Plugins;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -33,6 +34,9 @@ public partial class InsertViewModel : ObservableObject
         _ui = context.Ui;
         _hooks = context.Hooks;
         _docs = docs;
+
+        // Список размеров шрифта строится на текущем языке — пересобирается при его смене.
+        Loc.Instance.LanguageChanged += (_, _) => OnPropertyChanged(nameof(FontSizes));
     }
 
     // [RelayCommand] — не только для InsertParagraph/InsertUl/и т.п. ниже,
@@ -50,13 +54,13 @@ public partial class InsertViewModel : ObservableObject
         pane.Mode = EditorMode.Author;
         if (!pane.Author.InsertElement(name))
         {
-            _shell.StatusText = $"Элемент <{name}> здесь недопустим.";
+            _shell.StatusText = Loc.T("Msg_TheElement0IsNotAllowed", name);
             return;
         }
 
         _docs.RefreshAllTabTitles();
         _hooks.RefreshOutline?.Invoke();
-        _shell.StatusText = $"Вставлен <{name}>";
+        _shell.StatusText = Loc.T("Msg_Inserted0", name);
     }
 
     /// <summary>
@@ -123,7 +127,7 @@ public partial class InsertViewModel : ObservableObject
 
         if (!pane.Author.WrapCurrentInline(element))
         {
-            _shell.StatusText = "Выделите текст в режиме «Автор».";
+            _shell.StatusText = Loc.T("Msg_SelectTextInAuthorMode");
             return;
         }
 
@@ -169,7 +173,7 @@ public partial class InsertViewModel : ObservableObject
             return;
         }
 
-        if (!await _ui.Dialogs.ConfirmAsync("Удаление", $"Удалить элемент <{node.Name}> вместе с содержимым?"))
+        if (!await _ui.Dialogs.ConfirmAsync(Loc.T("Msg_Delete"), Loc.T("Msg_DeleteTheElement0WithIts", node.Name)))
         {
             return;
         }
@@ -189,11 +193,11 @@ public partial class InsertViewModel : ObservableObject
         var pane = _docs.Current;
         if (pane is null)
         {
-            await _ui.Dialogs.MessageAsync("Команда плагина", "Откройте документ.");
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_PluginCommand"), Loc.T("Msg_OpenADocument"));
             return;
         }
 
-        var command = await _ui.Dialogs.PickOneAsync("Команда плагина", "Выберите команду:", PluginRegistry.AuthorCommands, c => c.Name);
+        var command = await _ui.Dialogs.PickOneAsync(Loc.T("Msg_PluginCommand"), Loc.T("Msg_ChooseACommand"), PluginRegistry.AuthorCommands, c => c.Name);
         if (command is null)
         {
             return;
@@ -207,7 +211,7 @@ public partial class InsertViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            await _ui.Dialogs.MessageAsync("Команда плагина", $"Плагин «{command.Name}» упал: {ex.Message}");
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_PluginCommand"), Loc.T("Msg_ThePlugin0Failed1", command.Name, ex.Message));
             return;
         }
 
@@ -215,7 +219,7 @@ public partial class InsertViewModel : ObservableObject
         pane.Author.Rebuild();
         _docs.RefreshAllTabTitles();
         _hooks.RefreshAttributePanel?.Invoke();
-        _shell.StatusText = $"Выполнена команда плагина «{command.Name}».";
+        _shell.StatusText = Loc.T("Msg_PluginCommand0Completed", command.Name);
     }
 
     partial void OnShowElementTagsChanged(bool value)
@@ -231,7 +235,7 @@ public partial class InsertViewModel : ObservableObject
     private void Undo()
     {
         _docs.Current?.PerformUndo();
-        _shell.StatusText = "Отменено.";
+        _shell.StatusText = Loc.T("Msg_Undone");
         _docs.RefreshAllTabTitles();
         _hooks.RefreshOutline?.Invoke();
         // Отмена правки карты заменяет её узлы новыми — строки дерева карты ссылались бы на старые
@@ -243,7 +247,7 @@ public partial class InsertViewModel : ObservableObject
     private void Redo()
     {
         _docs.Current?.PerformRedo();
-        _shell.StatusText = "Повторено.";
+        _shell.StatusText = Loc.T("Msg_Redone");
         _docs.RefreshAllTabTitles();
         _hooks.RefreshOutline?.Invoke();
         // Отмена правки карты заменяет её узлы новыми — строки дерева карты ссылались бы на старые

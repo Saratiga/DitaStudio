@@ -10,6 +10,7 @@ using Avalonia.VisualTree;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Presentation.Authoring;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Authoring;
 
@@ -274,7 +275,7 @@ public sealed partial class AuthorView : UserControl
         {
             var rule = new Border { Height = 1, Width = 180, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left, Margin = new Thickness(0, 0, 0, 6) };
             Themed(rule, Border.BackgroundProperty, "Line");
-            var header = new TextBlock { Text = "Сноски", FontWeight = FontWeight.SemiBold, FontSize = 12, Margin = new Thickness(0, 0, 0, 4) };
+            var header = new TextBlock { Text = Loc.T("Author_Footnotes"), FontWeight = FontWeight.SemiBold, FontSize = 12, Margin = new Thickness(0, 0, 0, 4) };
             Themed(header, TextBlock.ForegroundProperty, "TextMuted");
             _footnotes.Children.Add(rule);
             _footnotes.Children.Add(header);
@@ -654,7 +655,7 @@ public sealed partial class AuthorView : UserControl
                 return false;
             }
 
-            _view.BeforeStructuralEdit?.Invoke(_view, $"Оформление <{element}>");
+            _view.BeforeStructuralEdit?.Invoke(_view, Loc.T("Author_Formatting0", element));
             editor.WrapSelection(element);
             return true;
         }
@@ -684,12 +685,12 @@ public sealed partial class AuthorView : UserControl
             {
                 // Весь текст блока — класс на самом абзаце, без лишней обёртки; фразы внутри с
                 // классом той же группы больше не нужны.
-                _view.BeforeStructuralEdit?.Invoke(_view, "Оформление текста");
+                _view.BeforeStructuralEdit?.Invoke(_view, Loc.T("Author_TextFormatting"));
                 editor.ApplyInlineClass(prefix, null);
                 return SetCurrentBlockFormat(prefix, token);
             }
 
-            _view.BeforeStructuralEdit?.Invoke(_view, "Оформление текста");
+            _view.BeforeStructuralEdit?.Invoke(_view, Loc.T("Author_TextFormatting"));
             if (!marker && token is null && selection.IsEmpty && TextFormatting.Token(CurrentNode, prefix) is not null)
             {
                 return SetCurrentBlockFormat(prefix, null);
@@ -731,7 +732,7 @@ public sealed partial class AuthorView : UserControl
                 return false;
             }
 
-            _view.BeforeStructuralEdit?.Invoke(_view, $"Вставка <{element.Name}>");
+            _view.BeforeStructuralEdit?.Invoke(_view, Loc.T("Author_Insert0", element.Name));
             if (element.Name == "fn")
             {
                 // Сноска — плашкой у курсора, её текст (выделенный или заготовка) — в области
@@ -762,7 +763,7 @@ public sealed partial class AuthorView : UserControl
                 return false;
             }
 
-            _view.BeforeStructuralEdit?.Invoke(_view, $"Вставка <{node.Name}>");
+            _view.BeforeStructuralEdit?.Invoke(_view, Loc.T("Author_Insert0", node.Name));
             editor.InsertInlineNode(node);
             return true;
         }

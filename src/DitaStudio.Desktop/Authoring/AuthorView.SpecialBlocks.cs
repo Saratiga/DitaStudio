@@ -10,6 +10,7 @@ using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Authoring;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Authoring;
 
@@ -94,7 +95,7 @@ public sealed partial class AuthorView
     /// <summary>Размер картинки мышью: @width в px, @height снимается — пропорции сохраняются.</summary>
     private void ResizeImage(DitaNode image, double width, BlockEditor? editor)
     {
-        BeforeStructuralEdit?.Invoke(this, "Размер изображения");
+        BeforeStructuralEdit?.Invoke(this, Loc.T("Author_ImageSize"));
         image.SetAttribute("width", width.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "px");
         image.RemoveAttribute("height");
         Modified();
@@ -159,7 +160,7 @@ public sealed partial class AuthorView
         Themed(chip, Border.BorderBrushProperty, "EditorChipBorder");
         Themed(chip.Child, TextBlock.ForegroundProperty, "EditorChipText");
         Themed(chip.Child, TextBlock.FontFamilyProperty, "MonoFont");
-        ToolTip.SetTip(chip, "Содержимое подставляется по conref при публикации; правится в исходном топике.");
+        ToolTip.SetTip(chip, Loc.T("Author_TheContentIsSubstitutedByConref"));
 
         var border = new Border { Child = TaggedRow(node, chip), Padding = new Thickness(4, 3, 4, 3), Background = Brushes.Transparent };
         AttachSelection(border, node);
@@ -243,7 +244,7 @@ public sealed partial class AuthorView
 
         var expander = new Expander
         {
-            Header = $"{node.Name} — метаданные",
+            Header = Loc.T("Author_0Metadata", node.Name),
             FontSize = 11.5,
             Margin = new Thickness(0, 6, 0, 6),
             IsExpanded = false,

@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -97,7 +98,7 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
         }
         catch (Exception ex)
         {
-            _ = _ui.Dialogs.MessageAsync("Открытие файла", $"Не удалось разобрать {Path.GetFileName(full)}:\n\n{ex.Message}");
+            _ = _ui.Dialogs.MessageAsync(Loc.T("Msg_OpenFile"), Loc.T("Msg_CouldNotParse01", Path.GetFileName(full), ex.Message));
             return null;
         }
 
@@ -127,7 +128,7 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
         SelectedTab = tab;
         Panes[full] = pane;
 
-        _shell.StatusText = $"Открыт {Path.GetFileName(full)}";
+        _shell.StatusText = Loc.T("Msg_Opened0", Path.GetFileName(full));
         return pane;
     }
 
@@ -159,7 +160,7 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
         pane.CommitPendingEdits();
         if (pane.IsDirty)
         {
-            var answer = await _ui.Dialogs.AskAsync("DITA Studio", $"Сохранить изменения в «{pane.Title}»?", AskButtons.YesNoCancel);
+            var answer = await _ui.Dialogs.AskAsync("DITA Studio", Loc.T("Msg_SaveChangesTo0", pane.Title), AskButtons.YesNoCancel);
 
             if (answer == AskResult.Cancel)
             {
@@ -168,7 +169,7 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
 
             if (answer == AskResult.Yes && !pane.Save(out var error))
             {
-                await _ui.Dialogs.MessageAsync("Сохранение", error ?? "Не удалось сохранить файл.");
+                await _ui.Dialogs.MessageAsync(Loc.T("Msg_Save"), error ?? Loc.T("Msg_CouldNotSaveTheFile"));
                 return;
             }
         }
@@ -284,14 +285,14 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
 
         if (!pane.Save(out var error))
         {
-            await _ui.Dialogs.MessageAsync("Сохранение", error ?? "Не удалось сохранить файл.");
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_Save"), error ?? Loc.T("Msg_CouldNotSaveTheFile"));
             return;
         }
 
         (tab!.Project ?? _workspace.Project)?.RebuildKeySpace();
         _workspace.NotifyKeysChanged();
         tab.RefreshTitle();
-        _shell.StatusText = $"Сохранено: {Path.GetFileName(pane.FilePath ?? pane.Title)}";
+        _shell.StatusText = Loc.T("Msg_Saved0", Path.GetFileName(pane.FilePath ?? pane.Title));
     }
 
     [RelayCommand]
@@ -312,7 +313,7 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
             }
             else
             {
-                await _ui.Dialogs.MessageAsync("Сохранение", error ?? "Не удалось сохранить файл.");
+                await _ui.Dialogs.MessageAsync(Loc.T("Msg_Save"), error ?? Loc.T("Msg_CouldNotSaveTheFile"));
             }
         }
 
@@ -323,7 +324,7 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
 
         _workspace.Project?.RebuildKeySpace();
         _workspace.NotifyKeysChanged();
-        _shell.StatusText = $"Сохранено файлов: {saved}";
+        _shell.StatusText = Loc.T("Msg_FilesSaved0", saved);
     }
 
     // Вызывается из MainWindow.OnClosing — там же живой Window.OnClosing,
@@ -346,7 +347,7 @@ public partial class DocumentsViewModel : ObservableObject, IDocumentHost
         }
 
         var answer = await _ui.Dialogs.AskAsync("DITA Studio",
-            $"Не сохранено документов: {dirty}. Сохранить перед выходом?", AskButtons.YesNoCancel);
+            Loc.T("Msg_UnsavedDocuments0SaveBeforeExit", dirty), AskButtons.YesNoCancel);
 
         if (answer == AskResult.Cancel)
         {

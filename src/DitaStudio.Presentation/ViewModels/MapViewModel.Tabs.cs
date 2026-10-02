@@ -7,6 +7,7 @@ using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -168,7 +169,7 @@ public partial class MapViewModel
         {
             SetSelection(null);
             _hooks.RefreshMapTree?.Invoke();
-            _shell.StatusText = $"Карта {tab.File.FileName} закрыта.";
+            _shell.StatusText = Loc.T("Msg_TheMap0WasClosed", tab.File.FileName);
             return;
         }
 

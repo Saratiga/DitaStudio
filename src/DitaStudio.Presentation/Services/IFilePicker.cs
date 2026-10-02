@@ -1,9 +1,10 @@
+using DitaStudio.Core.Localization;
 namespace DitaStudio.Presentation.Services;
 
 /// <summary>Фильтр файлов: название и маски вида <c>*.dita</c>.</summary>
 public sealed record FileFilter(string Name, params string[] Patterns)
 {
-    public static readonly FileFilter All = new("Все файлы", "*.*");
+    public static readonly FileFilter All = new(Loc.T("Msg_AllFiles"), "*.*");
 }
 
 /// <summary>Системные окна выбора файлов и папок. null — пользователь отказался.</summary>

@@ -8,6 +8,7 @@ using DitaStudio.Core.IO;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Services;
 
@@ -72,7 +73,7 @@ public sealed partial class AvaloniaDialogService
 
         if (checks.Count == 0)
         {
-            panel.Children.Add(Muted(new TextBlock { Text = "В проекте нет условных атрибутов.", Margin = new Thickness(0, 4, 0, 0) }));
+            panel.Children.Add(Muted(new TextBlock { Text = Loc.T("Dlg_TheProjectHasNoConditionalAttributes"), Margin = new Thickness(0, 4, 0, 0) }));
         }
 
         return checks;
@@ -101,23 +102,23 @@ public sealed partial class AvaloniaDialogService
     {
         if (project.DitavalPath is null)
         {
-            await MessageAsync("Редактирование .ditaval", "Сначала подключите файл .ditaval через «Публикация → Подключить .ditaval…».");
+            await MessageAsync(Loc.T("Dlg_EditDitaval"), Loc.T("Dlg_FirstConnectADitavalFileVia"));
             return false;
         }
 
         if (project.ResolveLinkedDitaval(out var error) is not { } current)
         {
-            await MessageAsync("Редактирование .ditaval", error ?? $"Не удалось прочитать связанный файл: {project.DitavalPath}");
+            await MessageAsync(Loc.T("Dlg_EditDitaval"), error ?? Loc.T("Dlg_CouldNotReadTheLinkedFile", project.DitavalPath));
             return false;
         }
 
         var panel = new StackPanel { Margin = new Thickness(16) };
-        panel.Children.Add(Wrapped($"Файл: {project.DitavalPath}. Отметьте значения, которые нужно исключить из сборки — " +
-            (current.Flags.Count > 0 ? $"правила подсветки ({current.Flags.Count}) в файле не тронутся." : "правил подсветки в файле нет.")));
+        panel.Children.Add(Wrapped(Loc.T("Dlg_File0TickTheValuesTo", project.DitavalPath) +
+            (current.Flags.Count > 0 ? Loc.T("Dlg_TheFlaggingRules0InThe", current.Flags.Count) : Loc.T("Dlg_ThereAreNoFlaggingRulesIn"))));
         var checks = ConditionChecks(panel, project, (attribute, value) =>
             current.Exclude.TryGetValue(attribute, out var excluded) && excluded.Contains(value));
 
-        var window = Shell("Редактирование .ditaval", new ScrollViewer { Content = panel }, 460, 560);
+        var window = Shell(Loc.T("Dlg_EditDitaval"), new ScrollViewer { Content = panel }, 460, 560);
         Dictionary<string, HashSet<string>>? exclude = null;
         panel.Children.Add(Buttons(window, () => exclude = CheckedExclusions(checks)));
         if (!await ShowAsync(window) || exclude is null)
@@ -133,7 +134,7 @@ public sealed partial class AvaloniaDialogService
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            await MessageAsync("Редактирование .ditaval", $"Не удалось записать файл: {ex.Message}");
+            await MessageAsync(Loc.T("Dlg_EditDitaval"), Loc.T("Dlg_CouldNotWriteTheFile0", ex.Message));
             return false;
         }
     }
@@ -143,27 +144,27 @@ public sealed partial class AvaloniaDialogService
     public async Task<PdfHeaderFooterResult?> PdfHeaderFooterAsync(DitaProject project)
     {
         var panel = new StackPanel { Margin = new Thickness(20) };
-        panel.Children.Add(Wrapped("Колонтитулы поддерживаются только при печати встроенным браузером редактора — это происходит " +
-                                   "автоматически, если задан свой текст или если в системе не установлен Edge/Chrome. " +
-                                   "Иначе PDF печатается без колонтитулов, как и раньше.", 12));
+        panel.Children.Add(Wrapped(Loc.T("Dlg_HeadersAndFootersAreSupportedOnly") +
+                                   Loc.T("Dlg_AutomaticallyIfYouSetYourOwn") +
+                                   Loc.T("Dlg_OtherwiseThePDFIsPrintedWithout"), 12));
 
-        var show = new CheckBox { Content = "Показывать колонтитулы", IsChecked = project.PdfShowHeaderFooter };
+        var show = new CheckBox { Content = Loc.T("Dlg_ShowHeadersAndFooters"), IsChecked = project.PdfShowHeaderFooter };
         panel.Children.Add(show);
-        panel.Children.Add(Label("Текст в шапке"));
+        panel.Children.Add(Label(Loc.T("Dlg_HeaderText")));
         var header = Input(project.PdfHeaderText ?? string.Empty);
         panel.Children.Add(header);
-        panel.Children.Add(Label("Текст в подвале"));
+        panel.Children.Add(Label(Loc.T("Dlg_FooterText")));
         var footer = Input(project.PdfFooterText ?? string.Empty);
         panel.Children.Add(footer);
         panel.Children.Add(Muted(new TextBlock
         {
-            Text = "Номер страницы и общее число страниц добавляются автоматически справа в подвале.",
+            Text = Loc.T("Dlg_ThePageNumberAndTotalPage"),
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 6, 0, 0)
         }));
 
         PdfHeaderFooterResult? result = null;
-        var window = Shell("Колонтитулы PDF", panel, 440, 340);
+        var window = Shell(Loc.T("Dlg_PDFHeadersAndFooters"), panel, 440, 340);
         panel.Children.Add(Buttons(window, () => result = new PdfHeaderFooterResult(show.IsChecked == true, header.Text ?? string.Empty, footer.Text ?? string.Empty)));
         return await ShowAsync(window) ? result : null;
     }
@@ -195,24 +196,24 @@ public sealed partial class AvaloniaDialogService
         var panel = new StackPanel { Margin = new Thickness(20) };
         panel.Children.Add(new TextBlock
         {
-            Text = "Файл стилей подключается к каждой публикации (HTML, PDF и DOCX) в дополнение к " +
-                   "встроенным стилям — его правила применяются последними и могут их переопределять. " +
-                   "В DOCX правила становятся стилями Word; правила только для Word — в @media docx { … }.",
+            Text = Loc.T("Dlg_TheStyleFileIsAttachedTo") +
+                   Loc.T("Dlg_TheBuiltInStylesItsRules") +
+                   Loc.T("Dlg_InDOCXTheRulesBecomeWord"),
             TextWrapping = TextWrapping.Wrap
         });
 
-        panel.Children.Add(Label("Подключённый файл"));
+        panel.Children.Add(Label(Loc.T("Dlg_AttachedFile")));
         var status = new TextBlock { FontFamily = Mono, TextWrapping = TextWrapping.Wrap };
-        void RefreshStatus() => status.Text = project.CustomCssPath ?? "не подключён";
+        void RefreshStatus() => status.Text = project.CustomCssPath ?? Loc.T("Dlg_NotAttached");
         RefreshStatus();
         panel.Children.Add(status);
 
-        var cssFilter = new[] { new FileFilter("Файлы CSS", "*.css") };
+        var cssFilter = new[] { new FileFilter(Loc.T("Dlg_CSSFiles"), "*.css") };
 
-        var create = new Button { Content = "Создать новый файл…", Padding = new Thickness(12, 5, 12, 5) };
+        var create = new Button { Content = Loc.T("Dlg_CreateNewFile"), Padding = new Thickness(12, 5, 12, 5) };
         create.Click += async (_, _) =>
         {
-            var file = await _files.SaveFileAsync("Создать файл стилей", cssFilter, "custom.css", project.RootPath);
+            var file = await _files.SaveFileAsync(Loc.T("Dlg_CreateStyleFile"), cssFilter, "custom.css", project.RootPath);
             if (file is null)
             {
                 return;
@@ -224,7 +225,7 @@ public sealed partial class AvaloniaDialogService
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                await MessageAsync("Пользовательский CSS", $"Не удалось создать файл: {ex.Message}");
+                await MessageAsync(Loc.T("Dlg_CustomCSS"), Loc.T("Dlg_CouldNotCreateTheFile0", ex.Message));
                 return;
             }
 
@@ -232,10 +233,10 @@ public sealed partial class AvaloniaDialogService
             RefreshStatus();
         };
 
-        var attach = new Button { Content = "Подключить существующий…", Padding = new Thickness(12, 5, 12, 5), Margin = new Thickness(8, 0, 0, 0) };
+        var attach = new Button { Content = Loc.T("Dlg_AttachExisting"), Padding = new Thickness(12, 5, 12, 5), Margin = new Thickness(8, 0, 0, 0) };
         attach.Click += async (_, _) =>
         {
-            var file = await _files.OpenFileAsync("Выберите файл стилей", cssFilter, project.RootPath);
+            var file = await _files.OpenFileAsync(Loc.T("Dlg_ChooseAStyleFile"), cssFilter, project.RootPath);
             if (file is not null)
             {
                 project.SetCustomCssPath(Path.GetRelativePath(project.RootPath, file).Replace('\\', '/'));
@@ -243,7 +244,7 @@ public sealed partial class AvaloniaDialogService
             }
         };
 
-        var detach = new Button { Content = "Отключить", Padding = new Thickness(12, 5, 12, 5), Margin = new Thickness(8, 0, 0, 0) };
+        var detach = new Button { Content = Loc.T("Dlg_Detach"), Padding = new Thickness(12, 5, 12, 5), Margin = new Thickness(8, 0, 0, 0) };
         detach.Click += (_, _) =>
         {
             project.SetCustomCssPath(null);
@@ -256,14 +257,14 @@ public sealed partial class AvaloniaDialogService
         buttons.Children.Add(detach);
         panel.Children.Add(buttons);
 
-        var window = Shell("Пользовательский CSS", panel, 520, 300);
+        var window = Shell(Loc.T("Dlg_CustomCSS"), panel, 520, 300);
         panel.Children.Add(CloseButton(window));
         await ShowAsync(window);
     }
 
     // ------------------------------------------------------------ оформление DOCX
 
-    private static readonly string[] Alignments = { "Слева", "По центру", "Справа" };
+    private static string[] Alignments => new[] { Loc.T("Dlg_Left"), Loc.T("Tip_AlignCenter"), Loc.T("Dlg_Right") };
 
     private static readonly string[] Languages = { "ru-RU", "en-US", "en-GB", "de-DE", "fr-FR", "es-ES", "uk-UA", "be-BY", "kk-KZ" };
 
@@ -276,57 +277,57 @@ public sealed partial class AvaloniaDialogService
 
         panel.Children.Add(Muted(new TextBlock
         {
-            Text = "Внешний вид текста — шрифты, цвета, отступы, рамки, таблицы — задаётся пользовательским CSS " +
-                   "проекта («Публикация → Пользовательский CSS…») и одинаково действует на HTML, PDF и DOCX. Размер " +
-                   "бумаги, ориентация и поля — «Публикация → Параметры страницы…». Здесь — то, чего CSS не умеет: " +
-                   "устройство документа Word.",
+            Text = Loc.T("Dlg_TheLookOfTheTextFonts") +
+                   Loc.T("Dlg_PublishCustomCSSAndWorksThe") +
+                   Loc.T("Dlg_OrientationAndMarginsAreInPublish") +
+                   Loc.T("Dlg_TheStructureOfTheWordDocument"),
             TextWrapping = TextWrapping.Wrap
         }));
 
         // ---- титул
-        panel.Children.Add(Header("Титульная страница"));
-        var titlePage = Check("Отдельная титульная страница с названием карты (снимите флажок — титула не будет)", current.TitlePage);
+        panel.Children.Add(Header(Loc.T("Dlg_TitlePage")));
+        var titlePage = Check(Loc.T("Dlg_ASeparateTitlePageWithThe"), current.TitlePage);
         panel.Children.Add(titlePage);
-        panel.Children.Add(Label("Подзаголовок"));
-        var subtitle = Named(Input(current.Subtitle), "Текст подзаголовка");
+        panel.Children.Add(Label(Loc.T("Dlg_Subtitle")));
+        var subtitle = Named(Input(current.Subtitle), Loc.T("Dlg_SubtitleText"));
         panel.Children.Add(subtitle);
-        panel.Children.Add(Label("Автор или организация (на титуле и в свойствах файла)"));
-        var author = Named(Input(current.Author), "Автор или организация");
+        panel.Children.Add(Label(Loc.T("Dlg_AuthorOrOrganizationOnTheTitle")));
+        var author = Named(Input(current.Author), Loc.T("Dlg_AuthorOrOrganization"));
         panel.Children.Add(author);
-        var titleDate = Check("Дата публикации на титуле", current.TitlePageDate, top: 6);
+        var titleDate = Check(Loc.T("Dlg_PublicationDateOnTheTitlePage"), current.TitlePageDate, top: 6);
         panel.Children.Add(titleDate);
-        panel.Children.Add(Label("Картинка на титуле (над названием): место и высота в мм"));
-        var titleImage = ImagePicker(project, current.TitleImage, current.TitleImageAlignment, current.TitleImageHeightMm, "титульной страницы");
+        panel.Children.Add(Label(Loc.T("Dlg_TitlePageImageAboveTheTitle")));
+        var titleImage = ImagePicker(project, current.TitleImage, current.TitleImageAlignment, current.TitleImageHeightMm, Loc.T("Dlg_OfTheTitlePage"));
         panel.Children.Add(titleImage.Row);
         Bind(titlePage, subtitle, titleDate, titleImage.Row);
 
         // ---- оглавление
-        panel.Children.Add(Header("Оглавление"));
-        var toc = Check("Оглавление в начале документа", current.TableOfContents);
+        panel.Children.Add(Header(Loc.T("Dlg_TableOfContents")));
+        var toc = Check(Loc.T("Dlg_TableOfContentsAtTheBeginning"), current.TableOfContents);
         panel.Children.Add(toc);
-        var tocDepth = Depth(current.TocDepth, "Уровней в оглавлении");
-        panel.Children.Add(Row("Уровней заголовков в оглавлении:", tocDepth));
+        var tocDepth = Depth(current.TocDepth, Loc.T("Dlg_LevelsInTheTableOfContents"));
+        panel.Children.Add(Row(Loc.T("Dlg_HeadingLevelsInTheTableOf"), tocDepth));
         var tocTitle = Named(new ComboBox
         {
             IsEditable = true,
-            ItemsSource = new[] { "Содержание", "Оглавление" },
+            ItemsSource = new[] { "Содержание", Loc.T("Dlg_TableOfContents") },
             Text = current.TocTitle.Length > 0 ? current.TocTitle : "Содержание",
             Width = 200,
             Padding = new Thickness(4, 3, 4, 3)
-        }, "Заголовок оглавления");
-        panel.Children.Add(Row("Заголовок оглавления (и в PDF):", tocTitle));
+        }, Loc.T("Dlg_TableOfContentsTitle"));
+        panel.Children.Add(Row(Loc.T("Dlg_TableOfContentsTitleAndIn"), tocTitle));
         Bind(toc, tocDepth, tocTitle);
 
         // ---- заголовки
-        panel.Children.Add(Header("Заголовки и подписи"));
-        var numberHeadings = Check("Нумеровать заголовки: 1, 1.1, 1.1.1…", current.NumberHeadings);
+        panel.Children.Add(Header(Loc.T("Dlg_HeadingsAndCaptions")));
+        var numberHeadings = Check(Loc.T("Dlg_NumberHeadings1111"), current.NumberHeadings);
         panel.Children.Add(numberHeadings);
-        var numberingDepth = Depth(current.NumberingDepth, "Нумеровать уровней");
-        panel.Children.Add(Row("Нумеровать уровней:", numberingDepth));
+        var numberingDepth = Depth(current.NumberingDepth, Loc.T("Dlg_LevelsToNumber"));
+        panel.Children.Add(Row(Loc.T("Dlg_LevelsToNumber2"), numberingDepth));
         Bind(numberHeadings, numberingDepth);
-        var pageBreak = Check("Каждый топик верхнего уровня — с новой страницы", current.PageBreakBeforeTopLevel, top: 6);
+        var pageBreak = Check(Loc.T("Dlg_EveryTopLevelTopicOnA"), current.PageBreakBeforeTopLevel, top: 6);
         panel.Children.Add(pageBreak);
-        var numberFigures = Check("Нумеровать рисунки и таблицы в подписях", current.NumberFiguresAndTables, top: 6);
+        var numberFigures = Check(Loc.T("Dlg_NumberFiguresAndTablesInCaptions"), current.NumberFiguresAndTables, top: 6);
         panel.Children.Add(numberFigures);
         var captionFormat = Named(new ComboBox
         {
@@ -334,54 +335,54 @@ public sealed partial class AvaloniaDialogService
             SelectedIndex = (int)current.CaptionSeparator,
             Width = 200,
             Padding = new Thickness(4, 3, 4, 3)
-        }, "Формат подписи");
-        panel.Children.Add(Row("Формат подписи:", captionFormat));
+        }, Loc.T("Dlg_CaptionFormat"));
+        panel.Children.Add(Row(Loc.T("Dlg_CaptionFormat2"), captionFormat));
         Bind(numberFigures, captionFormat);
 
         // ---- колонтитулы
-        panel.Children.Add(Header("Колонтитулы"));
-        panel.Children.Add(Label("Верхний колонтитул"));
-        var header = Named(Input(current.HeaderText), "Текст верхнего колонтитула");
-        var headerAlign = Alignment(current.HeaderAlignment, "Выравнивание верхнего колонтитула");
+        panel.Children.Add(Header(Loc.T("Dlg_HeadersAndFooters")));
+        panel.Children.Add(Label(Loc.T("Dlg_Header")));
+        var header = Named(Input(current.HeaderText), Loc.T("Dlg_HeaderText2"));
+        var headerAlign = Alignment(current.HeaderAlignment, Loc.T("Dlg_HeaderAlignment"));
         panel.Children.Add(WithAlignment(header, headerAlign));
-        var headerImage = ImagePicker(project, current.HeaderImage, current.HeaderImageAlignment, current.HeaderImageHeightMm, "верхнего");
+        var headerImage = ImagePicker(project, current.HeaderImage, current.HeaderImageAlignment, current.HeaderImageHeightMm, Loc.T("Dlg_Header2"));
         panel.Children.Add(headerImage.Row);
-        panel.Children.Add(Label("Нижний колонтитул"));
-        var footer = Named(Input(current.FooterText), "Текст нижнего колонтитула");
-        var footerAlign = Alignment(current.FooterAlignment, "Выравнивание нижнего колонтитула");
+        panel.Children.Add(Label(Loc.T("Dlg_Footer")));
+        var footer = Named(Input(current.FooterText), Loc.T("Dlg_FooterText2"));
+        var footerAlign = Alignment(current.FooterAlignment, Loc.T("Dlg_FooterAlignment"));
         panel.Children.Add(WithAlignment(footer, footerAlign));
-        var footerImage = ImagePicker(project, current.FooterImage, current.FooterImageAlignment, current.FooterImageHeightMm, "нижнего");
+        var footerImage = ImagePicker(project, current.FooterImage, current.FooterImageAlignment, current.FooterImageHeightMm, Loc.T("Dlg_Footer2"));
         panel.Children.Add(footerImage.Row);
         panel.Children.Add(Muted(new TextBlock
         {
-            Text = "Поля: {page} — номер страницы, {pages} — число страниц, {title} — название карты, " +
-                   "{date} — дата публикации. Например: «Стр. {page} из {pages}». Пусто — колонтитула нет. " +
-                   "Картинка (например, логотип; PNG, JPEG, GIF, BMP) ставится слева, по центру или справа, " +
-                   "высота — в миллиметрах; она появится и в колонтитулах PDF. Колонтитулы можно задать и в CSS " +
-                   "проекта — полями страницы @page { @top-left { content: … } }: они перекрывают эти настройки.",
+            Text = Loc.T("Dlg_FieldsPagePageNumberPagesPage") +
+                   Loc.T("Dlg_DatePublicationDateForExamplePage") +
+                   Loc.T("Dlg_AnImageForExampleALogo") +
+                   Loc.T("Dlg_TheHeightIsInMillimetersIt") +
+                   Loc.T("Dlg_CSSWithPageMarginBoxesPage"),
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 6, 0, 0)
         }));
-        var fitImages = Check("Подгонять картинки под колонтитул (высота — по полю страницы, пропорции сохраняются)",
+        var fitImages = Check(Loc.T("Dlg_FitImagesToTheHeaderOr"),
             current.FitHeaderFooterImages, top: 6);
         panel.Children.Add(fitImages);
-        var noFirst = Check("Не показывать колонтитулы на первой странице", current.NoHeaderOnFirstPage, top: 6);
+        var noFirst = Check(Loc.T("Dlg_DoNotShowHeadersAndFooters"), current.NoHeaderOnFirstPage, top: 6);
         panel.Children.Add(noFirst);
 
         // ---- печать
-        panel.Children.Add(Header("Печать"));
-        var mirror = Check("Зеркальные поля (двусторонняя печать)", current.MirrorMargins);
+        panel.Children.Add(Header(Loc.T("Dlg_Printing")));
+        var mirror = Check(Loc.T("Dlg_MirrorMarginsDoubleSidedPrinting"), current.MirrorMargins);
         panel.Children.Add(mirror);
         var gutter = Named(new TextBox
         {
             Text = current.GutterMm.ToString("0.#", CultureInfo.CurrentCulture),
             Width = 70,
             Padding = new Thickness(4, 3, 4, 3)
-        }, "Поле переплёта, мм");
-        panel.Children.Add(Row("Поле переплёта, мм:", gutter));
+        }, Loc.T("Dlg_BindingMarginMm"));
+        panel.Children.Add(Row(Loc.T("Dlg_BindingMarginMm2"), gutter));
 
         // ---- язык
-        panel.Children.Add(Header("Язык и переносы"));
+        panel.Children.Add(Header(Loc.T("Dlg_LanguageAndHyphenation")));
         var language = Named(new ComboBox
         {
             IsEditable = true,
@@ -389,9 +390,9 @@ public sealed partial class AvaloniaDialogService
             Text = current.Language,
             Width = 110,
             Padding = new Thickness(4, 3, 4, 3)
-        }, "Язык текста");
-        panel.Children.Add(Row("Язык текста (проверка правописания в Word):", language));
-        var hyphenation = Check("Автоматическая расстановка переносов", current.AutoHyphenation, top: 6);
+        }, Loc.T("Dlg_TextLanguage"));
+        panel.Children.Add(Row(Loc.T("Dlg_TextLanguageSpellCheckingInWord"), language));
+        var hyphenation = Check(Loc.T("Dlg_AutomaticHyphenation"), current.AutoHyphenation, top: 6);
         panel.Children.Add(hyphenation);
 
         return (new ScrollViewer { Content = panel }, target =>
@@ -486,32 +487,32 @@ public sealed partial class AvaloniaDialogService
         (Control Row, Func<string> Path, Func<DocxHeaderAlignment> Alignment, Func<double?> HeightMm) ImagePicker(
             DitaProject owner, string value, DocxHeaderAlignment alignment, double heightMm, string which)
         {
-            var path = Named(new TextBox { Text = value, Watermark = "без картинки", Padding = new Thickness(4, 3, 4, 3) },
-                $"Картинка {which} колонтитула");
-            var browse = new Button { Content = "Обзор…", Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
+            var path = Named(new TextBox { Text = value, Watermark = Loc.T("Dlg_NoImage"), Padding = new Thickness(4, 3, 4, 3) },
+                Loc.T("Dlg_Image0OfTheHeaderOr", which));
+            var browse = new Button { Content = Loc.T("Dlg_Browse"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
             browse.Click += async (_, _) =>
             {
-                var file = await _files.OpenFileAsync("Картинка колонтитула",
-                    new[] { new FileFilter("Изображения", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp") }, owner.RootPath);
+                var file = await _files.OpenFileAsync(Loc.T("Dlg_HeaderOrFooterImage"),
+                    new[] { new FileFilter(Loc.T("Dlg_Images"), "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp") }, owner.RootPath);
                 if (file is not null)
                 {
                     path.Text = System.IO.Path.GetRelativePath(owner.RootPath, file).Replace('\\', '/');
                 }
             };
-            var clear = new Button { Content = "Убрать", Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(4, 0, 0, 0) };
+            var clear = new Button { Content = Loc.T("Dlg_Remove"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(4, 0, 0, 0) };
             clear.Click += (_, _) => path.Text = string.Empty;
-            var place = Alignment(alignment, $"Место картинки {which} колонтитула");
+            var place = Alignment(alignment, Loc.T("Dlg_PositionOfImage0OfThe", which));
             var height = Named(new TextBox
             {
                 Text = heightMm.ToString("0.#", CultureInfo.CurrentCulture),
                 Width = 50,
                 Padding = new Thickness(4, 3, 4, 3),
                 Margin = new Thickness(8, 0, 0, 0)
-            }, $"Высота картинки {which} колонтитула, мм");
+            }, Loc.T("Dlg_HeightOfImage0OfThe", which));
 
-            var tail = new StackPanel { Orientation = Orientation.Horizontal, Children = { browse, clear, place, height, Muted(new TextBlock { Text = "мм", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 0) }) } };
+            var tail = new StackPanel { Orientation = Orientation.Horizontal, Children = { browse, clear, place, height, Muted(new TextBlock { Text = Loc.T("Dlg_Mm"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0, 0, 0) }) } };
             var dock = new DockPanel { Margin = new Thickness(0, 6, 0, 0) };
-            var caption = new TextBlock { Text = "Картинка:", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
+            var caption = new TextBlock { Text = Loc.T("Dlg_Image"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) };
             DockPanel.SetDock(caption, Dock.Left);
             DockPanel.SetDock(tail, Dock.Right);
             dock.Children.Add(caption);

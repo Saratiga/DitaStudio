@@ -7,6 +7,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Services;
 
@@ -80,7 +81,7 @@ public sealed partial class AvaloniaDialogService : IDialogService
     }
 
     /// <summary>Кнопки «ОК»/«Отмена» справа внизу; <paramref name="onOk"/> собирает результат.</summary>
-    private static StackPanel Buttons(Window window, Action onOk, string okText = "ОК")
+    private static StackPanel Buttons(Window window, Action onOk, string? okText = null)
     {
         var panel = new StackPanel
         {
@@ -89,7 +90,7 @@ public sealed partial class AvaloniaDialogService : IDialogService
             Margin = new Thickness(0, 14, 0, 0)
         };
 
-        var ok = new Button { Content = okText, Padding = new Thickness(18, 5, 18, 5), IsDefault = true };
+        var ok = new Button { Content = okText ?? Loc.T("Dlg_OK"), Padding = new Thickness(18, 5, 18, 5), IsDefault = true };
         ok.Click += (_, _) =>
         {
             onOk();
@@ -98,7 +99,7 @@ public sealed partial class AvaloniaDialogService : IDialogService
 
         var cancel = new Button
         {
-            Content = "Отмена",
+            Content = Loc.T("Dlg_Cancel"),
             Padding = new Thickness(18, 5, 18, 5),
             Margin = new Thickness(8, 0, 0, 0),
             IsCancel = true
@@ -132,7 +133,7 @@ public sealed partial class AvaloniaDialogService : IDialogService
     {
         var close = new Button
         {
-            Content = "Закрыть",
+            Content = Loc.T("Menu_CloseMap"),
             Padding = new Thickness(18, 5, 18, 5),
             HorizontalAlignment = HorizontalAlignment.Right,
             Margin = new Thickness(0, 18, 0, 0),
@@ -173,7 +174,7 @@ public sealed partial class AvaloniaDialogService : IDialogService
     // ------------------------------------------------------------ сообщения
 
     public async Task MessageAsync(string title, string message) =>
-        await AskCoreAsync(title, message, new[] { ("ОК", AskResult.Yes) }, isWarning: false);
+        await AskCoreAsync(title, message, new[] { (Loc.T("Dlg_OK"), AskResult.Yes) }, isWarning: false);
 
     public async Task<bool> ConfirmAsync(string title, string message) =>
         await AskAsync(title, message, AskButtons.YesNo) == AskResult.Yes;
@@ -181,8 +182,8 @@ public sealed partial class AvaloniaDialogService : IDialogService
     public Task<AskResult> AskAsync(string title, string message, AskButtons buttons, AskIcon icon = AskIcon.Question)
     {
         var choices = buttons == AskButtons.YesNo
-            ? new[] { ("Да", AskResult.Yes), ("Нет", AskResult.No) }
-            : new[] { ("Да", AskResult.Yes), ("Нет", AskResult.No), ("Отмена", AskResult.Cancel) };
+            ? new[] { (Loc.T("Dlg_Yes"), AskResult.Yes), (Loc.T("Dlg_No"), AskResult.No) }
+            : new[] { (Loc.T("Dlg_Yes"), AskResult.Yes), (Loc.T("Dlg_No"), AskResult.No), (Loc.T("Dlg_Cancel"), AskResult.Cancel) };
         return AskCoreAsync(title, message, choices, icon == AskIcon.Warning);
     }
 
@@ -260,7 +261,7 @@ public sealed partial class AvaloniaDialogService : IDialogService
     {
         if (items.Count == 0)
         {
-            await MessageAsync(title, "Нет подключённых плагинов этого вида — положите .dll в папку plugins рядом с приложением.");
+            await MessageAsync(title, Loc.T("Dlg_NoPluginsOfThisKindAre"));
             return null;
         }
 
@@ -285,19 +286,19 @@ public sealed partial class AvaloniaDialogService : IDialogService
         panel.Children.Add(new TextBlock { Text = "DITA Studio", FontSize = 20, FontWeight = FontWeight.SemiBold });
         panel.Children.Add(new TextBlock
         {
-            Text = "Редактор технической документации на DITA 1.3.\n" +
-                   "Режимы «Автор», «Исходный код» и «Предпросмотр», карты публикации, " +
-                   "проверка по контент-моделям, сборка HTML и PDF.",
+            Text = Loc.T("Dlg_ATechnicalDocumentationEditorForDITA") +
+                   Loc.T("Dlg_AuthorSourceAndPreviewModesPublication") +
+                   Loc.T("Dlg_ValidationAgainstContentModelsHTMLAnd"),
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 10, 0, 0)
         });
         panel.Children.Add(Muted(new TextBlock
         {
-            Text = $"Элементов в словаре: {DitaCatalog.Default.Elements.Count}",
+            Text = Loc.T("Dlg_ElementsInTheDictionary0", DitaCatalog.Default.Elements.Count),
             Margin = new Thickness(0, 14, 0, 0)
         }));
 
-        var window = Shell("О программе", panel, 460, 280);
+        var window = Shell(Loc.T("Menu_About"), panel, 460, 280);
         panel.Children.Add(CloseButton(window));
         await ShowAsync(window);
     }

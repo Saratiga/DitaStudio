@@ -58,6 +58,286 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Author_01Content2" xml:space="preserve">
+    <value>&lt;{0}&gt;
+
+{1}
+
+Content: {2}</value>
+  </data>
+  <data name="Author_01InTheCell" xml:space="preserve">
+    <value>{0}  &lt;{1}&gt; — in the cell</value>
+  </data>
+  <data name="Author_01PxDragTheCorner" xml:space="preserve">
+    <value>{0} × {1} px — drag the corner to resize</value>
+  </data>
+  <data name="Author_0ATableEdgeIsSet" xml:space="preserve">
+    <value>{0}: a table edge is set for its whole length at once — select the whole row or column; the other lines were applied.</value>
+  </data>
+  <data name="Author_0Done" xml:space="preserve">
+    <value>{0} — done.</value>
+  </data>
+  <data name="Author_0Metadata" xml:space="preserve">
+    <value>{0} — metadata</value>
+  </data>
+  <data name="Author_After0" xml:space="preserve">
+    <value> — after &lt;{0}&gt;</value>
+  </data>
+  <data name="Author_After02" xml:space="preserve">
+    <value>after &lt;{0}&gt;</value>
+  </data>
+  <data name="Author_AfterThisBlock" xml:space="preserve">
+    <value>after this block</value>
+  </data>
+  <data name="Author_Align" xml:space="preserve">
+    <value>Align</value>
+  </data>
+  <data name="Author_AsUsual" xml:space="preserve">
+    <value> — as usual</value>
+  </data>
+  <data name="Author_BlocksCopied0PasteWithCtrl" xml:space="preserve">
+    <value>Blocks copied: {0}. Paste with Ctrl+V at a selected block or in a paragraph: the blocks will go after it.</value>
+  </data>
+  <data name="Author_BlocksCut0" xml:space="preserve">
+    <value>Blocks cut: {0}.</value>
+  </data>
+  <data name="Author_BlocksPasted0" xml:space="preserve">
+    <value>Blocks pasted: {0}</value>
+  </data>
+  <data name="Author_BordersTheCursorMustBeIn" xml:space="preserve">
+    <value>Borders: the cursor must be in a cell of a regular table.</value>
+  </data>
+  <data name="Author_BottomBorder" xml:space="preserve">
+    <value>Bottom border</value>
+  </data>
+  <data name="Author_CaptionWhenPublishedTheNumberRuns" xml:space="preserve">
+    <value>Caption when published. The number runs through the whole publication and depends on the “Number figures and tables” setting; here it is by order in this topic.</value>
+  </data>
+  <data name="Author_CellAlignment" xml:space="preserve">
+    <value>Cell alignment: </value>
+  </data>
+  <data name="Author_CellContentsCleared" xml:space="preserve">
+    <value>Cell contents cleared.</value>
+  </data>
+  <data name="Author_CellsMerged" xml:space="preserve">
+    <value>Cells merged.</value>
+  </data>
+  <data name="Author_CellSplit" xml:space="preserve">
+    <value>Cell split.</value>
+  </data>
+  <data name="Author_ClearCell" xml:space="preserve">
+    <value>Clear cell</value>
+  </data>
+  <data name="Author_ClearContents" xml:space="preserve">
+    <value>Clear contents</value>
+  </data>
+  <data name="Author_ClearSelection" xml:space="preserve">
+    <value>Clear selection</value>
+  </data>
+  <data name="Author_ColumnInsertedToTheLeft" xml:space="preserve">
+    <value>Column inserted to the left.</value>
+  </data>
+  <data name="Author_ColumnInsertedToTheRight" xml:space="preserve">
+    <value>Column inserted to the right.</value>
+  </data>
+  <data name="Author_ColumnsDeleted" xml:space="preserve">
+    <value>Columns deleted.</value>
+  </data>
+  <data name="Author_ColumnsInsertedToTheLeft0" xml:space="preserve">
+    <value>Columns inserted to the left: {0}.</value>
+  </data>
+  <data name="Author_ColumnsInsertedToTheRight0" xml:space="preserve">
+    <value>Columns inserted to the right: {0}.</value>
+  </data>
+  <data name="Author_ColumnWidth" xml:space="preserve">
+    <value>Column width</value>
+  </data>
+  <data name="Author_DecreaseLevel" xml:space="preserve">
+    <value>Decrease level</value>
+  </data>
+  <data name="Author_DeleteColumns0" xml:space="preserve">
+    <value>Delete columns: {0}</value>
+  </data>
+  <data name="Author_DeleteEmptyBlock" xml:space="preserve">
+    <value>Delete empty block</value>
+  </data>
+  <data name="Author_DeleteRows0" xml:space="preserve">
+    <value>Delete rows: {0}</value>
+  </data>
+  <data name="Author_DeleteSelected" xml:space="preserve">
+    <value>Delete selected</value>
+  </data>
+  <data name="Author_DoubleClickOpensATopicEdit" xml:space="preserve">
+    <value>. Double-click opens a topic; edit the structure on the “Map” tab on the left.</value>
+  </data>
+  <data name="Author_DragToChangeTheColumnWidth" xml:space="preserve">
+    <value>Drag to change the column width</value>
+  </data>
+  <data name="Author_DragToChangeTheRowHeight" xml:space="preserve">
+    <value>Drag to change the row height; double-click — height to fit the content</value>
+  </data>
+  <data name="Author_DragToResize" xml:space="preserve">
+    <value>Drag to resize</value>
+  </data>
+  <data name="Author_DragToResizeTheWindow" xml:space="preserve">
+    <value>Drag to resize the window</value>
+  </data>
+  <data name="Author_DuplicateIdsReplaced0" xml:space="preserve">
+    <value>; duplicate ids replaced: {0}.</value>
+  </data>
+  <data name="Author_EditOnTheAttributesPanelTo" xml:space="preserve">
+    <value>Edit on the “Attributes” panel. To show the notes: “Structure → Show attribute notes”.</value>
+  </data>
+  <data name="Author_ElementAttributesInAConditionalBuild" xml:space="preserve">
+    <value>Element attributes: in a conditional build (product, audience…) it is published only for the selected values. </value>
+  </data>
+  <data name="Author_FilesNotFound0" xml:space="preserve">
+    <value> · files not found: {0}</value>
+  </data>
+  <data name="Author_Filter" xml:space="preserve">
+    <value>Filter…</value>
+  </data>
+  <data name="Author_Footnotes" xml:space="preserve">
+    <value>Footnotes</value>
+  </data>
+  <data name="Author_Formatting0" xml:space="preserve">
+    <value>Formatting &lt;{0}&gt;</value>
+  </data>
+  <data name="Author_ImageSize" xml:space="preserve">
+    <value>Image size</value>
+  </data>
+  <data name="Author_IncreaseLevel" xml:space="preserve">
+    <value>Increase level</value>
+  </data>
+  <data name="Author_InPDFAndDOCXTheBlock" xml:space="preserve">
+    <value>In PDF and DOCX the block sits on its own page in the chosen area of the sheet; on the site it stays in the text. </value>
+  </data>
+  <data name="Author_Insert0" xml:space="preserve">
+    <value>Insert &lt;{0}&gt;</value>
+  </data>
+  <data name="Author_Insert0InCell" xml:space="preserve">
+    <value>Insert &lt;{0}&gt; in cell</value>
+  </data>
+  <data name="Author_Inside0" xml:space="preserve">
+    <value>inside &lt;{0}&gt;</value>
+  </data>
+  <data name="Author_InsideBorders" xml:space="preserve">
+    <value>Inside borders</value>
+  </data>
+  <data name="Author_InsideHorizontalBorder" xml:space="preserve">
+    <value>Inside horizontal border</value>
+  </data>
+  <data name="Author_InsideVerticalBorder" xml:space="preserve">
+    <value>Inside vertical border</value>
+  </data>
+  <data name="Author_LeftBorder" xml:space="preserve">
+    <value>Left border</value>
+  </data>
+  <data name="Author_MergeBlocks" xml:space="preserve">
+    <value>Merge blocks</value>
+  </data>
+  <data name="Author_MergeCells" xml:space="preserve">
+    <value>Merge cells</value>
+  </data>
+  <data name="Author_NewParagraphInTheCell" xml:space="preserve">
+    <value>New paragraph in the cell</value>
+  </data>
+  <data name="Author_NewStep" xml:space="preserve">
+    <value>New step</value>
+  </data>
+  <data name="Author_NextStep" xml:space="preserve">
+    <value>Next step</value>
+  </data>
+  <data name="Author_NoBorder" xml:space="preserve">
+    <value>No border</value>
+  </data>
+  <data name="Author_NoNumberNotInTableOf" xml:space="preserve">
+    <value>no number · not in table of contents</value>
+  </data>
+  <data name="Author_NoSuggestions" xml:space="preserve">
+    <value>(no suggestions)</value>
+  </data>
+  <data name="Author_NumberedParagraphNumberFromTheHeadings" xml:space="preserve">
+    <value>Numbered paragraph: number from the headings (for example, 2.3.1) — when published</value>
+  </data>
+  <data name="Author_OutsideBorders" xml:space="preserve">
+    <value>Outside borders</value>
+  </data>
+  <data name="Author_Paste" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="Author_RightBorder" xml:space="preserve">
+    <value>Right border</value>
+  </data>
+  <data name="Author_RowHeight" xml:space="preserve">
+    <value>Row height</value>
+  </data>
+  <data name="Author_RowInsertedAbove" xml:space="preserve">
+    <value>Row inserted above.</value>
+  </data>
+  <data name="Author_RowInsertedBelow" xml:space="preserve">
+    <value>Row inserted below.</value>
+  </data>
+  <data name="Author_RowsDeleted" xml:space="preserve">
+    <value>Rows deleted.</value>
+  </data>
+  <data name="Author_RowsInsertedAbove0" xml:space="preserve">
+    <value>Rows inserted above: {0}.</value>
+  </data>
+  <data name="Author_RowsInsertedBelow0" xml:space="preserve">
+    <value>Rows inserted below: {0}.</value>
+  </data>
+  <data name="Author_SeparateSheet" xml:space="preserve">
+    <value>▣ Separate sheet · </value>
+  </data>
+  <data name="Author_SkipAll" xml:space="preserve">
+    <value>Skip all</value>
+  </data>
+  <data name="Author_SplitBlock" xml:space="preserve">
+    <value>Split block</value>
+  </data>
+  <data name="Author_Text" xml:space="preserve">
+    <value>text</value>
+  </data>
+  <data name="Author_TextFormatting" xml:space="preserve">
+    <value>Text formatting</value>
+  </data>
+  <data name="Author_TheClipboardHasNoDITABlocks" xml:space="preserve">
+    <value>The clipboard has no DITA blocks: select blocks and copy them (Ctrl+C).</value>
+  </data>
+  <data name="Author_TheContentIsSubstitutedByConref" xml:space="preserve">
+    <value>The content is substituted by conref when published; edit it in the source topic.</value>
+  </data>
+  <data name="Author_TheMapCannotBeRead" xml:space="preserve">
+    <value>The map cannot be read: </value>
+  </data>
+  <data name="Author_TheMapIsNotSaved" xml:space="preserve">
+    <value>The map is not saved.</value>
+  </data>
+  <data name="Author_TheseBlocksCannotBePastedHere" xml:space="preserve">
+    <value>These blocks cannot be pasted here: the parent's content model allows them neither here nor higher up. Choose another place.</value>
+  </data>
+  <data name="Author_TheseCellsCannotBeMergedA" xml:space="preserve">
+    <value>These cells cannot be merged: a table row must keep at least one cell, and the header and body are not merged.</value>
+  </data>
+  <data name="Author_ThisIsNotPossibleTheTable" xml:space="preserve">
+    <value>This is not possible: the table must keep at least one row and one column.</value>
+  </data>
+  <data name="Author_ToChangeContextMenuFormattingPosition" xml:space="preserve">
+    <value>To change: context menu → Formatting → Position on page.</value>
+  </data>
+  <data name="Author_TopBorder" xml:space="preserve">
+    <value>Top border</value>
+  </data>
+  <data name="Author_TopicsInTheMap0" xml:space="preserve">
+    <value>Topics in the map: {0}</value>
+  </data>
+  <data name="Author_WhatEnterDidWithoutTheHint" xml:space="preserve">
+    <value>What Enter did without the hint: the next block of the same kind. A double Enter gives it at once.</value>
+  </data>
+  <data name="Author_WhenPublishedTheTitleIsNot" xml:space="preserve">
+    <value>When published the title is not numbered and is left out of the table of contents (outputclass="nonumber").</value>
+  </data>
   <data name="Btn_AddAttribute" xml:space="preserve">
     <value>Add attribute</value>
   </data>
@@ -123,6 +403,658 @@
   </data>
   <data name="Col_Target" xml:space="preserve">
     <value>Target</value>
+  </data>
+  <data name="Dlg_0010Mm" xml:space="preserve">
+    <value>{0:0.#} × {1:0.#} mm</value>
+  </data>
+  <data name="Dlg_Add" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="Dlg_Added0" xml:space="preserve">
+    <value>Added: {0}.</value>
+  </data>
+  <data name="Dlg_AndTickedInBuildConditionsA" xml:space="preserve">
+    <value>and ticked in “Build conditions”. A name is one word: a space is replaced with “_”.</value>
+  </data>
+  <data name="Dlg_AnElementWithSeveralProductsIs" xml:space="preserve">
+    <value>an element with several products is included if at least one is ticked.</value>
+  </data>
+  <data name="Dlg_AnImageForExampleALogo" xml:space="preserve">
+    <value>An image (for example, a logo; PNG, JPEG, GIF, BMP) goes on the left, center or right, </value>
+  </data>
+  <data name="Dlg_ASeparateTitlePageWithThe" xml:space="preserve">
+    <value>A separate title page with the map title (clear the check box for no title page)</value>
+  </data>
+  <data name="Dlg_AsInTheProjectCSSUsually" xml:space="preserve">
+    <value>As in the project CSS (usually A4)</value>
+  </data>
+  <data name="Dlg_ASixDigitCodeIsRequired" xml:space="preserve">
+    <value>A six-digit code is required</value>
+  </data>
+  <data name="Dlg_ATechnicalDocumentationEditorForDITA" xml:space="preserve">
+    <value>A technical documentation editor for DITA 1.3.
+</value>
+  </data>
+  <data name="Dlg_AttachedFile" xml:space="preserve">
+    <value>Attached file</value>
+  </data>
+  <data name="Dlg_AttachExisting" xml:space="preserve">
+    <value>Attach existing…</value>
+  </data>
+  <data name="Dlg_AuthorOrOrganization" xml:space="preserve">
+    <value>Author or organization</value>
+  </data>
+  <data name="Dlg_AuthorOrOrganizationOnTheTitle" xml:space="preserve">
+    <value>Author or organization (on the title page and in the file properties)</value>
+  </data>
+  <data name="Dlg_AuthorSourceAndPreviewModesPublication" xml:space="preserve">
+    <value>“Author”, “Source” and “Preview” modes, publication maps, </value>
+  </data>
+  <data name="Dlg_AutomaticallyIfYouSetYourOwn" xml:space="preserve">
+    <value>automatically if you set your own text or if Edge/Chrome is not installed. </value>
+  </data>
+  <data name="Dlg_AutomaticHyphenation" xml:space="preserve">
+    <value>Automatic hyphenation</value>
+  </data>
+  <data name="Dlg_BindingMarginMm" xml:space="preserve">
+    <value>Binding margin, mm</value>
+  </data>
+  <data name="Dlg_BindingMarginMm2" xml:space="preserve">
+    <value>Binding margin, mm:</value>
+  </data>
+  <data name="Dlg_Bottom" xml:space="preserve">
+    <value>Bottom</value>
+  </data>
+  <data name="Dlg_BottomMarginMm" xml:space="preserve">
+    <value>Bottom margin, mm</value>
+  </data>
+  <data name="Dlg_Browse" xml:space="preserve">
+    <value>Browse…</value>
+  </data>
+  <data name="Dlg_BuildConditions" xml:space="preserve">
+    <value>Build conditions</value>
+  </data>
+  <data name="Dlg_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Dlg_CaptionFormat" xml:space="preserve">
+    <value>Caption format</value>
+  </data>
+  <data name="Dlg_CaptionFormat2" xml:space="preserve">
+    <value>Caption format:</value>
+  </data>
+  <data name="Dlg_ChooseAColorInThePalette" xml:space="preserve">
+    <value>Choose a color in the palette or enter a code like #RRGGBB.</value>
+  </data>
+  <data name="Dlg_ChooseAStyleFile" xml:space="preserve">
+    <value>Choose a style file</value>
+  </data>
+  <data name="Dlg_ChooseTopic" xml:space="preserve">
+    <value>+ choose topic</value>
+  </data>
+  <data name="Dlg_ClearCell" xml:space="preserve">
+    <value>Clear cell</value>
+  </data>
+  <data name="Dlg_Color" xml:space="preserve">
+    <value>Color #</value>
+  </data>
+  <data name="Dlg_ColorCode" xml:space="preserve">
+    <value>Color code</value>
+  </data>
+  <data name="Dlg_ColorSample" xml:space="preserve">
+    <value>Color sample</value>
+  </data>
+  <data name="Dlg_Column" xml:space="preserve">
+    <value>+ Column</value>
+  </data>
+  <data name="Dlg_Column2" xml:space="preserve">
+    <value>− Column</value>
+  </data>
+  <data name="Dlg_Columns" xml:space="preserve">
+    <value>Columns</value>
+  </data>
+  <data name="Dlg_Comparison" xml:space="preserve">
+    <value>Comparison</value>
+  </data>
+  <data name="Dlg_Comparison01" xml:space="preserve">
+    <value>Comparison: {0} ↔ {1}</value>
+  </data>
+  <data name="Dlg_CopyLeftToRight" xml:space="preserve">
+    <value>Copy left to right</value>
+  </data>
+  <data name="Dlg_CopyRightToLeft" xml:space="preserve">
+    <value>Copy right to left</value>
+  </data>
+  <data name="Dlg_CouldNotCreateTheFile0" xml:space="preserve">
+    <value>Could not create the file: {0}</value>
+  </data>
+  <data name="Dlg_CouldNotReadTheLinkedFile" xml:space="preserve">
+    <value>Could not read the linked file: {0}</value>
+  </data>
+  <data name="Dlg_CouldNotReadTheList" xml:space="preserve">
+    <value>Could not read the list: </value>
+  </data>
+  <data name="Dlg_CouldNotSave" xml:space="preserve">
+    <value>Could not save: </value>
+  </data>
+  <data name="Dlg_CouldNotWrite01" xml:space="preserve">
+    <value>Could not write {0}: {1}</value>
+  </data>
+  <data name="Dlg_CouldNotWriteTheFile0" xml:space="preserve">
+    <value>Could not write the file: {0}</value>
+  </data>
+  <data name="Dlg_Create" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="Dlg_CreateNewFile" xml:space="preserve">
+    <value>Create new file…</value>
+  </data>
+  <data name="Dlg_CreateStyleFile" xml:space="preserve">
+    <value>Create style file</value>
+  </data>
+  <data name="Dlg_CSSFiles" xml:space="preserve">
+    <value>CSS files</value>
+  </data>
+  <data name="Dlg_CSSWithPageMarginBoxesPage" xml:space="preserve">
+    <value>CSS with page margin boxes @page { @top-left { content: … } }: they override these settings.</value>
+  </data>
+  <data name="Dlg_CurrentId" xml:space="preserve">
+    <value>Current id</value>
+  </data>
+  <data name="Dlg_CurrentPathRelativeToTheProject" xml:space="preserve">
+    <value>Current path (relative to the project)</value>
+  </data>
+  <data name="Dlg_CustomCSS" xml:space="preserve">
+    <value>Custom CSS</value>
+  </data>
+  <data name="Dlg_CustomSize" xml:space="preserve">
+    <value>Custom size…</value>
+  </data>
+  <data name="Dlg_DatePublicationDateForExamplePage" xml:space="preserve">
+    <value>{date} — publication date. For example: “Page {page} of {pages}”. Empty — no header or footer. </value>
+  </data>
+  <data name="Dlg_DeleteSelected" xml:space="preserve">
+    <value>Delete selected</value>
+  </data>
+  <data name="Dlg_DescriptionOptional" xml:space="preserve">
+    <value>Description (optional)</value>
+  </data>
+  <data name="Dlg_Detach" xml:space="preserve">
+    <value>Detach</value>
+  </data>
+  <data name="Dlg_DocumentType" xml:space="preserve">
+    <value>Document type</value>
+  </data>
+  <data name="Dlg_DOCXLayout" xml:space="preserve">
+    <value>DOCX layout</value>
+  </data>
+  <data name="Dlg_DoNotShowHeadersAndFooters" xml:space="preserve">
+    <value>Do not show headers and footers on the first page</value>
+  </data>
+  <data name="Dlg_EachRowLinksTheTopicsFrom" xml:space="preserve">
+    <value>Each row links the topics from different columns to each other — when published </value>
+  </data>
+  <data name="Dlg_EditDitaval" xml:space="preserve">
+    <value>Edit .ditaval</value>
+  </data>
+  <data name="Dlg_ElementsInTheDictionary0" xml:space="preserve">
+    <value>Elements in the dictionary: {0}</value>
+  </data>
+  <data name="Dlg_EnterTheSheetWidthAndHeight" xml:space="preserve">
+    <value>Enter the sheet width and height: from {0:0} to {1:0} mm.</value>
+  </data>
+  <data name="Dlg_EveryTopLevelTopicOnA" xml:space="preserve">
+    <value>Every top-level topic on a new page</value>
+  </data>
+  <data name="Dlg_ExportToFile" xml:space="preserve">
+    <value>Export to file…</value>
+  </data>
+  <data name="Dlg_Extract" xml:space="preserve">
+    <value>Extract</value>
+  </data>
+  <data name="Dlg_ExtractToConref" xml:space="preserve">
+    <value>Extract to conref</value>
+  </data>
+  <data name="Dlg_FieldsPagePageNumberPagesPage" xml:space="preserve">
+    <value>Fields: {page} — page number, {pages} — page count, {title} — map title, </value>
+  </data>
+  <data name="Dlg_File0TickTheValuesTo" xml:space="preserve">
+    <value>File: {0}. Tick the values to exclude from the build — </value>
+  </data>
+  <data name="Dlg_FileName" xml:space="preserve">
+    <value>File name</value>
+  </data>
+  <data name="Dlg_FirstConnectADitavalFileVia" xml:space="preserve">
+    <value>First connect a .ditaval file via “Publish → Connect .ditaval…”.</value>
+  </data>
+  <data name="Dlg_FitImagesToTheHeaderOr" xml:space="preserve">
+    <value>Fit images to the header or footer (height from the page margin, proportions kept)</value>
+  </data>
+  <data name="Dlg_Folder" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="Dlg_Footer" xml:space="preserve">
+    <value>Footer</value>
+  </data>
+  <data name="Dlg_Footer2" xml:space="preserve">
+    <value>footer</value>
+  </data>
+  <data name="Dlg_FooterAlignment" xml:space="preserve">
+    <value>Footer alignment</value>
+  </data>
+  <data name="Dlg_FooterText" xml:space="preserve">
+    <value>Footer text</value>
+  </data>
+  <data name="Dlg_FooterText2" xml:space="preserve">
+    <value>Footer text</value>
+  </data>
+  <data name="Dlg_FromCSS" xml:space="preserve">
+    <value>from CSS</value>
+  </data>
+  <data name="Dlg_FromTheProjectCSSIfIt" xml:space="preserve">
+    <value>from the project CSS (if it is not set there — 20 mm).</value>
+  </data>
+  <data name="Dlg_Header" xml:space="preserve">
+    <value>Header</value>
+  </data>
+  <data name="Dlg_Header2" xml:space="preserve">
+    <value>header</value>
+  </data>
+  <data name="Dlg_HeaderAlignment" xml:space="preserve">
+    <value>Header alignment</value>
+  </data>
+  <data name="Dlg_HeaderOrFooterImage" xml:space="preserve">
+    <value>Header or footer image</value>
+  </data>
+  <data name="Dlg_HeaderRow" xml:space="preserve">
+    <value>Header row</value>
+  </data>
+  <data name="Dlg_HeadersAndFooters" xml:space="preserve">
+    <value>Headers and footers</value>
+  </data>
+  <data name="Dlg_HeadersAndFootersAreSupportedOnly" xml:space="preserve">
+    <value>Headers and footers are supported only when printing with the editor's built-in browser — that happens </value>
+  </data>
+  <data name="Dlg_HeaderText" xml:space="preserve">
+    <value>Header text</value>
+  </data>
+  <data name="Dlg_HeaderText2" xml:space="preserve">
+    <value>Header text</value>
+  </data>
+  <data name="Dlg_HeadingLevelsInTheTableOf" xml:space="preserve">
+    <value>Heading levels in the table of contents:</value>
+  </data>
+  <data name="Dlg_HeadingsAndCaptions" xml:space="preserve">
+    <value>Headings and captions</value>
+  </data>
+  <data name="Dlg_Height" xml:space="preserve">
+    <value>Height</value>
+  </data>
+  <data name="Dlg_HeightOfImage0OfThe" xml:space="preserve">
+    <value>Height of image {0} of the header or footer, mm</value>
+  </data>
+  <data name="Dlg_IdOfTheExtractedElement" xml:space="preserve">
+    <value>id of the extracted element</value>
+  </data>
+  <data name="Dlg_Image" xml:space="preserve">
+    <value>Image:</value>
+  </data>
+  <data name="Dlg_Image0OfTheHeaderOr" xml:space="preserve">
+    <value>Image {0} of the header or footer</value>
+  </data>
+  <data name="Dlg_Images" xml:space="preserve">
+    <value>Images</value>
+  </data>
+  <data name="Dlg_ImportFromFile" xml:space="preserve">
+    <value>Import from file…</value>
+  </data>
+  <data name="Dlg_ImportProductList" xml:space="preserve">
+    <value>Import product list</value>
+  </data>
+  <data name="Dlg_IncludeDraftCommentsDraftComment" xml:space="preserve">
+    <value>Include draft comments (draft-comment)</value>
+  </data>
+  <data name="Dlg_InDOCXTheRulesBecomeWord" xml:space="preserve">
+    <value>In DOCX the rules become Word styles; rules for Word only go in @media docx { … }.</value>
+  </data>
+  <data name="Dlg_InsertLink" xml:space="preserve">
+    <value>Insert link</value>
+  </data>
+  <data name="Dlg_InsertTable" xml:space="preserve">
+    <value>Insert table</value>
+  </data>
+  <data name="Dlg_IntoANewFile" xml:space="preserve">
+    <value>Into a new file</value>
+  </data>
+  <data name="Dlg_IntoAnExistingTopic" xml:space="preserve">
+    <value>Into an existing topic</value>
+  </data>
+  <data name="Dlg_Landscape" xml:space="preserve">
+    <value>Landscape</value>
+  </data>
+  <data name="Dlg_LanguageAndHyphenation" xml:space="preserve">
+    <value>Language and hyphenation</value>
+  </data>
+  <data name="Dlg_Left" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="Dlg_LeftMarginMm" xml:space="preserve">
+    <value>Left margin, mm</value>
+  </data>
+  <data name="Dlg_LevelsInTheTableOfContents" xml:space="preserve">
+    <value>Levels in the table of contents</value>
+  </data>
+  <data name="Dlg_LevelsToNumber" xml:space="preserve">
+    <value>Levels to number</value>
+  </data>
+  <data name="Dlg_LevelsToNumber2" xml:space="preserve">
+    <value>Levels to number:</value>
+  </data>
+  <data name="Dlg_LinesAdded0Removed1" xml:space="preserve">
+    <value>Lines added: {0}, removed: {1}.</value>
+  </data>
+  <data name="Dlg_ListReplaced0Products" xml:space="preserve">
+    <value>List replaced: {0} products.</value>
+  </data>
+  <data name="Dlg_ListSaved" xml:space="preserve">
+    <value>List saved: </value>
+  </data>
+  <data name="Dlg_MarginsMm" xml:space="preserve">
+    <value>Margins, mm</value>
+  </data>
+  <data name="Dlg_MirrorMarginsDoubleSidedPrinting" xml:space="preserve">
+    <value>Mirror margins (double-sided printing)</value>
+  </data>
+  <data name="Dlg_Mm" xml:space="preserve">
+    <value>mm</value>
+  </data>
+  <data name="Dlg_Mm0010" xml:space="preserve">
+    <value>mm ({0:0}–{1:0})</value>
+  </data>
+  <data name="Dlg_Move" xml:space="preserve">
+    <value>Move</value>
+  </data>
+  <data name="Dlg_NewDocument" xml:space="preserve">
+    <value>New document</value>
+  </data>
+  <data name="Dlg_NewId" xml:space="preserve">
+    <value>New id</value>
+  </data>
+  <data name="Dlg_NewPath" xml:space="preserve">
+    <value>New path</value>
+  </data>
+  <data name="Dlg_NewProduct" xml:space="preserve">
+    <value>New product</value>
+  </data>
+  <data name="Dlg_NewProductDescription" xml:space="preserve">
+    <value>New product description</value>
+  </data>
+  <data name="Dlg_NewProductName" xml:space="preserve">
+    <value>New product name</value>
+  </data>
+  <data name="Dlg_No" xml:space="preserve">
+    <value>No</value>
+  </data>
+  <data name="Dlg_NoImage" xml:space="preserve">
+    <value>no image</value>
+  </data>
+  <data name="Dlg_NoPluginsOfThisKindAre" xml:space="preserve">
+    <value>No plugins of this kind are connected — put a .dll in the plugins folder next to the application.</value>
+  </data>
+  <data name="Dlg_NotAttached" xml:space="preserve">
+    <value>not attached</value>
+  </data>
+  <data name="Dlg_NumberFiguresAndTablesInCaptions" xml:space="preserve">
+    <value>Number figures and tables in captions</value>
+  </data>
+  <data name="Dlg_NumberHeadings1111" xml:space="preserve">
+    <value>Number headings: 1, 1.1, 1.1.1…</value>
+  </data>
+  <data name="Dlg_OfTheTitlePage" xml:space="preserve">
+    <value>of the title page</value>
+  </data>
+  <data name="Dlg_OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Dlg_Orientation" xml:space="preserve">
+    <value>Orientation</value>
+  </data>
+  <data name="Dlg_OrientationAndMarginsAreInPublish" xml:space="preserve">
+    <value>orientation and margins are in “Publish → Page setup…”. Here is what CSS cannot do: </value>
+  </data>
+  <data name="Dlg_OtherConditionalAttributesTickTheValues" xml:space="preserve">
+    <value>Other conditional attributes: tick the values to exclude from the build.</value>
+  </data>
+  <data name="Dlg_OtherwiseThePDFIsPrintedWithout" xml:space="preserve">
+    <value>Otherwise the PDF is printed without headers and footers, as before.</value>
+  </data>
+  <data name="Dlg_Page" xml:space="preserve">
+    <value>Page</value>
+  </data>
+  <data name="Dlg_PaperSize" xml:space="preserve">
+    <value>Paper size</value>
+  </data>
+  <data name="Dlg_PaperSizeOrientationAndMarginsApply" xml:space="preserve">
+    <value>Paper size, orientation and margins apply to export to DOCX and PDF. An empty field means the value </value>
+  </data>
+  <data name="Dlg_PDFHeadersAndFooters" xml:space="preserve">
+    <value>PDF headers and footers</value>
+  </data>
+  <data name="Dlg_Portrait" xml:space="preserve">
+    <value>Portrait</value>
+  </data>
+  <data name="Dlg_PositionOfImage0OfThe" xml:space="preserve">
+    <value>Position of image {0} of the header or footer</value>
+  </data>
+  <data name="Dlg_Printing" xml:space="preserve">
+    <value>Printing</value>
+  </data>
+  <data name="Dlg_Product" xml:space="preserve">
+    <value>Product </value>
+  </data>
+  <data name="Dlg_Product0IsAlreadyInThe" xml:space="preserve">
+    <value>Product “{0}” is already in the list.</value>
+  </data>
+  <data name="Dlg_ProductList" xml:space="preserve">
+    <value>Product list</value>
+  </data>
+  <data name="Dlg_ProductListOfAnotherProject" xml:space="preserve">
+    <value>Product list of another project</value>
+  </data>
+  <data name="Dlg_ProductName" xml:space="preserve">
+    <value>Product name</value>
+  </data>
+  <data name="Dlg_ProductsAdded0" xml:space="preserve">
+    <value>Products added: {0}.</value>
+  </data>
+  <data name="Dlg_ProductsInTheFile0Yes" xml:space="preserve">
+    <value>Products in the file: {0}. Yes — add the missing ones to the current list, No — replace the current list with the one from the file.</value>
+  </data>
+  <data name="Dlg_ProductsWhatGoesIntoThePublication" xml:space="preserve">
+    <value>Products: what goes into the publication</value>
+  </data>
+  <data name="Dlg_ProjectProductsAreTheValuesOf" xml:space="preserve">
+    <value>Project products are the values of the product attribute. They are chosen from the list on the “Attributes” panel (several are allowed) </value>
+  </data>
+  <data name="Dlg_PublicationDateOnTheTitlePage" xml:space="preserve">
+    <value>Publication date on the title page</value>
+  </data>
+  <data name="Dlg_PublishCustomCSSAndWorksThe" xml:space="preserve">
+    <value>(“Publish → Custom CSS…”) and works the same for HTML, PDF and DOCX. Paper size, </value>
+  </data>
+  <data name="Dlg_ReferencesToThisFileHrefConref" xml:space="preserve">
+    <value>References to this file (href, conref) throughout the project will be recalculated automatically.</value>
+  </data>
+  <data name="Dlg_ReferencesToThisIdHrefConref" xml:space="preserve">
+    <value>References to this id (href, conref) throughout the project will be updated automatically.</value>
+  </data>
+  <data name="Dlg_RelationshipTable" xml:space="preserve">
+    <value>Relationship table</value>
+  </data>
+  <data name="Dlg_Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Dlg_RemovedFromTheList0The" xml:space="preserve">
+    <value>Removed from the list: {0}. The product values in topics are not changed.</value>
+  </data>
+  <data name="Dlg_Rename" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="Dlg_RenameId" xml:space="preserve">
+    <value>Rename id</value>
+  </data>
+  <data name="Dlg_RenameMoveFile" xml:space="preserve">
+    <value>Rename / move file</value>
+  </data>
+  <data name="Dlg_Right" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="Dlg_RightMarginMm" xml:space="preserve">
+    <value>Right margin, mm</value>
+  </data>
+  <data name="Dlg_Row" xml:space="preserve">
+    <value>+ Row</value>
+  </data>
+  <data name="Dlg_Row2" xml:space="preserve">
+    <value>− Row</value>
+  </data>
+  <data name="Dlg_Rows" xml:space="preserve">
+    <value>Rows</value>
+  </data>
+  <data name="Dlg_SaveProductList" xml:space="preserve">
+    <value>Save product list</value>
+  </data>
+  <data name="Dlg_SheetHeightMm" xml:space="preserve">
+    <value>Sheet height, mm</value>
+  </data>
+  <data name="Dlg_SheetWidthMm" xml:space="preserve">
+    <value>Sheet width, mm</value>
+  </data>
+  <data name="Dlg_ShowHeadersAndFooters" xml:space="preserve">
+    <value>Show headers and footers</value>
+  </data>
+  <data name="Dlg_StaysInItsPlaceEditThe" xml:space="preserve">
+    <value>stays in its place — edit the text afterwards in the target topic.</value>
+  </data>
+  <data name="Dlg_Subtitle" xml:space="preserve">
+    <value>Subtitle</value>
+  </data>
+  <data name="Dlg_SubtitleText" xml:space="preserve">
+    <value>Subtitle text</value>
+  </data>
+  <data name="Dlg_TableOfContents" xml:space="preserve">
+    <value>Table of contents</value>
+  </data>
+  <data name="Dlg_TableOfContentsAtTheBeginning" xml:space="preserve">
+    <value>Table of contents at the beginning of the document</value>
+  </data>
+  <data name="Dlg_TableOfContentsTitle" xml:space="preserve">
+    <value>Table of contents title</value>
+  </data>
+  <data name="Dlg_TableOfContentsTitleAndIn" xml:space="preserve">
+    <value>Table of contents title (and in PDF):</value>
+  </data>
+  <data name="Dlg_TableTitle" xml:space="preserve">
+    <value>Table title</value>
+  </data>
+  <data name="Dlg_TextLanguage" xml:space="preserve">
+    <value>Text language</value>
+  </data>
+  <data name="Dlg_TextLanguageSpellCheckingInWord" xml:space="preserve">
+    <value>Text language (spell checking in Word):</value>
+  </data>
+  <data name="Dlg_TheBuiltInStylesItsRules" xml:space="preserve">
+    <value>the built-in styles — its rules apply last and can override them. </value>
+  </data>
+  <data name="Dlg_TheElementSContentIsMoved" xml:space="preserve">
+    <value>The element's content is moved to the target topic as a whole, and an empty conref reference </value>
+  </data>
+  <data name="Dlg_TheFileHasNoProducts" xml:space="preserve">
+    <value>The file has no products.</value>
+  </data>
+  <data name="Dlg_TheFilesAreIdentical" xml:space="preserve">
+    <value>The files are identical.</value>
+  </data>
+  <data name="Dlg_TheFlaggingRules0InThe" xml:space="preserve">
+    <value>the flagging rules ({0}) in the file are left untouched.</value>
+  </data>
+  <data name="Dlg_TheHeightIsInMillimetersIt" xml:space="preserve">
+    <value>the height is in millimeters; it also appears in the PDF headers and footers. Headers and footers can also be set in the project </value>
+  </data>
+  <data name="Dlg_TheLookOfTheTextFonts" xml:space="preserve">
+    <value>The look of the text — fonts, colors, spacing, borders, tables — is set by the project's custom CSS </value>
+  </data>
+  <data name="Dlg_ThePageNumberAndTotalPage" xml:space="preserve">
+    <value>The page number and total page count are added automatically at the right of the footer.</value>
+  </data>
+  <data name="Dlg_TheProductListIsEmptyAdd" xml:space="preserve">
+    <value>The product list is empty — add products with the button below.</value>
+  </data>
+  <data name="Dlg_TheProjectHasNoConditionalAttributes" xml:space="preserve">
+    <value>The project has no conditional attributes.</value>
+  </data>
+  <data name="Dlg_ThereAreNoFlaggingRulesIn" xml:space="preserve">
+    <value>there are no flagging rules in the file.</value>
+  </data>
+  <data name="Dlg_TheStructureOfTheWordDocument" xml:space="preserve">
+    <value>the structure of the Word document.</value>
+  </data>
+  <data name="Dlg_TheStyleFileIsAttachedTo" xml:space="preserve">
+    <value>The style file is attached to every publication (HTML, PDF and DOCX) in addition to </value>
+  </data>
+  <data name="Dlg_TheyAppearInEachOtherS" xml:space="preserve">
+    <value>they appear in each other's “See also”. Topics in the same column are not linked to each other.</value>
+  </data>
+  <data name="Dlg_TickTheProductsThePublicationIs" xml:space="preserve">
+    <value>Tick the products the publication is built for. Elements without a product attribute are always included; </value>
+  </data>
+  <data name="Dlg_Title" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="Dlg_TitlePage" xml:space="preserve">
+    <value>Title page</value>
+  </data>
+  <data name="Dlg_TitlePageImageAboveTheTitle" xml:space="preserve">
+    <value>Title page image (above the title): position and height in mm</value>
+  </data>
+  <data name="Dlg_Top" xml:space="preserve">
+    <value>Top</value>
+  </data>
+  <data name="Dlg_TopMarginMm" xml:space="preserve">
+    <value>Top margin, mm</value>
+  </data>
+  <data name="Dlg_Untitled" xml:space="preserve">
+    <value>Untitled</value>
+  </data>
+  <data name="Dlg_ValidationAgainstContentModelsHTMLAnd" xml:space="preserve">
+    <value>validation against content models, HTML and PDF builds.</value>
+  </data>
+  <data name="Dlg_Width" xml:space="preserve">
+    <value>Width</value>
+  </data>
+  <data name="Dlg_Yes" xml:space="preserve">
+    <value>Yes</value>
+  </data>
+  <data name="Dlg_YouCanGiveAnotherFolderWith" xml:space="preserve">
+    <value>You can give another folder with “/” — it will be created if needed. </value>
+  </data>
+  <data name="Doc_Author" xml:space="preserve">
+    <value>Author</value>
+  </data>
+  <data name="Doc_Preview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="Doc_RecoveryAfterACrash" xml:space="preserve">
+    <value>Recovery after a crash</value>
+  </data>
+  <data name="Doc_ReloadFromDisk" xml:space="preserve">
+    <value>Reload from disk</value>
+  </data>
+  <data name="Doc_Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Doc_SourceEdit" xml:space="preserve">
+    <value>Source edit</value>
   </data>
   <data name="Hdr_ProjectProducts" xml:space="preserve">
     <value>Project products</value>
@@ -580,8 +1512,1074 @@
   <data name="Menu_WrapIn" xml:space="preserve">
     <value>Wrap in…</value>
   </data>
+  <data name="Msg_0IsNotPublishedNotIn" xml:space="preserve">
+    <value>“{0}” is not published (not in HTML, PDF or DOCX); references and keys from it still work.</value>
+  </data>
+  <data name="Msg_0IsNowNestedIn1" xml:space="preserve">
+    <value>“{0}” is now nested in “{1}”.</value>
+  </data>
+  <data name="Msg_0IsPublishedAgain" xml:space="preserve">
+    <value>“{0}” is published again.</value>
+  </data>
+  <data name="Msg_0MoreReferencesInOtherFiles" xml:space="preserve">
+    <value>
+
+{0} more references in other files ({1}) will become broken.</value>
+  </data>
+  <data name="Msg_0WasCreatedAndAddedTo" xml:space="preserve">
+    <value>{0} was created and added to the map {1} (do not forget to save the map).</value>
+  </data>
+  <data name="Msg_0WasMoved" xml:space="preserve">
+    <value>“{0}” was moved.</value>
+  </data>
+  <data name="Msg_AcceptChangeTrackChanges" xml:space="preserve">
+    <value>Accept change (track changes)</value>
+  </data>
+  <data name="Msg_AddNewTopicToTheMap" xml:space="preserve">
+    <value>Add new topic to the map</value>
+  </data>
+  <data name="Msg_AddReferenceToTheMap" xml:space="preserve">
+    <value>Add reference to the map</value>
+  </data>
+  <data name="Msg_AddSectionToTheMap" xml:space="preserve">
+    <value>Add section to the map</value>
+  </data>
+  <data name="Msg_AFileForTheReferenceCannot" xml:space="preserve">
+    <value>A file for the reference cannot be created: the row has no file path (the key is not defined). Choose another file.</value>
+  </data>
+  <data name="Msg_Alignment" xml:space="preserve">
+    <value>Alignment: </value>
+  </data>
+  <data name="Msg_AllFiles" xml:space="preserve">
+    <value>All files</value>
+  </data>
+  <data name="Msg_AllKeySourceProjectsDisconnected" xml:space="preserve">
+    <value>All key source projects disconnected.</value>
+  </data>
+  <data name="Msg_AllowedChildElements01" xml:space="preserve">
+    <value>Allowed child elements ({0}): {1}</value>
+  </data>
+  <data name="Msg_AllowedNextTo01Elements" xml:space="preserve">
+    <value>Allowed next to &lt;{0}&gt;: {1} elements. Double-click to insert.</value>
+  </data>
+  <data name="Msg_AProjectCannotBeConnectedTo" xml:space="preserve">
+    <value>A project cannot be connected to itself.</value>
+  </data>
+  <data name="Msg_ATableCannotBeInsertedHere" xml:space="preserve">
+    <value>A table cannot be inserted here.</value>
+  </data>
+  <data name="Msg_Attribute0" xml:space="preserve">
+    <value>Attribute @{0}</value>
+  </data>
+  <data name="Msg_Attributes0" xml:space="preserve">
+    <value>
+
+Attributes: {0}</value>
+  </data>
+  <data name="Msg_BlockFormatting" xml:space="preserve">
+    <value>Block formatting</value>
+  </data>
+  <data name="Msg_BordersOfSelectedCells" xml:space="preserve">
+    <value>Borders of selected cells</value>
+  </data>
+  <data name="Msg_BordersPutTheCursorInA" xml:space="preserve">
+    <value>Borders: put the cursor in a cell or select cells of a regular (CALS) table.</value>
+  </data>
+  <data name="Msg_BuildConditionsUpdatedValuesExcluded0" xml:space="preserve">
+    <value>Build conditions updated: values excluded: {0}.</value>
+  </data>
+  <data name="Msg_BuildingDOCXFromTheMap0" xml:space="preserve">
+    <value>Building DOCX from the map {0}…
+</value>
+  </data>
+  <data name="Msg_BuildingTheMap0" xml:space="preserve">
+    <value>Building the map {0}…
+</value>
+  </data>
+  <data name="Msg_BuiltInBrowser0PrintingWith" xml:space="preserve">
+    <value>Built-in browser: {0} — printing with the installed browser, without headers and footers.
+</value>
+  </data>
+  <data name="Msg_ButAreAvailableThroughKeyrefConref" xml:space="preserve">
+    <value>but are available through keyref/conref if not found in this project.</value>
+  </data>
+  <data name="Msg_CancelDecideLaterTheCopiesStay" xml:space="preserve">
+    <value>Cancel — decide later (the copies stay until the project is next opened).</value>
+  </data>
+  <data name="Msg_CaptionAdd" xml:space="preserve">
+    <value>Caption: add</value>
+  </data>
+  <data name="Msg_CaptionAddedWhenPublishedFigureN" xml:space="preserve">
+    <value>Caption added: when published — “Figure N” / “Table N”; type the title into the title element.</value>
+  </data>
+  <data name="Msg_CaptionRemove" xml:space="preserve">
+    <value>Caption: remove</value>
+  </data>
+  <data name="Msg_CaptionRemovedThisFigureTableWill" xml:space="preserve">
+    <value>Caption removed: this figure (table) will have no caption or number.</value>
+  </data>
+  <data name="Msg_CellAlignment" xml:space="preserve">
+    <value>Cell alignment</value>
+  </data>
+  <data name="Msg_CellBorders" xml:space="preserve">
+    <value>Cell borders</value>
+  </data>
+  <data name="Msg_CellBordersChanged" xml:space="preserve">
+    <value>Cell borders changed.</value>
+  </data>
+  <data name="Msg_CellsMergedHorizontally" xml:space="preserve">
+    <value>Cells merged horizontally.</value>
+  </data>
+  <data name="Msg_CellsMergedVertically" xml:space="preserve">
+    <value>Cells merged vertically.</value>
+  </data>
+  <data name="Msg_Change0" xml:space="preserve">
+    <value>Change @{0}</value>
+  </data>
+  <data name="Msg_ChangeAccepted" xml:space="preserve">
+    <value>Change accepted.</value>
+  </data>
+  <data name="Msg_ChangeMarkRev" xml:space="preserve">
+    <value>Change mark (rev)</value>
+  </data>
+  <data name="Msg_ChangeOutputFormatting" xml:space="preserve">
+    <value>Change output formatting</value>
+  </data>
+  <data name="Msg_ChangeRejected" xml:space="preserve">
+    <value>Change rejected.</value>
+  </data>
+  <data name="Msg_ChooseACommand" xml:space="preserve">
+    <value>Choose a command:</value>
+  </data>
+  <data name="Msg_ChooseADITAProjectFolder" xml:space="preserve">
+    <value>Choose a DITA project folder</value>
+  </data>
+  <data name="Msg_ChooseAFileForTheRow" xml:space="preserve">
+    <value>Choose a file for the row «</value>
+  </data>
+  <data name="Msg_ChooseAMapOnTheMap" xml:space="preserve">
+    <value>Choose a map on the “Map” tab.</value>
+  </data>
+  <data name="Msg_ChooseAnImage" xml:space="preserve">
+    <value>Choose an image</value>
+  </data>
+  <data name="Msg_ChooseAPublicationFormat" xml:space="preserve">
+    <value>Choose a publication format:</value>
+  </data>
+  <data name="Msg_ClearCells" xml:space="preserve">
+    <value>Clear cells</value>
+  </data>
+  <data name="Msg_Comment" xml:space="preserve">
+    <value>comment</value>
+  </data>
+  <data name="Msg_CompareFirstFile" xml:space="preserve">
+    <value>Compare — first file</value>
+  </data>
+  <data name="Msg_CompareSecondFile" xml:space="preserve">
+    <value>Compare — second file</value>
+  </data>
+  <data name="Msg_CompareWithGit" xml:space="preserve">
+    <value>Compare with git</value>
+  </data>
+  <data name="Msg_CompareWithSVN" xml:space="preserve">
+    <value>Compare with SVN</value>
+  </data>
+  <data name="Msg_ConnectAConditionsFileDitaval" xml:space="preserve">
+    <value>Connect a conditions file (.ditaval)</value>
+  </data>
+  <data name="Msg_ConnectAProjectAsAKey" xml:space="preserve">
+    <value>Connect a project as a key source</value>
+  </data>
+  <data name="Msg_ConnectedDitaval0Exclusions1Flagging" xml:space="preserve">
+    <value>Connected .ditaval: {0} (exclusions: {1}, flagging rules: {2}). Changes to the file are picked up automatically.</value>
+  </data>
+  <data name="Msg_ConnectedInTotal0" xml:space="preserve">
+    <value>(connected in total: {0}).</value>
+  </data>
+  <data name="Msg_ConnectExternalDTD" xml:space="preserve">
+    <value>Connect external DTD</value>
+  </data>
+  <data name="Msg_Content0" xml:space="preserve">
+    <value>Content: {0}
+</value>
+  </data>
+  <data name="Msg_Copied0" xml:space="preserve">
+    <value>Copied: {0}</value>
+  </data>
+  <data name="Msg_CouldNotCreate01" xml:space="preserve">
+    <value>Could not create {0}: {1}</value>
+  </data>
+  <data name="Msg_CouldNotMoveTheElementCheck" xml:space="preserve">
+    <value>Could not move the element — check the target.</value>
+  </data>
+  <data name="Msg_CouldNotOpenTheFileIs" xml:space="preserve">
+    <value>Could not open (the file is missing or cannot be parsed): </value>
+  </data>
+  <data name="Msg_CouldNotParse01" xml:space="preserve">
+    <value>Could not parse {0}:
+
+{1}</value>
+  </data>
+  <data name="Msg_CouldNotReadTheFile0" xml:space="preserve">
+    <value>Could not read the file: {0}</value>
+  </data>
+  <data name="Msg_CouldNotReadTheFolder0" xml:space="preserve">
+    <value>Could not read the folder: {0}</value>
+  </data>
+  <data name="Msg_CouldNotReload01" xml:space="preserve">
+    <value>Could not reload {0}: {1}</value>
+  </data>
+  <data name="Msg_CouldNotSaveTheFile" xml:space="preserve">
+    <value>Could not save the file.</value>
+  </data>
+  <data name="Msg_CouldNotSaveTheSettings0" xml:space="preserve">
+    <value>Could not save the settings: {0}</value>
+  </data>
+  <data name="Msg_CouldNotWriteTheRecoveryCopy" xml:space="preserve">
+    <value>Could not write the recovery copy ({0}): {1}</value>
+  </data>
+  <data name="Msg_CouldNotWriteTheTemporaryFile" xml:space="preserve">
+    <value>Could not write the temporary file: {0}</value>
+  </data>
+  <data name="Msg_CreateDocument" xml:space="preserve">
+    <value>Create document</value>
+  </data>
+  <data name="Msg_CreateFile" xml:space="preserve">
+    <value>Create file</value>
+  </data>
+  <data name="Msg_CustomCSS0" xml:space="preserve">
+    <value>Custom CSS: {0}</value>
+  </data>
+  <data name="Msg_CustomCSSIsOff" xml:space="preserve">
+    <value>Custom CSS is off.</value>
+  </data>
+  <data name="Msg_CustomFontSize" xml:space="preserve">
+    <value>Custom font size</value>
+  </data>
+  <data name="Msg_CutFromTheMap" xml:space="preserve">
+    <value>Cut from the map</value>
+  </data>
+  <data name="Msg_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Msg_Delete0" xml:space="preserve">
+    <value>Delete &lt;{0}&gt;</value>
+  </data>
+  <data name="Msg_Delete02" xml:space="preserve">
+    <value>Delete @{0}</value>
+  </data>
+  <data name="Msg_DeleteAFileFromTheMap" xml:space="preserve">
+    <value>Delete a file from the map</value>
+  </data>
+  <data name="Msg_DeleteBlocks0" xml:space="preserve">
+    <value>Delete blocks: {0}</value>
+  </data>
+  <data name="Msg_DeleteFile" xml:space="preserve">
+    <value>Delete file</value>
+  </data>
+  <data name="Msg_DeleteTheElement0WithIts" xml:space="preserve">
+    <value>Delete the element &lt;{0}&gt; with its content?</value>
+  </data>
+  <data name="Msg_DeleteTheFile0FromDisk" xml:space="preserve">
+    <value>Delete the file {0} from disk? This cannot be undone. The rows of this map that refer to it will be removed.{1}</value>
+  </data>
+  <data name="Msg_DITAFiles" xml:space="preserve">
+    <value>DITA files</value>
+  </data>
+  <data name="Msg_DITATopicsAndMaps" xml:space="preserve">
+    <value>DITA topics and maps</value>
+  </data>
+  <data name="Msg_DITAVALFiles" xml:space="preserve">
+    <value>DITAVAL files</value>
+  </data>
+  <data name="Msg_DocumentCheck0Remarks" xml:space="preserve">
+    <value>Document check: {0} remarks.</value>
+  </data>
+  <data name="Msg_DocumentsRecovered0SaveThemTo" xml:space="preserve">
+    <value>Documents recovered: {0}. Save them to write the changes to the files.</value>
+  </data>
+  <data name="Msg_DOCXBuilt" xml:space="preserve">
+    <value>DOCX built: </value>
+  </data>
+  <data name="Msg_Done" xml:space="preserve">
+    <value> — done.</value>
+  </data>
+  <data name="Msg_DTDFiles" xml:space="preserve">
+    <value>DTD files</value>
+  </data>
+  <data name="Msg_DuplicateInTheMap" xml:space="preserve">
+    <value>Duplicate in the map</value>
+  </data>
+  <data name="Msg_ElementsConnectedFromTheExternalDTD" xml:space="preserve">
+    <value> Elements connected from the external DTD: {0}{1}.</value>
+  </data>
+  <data name="Msg_Error" xml:space="preserve">
+    <value>Error: </value>
+  </data>
+  <data name="Msg_ExcludeTheTopicFromThePublication" xml:space="preserve">
+    <value>Exclude the topic from the publication</value>
+  </data>
+  <data name="Msg_ExportedToXLIFF0" xml:space="preserve">
+    <value>Exported to XLIFF: {0}</value>
+  </data>
+  <data name="Msg_ExportToDOCX" xml:space="preserve">
+    <value>Export to DOCX</value>
+  </data>
+  <data name="Msg_ExportToPDF" xml:space="preserve">
+    <value>Export to PDF</value>
+  </data>
+  <data name="Msg_ExportToXLIFF" xml:space="preserve">
+    <value>Export to XLIFF</value>
+  </data>
+  <data name="Msg_ExternalDTD" xml:space="preserve">
+    <value>External DTD</value>
+  </data>
+  <data name="Msg_ExternalDTDConnected0" xml:space="preserve">
+    <value>External DTD connected: {0}.</value>
+  </data>
+  <data name="Msg_ExternalDTDConnected0ElementsConnected" xml:space="preserve">
+    <value>External DTD connected: {0}. Elements connected: {1}{2}.</value>
+  </data>
+  <data name="Msg_ExternalDTDWarnings" xml:space="preserve">
+    <value>External DTD — warnings</value>
+  </data>
+  <data name="Msg_ExtractToConref" xml:space="preserve">
+    <value>Extract to conref</value>
+  </data>
+  <data name="Msg_FigureInsertedReplaceTheTitleUnder" xml:space="preserve">
+    <value>Figure inserted: replace the title under it. The caption “Figure N” appears when published.</value>
+  </data>
+  <data name="Msg_FigureTitle" xml:space="preserve">
+    <value>Figure title</value>
+  </data>
+  <data name="Msg_FileChangedExternally" xml:space="preserve">
+    <value>File changed externally</value>
+  </data>
+  <data name="Msg_FileCreatedForTheReference0" xml:space="preserve">
+    <value>File created for the reference: {0}.</value>
+  </data>
+  <data name="Msg_FileMoved01ReferencesUpdated" xml:space="preserve">
+    <value>File moved: {0} → {1}. References updated: {2}.</value>
+  </data>
+  <data name="Msg_FilesSaved0" xml:space="preserve">
+    <value>Files saved: {0}</value>
+  </data>
+  <data name="Msg_FilesWritten0" xml:space="preserve">
+    <value>Files written: {0}
+</value>
+  </data>
+  <data name="Msg_FontSize00Pt" xml:space="preserve">
+    <value>Font size {0:0.#} pt.</value>
+  </data>
+  <data name="Msg_FontSizeCleared" xml:space="preserve">
+    <value>Font size cleared.</value>
+  </data>
+  <data name="Msg_Footnote0" xml:space="preserve">
+    <value>footnote {0}</value>
+  </data>
+  <data name="Msg_FootnoteText" xml:space="preserve">
+    <value>Footnote text</value>
+  </data>
+  <data name="Msg_From00To10" xml:space="preserve">
+    <value>From {0:0} to {1:0} pt; fractional values with a period or comma (for example, 13.5).</value>
+  </data>
+  <data name="Msg_Help" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="Msg_Id0RenamedTo1References" xml:space="preserve">
+    <value>id “{0}” renamed to “{1}”. References updated: {2}.</value>
+  </data>
+  <data name="Msg_ImportFromXLIFF" xml:space="preserve">
+    <value>Import from XLIFF</value>
+  </data>
+  <data name="Msg_ImportFromXLIFFWarnings" xml:space="preserve">
+    <value>Import from XLIFF — warnings</value>
+  </data>
+  <data name="Msg_ImportTranslationFromXLIFF" xml:space="preserve">
+    <value>Import translation from XLIFF</value>
+  </data>
+  <data name="Msg_IncludeTheTopicInThePublication" xml:space="preserve">
+    <value>Include the topic in the publication</value>
+  </data>
+  <data name="Msg_Inserted0" xml:space="preserve">
+    <value>Inserted &lt;{0}&gt;</value>
+  </data>
+  <data name="Msg_InsertFigure" xml:space="preserve">
+    <value>Insert figure</value>
+  </data>
+  <data name="Msg_InsertTable" xml:space="preserve">
+    <value>Insert table</value>
+  </data>
+  <data name="Msg_InThisTableTheNumberOf" xml:space="preserve">
+    <value>In this table the number of columns is set by its type.</value>
+  </data>
+  <data name="Msg_KeptYourVersionOf0When" xml:space="preserve">
+    <value>Kept your version of {0}; when saved it will replace the file on disk.</value>
+  </data>
+  <data name="Msg_KeySourceProjectConnected0" xml:space="preserve">
+    <value>Key source project connected: {0}</value>
+  </data>
+  <data name="Msg_KeySourceProjectsConnected0Their" xml:space="preserve">
+    <value>Key source projects connected: {0} — their keys are not shown in the list, </value>
+  </data>
+  <data name="Msg_LineBelowRow" xml:space="preserve">
+    <value>Line below row</value>
+  </data>
+  <data name="Msg_LineRightOfColumn" xml:space="preserve">
+    <value>Line right of column</value>
+  </data>
+  <data name="Msg_MakeImageAFigure" xml:space="preserve">
+    <value>Make image a figure</value>
+  </data>
+  <data name="Msg_MarkAsDeletedTrackChanges" xml:space="preserve">
+    <value>Mark as deleted (track changes)</value>
+  </data>
+  <data name="Msg_MarkAsInsertedTrackChanges" xml:space="preserve">
+    <value>Mark as inserted (track changes)</value>
+  </data>
+  <data name="Msg_Marker0" xml:space="preserve">
+    <value>Marker: {0}.</value>
+  </data>
+  <data name="Msg_MarkerColor" xml:space="preserve">
+    <value>Marker color</value>
+  </data>
+  <data name="Msg_MarkerMode0SelectTextWith" xml:space="preserve">
+    <value>Marker mode: {0} — select text with the mouse to color it. Esc turns it off.</value>
+  </data>
+  <data name="Msg_MarkerModeEraserSelectTextWith" xml:space="preserve">
+    <value>Marker mode: eraser — select text with the mouse to remove the marker. Esc turns it off.</value>
+  </data>
+  <data name="Msg_MarkerModeOff" xml:space="preserve">
+    <value>Marker mode off.</value>
+  </data>
+  <data name="Msg_MarkerRemoved" xml:space="preserve">
+    <value>Marker removed.</value>
+  </data>
+  <data name="Msg_MatchesFound0" xml:space="preserve">
+    <value>Matches found: {0}</value>
+  </data>
+  <data name="Msg_MergeCellsHorizontally" xml:space="preserve">
+    <value>Merge cells horizontally</value>
+  </data>
+  <data name="Msg_MergeCellsVertically" xml:space="preserve">
+    <value>Merge cells vertically</value>
+  </data>
+  <data name="Msg_MergeSelectedCells" xml:space="preserve">
+    <value>Merge selected cells</value>
+  </data>
+  <data name="Msg_Module0" xml:space="preserve">
+    <value>Module: {0}
+</value>
+  </data>
+  <data name="Msg_MoveDown" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="Msg_MoveFile" xml:space="preserve">
+    <value>Move file</value>
+  </data>
+  <data name="Msg_MoveInTheMap" xml:space="preserve">
+    <value>Move in the map</value>
+  </data>
+  <data name="Msg_MoveOutOfTheNesting" xml:space="preserve">
+    <value>Move out of the nesting</value>
+  </data>
+  <data name="Msg_MoveUp" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="Msg_NestInTheMap" xml:space="preserve">
+    <value>Nest in the map</value>
+  </data>
+  <data name="Msg_NewSection" xml:space="preserve">
+    <value>New section</value>
+  </data>
+  <data name="Msg_NoDeleteTheCopies" xml:space="preserve">
+    <value>No — delete the copies.</value>
+  </data>
+  <data name="Msg_NoElementSelected" xml:space="preserve">
+    <value>No element selected</value>
+  </data>
+  <data name="Msg_NoKeepYourVersionWhenSaved" xml:space="preserve">
+    <value>No — keep your version (when saved it will replace the file on disk).</value>
+  </data>
+  <data name="Msg_NoProjectIsOpen" xml:space="preserve">
+    <value>No project is open.</value>
+  </data>
+  <data name="Msg_Normal" xml:space="preserve">
+    <value>Normal</value>
+  </data>
+  <data name="Msg_OccurrencesReplaced0InFiles1" xml:space="preserve">
+    <value>Occurrences replaced: {0} in files: {1}. Do not forget to save (Ctrl+Shift+S).</value>
+  </data>
+  <data name="Msg_OnlyTheKeysOfTheRoot" xml:space="preserve">
+    <value>Only the keys of the root scope are shown. {0} more are inside keyscope areas of the map.</value>
+  </data>
+  <data name="Msg_OpenADocument" xml:space="preserve">
+    <value>Open a document.</value>
+  </data>
+  <data name="Msg_OpenADocumentAndSelectText" xml:space="preserve">
+    <value>Open a document and select text.</value>
+  </data>
+  <data name="Msg_OpenAProjectFolderFirst" xml:space="preserve">
+    <value>Open a project folder first.</value>
+  </data>
+  <data name="Msg_Opened0" xml:space="preserve">
+    <value>Opened {0}</value>
+  </data>
+  <data name="Msg_OpenFile" xml:space="preserve">
+    <value>Open file</value>
+  </data>
+  <data name="Msg_OpenProjects0" xml:space="preserve">
+    <value> Open projects: {0}.</value>
+  </data>
+  <data name="Msg_OpenTheDocumentToPutThe" xml:space="preserve">
+    <value>Open the document to put the translation into.</value>
+  </data>
+  <data name="Msg_Other" xml:space="preserve">
+    <value>Other…</value>
+  </data>
+  <data name="Msg_PageBreakBeforeTheTitleIs" xml:space="preserve">
+    <value>Page break before the title is on.</value>
+  </data>
+  <data name="Msg_PageBreakBeforeTheTitleIs2" xml:space="preserve">
+    <value>Page break before the title is off.</value>
+  </data>
+  <data name="Msg_PageBreakBeforeTheTopic" xml:space="preserve">
+    <value>Page break before the topic</value>
+  </data>
+  <data name="Msg_PageSetup" xml:space="preserve">
+    <value>Page setup</value>
+  </data>
+  <data name="Msg_PageSetupSavedItAppliesAt" xml:space="preserve">
+    <value>Page setup saved — it applies at the next export to DOCX and PDF.</value>
+  </data>
+  <data name="Msg_PasteBlocks0" xml:space="preserve">
+    <value>Paste blocks: {0}</value>
+  </data>
+  <data name="Msg_PasteIntoTheMap" xml:space="preserve">
+    <value>Paste into the map</value>
+  </data>
+  <data name="Msg_PDFBuilt" xml:space="preserve">
+    <value>PDF built: </value>
+  </data>
+  <data name="Msg_PDFHeadersAndFootersAreOff" xml:space="preserve">
+    <value>PDF headers and footers are off.</value>
+  </data>
+  <data name="Msg_PDFHeadersAndFootersAreOn" xml:space="preserve">
+    <value>PDF headers and footers are on.</value>
+  </data>
+  <data name="Msg_PDFReady" xml:space="preserve">
+    <value>PDF ready: </value>
+  </data>
+  <data name="Msg_PluginCommand" xml:space="preserve">
+    <value>Plugin command</value>
+  </data>
+  <data name="Msg_PluginCommand0Completed" xml:space="preserve">
+    <value>Plugin command “{0}” completed.</value>
+  </data>
+  <data name="Msg_PrintingToPDF" xml:space="preserve">
+    <value>Printing to PDF…
+</value>
+  </data>
+  <data name="Msg_ProductList0" xml:space="preserve">
+    <value>Product list: {0}.</value>
+  </data>
+  <data name="Msg_ProjectCheckErrors0" xml:space="preserve">
+    <value>Project check: errors: {0}, </value>
+  </data>
+  <data name="Msg_ProjectOpened0Files1Keys" xml:space="preserve">
+    <value>Project opened: {0} files, {1} keys.{2}</value>
+  </data>
+  <data name="Msg_ProjectRefreshed0Files1" xml:space="preserve">
+    <value>Project refreshed: {0} files.{1}</value>
+  </data>
+  <data name="Msg_ProjectSettings" xml:space="preserve">
+    <value>Project settings</value>
+  </data>
+  <data name="Msg_Publication" xml:space="preserve">
+    <value>Publication</value>
+  </data>
+  <data name="Msg_Publication0" xml:space="preserve">
+    <value>Publication: {0}</value>
+  </data>
+  <data name="Msg_PublicationReady" xml:space="preserve">
+    <value>Publication ready: </value>
+  </data>
+  <data name="Msg_PublishedWithThePlugin01" xml:space="preserve">
+    <value>Published with the plugin “{0}”: {1}</value>
+  </data>
+  <data name="Msg_PublishingWithThePlugin0From" xml:space="preserve">
+    <value>Publishing with the plugin “{0}” from the map {1}…
+</value>
+  </data>
+  <data name="Msg_PublishWithAPlugin" xml:space="preserve">
+    <value>Publish with a plugin</value>
+  </data>
+  <data name="Msg_PutTheCursorInACell" xml:space="preserve">
+    <value>Put the cursor in a cell of a table (a regular CALS table).</value>
+  </data>
+  <data name="Msg_PutTheCursorInACell2" xml:space="preserve">
+    <value>Put the cursor in a cell of a regular table.</value>
+  </data>
+  <data name="Msg_PutTheCursorInAFigure" xml:space="preserve">
+    <value>Put the cursor in a figure or table to add or remove the caption.</value>
+  </data>
+  <data name="Msg_PutTheCursorInAnElement" xml:space="preserve">
+    <value>Put the cursor in an element.</value>
+  </data>
+  <data name="Msg_PutTheCursorInAnElement2" xml:space="preserve">
+    <value>Put the cursor in an element with a tracked change.</value>
+  </data>
+  <data name="Msg_PutTheCursorInAParagraph" xml:space="preserve">
+    <value>Put the cursor in a paragraph with an image (outside a figure) to make it a figure.</value>
+  </data>
+  <data name="Msg_PutTheCursorInAParagraph2" xml:space="preserve">
+    <value>Put the cursor in a paragraph, title or cell.</value>
+  </data>
+  <data name="Msg_PutTheCursorInAParagraph3" xml:space="preserve">
+    <value>Put the cursor in a paragraph, figure, table or note directly in the topic text (not in a list).</value>
+  </data>
+  <data name="Msg_PutTheCursorInAParagraph4" xml:space="preserve">
+    <value>Put the cursor in a paragraph.</value>
+  </data>
+  <data name="Msg_PutTheCursorInATable" xml:space="preserve">
+    <value>Put the cursor in a table cell.</value>
+  </data>
+  <data name="Msg_PutTheCursorInATopic" xml:space="preserve">
+    <value>Put the cursor in a topic or section title.</value>
+  </data>
+  <data name="Msg_PutTheCursorInTheElement" xml:space="preserve">
+    <value>Put the cursor in the element to mark as changed.</value>
+  </data>
+  <data name="Msg_PutTheCursorInTheElement2" xml:space="preserve">
+    <value>Put the cursor in the element to mark as inserted.</value>
+  </data>
+  <data name="Msg_PutTheCursorInTheElement3" xml:space="preserve">
+    <value>Put the cursor in the element to mark as deleted.</value>
+  </data>
+  <data name="Msg_PutTheCursorInTheParagraph" xml:space="preserve">
+    <value>Put the cursor in the paragraph where to insert the image.</value>
+  </data>
+  <data name="Msg_PutTheCursorInTheText" xml:space="preserve">
+    <value>Put the cursor in the text where to insert the link.</value>
+  </data>
+  <data name="Msg_PutTheCursorInTheText2" xml:space="preserve">
+    <value>Put the cursor in the text or select it.</value>
+  </data>
+  <data name="Msg_PutTheCursorInTheText3" xml:space="preserve">
+    <value>Put the cursor in the text to see the allowed elements.</value>
+  </data>
+  <data name="Msg_ReadingTheVersionFrom0" xml:space="preserve">
+    <value>Reading the version from {0}…</value>
+  </data>
+  <data name="Msg_Ready" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="Msg_Redone" xml:space="preserve">
+    <value>Redone.</value>
+  </data>
+  <data name="Msg_ReferencesTo01" xml:space="preserve">
+    <value>References to {0}: {1}</value>
+  </data>
+  <data name="Msg_ReferencesToItInTheProject" xml:space="preserve">
+    <value>References to it in the project will be updated.</value>
+  </data>
+  <data name="Msg_RejectChangeTrackChanges" xml:space="preserve">
+    <value>Reject change (track changes)</value>
+  </data>
+  <data name="Msg_Remove0FromTheMap" xml:space="preserve">
+    <value>Remove “{0}” from the map?</value>
+  </data>
+  <data name="Msg_RemoveARowFromTheMap" xml:space="preserve">
+    <value>Remove a row from the map</value>
+  </data>
+  <data name="Msg_RemoveFromTheMap" xml:space="preserve">
+    <value>Remove from the map</value>
+  </data>
+  <data name="Msg_RemoveTheRowFromTheMap" xml:space="preserve">
+    <value>Remove the row from the map</value>
+  </data>
+  <data name="Msg_ReorderInTheMap" xml:space="preserve">
+    <value>Reorder in the map</value>
+  </data>
+  <data name="Msg_Replace" xml:space="preserve">
+    <value>Replace</value>
+  </data>
+  <data name="Msg_ReplaceAllOccurrencesOf0With" xml:space="preserve">
+    <value>Replace all occurrences of “{0}” with “{1}” across the whole project?
+</value>
+  </data>
+  <data name="Msg_ReplaceTheFileOfAMap" xml:space="preserve">
+    <value>Replace the file of a map row</value>
+  </data>
+  <data name="Msg_ReplaceWorksOnlyForTextSearch" xml:space="preserve">
+    <value>Replace works only for text search, not for search by element names.</value>
+  </data>
+  <data name="Msg_Result" xml:space="preserve">
+    <value>Result: </value>
+  </data>
+  <data name="Msg_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Msg_SaveChangesTo0" xml:space="preserve">
+    <value>Save changes to “{0}”?</value>
+  </data>
+  <data name="Msg_Saved0" xml:space="preserve">
+    <value>Saved: {0}</value>
+  </data>
+  <data name="Msg_SelectAMapRow" xml:space="preserve">
+    <value>Select a map row.</value>
+  </data>
+  <data name="Msg_SelectATableCellThatHas" xml:space="preserve">
+    <value>Select a table cell that has a neighbor on the right.</value>
+  </data>
+  <data name="Msg_SelectATableCellThatHas2" xml:space="preserve">
+    <value>Select a table cell that has a neighbor below.</value>
+  </data>
+  <data name="Msg_SelectATitleForExampleA" xml:space="preserve">
+    <value>Select a title — for example, a section or topic title.</value>
+  </data>
+  <data name="Msg_Selected" xml:space="preserve">
+    <value> (selected)</value>
+  </data>
+  <data name="Msg_SelectTextInAuthorMode" xml:space="preserve">
+    <value>Select text in “Author” mode.</value>
+  </data>
+  <data name="Msg_SelectTheWholeTableNotA" xml:space="preserve">
+    <value>Select the whole table (not a single cell).</value>
+  </data>
+  <data name="Msg_SizePt" xml:space="preserve">
+    <value>Size, pt</value>
+  </data>
+  <data name="Msg_TableBorders" xml:space="preserve">
+    <value>Table borders</value>
+  </data>
+  <data name="Msg_TableBordersAllLines" xml:space="preserve">
+    <value>Table borders: all lines.</value>
+  </data>
+  <data name="Msg_TableBordersHorizontalLinesOnly" xml:space="preserve">
+    <value>Table borders: horizontal lines only.</value>
+  </data>
+  <data name="Msg_TableBordersOuterFrameOnly" xml:space="preserve">
+    <value>Table borders: outer frame only.</value>
+  </data>
+  <data name="Msg_TableBordersRemoved" xml:space="preserve">
+    <value>Table borders removed.</value>
+  </data>
+  <data name="Msg_TableDeletedUndoCtrlAltZ" xml:space="preserve">
+    <value>Table deleted (undo — Ctrl+Alt+Z).</value>
+  </data>
+  <data name="Msg_TableEdgesAreSetForA" xml:space="preserve">
+    <value>Table edges are set for a whole side at once: select the whole row or column. The lines between cells were applied.</value>
+  </data>
+  <data name="Msg_TableSelectedDeleteRemovesItEntirely" xml:space="preserve">
+    <value>Table selected: Delete removes it entirely, Esc clears the selection.</value>
+  </data>
+  <data name="Msg_TextColor0" xml:space="preserve">
+    <value>Text color: {0}.</value>
+  </data>
+  <data name="Msg_TextColorCleared" xml:space="preserve">
+    <value>Text color cleared.</value>
+  </data>
+  <data name="Msg_TextFormattingIsNotAvailableHere" xml:space="preserve">
+    <value>Text formatting is not available here.</value>
+  </data>
+  <data name="Msg_TheBlockIsInTheText" xml:space="preserve">
+    <value>The block is in the text again.</value>
+  </data>
+  <data name="Msg_TheBlockIsOnASeparate" xml:space="preserve">
+    <value>The block is on a separate sheet of PDF and DOCX: {0}.</value>
+  </data>
+  <data name="Msg_TheCellIsNotMergedNothing" xml:space="preserve">
+    <value>The cell is not merged — nothing to split.</value>
+  </data>
+  <data name="Msg_TheChangedDocumentsWillBeMarked" xml:space="preserve">
+    <value>The changed documents will be marked as unsaved.</value>
+  </data>
+  <data name="Msg_TheChangeMarkWasRemoved" xml:space="preserve">
+    <value>The change mark was removed.</value>
+  </data>
+  <data name="Msg_TheColumnCannotBeDeletedIt" xml:space="preserve">
+    <value>The column cannot be deleted: it is the last one, or the column count is set by the table type.</value>
+  </data>
+  <data name="Msg_TheCopiesWereLeftInThe" xml:space="preserve">
+    <value>.
+
+The copies were left in the folder:
+{0}</value>
+  </data>
+  <data name="Msg_TheDitavalFileWasUpdated0" xml:space="preserve">
+    <value>The .ditaval file was updated: {0}.</value>
+  </data>
+  <data name="Msg_TheDocumentCannotBeParsedAs" xml:space="preserve">
+    <value>The document cannot be parsed as XML:
+
+{0}</value>
+  </data>
+  <data name="Msg_TheDOCXLayoutWasSavedIt" xml:space="preserve">
+    <value>The DOCX layout was saved — it applies at the next export to DOCX.</value>
+  </data>
+  <data name="Msg_TheElement0IsNotAllowed" xml:space="preserve">
+    <value>The element &lt;{0}&gt; is not allowed here.</value>
+  </data>
+  <data name="Msg_TheElement0IsNotIn" xml:space="preserve">
+    <value>The element &lt;{0}&gt; is not in the DITA 1.3 dictionary.</value>
+  </data>
+  <data name="Msg_TheElementHasNoIdSet" xml:space="preserve">
+    <value>The element has no id — set one on the “Attributes” panel, then rename.</value>
+  </data>
+  <data name="Msg_TheElementIsMarkedAsChanged" xml:space="preserve">
+    <value>The element is marked as changed (rev) — a bar appears in the margin when published.</value>
+  </data>
+  <data name="Msg_TheElementIsMarkedAsDeleted" xml:space="preserve">
+    <value>The element is marked as deleted (track changes) — hidden from the publication, shown struck through in the preview.</value>
+  </data>
+  <data name="Msg_TheElementIsMarkedAsInserted" xml:space="preserve">
+    <value>The element is marked as inserted (track changes).</value>
+  </data>
+  <data name="Msg_TheElementWasExtractedToConref" xml:space="preserve">
+    <value>The element was extracted to conref (id “{0}”).</value>
+  </data>
+  <data name="Msg_TheExternalDTDWasDisconnectedIts" xml:space="preserve">
+    <value>The external DTD was disconnected — its elements were removed from the project catalog.</value>
+  </data>
+  <data name="Msg_TheFile0AlreadyExistsOverwrite" xml:space="preserve">
+    <value>The file {0} already exists. Overwrite?</value>
+  </data>
+  <data name="Msg_TheFile0AlreadyExistsReplace" xml:space="preserve">
+    <value>The file {0} already exists. Replace it?</value>
+  </data>
+  <data name="Msg_TheFile0WasChangedBy" xml:space="preserve">
+    <value>The file {0} was changed by another program — reloaded from disk.</value>
+  </data>
+  <data name="Msg_TheFile0WasChangedBy2" xml:space="preserve">
+    <value>The file “{0}” was changed by another program, and the tab has unsaved changes.
+
+</value>
+  </data>
+  <data name="Msg_TheFile0WasDeleted" xml:space="preserve">
+    <value>The file {0} was deleted.</value>
+  </data>
+  <data name="Msg_TheFile0WasDeletedOr" xml:space="preserve">
+    <value>The file {0} was deleted or renamed by another program. Save the tab to write it again.</value>
+  </data>
+  <data name="Msg_TheFile0WasReloadedFrom" xml:space="preserve">
+    <value>The file {0} was reloaded from disk.</value>
+  </data>
+  <data name="Msg_TheFileHasChangedSince" xml:space="preserve">
+    <value> — the file has changed since</value>
+  </data>
+  <data name="Msg_TheFileNoLongerExists" xml:space="preserve">
+    <value> — the file no longer exists</value>
+  </data>
+  <data name="Msg_TheFileWasNotFoundIn" xml:space="preserve">
+    <value>The file was not found in the git history: there is no repository, the file is not tracked, or git is not installed.</value>
+  </data>
+  <data name="Msg_TheFileWasNotFoundIn2" xml:space="preserve">
+    <value>The file was not found in the SVN history: it is not under version control, or svn is not installed.</value>
+  </data>
+  <data name="Msg_TheFileWillBeDeletedWhen" xml:space="preserve">
+    <value>The file will be deleted when you remove the last reference to it with “Delete file…”.</value>
+  </data>
+  <data name="Msg_TheImageIsNowAFigure" xml:space="preserve">
+    <value>The image is now a figure: replace the title under it.</value>
+  </data>
+  <data name="Msg_TheLineBelowTheRowIs" xml:space="preserve">
+    <value>The line below the row is shown.</value>
+  </data>
+  <data name="Msg_TheLineBelowTheRowIs2" xml:space="preserve">
+    <value>The line below the row is removed.</value>
+  </data>
+  <data name="Msg_TheLineRightOfTheColumn" xml:space="preserve">
+    <value>The line right of the column is shown.</value>
+  </data>
+  <data name="Msg_TheLineRightOfTheColumn2" xml:space="preserve">
+    <value>The line right of the column is removed.</value>
+  </data>
+  <data name="Msg_TheMap0WasClosed" xml:space="preserve">
+    <value>The map {0} was closed.</value>
+  </data>
+  <data name="Msg_TheMapCannotBeRead0" xml:space="preserve">
+    <value>The map cannot be read: {0}</value>
+  </data>
+  <data name="Msg_TheMarkerIsNotAvailableHere" xml:space="preserve">
+    <value>The marker is not available here.</value>
+  </data>
+  <data name="Msg_ThePageBreakBeforeTheTopic" xml:space="preserve">
+    <value>The page break before the topic is removed: as set in the DOCX layout.</value>
+  </data>
+  <data name="Msg_TheParagraphIsNoLongerNumbered" xml:space="preserve">
+    <value>The paragraph is no longer numbered.</value>
+  </data>
+  <data name="Msg_TheParagraphIsNumberedWhenPublished" xml:space="preserve">
+    <value>The paragraph is numbered: when published it gets a number from the headings (for example, 2.3.1).</value>
+  </data>
+  <data name="Msg_ThePlugin0Failed1" xml:space="preserve">
+    <value>The plugin “{0}” failed: {1}</value>
+  </data>
+  <data name="Msg_ThePlugin0FailedDuringValidation" xml:space="preserve">
+    <value>The plugin "{0}" failed during validation: {1}</value>
+  </data>
+  <data name="Msg_ThePreviousSessionEndedWithoutSaving" xml:space="preserve">
+    <value>The previous session ended without saving changes. Copies of documents were found:</value>
+  </data>
+  <data name="Msg_TheProject0IsAlreadyOpen" xml:space="preserve">
+    <value>The project “{0}” is already open — it is now active.</value>
+  </data>
+  <data name="Msg_TheProject0WasClosed" xml:space="preserve">
+    <value>The project “{0}” was closed.</value>
+  </data>
+  <data name="Msg_TheRelationshipTableWasUpdated" xml:space="preserve">
+    <value>The relationship table was updated.</value>
+  </data>
+  <data name="Msg_TheRow0HasNoFile" xml:space="preserve">
+    <value>The row “{0}” has no file. To remove it from the map, choose “Remove from map”.</value>
+  </data>
+  <data name="Msg_TheRow0NowRefersTo" xml:space="preserve">
+    <value>The row “{0}” now refers to {1}.</value>
+  </data>
+  <data name="Msg_TheRow0WasRemovedFrom" xml:space="preserve">
+    <value>The row “{0}” was removed from the map; the file {1} was kept — there are {2} more references to it from maps.</value>
+  </data>
+  <data name="Msg_TheRow0WillBeRemoved" xml:space="preserve">
+    <value>The row “{0}” will be removed from the map. The file {1} stays on disk: there are {2} more references to it from maps. </value>
+  </data>
+  <data name="Msg_TheRowCannotBeDeletedThe" xml:space="preserve">
+    <value>The row cannot be deleted: the table must keep at least one row.</value>
+  </data>
+  <data name="Msg_TheSizeMustBeANumber" xml:space="preserve">
+    <value>The size must be a number from {0:0} to {1:0} pt.</value>
+  </data>
+  <data name="Msg_TheTableCanNowBreakAcross" xml:space="preserve">
+    <value>The table can now break across pages with a repeated header.</value>
+  </data>
+  <data name="Msg_TheTablePrintsAsASingle" xml:space="preserve">
+    <value>The table prints as a single block again.</value>
+  </data>
+  <data name="Msg_TheTitleIsNumberedAgainAnd" xml:space="preserve">
+    <value>The title is numbered again and appears in the table of contents.</value>
+  </data>
+  <data name="Msg_TheTopicTitleWasChangedRename" xml:space="preserve">
+    <value>The topic title was changed.
+
+Rename the file “{0}” to “{1}”? </value>
+  </data>
+  <data name="Msg_TheTopicWillNotStartOn" xml:space="preserve">
+    <value>The topic will not start on a new page, even if the DOCX layout says so.</value>
+  </data>
+  <data name="Msg_TheTopicWillStartOnA" xml:space="preserve">
+    <value>The topic will start on a new page (DOCX, PDF, single HTML).</value>
+  </data>
+  <data name="Msg_TitleWithoutNumberWhenPublishedIt" xml:space="preserve">
+    <value>Title without number: when published it is not numbered and is left out of the table of contents.</value>
+  </data>
+  <data name="Msg_TopicNotFound" xml:space="preserve">
+    <value>Topic not found</value>
+  </data>
+  <data name="Msg_TopicTitle" xml:space="preserve">
+    <value>Topic title</value>
+  </data>
+  <data name="Msg_TranslationImportedSegmentsApplied0" xml:space="preserve">
+    <value>Translation imported: segments applied: {0}</value>
+  </data>
+  <data name="Msg_Undone" xml:space="preserve">
+    <value>Undone.</value>
+  </data>
+  <data name="Msg_UnsavedDocuments0SaveBeforeExit" xml:space="preserve">
+    <value>Unsaved documents: {0}. Save before exit?</value>
+  </data>
+  <data name="Msg_Warning" xml:space="preserve">
+    <value>Warning: </value>
+  </data>
+  <data name="Msg_Warnings0" xml:space="preserve">
+    <value>, warnings: {0}</value>
+  </data>
+  <data name="Msg_Warnings02" xml:space="preserve">
+    <value>, warnings: {0}.</value>
+  </data>
+  <data name="Msg_Warnings03" xml:space="preserve">
+    <value>warnings: {0}.</value>
+  </data>
+  <data name="Msg_WhatToDoWithTheRow" xml:space="preserve">
+    <value>
+
+What to do with the row «</value>
+  </data>
+  <data name="Msg_WhereToSaveThePublication" xml:space="preserve">
+    <value>Where to save the publication</value>
+  </data>
+  <data name="Msg_WordDocument" xml:space="preserve">
+    <value>Word document</value>
+  </data>
+  <data name="Msg_WrapIn0" xml:space="preserve">
+    <value>Wrap in &lt;{0}&gt;</value>
+  </data>
+  <data name="Msg_XLIFFFiles" xml:space="preserve">
+    <value>XLIFF files</value>
+  </data>
+  <data name="Msg_YesLoadTheVersionFromDisk" xml:space="preserve">
+    <value>Yes — load the version from disk (your changes can be brought back with “Edit → Undo structural change”, Ctrl+Alt+Z).
+
+</value>
+  </data>
+  <data name="Msg_YesOpenTheDocumentsWithThe" xml:space="preserve">
+    <value>Yes — open the documents with the recovered changes (they are not saved; check and save them).</value>
+  </data>
   <data name="Ph_FontSize" xml:space="preserve">
     <value>Size</value>
+  </data>
+  <data name="Preview_CouldNotStartTheBuiltIn" xml:space="preserve">
+    <value>could not start the built-in browser: </value>
+  </data>
+  <data name="Preview_CouldNotUpdateThePreview" xml:space="preserve">
+    <value>Could not update the preview: </value>
+  </data>
+  <data name="Preview_CouldNotWriteTheTemporaryPreview" xml:space="preserve">
+    <value>Could not write the temporary preview file: </value>
+  </data>
+  <data name="Preview_DOCXApproximate" xml:space="preserve">
+    <value>DOCX (approximate)</value>
+  </data>
+  <data name="Preview_HtmlBodyStyleFontFamilySans" xml:space="preserve">
+    <value>&lt;html&gt;&lt;body style='font-family:sans-serif'&gt;&lt;p&gt;Could not build the preview:&lt;/p&gt;&lt;pre&gt;</value>
+  </data>
+  <data name="Preview_Open" xml:space="preserve">
+    <value>Open </value>
+  </data>
+  <data name="Preview_OpenInExternalApplication" xml:space="preserve">
+    <value>Open in external application</value>
+  </data>
+  <data name="Preview_PagesLive" xml:space="preserve">
+    <value>Pages (live)</value>
+  </data>
+  <data name="Preview_PDFPrintingError" xml:space="preserve">
+    <value>PDF printing error: </value>
+  </data>
+  <data name="Preview_PrintingToPDFDidNotFinish" xml:space="preserve">
+    <value>printing to PDF did not finish within a minute</value>
+  </data>
+  <data name="Preview_PrintToPDF" xml:space="preserve">
+    <value>Print to PDF…</value>
+  </data>
+  <data name="Preview_TheBuiltInBrowserCouldNot" xml:space="preserve">
+    <value>the built-in browser could not load the HTML for printing</value>
+  </data>
+  <data name="Preview_TheBuiltInBrowserCouldNot2" xml:space="preserve">
+    <value>the built-in browser could not print the PDF</value>
+  </data>
+  <data name="Preview_TheBuiltInBrowserIsDisabled" xml:space="preserve">
+    <value>the built-in browser is disabled</value>
+  </data>
+  <data name="Preview_TheBuiltInBrowserIsNot" xml:space="preserve">
+    <value>the built-in browser is not ready to print</value>
+  </data>
+  <data name="Preview_TheBuiltInBrowserIsUnavailable" xml:space="preserve">
+    <value>The built-in browser is unavailable (</value>
+  </data>
+  <data name="Preview_ThePreviewIsBuiltItCan" xml:space="preserve">
+    <value>). The preview is built — it can be opened in an external application.</value>
+  </data>
+  <data name="Preview_UnknownReason" xml:space="preserve">
+    <value>unknown reason</value>
   </data>
   <data name="Tab_Attributes" xml:space="preserve">
     <value>Attributes</value>
@@ -777,5 +2775,84 @@
   </data>
   <data name="Tip_WrapIn" xml:space="preserve">
     <value>Nest the selected blocks (or the block under the cursor) in another element: note, section, div… The list shows only valid wrappers</value>
+  </data>
+  <data name="Win_After0" xml:space="preserve">
+    <value>After “{0}”</value>
+  </data>
+  <data name="Win_Alignment" xml:space="preserve">
+    <value>Alignment</value>
+  </data>
+  <data name="Win_AllElements" xml:space="preserve">
+    <value>All elements…</value>
+  </data>
+  <data name="Win_Before0" xml:space="preserve">
+    <value>Before “{0}”</value>
+  </data>
+  <data name="Win_BlockAfterTheCurrentOne" xml:space="preserve">
+    <value>Block after the current one</value>
+  </data>
+  <data name="Win_CellAttributes" xml:space="preserve">
+    <value>Cell attributes…</value>
+  </data>
+  <data name="Win_Empty" xml:space="preserve">
+    <value>(empty)</value>
+  </data>
+  <data name="Win_FontSize" xml:space="preserve">
+    <value>Font size</value>
+  </data>
+  <data name="Win_Formatting" xml:space="preserve">
+    <value>Formatting</value>
+  </data>
+  <data name="Win_InsertElement" xml:space="preserve">
+    <value>Insert element</value>
+  </data>
+  <data name="Win_Inside0" xml:space="preserve">
+    <value>Inside “{0}”</value>
+  </data>
+  <data name="Win_IntoTheLineOfText" xml:space="preserve">
+    <value>Into the line of text</value>
+  </data>
+  <data name="Win_Marker" xml:space="preserve">
+    <value>Marker</value>
+  </data>
+  <data name="Win_MergeWithTheCellBelow" xml:space="preserve">
+    <value>Merge with the cell below</value>
+  </data>
+  <data name="Win_MergeWithTheCellOnThe" xml:space="preserve">
+    <value>Merge with the cell on the right</value>
+  </data>
+  <data name="Win_MoreColors" xml:space="preserve">
+    <value>More colors…</value>
+  </data>
+  <data name="Win_NoColor" xml:space="preserve">
+    <value>No color</value>
+  </data>
+  <data name="Win_NoColor2" xml:space="preserve">
+    <value>No color</value>
+  </data>
+  <data name="Win_OpenADITAProjectFolderFile" xml:space="preserve">
+    <value>Open a DITA project folder: File → Open project folder.</value>
+  </data>
+  <data name="Win_Pt" xml:space="preserve">
+    <value> pt</value>
+  </data>
+  <data name="Win_SelectBlocksDragTheMouseFrom" xml:space="preserve">
+    <value>Select blocks (drag the mouse from block to block) or put the cursor in a block — there is nothing to wrap, or there are no valid wrappers.</value>
+  </data>
+  <data name="Win_TableProperties" xml:space="preserve">
+    <value>Table properties…</value>
+  </data>
+  <data name="Win_TextColor" xml:space="preserve">
+    <value>Text color</value>
+  </data>
+  <data name="Win_TheProjectHasNoMaps" xml:space="preserve">
+    <value>The project has no maps</value>
+  </data>
+  <data name="Win_UnexpectedError01" xml:space="preserve">
+    <value>Unexpected error:
+
+{0}
+
+{1}</value>
   </data>
 </root>

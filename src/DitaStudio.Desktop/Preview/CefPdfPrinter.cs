@@ -7,6 +7,7 @@ using DitaStudio.Presentation.Services;
 using Xilium.CefGlue;
 using Xilium.CefGlue.Avalonia;
 using Xilium.CefGlue.Common.Events;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Preview;
 
@@ -72,12 +73,12 @@ public sealed class CefPdfPrinter : IPdfPrinter
 
             if (await Task.WhenAny(loaded.Task, Task.Delay(LoadTimeout)) != loaded.Task || !loaded.Task.Result)
             {
-                return "встроенный браузер не смог загрузить HTML для печати";
+                return Loc.T("Preview_TheBuiltInBrowserCouldNot");
             }
 
             if (browser.Host is not { } host)
             {
-                return "встроенный браузер не готов к печати";
+                return Loc.T("Preview_TheBuiltInBrowserIsNot");
             }
 
             TryDelete(pdfPath);
@@ -85,10 +86,10 @@ public sealed class CefPdfPrinter : IPdfPrinter
             host.PrintToPdf(pdfPath, CreateSettings(decoration), callback);
             if (await Task.WhenAny(callback.Done, Task.Delay(PrintTimeout)) != callback.Done)
             {
-                return "печать в PDF не закончилась за минуту";
+                return Loc.T("Preview_PrintingToPDFDidNotFinish");
             }
 
-            return callback.Done.Result && File.Exists(pdfPath) ? null : "встроенный браузер не смог напечатать PDF";
+            return callback.Done.Result && File.Exists(pdfPath) ? null : Loc.T("Preview_TheBuiltInBrowserCouldNot2");
         }
         catch (Exception ex)
         {

@@ -3,6 +3,7 @@ using DitaStudio.Core.IO;
 using DitaStudio.Core.Project;
 using DitaStudio.Presentation.Services;
 using DitaStudio.Presentation.ViewModels;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation;
 
@@ -131,7 +132,7 @@ public sealed class AutoRecovery
                 if (!_reportedFailure)
                 {
                     _reportedFailure = true;
-                    _shell.StatusText = $"Не удалось записать копию для восстановления ({Path.GetFileName(path)}): {ex.Message}";
+                    _shell.StatusText = Loc.T("Msg_CouldNotWriteTheRecoveryCopy", Path.GetFileName(path), ex.Message);
                 }
             }
         }
@@ -214,24 +215,24 @@ public sealed class AutoRecovery
 
         var root = project.RootPath;
         var text = new StringBuilder();
-        text.AppendLine("Прошлый сеанс завершился, не сохранив правки. Найдены копии документов:");
+        text.AppendLine(Loc.T("Msg_ThePreviousSessionEndedWithoutSaving"));
         text.AppendLine();
         foreach (var entry in entries)
         {
             var name = Path.GetRelativePath(root, entry.OriginalPath);
             var when = entry.SavedAtUtc.ToLocalTime().ToString("g");
             var note = !File.Exists(entry.OriginalPath)
-                ? " — файла больше нет"
-                : entry.OriginalChangedSince ? " — файл с тех пор менялся" : string.Empty;
+                ? Loc.T("Msg_TheFileNoLongerExists")
+                : entry.OriginalChangedSince ? Loc.T("Msg_TheFileHasChangedSince") : string.Empty;
             text.AppendLine($"  • {name} ({when}){note}");
         }
 
         text.AppendLine();
-        text.AppendLine("Да — открыть документы с восстановленными правками (они не сохранены, проверьте и сохраните).");
-        text.AppendLine("Нет — удалить копии.");
-        text.Append("Отмена — решить позже (копии останутся до следующего открытия проекта).");
+        text.AppendLine(Loc.T("Msg_YesOpenTheDocumentsWithThe"));
+        text.AppendLine(Loc.T("Msg_NoDeleteTheCopies"));
+        text.Append(Loc.T("Msg_CancelDecideLaterTheCopiesStay"));
 
-        var answer = await _ui.Dialogs.AskAsync("Восстановление после сбоя", text.ToString(),
+        var answer = await _ui.Dialogs.AskAsync(Loc.T("Doc_RecoveryAfterACrash"), text.ToString(),
             AskButtons.YesNoCancel, AskIcon.Warning);
 
         if (answer == AskResult.No)
@@ -262,13 +263,13 @@ public sealed class AutoRecovery
         }
 
         _docs.RefreshAllTabTitles();
-        _shell.StatusText = $"Восстановлено документов: {restored}. Сохраните их, чтобы записать правки в файлы.";
+        _shell.StatusText = Loc.T("Msg_DocumentsRecovered0SaveThemTo", restored);
 
         if (skipped.Count > 0)
         {
-            await _ui.Dialogs.MessageAsync("Восстановление после сбоя",
-                "Не удалось открыть (файла нет или он не разбирается): " + string.Join(", ", skipped) +
-                $".\n\nКопии оставлены в папке:\n{store.Directory}");
+            await _ui.Dialogs.MessageAsync(Loc.T("Doc_RecoveryAfterACrash"),
+                Loc.T("Msg_CouldNotOpenTheFileIs") + string.Join(", ", skipped) +
+                Loc.T("Msg_TheCopiesWereLeftInThe", store.Directory));
         }
     }
 }

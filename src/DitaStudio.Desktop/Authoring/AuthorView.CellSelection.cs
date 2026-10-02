@@ -6,6 +6,7 @@ using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Presentation.Authoring;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Authoring;
 
@@ -203,46 +204,46 @@ public sealed partial class AuthorView
             }
             else
             {
-                MenuStatus("Так сделать нельзя: в таблице должна остаться хотя бы одна строка и один столбец.");
+                MenuStatus(Loc.T("Author_ThisIsNotPossibleTheTable"));
             }
         }
 
         var align = new MenuItem
         {
-            Header = "Выровнять",
+            Header = Loc.T("Author_Align"),
             ItemsSource = TextFormatting.Alignments.Select(a => (Control)Item(a.Label, () =>
             {
                 Surface.SetCurrentBlockFormat(TextFormatting.AlignPrefix, a.Token);
-                MenuStatus("Выравнивание ячеек: " + a.Label.ToLowerInvariant() + ".");
+                MenuStatus(Loc.T("Author_CellAlignment") + a.Label.ToLowerInvariant() + ".");
             })).ToList()
         };
 
         var items = new List<Control>
         {
-            Item("Вставить строку выше", () => Edit(TableOperation.InsertRowAbove, rows > 1 ? $"Строк вставлено выше: {rows}." : "Строка вставлена выше.")),
-            Item("Вставить строку ниже", () => Edit(TableOperation.InsertRowBelow, rows > 1 ? $"Строк вставлено ниже: {rows}." : "Строка вставлена ниже.")),
-            Item("Вставить столбец слева", () => Edit(TableOperation.InsertColumnLeft, columns > 1 ? $"Столбцов вставлено слева: {columns}." : "Столбец вставлен слева.")),
-            Item("Вставить столбец справа", () => Edit(TableOperation.InsertColumnRight, columns > 1 ? $"Столбцов вставлено справа: {columns}." : "Столбец вставлен справа.")),
+            Item(Loc.T("Menu_InsertRowAbove"), () => Edit(TableOperation.InsertRowAbove, rows > 1 ? Loc.T("Author_RowsInsertedAbove0", rows) : Loc.T("Author_RowInsertedAbove"))),
+            Item(Loc.T("Menu_InsertRowBelow"), () => Edit(TableOperation.InsertRowBelow, rows > 1 ? Loc.T("Author_RowsInsertedBelow0", rows) : Loc.T("Author_RowInsertedBelow"))),
+            Item(Loc.T("Menu_InsertColumnLeft"), () => Edit(TableOperation.InsertColumnLeft, columns > 1 ? Loc.T("Author_ColumnsInsertedToTheLeft0", columns) : Loc.T("Author_ColumnInsertedToTheLeft"))),
+            Item(Loc.T("Menu_InsertColumnRight"), () => Edit(TableOperation.InsertColumnRight, columns > 1 ? Loc.T("Author_ColumnsInsertedToTheRight0", columns) : Loc.T("Author_ColumnInsertedToTheRight"))),
             new Separator(),
-            Item(rows > 1 ? $"Удалить строки: {rows}" : "Удалить строку", () => Edit(TableOperation.DeleteRow, "Строки удалены.")),
-            Item(columns > 1 ? $"Удалить столбцы: {columns}" : "Удалить столбец", () => Edit(TableOperation.DeleteColumn, "Столбцы удалены.")),
+            Item(rows > 1 ? Loc.T("Author_DeleteRows0", rows) : Loc.T("Menu_DeleteRow"), () => Edit(TableOperation.DeleteRow, Loc.T("Author_RowsDeleted"))),
+            Item(columns > 1 ? Loc.T("Author_DeleteColumns0", columns) : Loc.T("Menu_DeleteColumn"), () => Edit(TableOperation.DeleteColumn, Loc.T("Author_ColumnsDeleted"))),
             new Separator(),
-            Item("Объединить ячейки", () =>
+            Item(Loc.T("Author_MergeCells"), () =>
             {
-                MenuStatus(Surface.MergeCurrentCellRight() ? "Ячейки объединены." : "Эти ячейки объединить нельзя: строка таблицы должна сохранить хотя бы одну ячейку, шапка и тело не объединяются.");
+                MenuStatus(Surface.MergeCurrentCellRight() ? Loc.T("Author_CellsMerged") : Loc.T("Author_TheseCellsCannotBeMergedA"));
             }, canMerge),
-            Item("Разделить ячейку", () => Edit(TableOperation.SplitCell, "Ячейка разделена."), single),
-            Item("Очистить содержимое", () =>
+            Item(Loc.T("Menu_SplitCell"), () => Edit(TableOperation.SplitCell, Loc.T("Author_CellSplit")), single),
+            Item(Loc.T("Author_ClearContents"), () =>
             {
                 Surface.ClearSelectedCells();
-                MenuStatus("Содержимое ячеек удалено.");
+                MenuStatus(Loc.T("Author_CellContentsCleared"));
             }),
             align,
-            new MenuItem { Header = "Границы", ItemsSource = BorderMenuItems((edges, label) => ApplyBorders(edges, label)) },
+            new MenuItem { Header = Loc.T("Menu_Borders"), ItemsSource = BorderMenuItems((edges, label) => ApplyBorders(edges, label)) },
             new Separator(),
-            Item("Выделить строку", () => Surface.SelectCurrentRow()),
-            Item("Выделить столбец", () => Surface.SelectCurrentColumn()),
-            Item("Снять выделение", Deselect)
+            Item(Loc.T("Menu_SelectRow"), () => Surface.SelectCurrentRow()),
+            Item(Loc.T("Menu_SelectColumn"), () => Surface.SelectCurrentColumn()),
+            Item(Loc.T("Author_ClearSelection"), Deselect)
         };
         return new ContextMenu { ItemsSource = items };
     }
@@ -252,13 +253,13 @@ public sealed partial class AuthorView
         switch (Surface.SetCellBorders(edges))
         {
             case null:
-                MenuStatus("Границы: курсор должен быть в ячейке обычной таблицы.");
+                MenuStatus(Loc.T("Author_BordersTheCursorMustBeIn"));
                 break;
             case false:
-                MenuStatus($"{label}: край таблицы задаётся для всей его длины сразу — выделите всю строку или весь столбец; остальные линии применены.");
+                MenuStatus(Loc.T("Author_0ATableEdgeIsSet", label));
                 break;
             default:
-                MenuStatus($"{label} — выполнено.");
+                MenuStatus(Loc.T("Author_0Done", label));
                 break;
         }
     }
@@ -269,18 +270,18 @@ public sealed partial class AuthorView
         MenuItem Edge(string label, BorderEdges edges) => Item(label, () => apply(edges, label));
         return new List<Control>
         {
-            Edge("Нижняя граница", BorderEdges.Bottom),
-            Edge("Верхняя граница", BorderEdges.Top),
-            Edge("Левая граница", BorderEdges.Left),
-            Edge("Правая граница", BorderEdges.Right),
+            Edge(Loc.T("Author_BottomBorder"), BorderEdges.Bottom),
+            Edge(Loc.T("Author_TopBorder"), BorderEdges.Top),
+            Edge(Loc.T("Author_LeftBorder"), BorderEdges.Left),
+            Edge(Loc.T("Author_RightBorder"), BorderEdges.Right),
             new Separator(),
-            Edge("Нет границы", BorderEdges.None),
-            Edge("Все границы", BorderEdges.All),
-            Edge("Внешние границы", BorderEdges.Outer),
-            Edge("Внутренние границы", BorderEdges.Inner),
+            Edge(Loc.T("Author_NoBorder"), BorderEdges.None),
+            Edge(Loc.T("Menu_AllBorders"), BorderEdges.All),
+            Edge(Loc.T("Author_OutsideBorders"), BorderEdges.Outer),
+            Edge(Loc.T("Author_InsideBorders"), BorderEdges.Inner),
             new Separator(),
-            Edge("Внутренняя горизонтальная граница", BorderEdges.InnerHorizontal),
-            Edge("Внутренняя вертикальная граница", BorderEdges.InnerVertical)
+            Edge(Loc.T("Author_InsideHorizontalBorder"), BorderEdges.InnerHorizontal),
+            Edge(Loc.T("Author_InsideVerticalBorder"), BorderEdges.InnerVertical)
         };
     }
 }

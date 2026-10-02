@@ -2,6 +2,7 @@ using DitaStudio.Core.IO;
 using DitaStudio.Core.Project;
 using DitaStudio.Presentation.Services;
 using DitaStudio.Presentation.ViewModels;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation;
 
@@ -177,26 +178,26 @@ public sealed class ExternalChangeWatcher : IDisposable
         if (!File.Exists(path))
         {
             pane.MarkMissingOnDisk();
-            _shell.StatusText = $"Файл {name} удалён или переименован другой программой. Сохраните вкладку, чтобы записать его заново.";
+            _shell.StatusText = Loc.T("Msg_TheFile0WasDeletedOr", name);
             return true;
         }
 
         if (!pane.IsDirty)
         {
-            return TryReload(pane, name, $"Файл {name} изменён другой программой — перечитан с диска.");
+            return TryReload(pane, name, Loc.T("Msg_TheFile0WasChangedBy", name));
         }
 
         var answer = await _ui.Dialogs.AskAsync(
-            "Файл изменён извне",
-            $"Файл «{name}» изменён другой программой, а во вкладке есть несохранённые правки.\n\n" +
-            "Да — загрузить версию с диска (ваши правки можно вернуть через «Правка → Отменить структурное изменение», Ctrl+Alt+Z).\n" +
-            "Нет — оставить свою версию (при сохранении она заменит файл на диске).",
+            Loc.T("Msg_FileChangedExternally"),
+            Loc.T("Msg_TheFile0WasChangedBy2", name) +
+            Loc.T("Msg_YesLoadTheVersionFromDisk") +
+            Loc.T("Msg_NoKeepYourVersionWhenSaved"),
             AskButtons.YesNo,
             AskIcon.Warning);
 
         if (answer == AskResult.Yes)
         {
-            if (TryReload(pane, name, $"Файл {name} перечитан с диска."))
+            if (TryReload(pane, name, Loc.T("Msg_TheFile0WasReloadedFrom", name)))
             {
                 return true;
             }
@@ -208,7 +209,7 @@ public sealed class ExternalChangeWatcher : IDisposable
 
         // Свою версию оставили — считаем текущее состояние диска «увиденным».
         pane.Document.DiskStamp = FileStamp.Of(path);
-        _shell.StatusText = $"Оставлена своя версия {name}; при сохранении она заменит файл на диске.";
+        _shell.StatusText = Loc.T("Msg_KeptYourVersionOf0When", name);
         return false;
     }
 
@@ -224,7 +225,7 @@ public sealed class ExternalChangeWatcher : IDisposable
         {
             // Чаще всего файл ещё дописывается или временно невалиден (конфликт слияния).
             // Отпечаток не обновляем — следующая запись файла вызовет новую попытку.
-            _shell.StatusText = $"Не удалось перечитать {name}: {ex.Message}";
+            _shell.StatusText = Loc.T("Msg_CouldNotReload01", name, ex.Message);
             return false;
         }
     }

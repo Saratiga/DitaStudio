@@ -10,6 +10,7 @@ using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Authoring;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Authoring;
 
@@ -24,14 +25,14 @@ public sealed partial class AuthorView
     {
         var mark = new TextBlock
         {
-            Text = "▣ Отдельный лист · " + PagePlacement.LabelOf(place)?.ToLowerInvariant(),
+            Text = Loc.T("Author_SeparateSheet") + PagePlacement.LabelOf(place)?.ToLowerInvariant(),
             FontSize = 11,
             Margin = new Thickness(4, 4, 0, 0),
             Tag = "placement-mark"
         };
         Themed(mark, TextBlock.ForegroundProperty, "Accent");
-        ToolTip.SetTip(mark, "В PDF и DOCX блок стоит на своей странице в выбранной области листа; на сайте — в тексте. " +
-                             "Изменить: контекстное меню → Оформление → Положение на листе.");
+        ToolTip.SetTip(mark, Loc.T("Author_InPDFAndDOCXTheBlock") +
+                             Loc.T("Author_ToChangeContextMenuFormattingPosition"));
         return new StackPanel { Tag = ViewWrapperTag, Children = { mark, view } };
     }
 
@@ -107,8 +108,8 @@ public sealed partial class AuthorView
     {
         var note = new TextBlock { Text = text, FontSize = 10.5, Margin = new Thickness(4, 2, 0, 0), Tag = "attribute-note", TextWrapping = TextWrapping.Wrap };
         Themed(note, TextBlock.ForegroundProperty, "EditorTag");
-        ToolTip.SetTip(note, "Атрибуты элемента: при условной сборке (product, audience…) он попадает в публикацию только для выбранных значений. " +
-                             "Правка — панель «Атрибуты». Показ пометок: «Структура → Показывать пометки атрибутов».");
+        ToolTip.SetTip(note, Loc.T("Author_ElementAttributesInAConditionalBuild") +
+                             Loc.T("Author_EditOnTheAttributesPanelTo"));
         return new StackPanel { Tag = ViewWrapperTag, Children = { note, view } };
     }
 }

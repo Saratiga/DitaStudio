@@ -1,6 +1,7 @@
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Publishing;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.Authoring;
 
@@ -52,7 +53,7 @@ public abstract partial class AuthorSurfaceBase
         FlushPendingEdits();
         BeforeStructuralEdit(TableCommands.Describe(operation) + (range.Rows > 1 && operation is TableOperation.InsertRowAbove or TableOperation.InsertRowBelow or TableOperation.DeleteRow ||
                                                                   range.Columns > 1 && operation is TableOperation.InsertColumnLeft or TableOperation.InsertColumnRight or TableOperation.DeleteColumn
-            ? " (выделенные)"
+            ? Loc.T("Msg_Selected")
             : string.Empty));
         var count = operation switch
         {
@@ -93,7 +94,7 @@ public abstract partial class AuthorSurfaceBase
         }
 
         FlushPendingEdits();
-        BeforeStructuralEdit("Объединение выделенных ячеек");
+        BeforeStructuralEdit(Loc.T("Msg_MergeSelectedCells"));
         if (TableRanges.Merge(grid.Tgroup, range) is not { } merged)
         {
             return false;
@@ -115,7 +116,7 @@ public abstract partial class AuthorSurfaceBase
 
         var cells = grid.CellsIn(grid.Expand(selection.Range)).Select(c => c.Entry).ToList();
         FlushPendingEdits();
-        BeforeStructuralEdit("Очистка ячеек");
+        BeforeStructuralEdit(Loc.T("Msg_ClearCells"));
         TableRanges.Clear(cells);
         Changed(FirstEditable(cells[0]), selection.Table.Parent, selection.Table);
         ReselectCells(selection.Table, selection.Range);
@@ -137,7 +138,7 @@ public abstract partial class AuthorSurfaceBase
         var (table, _, _, range) = target;
         var show = edges == BorderEdges.None || !CalsBorders.AreVisible(table, range, edges);
         FlushPendingEdits();
-        BeforeStructuralEdit(edges == BorderEdges.All || edges == BorderEdges.None ? "Границы ячеек" : "Границы выделенных ячеек");
+        BeforeStructuralEdit(edges == BorderEdges.All || edges == BorderEdges.None ? Loc.T("Msg_CellBorders") : Loc.T("Msg_BordersOfSelectedCells"));
         var complete = edges == BorderEdges.None
             ? CalsBorders.SetEdges(table, range, BorderEdges.All, visible: false)
             : CalsBorders.SetEdges(table, range, edges, show);

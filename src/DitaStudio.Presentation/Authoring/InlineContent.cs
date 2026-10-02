@@ -2,6 +2,7 @@ using System.Text;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.Authoring;
 
@@ -740,7 +741,7 @@ public sealed class InlineContent
     {
         if (node.Kind == NodeKind.Comment)
         {
-            return "комментарий";
+            return Loc.T("Msg_Comment");
         }
 
         switch (node.Name)
@@ -759,7 +760,7 @@ public sealed class InlineContent
             }
 
             case "fn":
-                return $"сноска {FootnoteNumber(node)}";
+                return Loc.T("Msg_Footnote0", FootnoteNumber(node));
 
             case "indexterm":
             {

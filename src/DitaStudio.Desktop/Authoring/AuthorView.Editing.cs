@@ -5,6 +5,7 @@ using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Authoring;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Authoring;
 
@@ -79,10 +80,10 @@ public sealed partial class AuthorView
         var items = new List<ElementSuggestion>();
         var anchors = new Dictionary<ElementSuggestion, DitaNode>();
         var defaultTitle = node.Name == "cmd" && node.Parent is { Name: "step" or "substep" }
-            ? "Следующий шаг"
-            : node.Name == "entry" ? "Новый абзац в ячейке" : Describe(node.Name);
-        items.Add(new ElementSuggestion(null, defaultTitle + " — как обычно",
-            "То, что Enter делал без подсказки: следующий блок того же вида. Двойной Enter — сразу он."));
+            ? Loc.T("Author_NextStep")
+            : node.Name == "entry" ? Loc.T("Author_NewParagraphInTheCell") : Describe(node.Name);
+        items.Add(new ElementSuggestion(null, defaultTitle + Loc.T("Author_AsUsual"),
+            Loc.T("Author_WhatEnterDidWithoutTheHint")));
 
         // В ячейке таблицы (текст прямо в entry) блоки вставляются внутрь ячейки — как в любом блоке вне таблицы.
         var insideCell = new Dictionary<ElementSuggestion, DitaNode>();
@@ -93,8 +94,8 @@ public sealed partial class AuthorView
                          .DistinctBy(d => d.Name)
                          .OrderBy(d => string.IsNullOrEmpty(d.Description) ? d.Name : d.Description, StringComparer.CurrentCulture))
             {
-                var item = new ElementSuggestion(def.Name, $"{Describe(def.Name)}  <{def.Name}> — в ячейке",
-                    $"<{def.Name}>\n\n{def.Description}\n\nСодержимое: {def.ModelText}");
+                var item = new ElementSuggestion(def.Name, Loc.T("Author_01InTheCell", Describe(def.Name), def.Name),
+                    Loc.T("Author_01Content2", def.Name, def.Description, def.ModelText));
                 items.Add(item);
                 insideCell[item] = node;
             }
@@ -103,7 +104,7 @@ public sealed partial class AuthorView
         var anchor = node;
         for (var level = 0; level < 6 && anchor.Parent is { } parent; level++)
         {
-            var where = level == 0 ? string.Empty : $" — после <{anchor.Name}>";
+            var where = level == 0 ? string.Empty : Loc.T("Author_After0", anchor.Name);
             // Строки, ячейки и секции таблицы не предлагаются: «соседняя ячейка» — не то, что ждут от Enter;
             // выйти из таблицы можно выше по цепочке (после самой таблицы) или по Ctrl+Enter.
             foreach (var def in TablePartParents.Contains(parent.Name)
@@ -114,7 +115,7 @@ public sealed partial class AuthorView
                              .OrderBy(d => string.IsNullOrEmpty(d.Description) ? d.Name : d.Description, StringComparer.CurrentCulture))
             {
                 var item = new ElementSuggestion(def.Name, $"{Describe(def.Name)}  <{def.Name}>{where}",
-                    $"<{def.Name}>\n\n{def.Description}\n\nСодержимое: {def.ModelText}");
+                    Loc.T("Author_01Content2", def.Name, def.Description, def.ModelText));
                 items.Add(item);
                 anchors[item] = anchor;
             }
@@ -247,7 +248,7 @@ public sealed partial class AuthorView
                          .OrderBy(d => string.IsNullOrEmpty(d.Description) ? d.Name : d.Description, StringComparer.CurrentCulture))
             {
                 var item = new ElementSuggestion(def.Name, $"{Describe(def.Name)}  <{def.Name}> — {where}",
-                    $"<{def.Name}>\n\n{def.Description}\n\nСодержимое: {def.ModelText}");
+                    Loc.T("Author_01Content2", def.Name, def.Description, def.ModelText));
                 items.Add(item);
                 slots[item] = new InsertSlot(parent, index, inside);
             }
@@ -255,7 +256,7 @@ public sealed partial class AuthorView
 
         if (emptyContainer is not null)
         {
-            Offer(emptyContainer, 0, $"внутрь <{emptyContainer.Name}>", inside: true);
+            Offer(emptyContainer, 0, Loc.T("Author_Inside0", emptyContainer.Name), inside: true);
         }
 
         var level = anchor;
@@ -263,7 +264,7 @@ public sealed partial class AuthorView
         {
             if (!TablePartParents.Contains(parent.Name))
             {
-                Offer(parent, EditCommands.ElementIndexOf(parent, level) + 1, depth == 0 ? "после этого блока" : $"после <{level.Name}>", inside: false);
+                Offer(parent, EditCommands.ElementIndexOf(parent, level) + 1, depth == 0 ? Loc.T("Author_AfterThisBlock") : Loc.T("Author_After02", level.Name), inside: false);
             }
 
             if (catalog.Get(parent.Name)?.IsTopicType == true)
@@ -300,7 +301,7 @@ public sealed partial class AuthorView
 
     private void InsertAtSlot(InsertSlot slot, string element)
     {
-        BeforeStructuralEdit?.Invoke(this, $"Вставка <{element}>");
+        BeforeStructuralEdit?.Invoke(this, Loc.T("Author_Insert0", element));
         if (EditCommands.InsertInto(slot.Parent, element, slot.Index) is not { } created)
         {
             return;
@@ -369,7 +370,7 @@ public sealed partial class AuthorView
     /// <summary>Новый блок после <paramref name="anchor"/>, курсор — в его первое текстовое место.</summary>
     private void InsertAfterBlock(DitaNode anchor, string element)
     {
-        BeforeStructuralEdit?.Invoke(this, $"Вставка <{element}>");
+        BeforeStructuralEdit?.Invoke(this, Loc.T("Author_Insert0", element));
         if (EditCommands.InsertAfter(anchor, element) is not { } created)
         {
             return;
@@ -383,7 +384,7 @@ public sealed partial class AuthorView
     /// <summary>Очищает ячейку таблицы (Delete у выделенной ячейки): текст и блоки уходят, сама ячейка остаётся.</summary>
     private void ClearCell(DitaNode cell)
     {
-        BeforeStructuralEdit?.Invoke(this, "Очистка ячейки");
+        BeforeStructuralEdit?.Invoke(this, Loc.T("Author_ClearCell"));
         foreach (var child in cell.Children.ToList())
         {
             child.RemoveSelf();
@@ -396,7 +397,7 @@ public sealed partial class AuthorView
     /// <summary>Блок внутрь ячейки таблицы — после её текста.</summary>
     private void InsertIntoCell(DitaNode cell, string element)
     {
-        BeforeStructuralEdit?.Invoke(this, $"Вставка <{element}> в ячейку");
+        BeforeStructuralEdit?.Invoke(this, Loc.T("Author_Insert0InCell", element));
         if (EditCommands.Append(cell, element) is not { } created)
         {
             return;
@@ -418,7 +419,7 @@ public sealed partial class AuthorView
             !DitaCatalog.Default.CanInsert(cell, "p", 0))
         {
             // В ячейке уже есть блоки (абзацы, списки) — новый абзац встаёт после них.
-            BeforeStructuralEdit?.Invoke(this, "Новый абзац в ячейке");
+            BeforeStructuralEdit?.Invoke(this, Loc.T("Author_NewParagraphInTheCell"));
             if (EditCommands.Append(cell, "p") is not { } appended)
             {
                 return true;
@@ -429,7 +430,7 @@ public sealed partial class AuthorView
             return true;
         }
 
-        BeforeStructuralEdit?.Invoke(this, "Новый абзац в ячейке");
+        BeforeStructuralEdit?.Invoke(this, Loc.T("Author_NewParagraphInTheCell"));
         var tail = DitaNode.Element("p");
         if (!editor.Content.SplitInto(caretOffset, tail))
         {
@@ -466,7 +467,7 @@ public sealed partial class AuthorView
         // В шаге Enter создаёт следующий шаг, а не второй cmd.
         if (node.Name == "cmd" && node.Parent is { Name: "step" or "substep" } step)
         {
-            BeforeStructuralEdit?.Invoke(this, "Новый шаг");
+            BeforeStructuralEdit?.Invoke(this, Loc.T("Author_NewStep"));
             if (EditCommands.InsertAfter(step, step.Name) is not { } createdStep)
             {
                 return false;
@@ -482,7 +483,7 @@ public sealed partial class AuthorView
             return false;
         }
 
-        BeforeStructuralEdit?.Invoke(this, "Разделение блока");
+        BeforeStructuralEdit?.Invoke(this, Loc.T("Author_SplitBlock"));
         if (BlockOperations.SplitBlock(editor.Content, caretOffset) is not { } created)
         {
             return false;
@@ -514,11 +515,11 @@ public sealed partial class AuthorView
                 return false;
             }
 
-            Edited("Удаление пустого блока", node.Parent!, new[] { node }, () => EditCommands.Delete(node) ? previous : node, focus => ReferenceEquals(focus, previous) ? offset : 0);
+            Edited(Loc.T("Author_DeleteEmptyBlock"), node.Parent!, new[] { node }, () => EditCommands.Delete(node) ? previous : node, focus => ReferenceEquals(focus, previous) ? offset : 0);
             return true;
         }
 
-        Edited("Объединение блоков", node.Parent!, new[] { previous, node }, () => EditCommands.MergeWithPrevious(node), _ => offset);
+        Edited(Loc.T("Author_MergeBlocks"), node.Parent!, new[] { previous, node }, () => EditCommands.MergeWithPrevious(node), _ => offset);
         return true;
     }
 
@@ -531,7 +532,7 @@ public sealed partial class AuthorView
         }
 
         var offset = InlineContent.FromNode(node).Length;
-        Edited("Объединение блоков", next.Parent!, new[] { node, next }, () => EditCommands.MergeWithPrevious(next), _ => offset);
+        Edited(Loc.T("Author_MergeBlocks"), next.Parent!, new[] { node, next }, () => EditCommands.MergeWithPrevious(next), _ => offset);
         return true;
     }
 
@@ -544,7 +545,7 @@ public sealed partial class AuthorView
 
         // Затрагивается список пункта (Tab) или внешний список (Shift+Tab).
         var changed = outdent ? item.Parent?.Parent?.Parent ?? item : item.Parent!;
-        BeforeStructuralEdit?.Invoke(this, outdent ? "Уменьшение уровня" : "Увеличение уровня");
+        BeforeStructuralEdit?.Invoke(this, outdent ? Loc.T("Author_DecreaseLevel") : Loc.T("Author_IncreaseLevel"));
         if (!(outdent ? BlockOperations.OutdentItem(item) : BlockOperations.IndentItem(item)))
         {
             return false;

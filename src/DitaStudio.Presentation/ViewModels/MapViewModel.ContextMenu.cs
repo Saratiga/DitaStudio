@@ -7,6 +7,7 @@ using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -38,7 +39,7 @@ public partial class MapViewModel
 
         _clipboard = (node.CloneDeep(), map.FullPath);
         OnPropertyChanged(nameof(CanPaste));
-        _shell.StatusText = $"Скопировано: {SelectedNode.Title}";
+        _shell.StatusText = Loc.T("Msg_Copied0", SelectedNode.Title);
     }
 
     [RelayCommand(CanExecute = nameof(HasStructureSelection))]
@@ -47,7 +48,7 @@ public partial class MapViewModel
         Copy();
         if (_clipboard is not null)
         {
-            StructureOperation(EditCommands.Delete, "Вырезание из карты");
+            StructureOperation(EditCommands.Delete, Loc.T("Msg_CutFromTheMap"));
         }
     }
 
@@ -74,7 +75,7 @@ public partial class MapViewModel
             return;
         }
 
-        pane.PushUndo("Вставка в карту");
+        pane.PushUndo(Loc.T("Msg_PasteIntoTheMap"));
         var copy = clip.Node.CloneDeep();
         RebaseHrefs(copy, clip.MapPath, ownerMap);
         InsertAtSelection(pane, copy, place);

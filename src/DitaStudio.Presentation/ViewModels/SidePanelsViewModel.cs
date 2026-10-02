@@ -5,6 +5,7 @@ using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -34,7 +35,7 @@ public partial class SidePanelsViewModel : ObservableObject
     // ------------------------------------------------------------ атрибуты
 
     [ObservableProperty]
-    private string attributeContext = "Элемент не выбран";
+    private string attributeContext = Loc.T("Msg_NoElementSelected");
 
     public ObservableCollection<AttributeRowViewModel> Attributes { get; } = new();
 
@@ -50,7 +51,7 @@ public partial class SidePanelsViewModel : ObservableObject
     private string paletteFilter = string.Empty;
 
     [ObservableProperty]
-    private string paletteHint = "Поставьте курсор в текст, чтобы увидеть допустимые элементы.";
+    private string paletteHint = Loc.T("Msg_PutTheCursorInTheText3");
 
     public ObservableCollection<PaletteEntry> Palette { get; } = new();
 
@@ -80,7 +81,7 @@ public partial class SidePanelsViewModel : ObservableObject
         var node = pane?.Author.CurrentNode;
         if (pane is null || node is null)
         {
-            AttributeContext = "Элемент не выбран";
+            AttributeContext = Loc.T("Msg_NoElementSelected");
             return;
         }
 
@@ -115,7 +116,7 @@ public partial class SidePanelsViewModel : ObservableObject
             return;
         }
 
-        pane.PushUndo($"Атрибут @{value}");
+        pane.PushUndo(Loc.T("Msg_Attribute0", value));
         node.SetAttribute(value, attributeDef.DefaultValue ?? (attributeDef.Values.Count > 0 ? attributeDef.Values[0] : string.Empty));
         AfterAttributeEdit(pane);
         RefreshAttributes();
@@ -139,7 +140,7 @@ public partial class SidePanelsViewModel : ObservableObject
         var node = _docs.Current?.Author.CurrentNode;
         if (node is null)
         {
-            PaletteHint = "Поставьте курсор в текст, чтобы увидеть допустимые элементы.";
+            PaletteHint = Loc.T("Msg_PutTheCursorInTheText3");
             return;
         }
 
@@ -147,14 +148,14 @@ public partial class SidePanelsViewModel : ObservableObject
         if (node.Parent is { } parent)
         {
             var index = EditCommands.ElementIndexOf(parent, node) + 1;
-            candidates.AddRange(DitaCatalog.Default.InsertableAt(parent, index).Select(d => (d, $"после <{node.Name}>")));
+            candidates.AddRange(DitaCatalog.Default.InsertableAt(parent, index).Select(d => (d, Loc.T("Author_After02", node.Name))));
         }
 
         foreach (var def in DitaCatalog.Default.InsertableAt(node, DitaCatalog.ChildNames(node).Count))
         {
             if (candidates.All(c => c.Def.Name != def.Name))
             {
-                candidates.Add((def, $"внутрь <{node.Name}>"));
+                candidates.Add((def, Loc.T("Author_Inside0", node.Name)));
             }
         }
 
@@ -167,7 +168,7 @@ public partial class SidePanelsViewModel : ObservableObject
                 .ToList();
         }
 
-        PaletteHint = $"Допустимо рядом с <{node.Name}>: {candidates.Count} элементов. Двойной щелчок — вставить.";
+        PaletteHint = Loc.T("Msg_AllowedNextTo01Elements", node.Name, candidates.Count);
         foreach (var (def, where) in candidates.OrderBy(c => c.Def.Name, StringComparer.Ordinal))
         {
             Palette.Add(new PaletteEntry(def.Name,
@@ -308,7 +309,7 @@ public sealed partial class AttributeRowViewModel : ObservableObject
             return;
         }
 
-        _pane.PushUndo($"Изменение @{Name}");
+        _pane.PushUndo(Loc.T("Msg_Change0", Name));
         _node.SetAttribute(Name, Value);
         _owner.AfterAttributeEdit(_pane);
         _owner.SetStatus($"@{Name} = {Value}");
@@ -317,7 +318,7 @@ public sealed partial class AttributeRowViewModel : ObservableObject
     [RelayCommand]
     private void Remove()
     {
-        _pane.PushUndo($"Удаление @{Name}");
+        _pane.PushUndo(Loc.T("Msg_Delete02", Name));
         _node.RemoveAttribute(Name);
         _owner.AfterAttributeEdit(_pane);
         _owner.RefreshAttributes();

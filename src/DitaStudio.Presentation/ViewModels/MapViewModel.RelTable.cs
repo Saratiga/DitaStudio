@@ -7,6 +7,7 @@ using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Templates;
 using DitaStudio.Presentation.Services;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Presentation.ViewModels;
 
@@ -35,7 +36,7 @@ public partial class MapViewModel
             return;
         }
 
-        pane.PushUndo("Таблица соответствий");
+        pane.PushUndo(Loc.T("Dlg_RelationshipTable"));
         var reltable = RelTableConverter.Build(rows, map.FullPath);
         if (existing is not null)
         {
@@ -49,6 +50,6 @@ public partial class MapViewModel
         pane.Document.IsDirty = true;
         pane.ReloadViews();
         _documents.RefreshAllTabTitles();
-        _shell.StatusText = "Таблица соответствий обновлена.";
+        _shell.StatusText = Loc.T("Msg_TheRelationshipTableWasUpdated");
     }
 }

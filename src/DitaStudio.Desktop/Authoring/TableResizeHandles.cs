@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Authoring;
 
@@ -46,7 +47,7 @@ public static class TableResizeHandles
             ZIndex = 10,
             Tag = "column-handle"
         };
-        ToolTip.SetTip(handle, "Потяните, чтобы изменить ширину столбцов");
+        ToolTip.SetTip(handle, Loc.T("Author_DragToChangeTheColumnWidth"));
         Grid.SetColumn(handle, column);
         Grid.SetRowSpan(handle, rows);
 
@@ -103,7 +104,7 @@ public static class TableResizeHandles
             ZIndex = 9,
             Tag = "row-handle"
         };
-        ToolTip.SetTip(handle, "Потяните, чтобы изменить высоту строки; двойной щелчок — высота по содержимому");
+        ToolTip.SetTip(handle, Loc.T("Author_DragToChangeTheRowHeight"));
         Grid.SetRow(handle, row);
         Grid.SetColumnSpan(handle, columns);
 
