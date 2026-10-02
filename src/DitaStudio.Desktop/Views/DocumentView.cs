@@ -1,3 +1,4 @@
+using DitaStudio.Desktop.Localization;
 using Avalonia;
 using Avalonia.Controls;
 using DitaStudio.Desktop.Authoring;
@@ -65,9 +66,9 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
 
         _tabs.ItemsSource = new[]
         {
-            new TabItem { Header = Loc.T("Doc_Author"), Content = (Control?)_outline ?? _author },
-            new TabItem { Header = Loc.T("Doc_Source"), Content = _source },
-            new TabItem { Header = Loc.T("Doc_Preview"), Content = _preview }
+            new TabItem { Content = (Control?)_outline ?? _author }.Tr(TabItem.HeaderProperty, "Doc_Author"),
+            new TabItem { Content = _source }.Tr(TabItem.HeaderProperty, "Doc_Source"),
+            new TabItem { Content = _preview }.Tr(TabItem.HeaderProperty, "Doc_Preview")
         };
         _tabs.SelectionChanged += OnTabChanged;
         _layout.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));

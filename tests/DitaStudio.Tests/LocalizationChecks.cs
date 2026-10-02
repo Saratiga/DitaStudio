@@ -69,6 +69,13 @@ internal static partial class CoreChecks
             Check(loc.Language == "ru" && loc.UserChoice is null && !File.Exists(LanguageSettings.SettingsPath),
                 "«как в системе» — выбор сброшен, файл удалён, язык снова по системе");
 
+            // «Как в системе» после выбора другого языка возвращает язык системы (его определение не должно зависеть от выбора)
+            var systemChoice = UiLanguages.Resolve(null, UiLanguages.SystemLanguages());
+            var other = systemChoice == "ru" ? "en" : "ru";
+            loc.SetUserLanguage(other);
+            loc.SetUserLanguage(null);
+            Check(loc.Language == systemChoice, $"после «{other}» и «как в системе» язык снова системный ({systemChoice}), а не {loc.Language}");
+
             Check(loc.Get("Нет_такого_ключа") == "Нет_такого_ключа", "ключа нет нигде — виден сам ключ");
 
             File.WriteAllText(LanguageSettings.SettingsPath, "klingon");

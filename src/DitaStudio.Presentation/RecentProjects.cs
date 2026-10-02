@@ -7,7 +7,8 @@ public static class RecentProjects
 {
     private const int MaxEntries = 8;
 
-    private static readonly string SettingsPath = Path.Combine(
+    /// <summary>Файл списка; тесты подменяют его, чтобы не засорять список пользователя.</summary>
+    public static string SettingsPath { get; set; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DitaStudio", "recent-projects.txt");
 
     public static IReadOnlyList<string> Load()

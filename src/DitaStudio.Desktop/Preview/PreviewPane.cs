@@ -1,3 +1,4 @@
+using DitaStudio.Desktop.Localization;
 using System.Security.Cryptography;
 using System.Text;
 using Avalonia;
@@ -68,10 +69,10 @@ public sealed class PreviewPane : UserControl
         };
         _format.SelectionChanged += (_, _) => _ = RefreshAsync();
 
-        var refresh = new Button { Content = Loc.T("Btn_Refresh"), Margin = new Thickness(4) };
+        var refresh = new Button { Margin = new Thickness(4) }.Tr(ContentControl.ContentProperty, "Btn_Refresh");
         refresh.Click += (_, _) => _ = RefreshAsync();
 
-        var external = _external = new Button { Content = Loc.T("Preview_OpenInExternalApplication"), Margin = new Thickness(0, 4, 4, 4) };
+        var external = _external = new Button { Margin = new Thickness(0, 4, 4, 4) }.Tr(ContentControl.ContentProperty, "Preview_OpenInExternalApplication");
         external.Click += async (_, _) =>
         {
             if (await RefreshAsync() is { } file)

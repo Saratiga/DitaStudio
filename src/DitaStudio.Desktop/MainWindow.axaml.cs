@@ -64,7 +64,11 @@ public partial class MainWindow : Window
         ThemeMenuItem.IsChecked = Application.Current?.RequestedThemeVariant == ThemeVariant.Dark;
         RefreshRecentProjectsMenu();
         BuildLanguageMenu();
-        Loc.Instance.LanguageChanged += (_, _) => BuildLanguageMenu();
+        Loc.Instance.LanguageChanged += (_, _) =>
+        {
+            BuildLanguageMenu();
+            ViewModel.Hooks.RefreshEditorContext?.Invoke(); // подписи правой панели («Элемент не выбран…») на новом языке
+        };
         ViewModel.StatusText = Loc.T("Win_OpenADITAProjectFolderFile");
 
         AddHandler(KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);

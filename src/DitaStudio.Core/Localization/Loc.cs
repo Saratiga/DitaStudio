@@ -84,9 +84,8 @@ public sealed class Loc : INotifyPropertyChanged
     private void Apply(string code)
     {
         var changed = !string.Equals(_culture.Name, code, StringComparison.Ordinal);
+        // CurrentUICulture не трогаем: по нему определяется язык системы («Как в системе»), и подмена сломала бы возврат к нему.
         _culture = CultureInfo.GetCultureInfo(code);
-        // Числа и даты в сообщениях — по языку интерфейса, чтобы «1,5» и «1.5» не путались в одном окне.
-        CultureInfo.CurrentUICulture = _culture;
         if (changed)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));

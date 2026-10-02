@@ -15,7 +15,8 @@ public sealed class PublishOptions
 
     public bool ShowDraftComments { get; set; }
 
-    public string Language { get; set; } = "ru";
+    /// <summary>Язык подписей публикации («Содержание»/«Contents»); по умолчанию — язык интерфейса.</summary>
+    public string Language { get; set; } = Core.Localization.Loc.Instance.Language;
 
     /// <summary>Условная фильтрация: атрибут -> значения, которые нужно исключить.</summary>
     public Dictionary<string, HashSet<string>> ExcludeConditions { get; } = new(StringComparer.Ordinal);

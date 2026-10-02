@@ -76,7 +76,7 @@ public sealed partial class AuthorView : UserControl
     /// <summary>Операции «Автора» для общих ViewModel'ей (IAuthorSurface).</summary>
     public AuthorSurfaceBase Surface { get; }
 
-    public Labels Labels { get; set; } = Labels.Russian;
+    public Labels Labels { get; set; } = Labels.For(Loc.Instance.Language);
 
     /// <summary>Элемент, в котором сейчас находится курсор.</summary>
     public DitaNode? CurrentNode

@@ -999,6 +999,9 @@ Content: {2}</value>
   <data name="Dlg_CaptionFormat2" xml:space="preserve">
     <value>Caption format:</value>
   </data>
+  <data name="Dlg_CaptionSampleTitle" xml:space="preserve">
+    <value>Title</value>
+  </data>
   <data name="Dlg_ChooseAColorInThePalette" xml:space="preserve">
     <value>Choose a color in the palette or enter a code like #RRGGBB.</value>
   </data>

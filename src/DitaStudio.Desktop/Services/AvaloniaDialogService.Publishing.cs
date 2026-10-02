@@ -310,8 +310,8 @@ public sealed partial class AvaloniaDialogService
         var tocTitle = Named(new ComboBox
         {
             IsEditable = true,
-            ItemsSource = new[] { "Содержание", Loc.T("Dlg_TableOfContents") },
-            Text = current.TocTitle.Length > 0 ? current.TocTitle : "Содержание",
+            ItemsSource = new[] { Labels.For(Loc.Instance.Language).Contents, Loc.T("Dlg_TableOfContents") },
+            Text = current.TocTitle.Length > 0 ? current.TocTitle : Labels.For(Loc.Instance.Language).Contents,
             Width = 200,
             Padding = new Thickness(4, 3, 4, 3)
         }, Loc.T("Dlg_TableOfContentsTitle"));
@@ -331,7 +331,11 @@ public sealed partial class AvaloniaDialogService
         panel.Children.Add(numberFigures);
         var captionFormat = Named(new ComboBox
         {
-            ItemsSource = new[] { "Рисунок 1. Название", "Рисунок 1 — Название" },
+            ItemsSource = new[]
+            {
+                $"{Labels.For(Loc.Instance.Language).Figure} 1. {Loc.T("Dlg_CaptionSampleTitle")}",
+                $"{Labels.For(Loc.Instance.Language).Figure} 1 — {Loc.T("Dlg_CaptionSampleTitle")}"
+            },
             SelectedIndex = (int)current.CaptionSeparator,
             Width = 200,
             Padding = new Thickness(4, 3, 4, 3)
@@ -412,7 +416,7 @@ public sealed partial class AvaloniaDialogService
                 TitleImageHeightMm = titleImage.HeightMm() ?? current.TitleImageHeightMm,
                 TableOfContents = toc.IsChecked == true,
                 TocDepth = tocDepth.SelectedItem as int? ?? current.TocDepth,
-                TocTitle = (tocTitle.Text ?? string.Empty).Trim() is { Length: > 0 } name && name != "Содержание" ? name : string.Empty,
+                TocTitle = (tocTitle.Text ?? string.Empty).Trim() is { Length: > 0 } name && name != Labels.Russian.Contents && name != Labels.English.Contents ? name : string.Empty,
                 NumberHeadings = numberHeadings.IsChecked == true,
                 NumberingDepth = numberingDepth.SelectedItem as int? ?? current.NumberingDepth,
                 PageBreakBeforeTopLevel = pageBreak.IsChecked == true,

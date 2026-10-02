@@ -32,7 +32,7 @@ public sealed partial class AuthorView
 
         var number = root.DescendantsAndSelf().Where(n => n.Name == captioned.Name && n.FirstElement("title") is not null)
             .TakeWhile(n => !ReferenceEquals(n, captioned)).Count() + 1;
-        var labels = Labels.For("ru");
+        var labels = Labels.For(Loc.Instance.Language);
         // Пустое название — подпись «Рисунок N» без точки; точка появляется вместе с названием.
         return $"{(captioned.Name == "fig" ? labels.Figure : labels.Table)} {number}" + (CaptionRules.HasContent(captioned.FirstElement("title")) ? "." : string.Empty);
     }

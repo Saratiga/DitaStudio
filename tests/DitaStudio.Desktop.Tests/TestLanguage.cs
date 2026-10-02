@@ -9,6 +9,8 @@ internal static class TestLanguage
     [ModuleInitializer]
     internal static void Pin()
     {
+        // Тесты открывают проекты: список недавних — свой, временный, а не пользовательский.
+        DitaStudio.Presentation.RecentProjects.SettingsPath = Path.Combine(Path.GetTempPath(), "DitaStudioTests", "recent-" + Environment.ProcessId + ".txt");
         LanguageSettings.SettingsPath = Path.Combine(Path.GetTempPath(), "DitaStudioTests", "language-" + Environment.ProcessId + ".txt");
         Loc.Instance.SetUserLanguage("ru");
     }
