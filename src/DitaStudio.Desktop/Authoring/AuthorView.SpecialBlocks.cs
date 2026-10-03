@@ -54,12 +54,14 @@ public sealed partial class AuthorView
 
         if (TryLoadImage(node) is { } bitmap)
         {
-            panel.Children.Add(new ResizableImage(bitmap,
+            var picture = new ResizableImage(bitmap,
                 ResizableImage.WidthFromAttributes(node.GetAttribute("width"), node.GetAttribute("height"), bitmap),
                 520, 260, width => ResizeImage(node, width, null))
             {
                 Margin = new Thickness(0, 0, 10, 0)
-            });
+            };
+            PointerClick.Attach(picture, () => EditChip(node, picture, null));
+            panel.Children.Add(picture);
         }
         else
         {

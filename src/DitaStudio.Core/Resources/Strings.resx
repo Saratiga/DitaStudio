@@ -4712,4 +4712,28 @@ What to do with the row «</value>
 
 {1}</value>
   </data>
+  <data name="Author_ImageProperties" xml:space="preserve">
+    <value>Image properties</value>
+  </data>
+  <data name="Author_LinkProperties" xml:space="preserve">
+    <value>Link properties</value>
+  </data>
+  <data name="Author_ChipAltText" xml:space="preserve">
+    <value>Alt text</value>
+  </data>
+  <data name="Author_ChipWidth" xml:space="preserve">
+    <value>Width (px, %)</value>
+  </data>
+  <data name="Author_ChipImageFile" xml:space="preserve">
+    <value>File (href)</value>
+  </data>
+  <data name="Author_ChipTarget" xml:space="preserve">
+    <value>Target (href)</value>
+  </data>
+  <data name="Author_ChipScope" xml:space="preserve">
+    <value>Scope</value>
+  </data>
+  <data name="Author_ChipLinkText" xml:space="preserve">
+    <value>Link text</value>
+  </data>
 </root>

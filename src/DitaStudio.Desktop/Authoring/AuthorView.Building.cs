@@ -443,6 +443,7 @@ public sealed partial class AuthorView
                 RootTitleCommitted?.Invoke(this, EventArgs.Empty);
             }
         };
+        editor.ChipClicked += (_, e) => EditChip(e.Node, e.Control, editor);
         editor.ChipFactory = chip => chip.Name == "image" && TryLoadImage(chip) is { } bitmap
             ? new ResizableImage(bitmap, ResizableImage.WidthFromAttributes(chip.GetAttribute("width"), chip.GetAttribute("height"), bitmap),
                 480, 240, width => ResizeImage(chip, width, editor))

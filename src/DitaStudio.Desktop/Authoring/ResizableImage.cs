@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.VisualTree;
 using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Authoring;
@@ -58,6 +59,9 @@ public sealed class ResizableImage : Panel
         _thumb.PointerMoved += OnThumbMoved;
         _thumb.PointerReleased += OnThumbReleased;
     }
+
+    /// <summary>Источник события — маркер размера (а не сама картинка).</summary>
+    public bool IsThumb(object? source) => ReferenceEquals(source, _thumb) || (source is Visual visual && visual.GetVisualAncestors().Contains(_thumb));
 
     /// <summary>Показанная ширина, px.</summary>
     public double ShownWidth => _image.Width;

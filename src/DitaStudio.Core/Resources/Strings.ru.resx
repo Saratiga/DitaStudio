@@ -4712,4 +4712,28 @@
 
 {1}</value>
   </data>
+  <data name="Author_ImageProperties" xml:space="preserve">
+    <value>Свойства изображения</value>
+  </data>
+  <data name="Author_LinkProperties" xml:space="preserve">
+    <value>Свойства ссылки</value>
+  </data>
+  <data name="Author_ChipAltText" xml:space="preserve">
+    <value>Альтернативный текст</value>
+  </data>
+  <data name="Author_ChipWidth" xml:space="preserve">
+    <value>Ширина (px, %)</value>
+  </data>
+  <data name="Author_ChipImageFile" xml:space="preserve">
+    <value>Файл (href)</value>
+  </data>
+  <data name="Author_ChipTarget" xml:space="preserve">
+    <value>Адрес (href)</value>
+  </data>
+  <data name="Author_ChipScope" xml:space="preserve">
+    <value>Область (scope)</value>
+  </data>
+  <data name="Author_ChipLinkText" xml:space="preserve">
+    <value>Текст ссылки</value>
+  </data>
 </root>

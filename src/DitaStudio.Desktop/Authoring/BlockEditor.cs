@@ -99,6 +99,9 @@ public sealed class BlockEditor : TextEditor
         TextArea.TextView.ElementGenerators.Add(new ChipGenerator(this));
         TextArea.TextView.BackgroundRenderers.Add(new SpellingRenderer(this));
         TextArea.AddHandler(PointerPressedEvent, OnPointerPressedTunnel, RoutingStrategies.Tunnel);
+        // Щелчок по плашке: поле Capture у TextArea уводит отпускание кнопки на себя, поэтому ловим и нажатие, и отпускание здесь.
+        TextArea.AddHandler(PointerPressedEvent, OnChipPointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
+        TextArea.AddHandler(PointerReleasedEvent, OnChipPointerReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
         AttachedToVisualTree += (_, _) =>
         {
             SpellChecker.Default.Changed += OnSpellingChanged;
@@ -843,7 +846,62 @@ public sealed class BlockEditor : TextEditor
     /// <summary>Свой вид плашки (например, картинка вместо подписи); null — обычная плашка.</summary>
     public Func<DitaNode, Control?>? ChipFactory { get; set; }
 
+    /// <summary>Щелчок по плашке (без протаскивания): интерфейс открывает правку её атрибутов.</summary>
+    public event EventHandler<ChipClickedEventArgs>? ChipClicked;
+
     private Control BuildChip(DitaNode? node)
+    {
+        var chip = CreateChip(node);
+        if (node is not null)
+        {
+            _chipNodes.AddOrUpdate(chip, node);
+        }
+
+        return chip;
+    }
+
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<Control, DitaNode> _chipNodes = new();
+    private (Control Chip, DitaNode Node, Point At)? _chipPress;
+
+    private (Control Chip, DitaNode Node)? ChipUnder(object? source)
+    {
+        for (var visual = source as Visual; visual is not null; visual = visual.GetVisualParent())
+        {
+            if (visual is Control control && _chipNodes.TryGetValue(control, out var node))
+            {
+                return (control, node);
+            }
+        }
+
+        return null;
+    }
+
+    private void OnChipPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        _chipPress = null;
+        if (e.GetCurrentPoint(TextArea).Properties.IsLeftButtonPressed && ChipUnder(e.Source) is var (chip, node) &&
+            !(chip is ResizableImage image && image.IsThumb(e.Source))) // маркер размера — не щелчок по плашке
+        {
+            _chipPress = (chip, node, e.GetPosition(TextArea));
+        }
+    }
+
+    private void OnChipPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (_chipPress is not var (chip, node, at))
+        {
+            return;
+        }
+
+        _chipPress = null;
+        var delta = e.GetPosition(TextArea) - at;
+        if (delta.X * delta.X + delta.Y * delta.Y < 16)
+        {
+            ChipClicked?.Invoke(this, new ChipClickedEventArgs(node, chip));
+        }
+    }
+
+    private Control CreateChip(DitaNode? node)
     {
         if (node is not null && ChipFactory?.Invoke(node) is { } custom)
         {
@@ -876,4 +934,18 @@ public sealed class BlockEditor : TextEditor
 
         return chip;
     }
+}
+
+/// <summary>Плашка, по которой щёлкнули, и её представление (место для окна правки).</summary>
+public sealed class ChipClickedEventArgs : EventArgs
+{
+    public ChipClickedEventArgs(DitaNode node, Control control)
+    {
+        Node = node;
+        Control = control;
+    }
+
+    public DitaNode Node { get; }
+
+    public Control Control { get; }
 }
