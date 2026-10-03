@@ -27,6 +27,8 @@ public sealed class Labels
         Value = "Значение",
         Type = "Тип",
         Index = "Указатель",
+        IndexSee = "см.",
+        IndexSeeAlso = "см. также",
         Notes = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["note"] = "Примечание",
@@ -69,6 +71,8 @@ public sealed class Labels
         Value = "Value",
         Type = "Type",
         Index = "Index",
+        IndexSee = "see",
+        IndexSeeAlso = "see also",
         Notes = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["note"] = "Note",
@@ -130,6 +134,11 @@ public sealed class Labels
     public string Type { get; init; } = string.Empty;
 
     public string Index { get; init; } = string.Empty;
+
+    /// <summary>Отсылки указателя: «см.» и «см. также».</summary>
+    public string IndexSee { get; init; } = string.Empty;
+
+    public string IndexSeeAlso { get; init; } = string.Empty;
 
     public IReadOnlyDictionary<string, string> Notes { get; init; } =
         new Dictionary<string, string>(StringComparer.Ordinal);

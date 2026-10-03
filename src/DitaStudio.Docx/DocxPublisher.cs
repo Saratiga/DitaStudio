@@ -137,6 +137,8 @@ public sealed partial class DocxPublisher
                     unnumbered: TocRules.IsHiddenInMap(item.Node), pageBreakBefore: TopicPageBreak.Of(item.Node));
             }
 
+            WriteIndex(body, labels, renderer.IndexTerms);
+
             var mainSection = BuildSectionProperties(mainPart, WithLayoutPage(styles.Page, layout), layout, styles.MarginBoxes, title, date, warnings);
             body.Append(mainSection);
             FinishPlacedSections(body, mainSection);

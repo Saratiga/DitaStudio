@@ -11,26 +11,26 @@ public sealed partial class HtmlRenderer
 {
     public bool HasIndexTerms => _indexTerms.Count > 0;
 
+    private sealed record IndexEntry(IndexTermEntry Term, string? Href);
+
     /// <summary>Отмечает вхождение и рекурсивно собирает вложенные indexterm (подпункты) — сам
     /// термин в тексте топика не выводится, только накапливается для <see cref="RenderIndexSection"/>.</summary>
     private string CollectIndexTerm(DitaNode node)
     {
-        CollectIndexTermPath(node, Array.Empty<string>());
+        foreach (var term in IndexTermReader.Read(node))
+        {
+            _indexTerms.Add(new IndexEntry(term, _currentTopicHref));
+        }
+
         return string.Empty;
     }
 
-    private void CollectIndexTermPath(DitaNode node, IReadOnlyList<string> parentPath)
+    /// <summary>Термины из пролога топика: в тексте их нет, но в указатель они входят.</summary>
+    private void CollectPrologIndexTerms(DitaNode prolog)
     {
-        var ownText = string.Concat(node.Children.Where(c => c.Kind == NodeKind.Text).Select(c => c.Value)).Trim();
-        var path = ownText.Length > 0 ? parentPath.Append(ownText).ToList() : parentPath;
-        if (ownText.Length > 0)
+        foreach (var term in IndexTermReader.TermsIn(prolog))
         {
-            _indexTerms.Add((path, _currentTopicHref));
-        }
-
-        foreach (var child in node.ElementChildren().Where(c => c.Name == "indexterm"))
-        {
-            CollectIndexTermPath(child, path);
+            CollectIndexTerm(term);
         }
     }
 
@@ -38,13 +38,21 @@ public sealed partial class HtmlRenderer
     {
         public List<string> Hrefs { get; } = new();
 
-        public SortedDictionary<string, IndexNode> Children { get; } = new(StringComparer.Ordinal);
+        public string? SortAs { get; set; }
+
+        public List<string> See { get; } = new();
+
+        public List<string> SeeAlso { get; } = new();
+
+        public Dictionary<string, IndexNode> Children { get; } = new(StringComparer.Ordinal);
     }
 
     /// <summary>Алфавитный указатель по всем indexterm, встреченным с начала публикации
     /// (счётчик не сбрасывается между топиками, в отличие от сносок) — вызывается один раз в
-    /// конце публикации. Ссылки ведут на топик, где стоит термин (не на точное место в тексте).</summary>
-    public string RenderIndexSection()
+    /// конце публикации. Ссылки ведут на топик, где стоит термин (не на точное место в тексте).
+    /// Порядок — по <c>sort-as</c>, нет его — по самому термину; <c>index-see</c> и <c>index-see-also</c> выводятся отсылками.</summary>
+    /// <param name="heading">Выводить ли заголовок «Указатель» (для отдельной страницы указателя он уже есть в заголовке страницы).</param>
+    public string RenderIndexSection(bool heading = true)
     {
         if (_indexTerms.Count == 0)
         {
@@ -52,10 +60,10 @@ public sealed partial class HtmlRenderer
         }
 
         var root = new IndexNode();
-        foreach (var (path, href) in _indexTerms)
+        foreach (var entry in _indexTerms)
         {
             var node = root;
-            foreach (var segment in path)
+            foreach (var segment in entry.Term.Path)
             {
                 if (!node.Children.TryGetValue(segment, out var child))
                 {
@@ -66,13 +74,29 @@ public sealed partial class HtmlRenderer
                 node = child;
             }
 
-            if (href is not null)
+            if (entry.Href is not null)
             {
-                node.Hrefs.Add(href);
+                node.Hrefs.Add(entry.Href);
+            }
+
+            node.SortAs ??= entry.Term.SortAs;
+            foreach (var see in entry.Term.See.Where(t => !node.See.Contains(t)))
+            {
+                node.See.Add(see);
+            }
+
+            foreach (var seeAlso in entry.Term.SeeAlso.Where(t => !node.SeeAlso.Contains(t)))
+            {
+                node.SeeAlso.Add(seeAlso);
             }
         }
 
-        var sb = new StringBuilder("<div class=\"index-terms\">\n<h2>").Append(Escape(L.Index)).Append("</h2>\n");
+        var sb = new StringBuilder("<div class=\"index-terms\">\n");
+        if (heading)
+        {
+            sb.Append("<h2>").Append(Escape(L.Index)).Append("</h2>\n");
+        }
+
         AppendIndexNode(sb, root);
         sb.Append("</div>\n");
         return sb.ToString();
@@ -85,14 +109,25 @@ public sealed partial class HtmlRenderer
             return;
         }
 
+        var comparer = StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo(L == Labels.Russian ? "ru-RU" : "en-US"), ignoreCase: true);
         sb.Append("<ul>\n");
-        foreach (var (term, child) in node.Children)
+        foreach (var (term, child) in node.Children.OrderBy(kv => kv.Value.SortAs ?? kv.Key, comparer).ThenBy(kv => kv.Key, StringComparer.Ordinal))
         {
             sb.Append("<li>").Append(Escape(term));
             foreach (var (href, i) in child.Hrefs.Distinct().Select((h, i) => (h, i)))
             {
                 sb.Append(i == 0 ? " " : ", ").Append("<a href=\"").Append(Escape(href)).Append("\">")
                   .Append(i + 1).Append("</a>");
+            }
+
+            if (child.See.Count > 0)
+            {
+                sb.Append(" — <em>").Append(Escape(L.IndexSee)).Append("</em> ").Append(Escape(string.Join(", ", child.See)));
+            }
+
+            if (child.SeeAlso.Count > 0)
+            {
+                sb.Append(" — <em>").Append(Escape(L.IndexSeeAlso)).Append("</em> ").Append(Escape(string.Join(", ", child.SeeAlso)));
             }
 
             AppendIndexNode(sb, child);

@@ -112,9 +112,12 @@
     <section id="index">
       <title>Предметный указатель</title>
       <p>Термин указателя <codeph>indexterm</codeph> ставится прямо в текст топика или в
-        ключевые слова пролога; вложенный <codeph>indexterm</codeph> — подпункт. Алфавитный
-        указатель собирается при публикации единого HTML-файла и в PDF, который из него
-        печатается. В многостраничном сайте и в DOCX указатель не выводится.</p>
+        ключевые слова пролога; вложенный <codeph>indexterm</codeph> — подпункт, а
+        <codeph>index-see</codeph> и <codeph>index-see-also</codeph> дают отсылки «см.» и
+        «см. также». Алфавитный указатель собирается при любой публикации: в конце единого
+        HTML-файла (и PDF), отдельной страницей <codeph>index-terms.html</codeph>
+        многостраничного сайта и полем «Указатель» в DOCX — номера страниц в нём Word
+        проставит при обновлении полей.</p>
       <codeblock>&lt;indexterm&gt;резервная копия&lt;indexterm&gt;восстановление&lt;/indexterm&gt;&lt;/indexterm&gt;</codeblock>
     </section>
   </conbody>

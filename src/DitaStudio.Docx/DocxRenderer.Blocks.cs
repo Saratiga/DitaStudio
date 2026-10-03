@@ -293,6 +293,11 @@ public sealed partial class DocxRenderer
                 yield break;
 
             case "indexterm":
+                if (HiddenIndexParagraph(new[] { node }) is { } indexParagraph)
+                {
+                    yield return indexParagraph;
+                }
+
                 yield break;
 
             case "title":

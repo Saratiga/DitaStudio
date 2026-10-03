@@ -71,7 +71,7 @@ public sealed partial class HtmlRenderer
 
     private DitaDocument _document = null!;
     private List<DitaNode> _footnotes = new();
-    private readonly List<(IReadOnlyList<string> Path, string? Href)> _indexTerms = new();
+    private readonly List<IndexEntry> _indexTerms = new();
     private string? _currentTopicHref;
     private int _figureNumber;
     private int _tableNumber;
@@ -159,6 +159,9 @@ public sealed partial class HtmlRenderer
                     break;
 
                 case "prolog":
+                    CollectPrologIndexTerms(child); // в тексте пролога нет, но его термины входят в указатель
+                    break;
+
                 case "titlealts":
                     break;
 

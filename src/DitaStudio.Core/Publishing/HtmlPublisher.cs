@@ -181,7 +181,10 @@ public sealed class HtmlPublisher
         };
 
         var renderer = new HtmlRenderer(_project, renderOptions);
-        var toc = BuildToc(tree, fileNames, null);
+
+        // Страницы пишутся после обхода всех топиков: ссылка на указатель в навигации нужна и на первых страницах,
+        // а есть ли термины, известно только после рендера последнего топика.
+        var pages = new List<(string OutPath, MapItem Item, string Body)>();
 
         for (var i = 0; i < topics.Count; i++)
         {
@@ -204,20 +207,28 @@ public sealed class HtmlPublisher
             renderOptions.TopicUnnumbered = TocRules.IsHiddenInMap(item.Node);
             renderOptions.RelatedTopics = tree.RelatedLinks.TryGetValue(Path.GetFullPath(path), out var related) ? related : null;
             var body = renderer.RenderTopic(expanded, topicNode);
-            var pageToc = BuildToc(tree, fileNames, item);
             var previous = i > 0 ? topics[i - 1] : null;
             var next = i + 1 < topics.Count ? topics[i + 1] : null;
+            pages.Add((Path.Combine(options.OutputDirectory, fileNames[Path.GetFullPath(path)]), item, body + Pager(previous, next, fileNames)));
+        }
 
-            var html = Page(
-                item.Title,
-                pageToc,
-                body + Pager(previous, next, fileNames),
-                labels,
-                customCss);
-
-            var outPath = Path.Combine(options.OutputDirectory, fileNames[Path.GetFullPath(path)]);
-            File.WriteAllText(outPath, html, new UTF8Encoding(false));
+        var hasIndex = renderer.HasIndexTerms;
+        var toc = BuildToc(tree, fileNames, null, hasIndex ? (IndexPageName, labels.Index, false) : null);
+        foreach (var (outPath, item, pageBody) in pages)
+        {
+            var pageToc = BuildToc(tree, fileNames, item, hasIndex ? (IndexPageName, labels.Index, false) : null);
+            File.WriteAllText(outPath, Page(item.Title, pageToc, pageBody, labels, customCss), new UTF8Encoding(false));
             written.Add(outPath);
+        }
+
+        if (hasIndex)
+        {
+            var indexTermsPath = Path.Combine(options.OutputDirectory, IndexPageName);
+            var indexTermsBody = "<h1>" + HtmlRenderer.Escape(labels.Index) + "</h1>\n" + renderer.RenderIndexSection(heading: false);
+            File.WriteAllText(indexTermsPath,
+                Page(labels.Index, BuildToc(tree, fileNames, null, (IndexPageName, labels.Index, true)), indexTermsBody, labels, customCss),
+                new UTF8Encoding(false));
+            written.Add(indexTermsPath);
         }
 
         var indexPath = Path.Combine(options.OutputDirectory, "index.html");
@@ -435,7 +446,7 @@ public sealed class HtmlPublisher
     private static Dictionary<string, string> AssignFileNames(IEnumerable<MapItem> topics)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "index.html", "style.css" };
+        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "index.html", "style.css", IndexPageName };
 
         foreach (var item in topics)
         {
@@ -490,13 +501,23 @@ public sealed class HtmlPublisher
         return result.Length == 0 ? "topic" : result;
     }
 
-    private static string BuildToc(MapTree tree, IReadOnlyDictionary<string, string> fileNames, MapItem? current)
+    /// <summary>Имя страницы предметного указателя многостраничного сайта.</summary>
+    private const string IndexPageName = "index-terms.html";
+
+    private static string BuildToc(MapTree tree, IReadOnlyDictionary<string, string> fileNames, MapItem? current,
+        (string Href, string Title, bool IsCurrent)? indexPage = null)
     {
         var sb = new StringBuilder();
         sb.Append("<ul>\n");
         foreach (var child in tree.Root.Children)
         {
             AppendTocItem(sb, child, fileNames, current);
+        }
+
+        if (indexPage is { } page)
+        {
+            sb.Append("<li><a href=\"").Append(page.Href).Append('"').Append(page.IsCurrent ? " class=\"current\"" : string.Empty).Append('>')
+              .Append(HtmlRenderer.Escape(page.Title)).Append("</a></li>\n");
         }
 
         sb.Append("</ul>\n");

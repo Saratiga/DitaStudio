@@ -155,6 +155,8 @@ public sealed partial class DocxRenderer
                 yield return RenderFootnote(node);
                 yield break;
             case "indexterm":
+                foreach (var r in IndexFieldRuns(node)) yield return r;
+                yield break;
             case "index-see":
             case "index-see-also":
             case "sort-as":

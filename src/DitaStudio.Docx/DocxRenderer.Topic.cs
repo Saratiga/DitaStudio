@@ -102,6 +102,14 @@ public sealed partial class DocxRenderer
                     break;
 
                 case "prolog":
+                    // В тексте пролога нет, но его термины входят в указатель.
+                    if (HiddenIndexParagraph(IndexTermReader.TermsIn(child)) is { } prologIndex)
+                    {
+                        body.Append(prologIndex);
+                    }
+
+                    break;
+
                 case "titlealts":
                     break;
 
