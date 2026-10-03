@@ -190,6 +190,8 @@
                 <Separator />
                 <MenuItem Header="{loc:Tr Menu_ExportXliff}" Command="{Binding Publish.ExportXliffCommand}" />
                 <MenuItem Header="{loc:Tr Menu_ImportXliff}" Command="{Binding Publish.ImportXliffCommand}" />
+                <MenuItem Header="{loc:Tr Menu_ExportMapXliff}" Command="{Binding Publish.ExportXliffBatchCommand}" />
+                <MenuItem Header="{loc:Tr Menu_ImportMapXliff}" Command="{Binding Publish.ImportXliffBatchCommand}" />
             </MenuItem>
 
             <MenuItem Header="{loc:Tr Menu_Help}">

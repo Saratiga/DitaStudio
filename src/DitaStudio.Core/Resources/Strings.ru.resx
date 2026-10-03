@@ -491,6 +491,9 @@
   <data name="Core_0PlaceholderId1IsOut2" xml:space="preserve">
     <value>{0}: placeholder id="{1}" вне диапазона — пропущен.</value>
   </data>
+  <data name="Core_0SegmentsApplied1" xml:space="preserve">
+    <value>{0}: применено сегментов: {1}</value>
+  </data>
   <data name="Core_0TheXLIFFHasNoSuch" xml:space="preserve">
     <value>{0}: в XLIFF нет такого сегмента — пропущен, документ мог измениться после экспорта.</value>
   </data>
@@ -848,6 +851,9 @@
   <data name="Core_TheKeySourceProject0Is" xml:space="preserve">
     <value>Проект-источник ключей {0} недоступен: {1}</value>
   </data>
+  <data name="Core_TheManifestCouldNotBeRead" xml:space="preserve">
+    <value>Не удалось прочитать manifest.json: {0}</value>
+  </data>
   <data name="Core_TheMapRootCannotBeMoved" xml:space="preserve">
     <value>Корень карты перенести нельзя.</value>
   </data>
@@ -878,6 +884,9 @@
   <data name="Core_TheReferenceHref0CouldNot" xml:space="preserve">
     <value>Ссылка href="{0}" не разобрана: неверный путь. {1}</value>
   </data>
+  <data name="Core_ThereIsNoManifestJsonIn" xml:space="preserve">
+    <value>В папке нет manifest.json со списком файлов — выберите папку, выгруженную командой «Экспорт карты в XLIFF».</value>
+  </data>
   <data name="Core_TheRules0AreNotSupported" xml:space="preserve">
     <value>Правила {0} в DOCX не поддерживаются и пропущены.</value>
   </data>
@@ -890,8 +899,20 @@
   <data name="Core_TheTitlePageImageWasNot" xml:space="preserve">
     <value>Картинка титульной страницы не найдена или не PNG/JPEG/GIF/BMP: {0}</value>
   </data>
+  <data name="Core_TheTopic0CouldNotBe" xml:space="preserve">
+    <value>Топик {0} не прочитан: {1}</value>
+  </data>
+  <data name="Core_TheTopic0IsNotIn" xml:space="preserve">
+    <value>Топика {0} нет в проекте — пропущен.</value>
+  </data>
   <data name="Core_TheTopicHasNoIdAttribute" xml:space="preserve">
     <value>У топика нет атрибута @id — на него нельзя сослаться из карты и из других топиков.</value>
+  </data>
+  <data name="Core_TheValue0OfTheAttribute1" xml:space="preserve">
+    <value>Значение «{0}» атрибута @{1} не объявлено в схеме категорий (допустимо: {2}).</value>
+  </data>
+  <data name="Core_TheXLIFFFile0Is" xml:space="preserve">
+    <value>XLIFF-файла {0} из манифеста нет — пропущен.</value>
   </data>
   <data name="Core_TheXLIFFHasNoFileBody" xml:space="preserve">
     <value>В XLIFF нет &lt;file&gt;/&lt;body&gt; — импортировать нечего.</value>
@@ -3024,6 +3045,9 @@
   <data name="Menu_ExportDocx" xml:space="preserve">
     <value>Экспорт в DOCX…</value>
   </data>
+  <data name="Menu_ExportMapXliff" xml:space="preserve">
+    <value>Экспорт карты в XLIFF (все топики)…</value>
+  </data>
   <data name="Menu_ExportPdf" xml:space="preserve">
     <value>Экспорт в PDF…</value>
   </data>
@@ -3053,6 +3077,9 @@
   </data>
   <data name="Menu_ImageAsFigure" xml:space="preserve">
     <value>Оформить изображение как рисунок</value>
+  </data>
+  <data name="Menu_ImportMapXliff" xml:space="preserve">
+    <value>Импорт переводов карты из XLIFF…</value>
   </data>
   <data name="Menu_ImportXliff" xml:space="preserve">
     <value>Импортировать перевод из XLIFF…</value>
@@ -3359,6 +3386,9 @@
   <data name="Msg_AllowedNextTo01Elements" xml:space="preserve">
     <value>Допустимо рядом с &lt;{0}&gt;: {1} элементов. Двойной щелчок — вставить.</value>
   </data>
+  <data name="Msg_ApplyTranslationsFromXLIFF" xml:space="preserve">
+    <value>Применить переводы из папки к топикам проекта? Открытые во вкладках топики будут помечены несохранёнными, закрытые — сразу сохранены на диск.</value>
+  </data>
   <data name="Msg_AProjectCannotBeConnectedTo" xml:space="preserve">
     <value>Нельзя подключить проект сам к себе.</value>
   </data>
@@ -3453,6 +3483,9 @@
   </data>
   <data name="Msg_ChooseAFileForTheRow" xml:space="preserve">
     <value>Выберите файл для строки «</value>
+  </data>
+  <data name="Msg_ChooseAMapOnThe" xml:space="preserve">
+    <value>Выберите карту на вкладке «Карта».</value>
   </data>
   <data name="Msg_ChooseAMapOnTheMap" xml:space="preserve">
     <value>Выберите карту на вкладке «Карта».</value>
@@ -3620,6 +3653,9 @@
   <data name="Msg_ExportedToXLIFF0" xml:space="preserve">
     <value>Экспортировано в XLIFF: {0}</value>
   </data>
+  <data name="Msg_ExportMapToXLIFF" xml:space="preserve">
+    <value>Экспорт карты в XLIFF</value>
+  </data>
   <data name="Msg_ExportToDOCX" xml:space="preserve">
     <value>Экспорт в DOCX</value>
   </data>
@@ -3628,6 +3664,9 @@
   </data>
   <data name="Msg_ExportToXLIFF" xml:space="preserve">
     <value>Экспорт в XLIFF</value>
+  </data>
+  <data name="Msg_ExportWarnings" xml:space="preserve">
+    <value>Экспорт в XLIFF — предупреждения</value>
   </data>
   <data name="Msg_ExternalDTD" xml:space="preserve">
     <value>Внешний DTD</value>
@@ -3666,6 +3705,12 @@
     <value>Файлов записано: {0}
 </value>
   </data>
+  <data name="Msg_FolderForXLIFFFiles" xml:space="preserve">
+    <value>Папка для XLIFF-файлов (по файлу на топик)</value>
+  </data>
+  <data name="Msg_FolderWithXLIFFFiles" xml:space="preserve">
+    <value>Папка с XLIFF-файлами, выгруженными из карты</value>
+  </data>
   <data name="Msg_FontSize00Pt" xml:space="preserve">
     <value>Размер шрифта {0:0.#} пт.</value>
   </data>
@@ -3690,8 +3735,14 @@
   <data name="Msg_ImportFromXLIFF" xml:space="preserve">
     <value>Импорт из XLIFF</value>
   </data>
+  <data name="Msg_ImportFromXLIFFReport" xml:space="preserve">
+    <value>Импорт из XLIFF — отчёт</value>
+  </data>
   <data name="Msg_ImportFromXLIFFWarnings" xml:space="preserve">
     <value>Импорт из XLIFF — предупреждения</value>
+  </data>
+  <data name="Msg_ImportMapFromXLIFF" xml:space="preserve">
+    <value>Импорт переводов карты из XLIFF</value>
   </data>
   <data name="Msg_ImportTranslationFromXLIFF" xml:space="preserve">
     <value>Импортировать перевод из XLIFF</value>
@@ -3731,6 +3782,9 @@
   </data>
   <data name="Msg_MakeImageAFigure" xml:space="preserve">
     <value>Оформление изображения как рисунка</value>
+  </data>
+  <data name="Msg_MapExportedToXLIFF0" xml:space="preserve">
+    <value>Карта выгружена в XLIFF: файлов {0}, папка {1}.</value>
   </data>
   <data name="Msg_MarkAsDeletedTrackChanges" xml:space="preserve">
     <value>Пометка удаления (track changes)</value>
@@ -4281,6 +4335,9 @@
   </data>
   <data name="Msg_TranslationImportedSegmentsApplied0" xml:space="preserve">
     <value>Перевод импортирован: применено сегментов {0}</value>
+  </data>
+  <data name="Msg_TranslationsImportedTopicsChanged" xml:space="preserve">
+    <value>Переводы импортированы: изменено топиков {0}, применено сегментов {1}.</value>
   </data>
   <data name="Msg_Undone" xml:space="preserve">
     <value>Отменено.</value>

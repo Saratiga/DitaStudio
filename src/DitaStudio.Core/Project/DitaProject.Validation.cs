@@ -14,6 +14,7 @@ public sealed partial class DitaProject
     {
         var validator = new DitaValidator(Catalog);
         var issues = new List<ValidationIssue>();
+        var subjectRules = SubjectSchemeRules.Build(this); // значения условных атрибутов — по схемам категорий проекта (нет схем — проверки нет)
 
         foreach (var file in _files)
         {
@@ -34,6 +35,7 @@ public sealed partial class DitaProject
 
             issues.AddRange(validator.Validate(doc));
             issues.AddRange(RefResolver.ValidateReferences(this, doc));
+            issues.AddRange(subjectRules.Check(doc));
 
             if (plugins is null)
             {

@@ -491,6 +491,9 @@ Content: {2}</value>
   <data name="Core_0PlaceholderId1IsOut2" xml:space="preserve">
     <value>{0}: placeholder id="{1}" is out of range — skipped.</value>
   </data>
+  <data name="Core_0SegmentsApplied1" xml:space="preserve">
+    <value>{0}: segments applied: {1}</value>
+  </data>
   <data name="Core_0TheXLIFFHasNoSuch" xml:space="preserve">
     <value>{0}: the XLIFF has no such segment — skipped, the document may have changed after export.</value>
   </data>
@@ -848,6 +851,9 @@ Content: {2}</value>
   <data name="Core_TheKeySourceProject0Is" xml:space="preserve">
     <value>The key source project {0} is unavailable: {1}</value>
   </data>
+  <data name="Core_TheManifestCouldNotBeRead" xml:space="preserve">
+    <value>The manifest.json could not be read: {0}</value>
+  </data>
   <data name="Core_TheMapRootCannotBeMoved" xml:space="preserve">
     <value>The map root cannot be moved.</value>
   </data>
@@ -878,6 +884,9 @@ Content: {2}</value>
   <data name="Core_TheReferenceHref0CouldNot" xml:space="preserve">
     <value>The reference href="{0}" could not be parsed: invalid path. {1}</value>
   </data>
+  <data name="Core_ThereIsNoManifestJsonIn" xml:space="preserve">
+    <value>There is no manifest.json with files in the folder — choose a folder exported with “Export map to XLIFF”.</value>
+  </data>
   <data name="Core_TheRules0AreNotSupported" xml:space="preserve">
     <value>The rules {0} are not supported in DOCX and were skipped.</value>
   </data>
@@ -890,8 +899,20 @@ Content: {2}</value>
   <data name="Core_TheTitlePageImageWasNot" xml:space="preserve">
     <value>The title page image was not found or is not PNG/JPEG/GIF/BMP: {0}</value>
   </data>
+  <data name="Core_TheTopic0CouldNotBe" xml:space="preserve">
+    <value>The topic {0} could not be read: {1}</value>
+  </data>
+  <data name="Core_TheTopic0IsNotIn" xml:space="preserve">
+    <value>The topic {0} is not in the project — skipped.</value>
+  </data>
   <data name="Core_TheTopicHasNoIdAttribute" xml:space="preserve">
     <value>The topic has no @id attribute — it cannot be referenced from a map or other topics.</value>
+  </data>
+  <data name="Core_TheValue0OfTheAttribute1" xml:space="preserve">
+    <value>The value “{0}” of the attribute @{1} is not declared in the subject scheme (allowed: {2}).</value>
+  </data>
+  <data name="Core_TheXLIFFFile0Is" xml:space="preserve">
+    <value>The XLIFF file {0} from the manifest is missing — skipped.</value>
   </data>
   <data name="Core_TheXLIFFHasNoFileBody" xml:space="preserve">
     <value>The XLIFF has no &lt;file&gt;/&lt;body&gt; — nothing to import.</value>
@@ -3024,6 +3045,9 @@ Content: {2}</value>
   <data name="Menu_ExportDocx" xml:space="preserve">
     <value>Export to DOCX…</value>
   </data>
+  <data name="Menu_ExportMapXliff" xml:space="preserve">
+    <value>Export map to XLIFF (all topics)…</value>
+  </data>
   <data name="Menu_ExportPdf" xml:space="preserve">
     <value>Export to PDF…</value>
   </data>
@@ -3053,6 +3077,9 @@ Content: {2}</value>
   </data>
   <data name="Menu_ImageAsFigure" xml:space="preserve">
     <value>Make image a figure</value>
+  </data>
+  <data name="Menu_ImportMapXliff" xml:space="preserve">
+    <value>Import translations of the map from XLIFF…</value>
   </data>
   <data name="Menu_ImportXliff" xml:space="preserve">
     <value>Import translation from XLIFF…</value>
@@ -3359,6 +3386,9 @@ Content: {2}</value>
   <data name="Msg_AllowedNextTo01Elements" xml:space="preserve">
     <value>Allowed next to &lt;{0}&gt;: {1} elements. Double-click to insert.</value>
   </data>
+  <data name="Msg_ApplyTranslationsFromXLIFF" xml:space="preserve">
+    <value>Apply the translations from the folder to the topics of the project? Topics that are open in tabs are marked as unsaved; closed topics are saved to disk at once.</value>
+  </data>
   <data name="Msg_AProjectCannotBeConnectedTo" xml:space="preserve">
     <value>A project cannot be connected to itself.</value>
   </data>
@@ -3453,6 +3483,9 @@ Attributes: {0}</value>
   </data>
   <data name="Msg_ChooseAFileForTheRow" xml:space="preserve">
     <value>Choose a file for the row «</value>
+  </data>
+  <data name="Msg_ChooseAMapOnThe" xml:space="preserve">
+    <value>Choose a map on the “Map” tab.</value>
   </data>
   <data name="Msg_ChooseAMapOnTheMap" xml:space="preserve">
     <value>Choose a map on the “Map” tab.</value>
@@ -3619,6 +3652,9 @@ Attributes: {0}</value>
   <data name="Msg_ExportedToXLIFF0" xml:space="preserve">
     <value>Exported to XLIFF: {0}</value>
   </data>
+  <data name="Msg_ExportMapToXLIFF" xml:space="preserve">
+    <value>Export map to XLIFF</value>
+  </data>
   <data name="Msg_ExportToDOCX" xml:space="preserve">
     <value>Export to DOCX</value>
   </data>
@@ -3627,6 +3663,9 @@ Attributes: {0}</value>
   </data>
   <data name="Msg_ExportToXLIFF" xml:space="preserve">
     <value>Export to XLIFF</value>
+  </data>
+  <data name="Msg_ExportWarnings" xml:space="preserve">
+    <value>Export to XLIFF — warnings</value>
   </data>
   <data name="Msg_ExternalDTD" xml:space="preserve">
     <value>External DTD</value>
@@ -3665,6 +3704,12 @@ Attributes: {0}</value>
     <value>Files written: {0}
 </value>
   </data>
+  <data name="Msg_FolderForXLIFFFiles" xml:space="preserve">
+    <value>Folder for the XLIFF files (one per topic)</value>
+  </data>
+  <data name="Msg_FolderWithXLIFFFiles" xml:space="preserve">
+    <value>Folder with the XLIFF files exported from the map</value>
+  </data>
   <data name="Msg_FontSize00Pt" xml:space="preserve">
     <value>Font size {0:0.#} pt.</value>
   </data>
@@ -3689,8 +3734,14 @@ Attributes: {0}</value>
   <data name="Msg_ImportFromXLIFF" xml:space="preserve">
     <value>Import from XLIFF</value>
   </data>
+  <data name="Msg_ImportFromXLIFFReport" xml:space="preserve">
+    <value>Import from XLIFF — report</value>
+  </data>
   <data name="Msg_ImportFromXLIFFWarnings" xml:space="preserve">
     <value>Import from XLIFF — warnings</value>
+  </data>
+  <data name="Msg_ImportMapFromXLIFF" xml:space="preserve">
+    <value>Import map translations from XLIFF</value>
   </data>
   <data name="Msg_ImportTranslationFromXLIFF" xml:space="preserve">
     <value>Import translation from XLIFF</value>
@@ -3730,6 +3781,9 @@ Attributes: {0}</value>
   </data>
   <data name="Msg_MakeImageAFigure" xml:space="preserve">
     <value>Make image a figure</value>
+  </data>
+  <data name="Msg_MapExportedToXLIFF0" xml:space="preserve">
+    <value>Map exported to XLIFF: files written: {0}, folder {1}.</value>
   </data>
   <data name="Msg_MarkAsDeletedTrackChanges" xml:space="preserve">
     <value>Mark as deleted (track changes)</value>
@@ -4280,6 +4334,9 @@ Rename the file “{0}” to “{1}”? </value>
   </data>
   <data name="Msg_TranslationImportedSegmentsApplied0" xml:space="preserve">
     <value>Translation imported: segments applied: {0}</value>
+  </data>
+  <data name="Msg_TranslationsImportedTopicsChanged" xml:space="preserve">
+    <value>Translations imported: topics changed {0}, segments applied {1}.</value>
   </data>
   <data name="Msg_Undone" xml:space="preserve">
     <value>Undone.</value>
