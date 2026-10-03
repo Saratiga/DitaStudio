@@ -42,7 +42,8 @@ public partial class MainWindow : Window
             files,
             new AvaloniaUiPlatform(),
             pdfPrinter,
-            (project, document) => CreateDocumentView(project, document, pdfPrinter)));
+            (project, document) => CreateDocumentView(project, document, pdfPrinter),
+            new SkiaSvgRasterizer()));
 
         var hooks = ViewModel.Hooks;
         hooks.RefreshEditorContext = () =>

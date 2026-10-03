@@ -81,6 +81,11 @@ internal static class ImageSize
 
     private static (int Width, int Height) ReadPixelSize(string path)
     {
+        if (string.Equals(Path.GetExtension(path), ".svg", StringComparison.OrdinalIgnoreCase))
+        {
+            return SvgSize.Read(path);
+        }
+
         try
         {
             using var stream = File.OpenRead(path);

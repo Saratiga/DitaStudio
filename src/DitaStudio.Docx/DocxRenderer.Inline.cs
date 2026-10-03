@@ -400,6 +400,24 @@ public sealed partial class DocxRenderer
         var extension = Path.GetExtension(absolute).ToLowerInvariant();
         var supported = extension is ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".tif" or ".tiff";
 
+        if (extension == ".svg" && _options.ImageRasterizer is { } rasterizer)
+        {
+            // SVG Word не читает: на экспорте он растеризуется в PNG (вдвое плотнее экрана — чётче в печати), размер — как у обычной картинки.
+            var (svgWidth, svgHeight) = ImageSize.ReadEmuSize(absolute, node.GetAttribute("width"), node.GetAttribute("height"));
+            const long emuPerPixel = 9525;
+            var png = rasterizer.RasterizeSvg(absolute, (int)Math.Clamp(svgWidth * 2 / emuPerPixel, 1, 8000), (int)Math.Clamp(svgHeight * 2 / emuPerPixel, 1, 8000));
+            if (png is { Length: > 0 } && DocxPictures.AddPng(_mainPart, png) is { } svgRelId)
+            {
+                yield return DocxPictures.Inline(svgRelId, svgWidth, svgHeight, (uint)_nextImageId++, Path.GetFileName(absolute), alt);
+                yield break;
+            }
+
+            _options.Warnings.Add(Loc.T("Core_TheSVGImage0CouldNot", href));
+            yield return new W.Run(new W.RunProperties(new W.Italic(), new W.Color { Val = "808080" }),
+                new W.Text($"[изображение: {Path.GetFileName(absolute)}{(string.IsNullOrEmpty(alt) ? string.Empty : " — " + alt)}]"));
+            yield break;
+        }
+
         if (!supported)
         {
             _options.Warnings.Add(Loc.T("Core_TheImageFormatIsNotSupported", href));

@@ -1,5 +1,6 @@
 using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
+using DitaStudio.Core.Publishing;
 
 namespace DitaStudio.Presentation.Services;
 
@@ -10,4 +11,5 @@ public sealed record UiServices(
     IFilePicker Files,
     IUiPlatform Platform,
     IPdfPrinter PdfPrinter,
-    Func<DitaProject, DitaDocument, IDocumentView> CreateDocumentView);
+    Func<DitaProject, DitaDocument, IDocumentView> CreateDocumentView,
+    IImageRasterizer? ImageRasterizer = null);

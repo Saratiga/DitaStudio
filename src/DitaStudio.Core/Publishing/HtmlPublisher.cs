@@ -35,6 +35,9 @@ public sealed class PublishOptions
 
     public bool CopyImages { get; set; } = true;
 
+    /// <summary>Растеризатор SVG для DOCX; null — SVG в DOCX заменяется плашкой с именем файла.</summary>
+    public IImageRasterizer? ImageRasterizer { get; set; }
+
     /// <summary>Вместо картинки, которой нет на диске, — плашка «Картинка не найдена» (предпросмотр).</summary>
     public bool MarkMissingImages { get; set; }
 }

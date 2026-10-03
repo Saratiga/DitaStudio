@@ -70,7 +70,8 @@ public partial class PublishViewModel : ObservableObject
 
         var options = new PublishOptions
         {
-            ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false
+            ShowDraftComments = _workspace.Conditions?.ShowDraftComments ?? false,
+            ImageRasterizer = _ui.ImageRasterizer
         };
 
         var conditionsWarning = ApplyConditions(options);

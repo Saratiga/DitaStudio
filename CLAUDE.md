@@ -66,7 +66,7 @@ CefGlue); логика окна — общие ViewModel'и `src/DitaStudio.Pres
 `USAGE.md` (пошаговое руководство по всем пунктам меню) и `samples/DitaStudioGuide`
 (то же руководство как DITA-проект, новый топик добавить в `guide.ditamap`). Оба проекта
 из `samples/` проверяет тест `SampleProjectsTests`: ноль ошибок и предупреждений валидации,
-HTML и DOCX собираются без предупреждений (кроме SVG в DOCX) — после правки прогнать `dotnet test`. Чек-лист тестирования — `docs/TESTPLAN.md`.
+HTML и DOCX собираются без предупреждений (кроме SVG в DOCX: тест собирает без растеризатора) — после правки прогнать `dotnet test`. Чек-лист тестирования — `docs/TESTPLAN.md`.
 
 ## Устройство
 
@@ -108,7 +108,9 @@ samples/GuideSample/     учебный DITA-проект
 
 Зависимости Avalonia-версии: **Avalonia 11.3**, **AvaloniaEdit** (исходный XML и редактор
 блока «Автора»), **CefGlue.Avalonia** (встроенный Chromium: предпросмотр, PDF),
-**WeCantSpell.Hunspell** (орфография). Ядро сейчас без NuGet-зависимостей, но это больше не жёсткое правило —
+**WeCantSpell.Hunspell** (орфография), **Svg.Skia 2.0.0.4** (растеризация SVG в PNG для DOCX —
+`Desktop/Services/SkiaSvgRasterizer`; версия 2.x держит SkiaSharp 2.88, как у Avalonia 11.3, новее
+Svg.Skia тянет SkiaSharp 3/4 и ломает отрисовку). Ядро сейчас без NuGet-зависимостей, но это больше не жёсткое правило —
 решение снято при добавлении поддержки внешних DTD (см. ниже): если для следующей
 задачи понадобится библиотека, добавлять её не запрещено.
 

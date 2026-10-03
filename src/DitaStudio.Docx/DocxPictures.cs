@@ -33,6 +33,20 @@ internal static class DocxPictures
         return part.GetIdOfPart(image);
     }
 
+    /// <summary>Добавляет готовый PNG (например, растеризованный SVG) в часть документа.</summary>
+    public static string? AddPng(OpenXmlPart part, byte[] png)
+    {
+        var image = Add(part, ImagePartType.Png);
+        if (image is null)
+        {
+            return null;
+        }
+
+        using var stream = new MemoryStream(png);
+        image.FeedData(stream);
+        return part.GetIdOfPart(image);
+    }
+
     private static ImagePart? Add(OpenXmlPart part, PartTypeInfo type) => part switch
     {
         MainDocumentPart main => main.AddImagePart(type),

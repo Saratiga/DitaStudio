@@ -4736,4 +4736,7 @@ What to do with the row «</value>
   <data name="Author_ChipLinkText" xml:space="preserve">
     <value>Link text</value>
   </data>
+  <data name="Core_TheSVGImage0CouldNot" xml:space="preserve">
+    <value>The SVG image could not be converted for DOCX (shown as a label): {0}</value>
+  </data>
 </root>

@@ -105,6 +105,7 @@ public sealed partial class DocxPublisher
             {
                 Labels = labels,
                 ShowDraftComments = options.ShowDraftComments,
+                ImageRasterizer = options.ImageRasterizer,
                 Filter = node => PublishFilter.IsIncluded(node, options),
                 TopicBookmark = (path, id) => bookmarks.TryGetValue(BookmarkKey(path, id), out var name) ? name : null,
                 Styles = styles,

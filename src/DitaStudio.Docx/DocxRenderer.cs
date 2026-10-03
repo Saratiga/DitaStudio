@@ -17,6 +17,9 @@ public sealed class DocxRenderOptions
 
     public bool ShowDraftComments { get; set; }
 
+    /// <summary>Растеризатор SVG: нет его — SVG заменяется плашкой с именем файла.</summary>
+    public IImageRasterizer? ImageRasterizer { get; set; }
+
     /// <summary>Условная фильтрация: возвращает false, если элемент нужно исключить.</summary>
     public Func<DitaNode, bool>? Filter { get; set; }
 
