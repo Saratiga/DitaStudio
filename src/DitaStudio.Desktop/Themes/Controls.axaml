@@ -438,6 +438,15 @@
         <Setter Property="Background" Value="{DynamicResource ScrollThumbHover}" />
     </Style>
 
+    <!-- Вкладки карт: полоса прокрутки тонкая и занимает своё место под вкладками, а не лежит поверх названий. -->
+    <Style Selector="ListBox#MapTabs ScrollBar:horizontal">
+        <Setter Property="Height" Value="8" />
+        <Setter Property="MinHeight" Value="8" />
+    </Style>
+    <Style Selector="ListBox#MapTabs ScrollBar:horizontal /template/ RepeatButton">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
     <!-- ============================================================ Строка состояния -->
 
     <Style Selector="Border.statusbar">

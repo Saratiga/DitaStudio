@@ -45,6 +45,7 @@ public sealed class CoreTests
     [Fact] public void SubjectSchemeTests() => Run(CoreChecks.SubjectSchemeTests);
     [Fact] public void IndexTermTests() => Run(CoreChecks.IndexTermTests);
     [Fact] public void SvgDocxTests() => Run(CoreChecks.SvgDocxTests);
+    [Fact] public void TableClipboardTests() => Run(CoreChecks.TableClipboardTests);
     [Fact] public void HtmlPublisherMiscTests() => Run(CoreChecks.HtmlPublisherMiscTests);
     [Fact] public void KeyScopeTests() => Run(CoreChecks.KeyScopeTests);
     [Fact] public void KeyDefinitionMiscTests() => Run(CoreChecks.KeyDefinitionMiscTests);

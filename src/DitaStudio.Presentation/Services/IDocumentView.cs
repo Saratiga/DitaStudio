@@ -189,6 +189,11 @@ public interface IAuthorSurface
     /// <summary>Строки и столбцы таблицы под курсором; false — здесь невозможно (или оболочка не умеет).</summary>
     bool EditCurrentTable(TableOperation operation) => false;
 
+    /// <summary>Атрибуты элемента изменились извне (панель «Атрибуты»): обновить серые пометки у его блока. Оболочки без пометок ничего не делают.</summary>
+    void RefreshAttributeNotes(DitaNode node)
+    {
+    }
+
     /// <summary>Переключает класс в outputclass текущего элемента; null — элемента нет.</summary>
     bool? ToggleCurrentOutputClass(string className);
 

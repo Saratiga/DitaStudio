@@ -642,6 +642,8 @@ public sealed partial class AuthorView : UserControl
 
         public override void FlushPendingEdits() => _view.FlushPendingEdits();
 
+        public override void RefreshAttributeNotes(DitaNode node) => _view.RefreshMarks(node);
+
         public override void Rebuild()
         {
             _view.FlushPendingEdits();

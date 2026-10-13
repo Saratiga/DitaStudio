@@ -118,6 +118,12 @@ public static class BlockClipboard
     /// </summary>
     public static BlockInsertion? FindInsertion(DitaNode after, IReadOnlyList<DitaNode> blocks)
     {
+        // Якорь — сама ячейка таблицы (текст прямо в entry): блоки встают внутрь ячейки, а не после всей таблицы.
+        if (after.Name is "entry" or "stentry" && Accepts(after, after.Children.Count, blocks))
+        {
+            return new BlockInsertion(after, after.Children.Count);
+        }
+
         var anchor = after;
         for (var level = 0; level < 8 && anchor.Parent is { } parent; level++)
         {

@@ -104,6 +104,55 @@ public sealed partial class AuthorView
         return parts.Count == 0 ? null : string.Join(" · ", parts);
     }
 
+    /// <summary>
+    /// Пересобирает только обёртки блока (метка размещения, серая пометка атрибутов) после того, как атрибуты узла изменились
+    /// без перестройки блока (панель «Атрибуты»): блок и его редакторы остаются на месте, курсор не сбивается.
+    /// </summary>
+    public void RefreshMarks(DitaNode node)
+    {
+        if (!_views.TryGetValue(node, out var outer) || outer.Parent is null)
+        {
+            return;
+        }
+
+        var note = AttributeNotesEnabled ? AttributeNote(node) : null;
+        var place = PagePlacement.Of(node);
+        if (ReferenceEquals(outer, ViewFor(node)) && note is null && place is null)
+        {
+            return;
+        }
+
+        if (!Detach(outer))
+        {
+            return;
+        }
+
+        var core = outer;
+        while (core is StackPanel { Tag: ViewWrapperTag } wrapper && wrapper.Children.Count > 0)
+        {
+            var inner = wrapper.Children[^1];
+            wrapper.Children.Remove(inner);
+            core = inner;
+        }
+
+        var view = core;
+        if (place is not null)
+        {
+            view = WithPlacementMark(place, view);
+        }
+
+        if (note is not null)
+        {
+            view = WithAttributeNote(note, view);
+        }
+
+        _viewNodes.Remove(outer);
+        _views[node] = view;
+        _viewNodes[view] = node;
+        _replaceSlot!(view);
+        _replaceSlot = null;
+    }
+
     private static Control WithAttributeNote(string text, Control view)
     {
         var note = new TextBlock { Text = text, FontSize = 10.5, Margin = new Thickness(4, 2, 0, 0), Tag = "attribute-note", TextWrapping = TextWrapping.Wrap };

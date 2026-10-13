@@ -114,6 +114,30 @@ public sealed class AuthorViewTests
     }
 
     [AvaloniaFact]
+    public void Backspace_AtStartOfNumberedParagraph_RemovesNumbering_ThenMerges()
+    {
+        var (window, author, document, undo) = Show(
+            "<concept id=\"c\"><title>Н</title><conbody><p>Первый</p><p outputclass=\"numbered align-center\">Нумерованный</p></conbody></concept>");
+        var numbered = Paragraphs(document)[1];
+        Focus(window, author, numbered, 0);
+
+        Press(window, Key.Back, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(2, Paragraphs(document).Count); // слияния нет
+        Assert.Equal("align-center", numbered.GetAttribute("outputclass")); // чужие классы остались
+        Assert.Equal("Нумерованный", numbered.InnerText);
+        Assert.Single(undo);
+        Assert.DoesNotContain(author.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "№");
+
+        // Второй Backspace — уже обычное слияние с предыдущим.
+        Focus(window, author, numbered, 0);
+        Press(window, Key.Back, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Single(Paragraphs(document));
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void Backspace_AtStart_MergesWithPrevious_DeleteAtEnd_PullsNext()
     {
         var (window, author, document, _) = Show();

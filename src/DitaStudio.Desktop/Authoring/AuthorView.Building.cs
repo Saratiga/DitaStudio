@@ -467,6 +467,7 @@ public sealed partial class AuthorView
         };
         editor.MouseSelectionFinished += (_, _) => OnMouseSelectionFinished(editor);
         editor.BlocksPasteRequested += (_, _) => _ = PasteBlocksAsync(editor.Node);
+        editor.TablePasteRequested += (_, e) => e.Handled = PasteTabularText(editor.Node, e.Text);
         editor.WrapRequested += (_, element) => Surface.WrapCurrentInline(element);
         editor.StructureRequested += OnStructureRequested;
 

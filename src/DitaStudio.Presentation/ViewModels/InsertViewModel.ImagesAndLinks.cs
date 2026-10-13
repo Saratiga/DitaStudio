@@ -24,10 +24,33 @@ public partial class InsertViewModel
             return;
         }
 
+        // Рисунок бывает с номером и названием («Рисунок N. …», блок fig) и обычным — просто картинка в месте курсора.
+        var kind = await _ui.Dialogs.AskAsync(Loc.T("Msg_InsertImage"), Loc.T("Msg_NumberedFigureQuestion"), AskButtons.YesNoCancel);
+        if (kind == AskResult.Cancel)
+        {
+            return;
+        }
+
         var file = await _ui.Files.OpenFileAsync(Loc.T("Msg_ChooseAnImage"),
             new[] { new FileFilter(Loc.T("Dlg_Images"), "*.png", "*.jpg", "*.jpeg", "*.gif", "*.svg", "*.bmp"), FileFilter.All },
             Path.GetDirectoryName(pane.FilePath));
         if (file is null)
+        {
+            return;
+        }
+
+        InsertImageFile(file, numbered: kind == AskResult.Yes);
+    }
+
+    /// <summary>
+    /// Вставляет изображение из файла. <paramref name="numbered"/> — рисунок: блок <c>fig</c> с названием, у которого при публикации подпись
+    /// «Рисунок N. Название» (где <c>fig</c> недопустим — изображение в строке); иначе — обычное изображение в позиции курсора, без
+    /// названия и номера.
+    /// </summary>
+    public void InsertImageFile(string file, bool numbered)
+    {
+        var pane = _docs.Current;
+        if (pane?.FilePath is null)
         {
             return;
         }
@@ -40,8 +63,19 @@ public partial class InsertViewModel
         alt.SetText(Path.GetFileNameWithoutExtension(file));
         image.Add(alt);
 
-        // Рисунок — блок fig с названием: при публикации у него подпись «Рисунок N. Название».
         // Там, где fig недопустим (например, в середине заголовка), изображение идёт в строку.
+        if (!numbered)
+        {
+            if (!pane.Author.InsertInlineNode(image))
+            {
+                _shell.StatusText = Loc.T("Msg_PutTheCursorInTheParagraph");
+                return;
+            }
+
+            _docs.RefreshAllTabTitles();
+            return;
+        }
+
         if (pane.Author.InsertFigure(image))
         {
             _shell.StatusText = Loc.T("Msg_FigureInsertedReplaceTheTitleUnder");

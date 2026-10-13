@@ -1,6 +1,10 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.ViewModels;
 using Xunit;
@@ -169,6 +173,37 @@ public sealed class MultiProjectTests : IDisposable
         Assert.Empty(vm.Documents.Tabs);
         Assert.Null(vm.Project);
         Assert.Equal("DITA Studio", window.Title);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task MapTabs_ThinScrollBar_DoesNotCoverTabTitles()
+    {
+        var (window, _) = await OpenBothAsync();
+        window.Width = 420; // узкое окно: вкладки двух карт не помещаются и появляется полоса прокрутки
+        Dispatcher.UIThread.RunJobs();
+
+        foreach (var control in window.GetVisualDescendants().OfType<TabControl>())
+        {
+            if (control.Items.OfType<TabItem>().FirstOrDefault(t => t.Header as string == "Карта") is { } mapTab)
+            {
+                control.SelectedItem = mapTab; // вкладки карт лежат на левой панели «Карта»
+            }
+        }
+
+        Dispatcher.UIThread.RunJobs();
+        var tabs = window.GetVisualDescendants().OfType<ListBox>().Single(l => l.Name == "MapTabs");
+        var bar = tabs.GetVisualDescendants().OfType<ScrollBar>().First(b => b.Orientation == Avalonia.Layout.Orientation.Horizontal);
+        Assert.True(bar.IsVisible);
+        Assert.True(bar.Bounds.Height <= 10, $"полоса прокрутки тонкая: {bar.Bounds.Height}");
+        var item = tabs.GetVisualDescendants().OfType<ListBoxItem>().First();
+        var itemBottom = item.TranslatePoint(new Point(0, item.Bounds.Height), window)!.Value.Y;
+        var barTop = bar.TranslatePoint(new Point(0, 0), window)!.Value.Y;
+        Assert.True(barTop >= itemBottom - 1, $"полоса ({barTop}) не перекрывает вкладку (низ {itemBottom})");
+
+        var dir = Path.Combine(AppContext.BaseDirectory, "screenshots");
+        Directory.CreateDirectory(dir);
+        window.CaptureRenderedFrame()?.Save(Path.Combine(dir, "map-tabs-scrollbar.png"));
         window.Close();
     }
 

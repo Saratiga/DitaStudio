@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.VisualTree;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
+using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Authoring;
 using DitaStudio.Core.Localization;
@@ -499,6 +500,17 @@ public sealed partial class AuthorView
         if (node.Name == "fn")
         {
             return false; // Backspace в начале текста сноски не сливает её с соседями
+        }
+
+        // Backspace перед текстом нумерованного абзаца «стирает» его «№»: абзац становится обычным (слияния с предыдущим не будет).
+        if (node.Name == "p" && HeadingNumbering.IsNumbered(node))
+        {
+            BeforeStructuralEdit?.Invoke(this, Loc.T("Msg_ChangeOutputFormatting"));
+            EditCommands.ToggleOutputClassToken(node, HeadingNumbering.NumberedClass);
+            Modified();
+            RefreshChildren(node.Parent!, new[] { node }, node);
+            StatusRequested?.Invoke(this, Loc.T("Msg_TheParagraphIsNoLongerNumbered"));
+            return true;
         }
 
         if (EditCommands.PreviousElement(node) is not { } previous)

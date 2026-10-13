@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Media;
 using DitaStudio.Core.Editing;
 using DitaStudio.Core.Model;
@@ -23,6 +24,56 @@ public sealed partial class AuthorView
         public required Control Content { get; init; }
 
         public required Grid Host { get; init; }
+    }
+
+    /// <summary>Копирует (или вырезает) выделенные ячейки в системный буфер обмена текстом с табуляциями — так же их понимают Excel и Word.</summary>
+    private async Task CopyCellsAsync(bool cut)
+    {
+        if (Surface.CopySelectedCells(cut) is not { } text)
+        {
+            return;
+        }
+
+        if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard)
+        {
+            await clipboard.SetTextAsync(text);
+        }
+
+        StatusRequested?.Invoke(this, Loc.T("Author_CellsCopied0", text.Split('\n').Length));
+    }
+
+    /// <summary>Ctrl+V при выделенных ячейках: ячейки из буфера ложатся от левой верхней выделенной; блоки DITA — в первую выделенную ячейку.</summary>
+    private async Task PasteIntoSelectedCellsAsync()
+    {
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+        var text = clipboard is null ? null : await clipboard.TryGetTextAsync();
+        text ??= TableClipboard.LastCopied?.Text ?? BlockClipboard.LastCopiedText;
+        if (text is null || PasteTabularText(null, text))
+        {
+            return;
+        }
+
+        if (BlockClipboard.Parse(text) is { } blocks && Surface.CellSelection is { } selection && CellGrid.Of(selection.Table) is { } grid &&
+            grid.At(selection.Range.Row0, selection.Range.Col0) is { } first && BlockClipboard.FindInsertion(first.Entry, blocks) is { } place)
+        {
+            BlockClipboard.MakeIdsUnique(Document!, blocks);
+            Surface.InsertBlocks(place.Parent, place.Index, blocks);
+        }
+    }
+
+    /// <summary>Вставляет текст с табуляциями таблицей: в ячейки от курсора (внутри таблицы) или новой таблицей после блока. false — это обычный текст.</summary>
+    private bool PasteTabularText(DitaNode? from, string text)
+    {
+        if (Surface.PasteCells(text, from) is { } result)
+        {
+            StatusRequested?.Invoke(this, Loc.T("Author_CellsPasted0", result.Written) +
+                                          (result.AddedRows > 0 ? Loc.T("Author_CellsPastedRowsAdded1", result.AddedRows) : string.Empty) +
+                                          (result.SkippedColumns > 0 ? Loc.T("Author_CellsPastedColumnsDropped1", result.SkippedColumns) : string.Empty) + ".");
+            return true;
+        }
+
+        // Вне таблицы многострочный текст без табуляций остаётся текстом; с табуляциями (Excel, Word) становится таблицей.
+        return from is not null && text.Contains('\t') && Surface.PasteAsTable(text);
     }
 
     private readonly List<CellTint> _tints = new();

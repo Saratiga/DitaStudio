@@ -4739,4 +4739,28 @@ What to do with the row «</value>
   <data name="Core_TheSVGImage0CouldNot" xml:space="preserve">
     <value>The SVG image could not be converted for DOCX (shown as a label): {0}</value>
   </data>
+  <data name="Msg_InsertImage" xml:space="preserve">
+    <value>Insert image</value>
+  </data>
+  <data name="Msg_NumberedFigureQuestion" xml:space="preserve">
+    <value>Insert the image as a numbered figure (with a title and the caption “Figure N”)?
+
+Yes — numbered figure.
+No — plain image at the cursor, without a title or number.</value>
+  </data>
+  <data name="Msg_PasteCells" xml:space="preserve">
+    <value>Paste cells</value>
+  </data>
+  <data name="Author_CellsCopied0" xml:space="preserve">
+    <value>Cells copied: {0}. Paste with Ctrl+V.</value>
+  </data>
+  <data name="Author_CellsPasted0" xml:space="preserve">
+    <value>Cells pasted: {0}</value>
+  </data>
+  <data name="Author_CellsPastedRowsAdded1" xml:space="preserve">
+    <value>, rows added: {0}</value>
+  </data>
+  <data name="Author_CellsPastedColumnsDropped1" xml:space="preserve">
+    <value>, columns beyond the table edge dropped: {0}</value>
+  </data>
 </root>

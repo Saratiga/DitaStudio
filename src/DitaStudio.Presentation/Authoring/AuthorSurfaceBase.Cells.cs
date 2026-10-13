@@ -106,6 +106,90 @@ public abstract partial class AuthorSurfaceBase
         return true;
     }
 
+    /// <summary>
+    /// Копирует выделенные ячейки: возвращает текст для буфера обмена (табуляции и переводы строк, как у Excel); разметка ячеек запоминается
+    /// в <see cref="TableClipboard.LastCopied"/>. <paramref name="cut"/> — после копирования ячейки очищаются. Null — ячейки не выделены.
+    /// </summary>
+    public string? CopySelectedCells(bool cut)
+    {
+        if (Document is null || CellSelection is not { } selection || CellGrid.Of(selection.Table) is not { } grid)
+        {
+            return null;
+        }
+
+        FlushPendingEdits();
+        var copied = TableClipboard.Copy(grid, grid.Expand(selection.Range));
+        TableClipboard.LastCopied = copied;
+        if (cut)
+        {
+            ClearSelectedCells();
+        }
+
+        return copied.Text;
+    }
+
+    /// <summary>
+    /// Вставляет ячейки из текста буфера обмена (этот же редактор, Excel, Word) в таблицу: от левой верхней выделенной ячейки или от ячейки
+    /// под курсором (<paramref name="from"/> — узел в ячейке, если курсор не там, где <see cref="CurrentNode"/>). Не хватает строк —
+    /// таблица удлиняется. Null — вставлять некуда или в тексте одна ячейка (работает обычная вставка текста).
+    /// </summary>
+    public CellPasteResult? PasteCells(string? text, DitaNode? from = null)
+    {
+        var rows = TableClipboard.LastCopied is { } last && last.Text == text ? last.Rows : TableClipboard.Parse(text);
+        if (rows is null || Document is null)
+        {
+            return null;
+        }
+
+        DitaNode table;
+        int row, column;
+        if (CellSelection is { } selection && CellGrid.Of(selection.Table) is { } selected)
+        {
+            var range = selected.Expand(selection.Range);
+            (table, row, column) = (selection.Table, range.Row0, range.Col0);
+        }
+        else if ((from ?? CurrentNode) is { } node && TableCommands.CellOf(node) is { Name: "entry" } cell && cell.Closest("table") is { } holder &&
+                 CellGrid.Of(cell) is { } grid && grid.CellOf(cell) is { } at)
+        {
+            (table, row, column) = (holder, at.Row, at.Col);
+        }
+        else
+        {
+            return null;
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit(Loc.T("Msg_PasteCells"));
+        var result = TableClipboard.Paste(table, row, column, rows);
+        var columns = Math.Min(rows.Max(r => r.Count), (CellGrid.Of(table)?.Columns ?? 1) - column);
+        var firstCell = CellGrid.Of(table)?.At(row, column)?.Entry ?? table;
+        CurrentNode = firstCell;
+        Changed(FirstEditable(firstCell), table.Parent, table);
+        ReselectCells(table, new CellRange(row, row + rows.Count - 1, column, column + Math.Max(columns, 1) - 1));
+        return result;
+    }
+
+    /// <summary>
+    /// Вставляет текст из Excel/Word (табуляции, строки) таблицей после текущего блока — когда курсор не в таблице. Null — в тексте
+    /// одна ячейка или таблицу сюда не поставить.
+    /// </summary>
+    public bool PasteAsTable(string? text)
+    {
+        if (TableClipboard.Parse(text) is not { } rows || Document is null || CurrentNode is null)
+        {
+            return false;
+        }
+
+        var table = ViewModels.TableNodeBuilder.Build(new Services.TableResult(rows.Count, rows.Max(r => r.Count), false, string.Empty));
+        if (BlockClipboard.FindInsertion(CurrentNode, new[] { table }) is not { } place)
+        {
+            return false;
+        }
+
+        TableClipboard.Paste(table, 0, 0, rows);
+        return InsertBlocks(place.Parent, place.Index, new[] { table });
+    }
+
     /// <summary>Очищает выделенные ячейки (Delete): содержимое уходит, ячейки остаются. false — ячейки не выделены.</summary>
     public bool ClearSelectedCells()
     {

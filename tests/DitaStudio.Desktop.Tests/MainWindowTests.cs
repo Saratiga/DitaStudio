@@ -397,6 +397,38 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Значок рисунка: «с нумерацией» — блок fig с названием, «обычный» — просто image в позиции курсора, без fig и названия.</summary>
+    [AvaloniaFact]
+    public async Task InsertImageFile_NumberedMakesFigure_PlainIsJustImageAtCursor()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.Length > 10);
+        var picture = Path.Combine(_project, "concepts", "pic.png");
+        File.WriteAllBytes(picture, Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg=="));
+        var figuresBefore = pane.Document.Root.Descendants().Count(n => n.Name == "fig");
+
+        var editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(4);
+        Dispatcher.UIThread.RunJobs();
+        vm.Insert.InsertImageFile(picture, numbered: false);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(figuresBefore, pane.Document.Root.Descendants().Count(n => n.Name == "fig"));
+        var image = Assert.Single(p.Descendants().Where(n => n.Name == "image"));
+        Assert.Equal("pic.png", image.GetAttribute("href"));
+        Assert.Null(image.GetAttribute("placement")); // в строке, не отдельным блоком
+        Assert.DoesNotContain(pane.Document.Root.Descendants(), n => n.Name == "title" && n.Parent?.Name == "fig" && n.InnerText.Contains("Название"));
+
+        editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        vm.Insert.InsertImageFile(picture, numbered: true);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(figuresBefore + 1, pane.Document.Root.Descendants().Count(n => n.Name == "fig"));
+        window.Close();
+    }
+
     /// <summary>Д3: команда «Маркер» — с выделением закрашивает, без — включает кисть (повтор выключает); «Другой цвет…» открывает окно
     /// выбора цвета; кнопка на панели подсвечена, пока кисть включена.</summary>
     [AvaloniaFact]

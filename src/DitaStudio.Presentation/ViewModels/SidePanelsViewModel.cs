@@ -118,13 +118,18 @@ public partial class SidePanelsViewModel : ObservableObject
 
         pane.PushUndo(Loc.T("Msg_Attribute0", value));
         node.SetAttribute(value, attributeDef.DefaultValue ?? (attributeDef.Values.Count > 0 ? attributeDef.Values[0] : string.Empty));
-        AfterAttributeEdit(pane);
+        AfterAttributeEdit(pane, node);
         RefreshAttributes();
     }
 
-    internal void AfterAttributeEdit(IDocumentView pane)
+    internal void AfterAttributeEdit(IDocumentView pane, DitaNode? node = null)
     {
         pane.Document.IsDirty = true;
+        if (node is not null)
+        {
+            pane.Author.RefreshAttributeNotes(node);
+        }
+
         _docs.RefreshAllTabTitles();
     }
 
@@ -311,7 +316,7 @@ public sealed partial class AttributeRowViewModel : ObservableObject
 
         _pane.PushUndo(Loc.T("Msg_Change0", Name));
         _node.SetAttribute(Name, Value);
-        _owner.AfterAttributeEdit(_pane);
+        _owner.AfterAttributeEdit(_pane, _node);
         _owner.SetStatus($"@{Name} = {Value}");
     }
 
@@ -320,7 +325,7 @@ public sealed partial class AttributeRowViewModel : ObservableObject
     {
         _pane.PushUndo(Loc.T("Msg_Delete02", Name));
         _node.RemoveAttribute(Name);
-        _owner.AfterAttributeEdit(_pane);
+        _owner.AfterAttributeEdit(_pane, _node);
         _owner.RefreshAttributes();
     }
 }

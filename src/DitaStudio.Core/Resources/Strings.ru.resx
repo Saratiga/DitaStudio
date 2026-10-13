@@ -4739,4 +4739,28 @@
   <data name="Core_TheSVGImage0CouldNot" xml:space="preserve">
     <value>Не удалось преобразовать SVG-изображение для DOCX (показано плашкой): {0}</value>
   </data>
+  <data name="Msg_InsertImage" xml:space="preserve">
+    <value>Вставка изображения</value>
+  </data>
+  <data name="Msg_NumberedFigureQuestion" xml:space="preserve">
+    <value>Вставить изображение как рисунок с нумерацией (с названием и подписью «Рисунок N»)?
+
+Да — рисунок с нумерацией.
+Нет — обычное изображение в месте курсора, без названия и номера.</value>
+  </data>
+  <data name="Msg_PasteCells" xml:space="preserve">
+    <value>Вставка ячеек</value>
+  </data>
+  <data name="Author_CellsCopied0" xml:space="preserve">
+    <value>Скопировано ячеек: {0}. Вставка — Ctrl+V.</value>
+  </data>
+  <data name="Author_CellsPasted0" xml:space="preserve">
+    <value>Вставлено ячеек: {0}</value>
+  </data>
+  <data name="Author_CellsPastedRowsAdded1" xml:space="preserve">
+    <value>, добавлено строк: {0}</value>
+  </data>
+  <data name="Author_CellsPastedColumnsDropped1" xml:space="preserve">
+    <value>, столбцов за краем таблицы отброшено: {0}</value>
+  </data>
 </root>

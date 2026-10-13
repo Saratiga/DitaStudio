@@ -532,6 +532,11 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         return true;
     }
 
+    /// <summary>Серые пометки у блока узла после изменения атрибутов извне; в базе — ничего (пометки рисует оболочка).</summary>
+    public virtual void RefreshAttributeNotes(DitaNode node)
+    {
+    }
+
     public bool? ToggleCurrentOutputClass(string className)
     {
         if (Document is null || CurrentNode is null)

@@ -173,6 +173,9 @@ public sealed class BlockEditor : TextEditor
     /// <summary>В буфере обмена блоки, скопированные «Автором»: вставка в этот блок — вставка блоков после него.</summary>
     public event EventHandler? BlocksPasteRequested;
 
+    /// <summary>В буфере обмена ячейки (текст с табуляциями из Excel/Word или ячейки этого редактора): оболочка вставляет их в таблицу, а если места нет — оставляет вставку текстом.</summary>
+    public event EventHandler<TablePasteEventArgs>? TablePasteRequested;
+
     /// <summary>Выделение мышью закончено: кнопку отпустили, выделенный текст не пуст.</summary>
     public event EventHandler? MouseSelectionFinished;
 
@@ -593,6 +596,16 @@ public sealed class BlockEditor : TextEditor
             return;
         }
 
+        if (DitaStudio.Core.Editing.TableClipboard.LooksTabular(text) || DitaStudio.Core.Editing.TableClipboard.LastCopied?.Text == text)
+        {
+            var request = new TablePasteEventArgs(text);
+            TablePasteRequested?.Invoke(this, request);
+            if (request.Handled)
+            {
+                return;
+            }
+        }
+
         text = text.Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ').Replace('\t', ' ')
             .Replace(InlineContent.ChipChar.ToString(), string.Empty);
         TextArea.Selection.ReplaceSelectionWithText(text);
@@ -934,6 +947,16 @@ public sealed class BlockEditor : TextEditor
 
         return chip;
     }
+}
+
+/// <summary>Текст ячеек из буфера обмена; <see cref="Handled"/> — оболочка уже вставила его таблицей.</summary>
+public sealed class TablePasteEventArgs : EventArgs
+{
+    public TablePasteEventArgs(string text) => Text = text;
+
+    public string Text { get; }
+
+    public bool Handled { get; set; }
 }
 
 /// <summary>Плашка, по которой щёлкнули, и её представление (место для окна правки).</summary>

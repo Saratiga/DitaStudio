@@ -516,6 +516,16 @@ public sealed partial class AuthorView
                 e.Handled = true;
                 Surface.ClearSelectedCells();
             }
+            else if (e.Key is Key.C or Key.X && e.KeyModifiers == KeyModifiers.Control)
+            {
+                e.Handled = true;
+                _ = CopyCellsAsync(cut: e.Key == Key.X);
+            }
+            else if (e.Key == Key.V && e.KeyModifiers == KeyModifiers.Control)
+            {
+                e.Handled = true;
+                _ = PasteIntoSelectedCellsAsync();
+            }
             else if (e.Key == Key.Escape)
             {
                 e.Handled = true;

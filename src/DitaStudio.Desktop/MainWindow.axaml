@@ -355,7 +355,8 @@
                             <Button Name="OpenMapButton" DockPanel.Dock="Right" Content="{loc:Tr Btn_AddMap}" Padding="6,3" Margin="4,0,0,0"
                                     Click="OnOpenMapClick" ToolTip.Tip="{loc:Tr Tip_AddMap}" />
                             <ListBox Name="MapTabs" ItemsSource="{Binding Map.OpenMaps}" SelectedItem="{Binding Map.SelectedMapTab}"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                     ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                     ScrollViewer.AllowAutoHide="False">
                                 <ListBox.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <StackPanel Orientation="Horizontal" />
