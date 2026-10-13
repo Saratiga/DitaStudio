@@ -28,6 +28,9 @@
   glossary/             статьи глоссария
   reusable/             общие фрагменты для conref
   images/               рисунки</codeblock>
+          <p>Папку можно создать прямо в программе: кнопка «Папка» на вкладке «Проект» или пункт
+            «Новая папка…» в меню дерева (вложенная — через слеш, например
+            <filepath>tasks/new</filepath>); пустые папки в дереве видны.</p>
           <p>Скрытые папки и папки <filepath>out</filepath>, <filepath>bin</filepath>,
             <filepath>obj</filepath>, <filepath>temp</filepath>, <filepath>node_modules</filepath>
             редактор не сканирует. Сборку он по умолчанию предлагает класть в

@@ -1354,7 +1354,9 @@ li::marker { color: #1a5fb4; }         /* цвет маркеров и номе�
 число страниц (в Word — поля `PAGE` и `NUMPAGES`, номера подставляет Word), `string(title)` —
 название издания (карты), `url("картинка")` — картинка (путь от папки проекта; PNG, JPEG, GIF,
 BMP). Части через пробел склеиваются. У поля работают `font-family`, `font-size`, `font-weight`,
-`font-style`, `font` (краткая запись), `color`; `border-bottom` у верхних полей и `border-top`
+`font-style`, `font` (краткая запись), `color`, `text-transform: uppercase`, `text-decoration: underline`,
+`letter-spacing`; `height` или `min-height` — наименьшая высота области колонтитула, `padding-top` и
+`padding-bottom` — интервалы над текстом и под ним; `border-bottom` у верхних полей и `border-top`
 у нижних — линия между колонтитулом и текстом; `margin-top` (верхние) и `margin-bottom`
 (нижние поля) — расстояние от края листа; `height` — высота картинки (без него картинка
 подгоняется под колонтитул, как в диалоге). `content: none` убирает поле. Колонтитулы из CSS
