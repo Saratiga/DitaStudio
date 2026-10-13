@@ -4763,4 +4763,55 @@
   <data name="Author_CellsPastedColumnsDropped1" xml:space="preserve">
     <value>, столбцов за краем таблицы отброшено: {0}</value>
   </data>
+  <data name="Core_TheFolderNameIsEmpty" xml:space="preserve">
+    <value>Имя папки пустое.</value>
+  </data>
+  <data name="Core_TheFolderNameHasAnEmptyPart" xml:space="preserve">
+    <value>В имени папки пустая часть (два слеша подряд или слеш с краю).</value>
+  </data>
+  <data name="Core_TheFolderNameMustNotContain" xml:space="preserve">
+    <value>В имени папки нельзя использовать символы: {0}</value>
+  </data>
+  <data name="Core_TheFolderNameMustNotEndWithADot" xml:space="preserve">
+    <value>Имя папки не может оканчиваться точкой или состоять из точек: {0}</value>
+  </data>
+  <data name="Core_TheFolderNameMustNotStartWithADot" xml:space="preserve">
+    <value>Имя папки не должно начинаться с точки (такие папки служебные и не показываются): {0}</value>
+  </data>
+  <data name="Core_TheFolderName0IsReservedBy" xml:space="preserve">
+    <value>Имя «{0}» зарезервировано системой, для папки его использовать нельзя.</value>
+  </data>
+  <data name="Core_TheFolderNameIsTooLong" xml:space="preserve">
+    <value>Имя папки слишком длинное (до 100 символов в каждой части).</value>
+  </data>
+  <data name="Core_TheFolderMustBeInsideTheProject" xml:space="preserve">
+    <value>Папка должна быть внутри папки проекта.</value>
+  </data>
+  <data name="Core_TheFolder0AlreadyExists" xml:space="preserve">
+    <value>Папка или файл «{0}» уже есть.</value>
+  </data>
+  <data name="Msg_NewFolder" xml:space="preserve">
+    <value>Новая папка</value>
+  </data>
+  <data name="Msg_NewFolderName" xml:space="preserve">
+    <value>Имя папки:</value>
+  </data>
+  <data name="Msg_NewFolderHint" xml:space="preserve">
+    <value>Папка создаётся внутри выбранной папки. Вложенную можно записать через слеш: tasks/new.</value>
+  </data>
+  <data name="Msg_FolderCreated0" xml:space="preserve">
+    <value>Папка создана: {0}</value>
+  </data>
+  <data name="Msg_CouldNotCreateTheFolder0" xml:space="preserve">
+    <value>Не удалось создать папку: {0}</value>
+  </data>
+  <data name="Btn_NewFolder" xml:space="preserve">
+    <value>Папка</value>
+  </data>
+  <data name="Menu_NewFolder" xml:space="preserve">
+    <value>Новая папка…</value>
+  </data>
+  <data name="Tip_NewFolder" xml:space="preserve">
+    <value>Создать папку в выбранной папке проекта</value>
+  </data>
 </root>

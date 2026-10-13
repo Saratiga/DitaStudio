@@ -381,6 +381,12 @@ public partial class ProjectViewModel : ObservableObject
                 EnsureFolder(project, folders, directory).Children.Add(new ProjectTreeNode(file.FileName, null, file, project));
             }
 
+            // Совсем пустые папки (только что созданные) тоже видны: в них можно создавать документы и вложенные папки.
+            foreach (var empty in EmptyFolders(project))
+            {
+                EnsureFolder(project, folders, empty);
+            }
+
             Tree.Add(root);
         }
 
@@ -401,6 +407,120 @@ public partial class ProjectViewModel : ObservableObject
     }
 
     private bool _suppressActivation;
+
+    /// <summary>Пустые папки проекта (в них нет ни файлов, ни папок), относительные пути; служебные, начинающиеся с точки, не считаются.</summary>
+    private static IEnumerable<string> EmptyFolders(DitaProject project)
+    {
+        List<string> directories;
+        try
+        {
+            directories = Directory.EnumerateDirectories(project.RootPath, "*", SearchOption.AllDirectories).ToList();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            yield break;
+        }
+
+        foreach (var directory in directories)
+        {
+            var relative = Path.GetRelativePath(project.RootPath, directory);
+            if (relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Any(part => part.StartsWith('.')))
+            {
+                continue;
+            }
+
+            bool empty;
+            try
+            {
+                empty = !Directory.EnumerateFileSystemEntries(directory).Any();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                continue;
+            }
+
+            if (empty)
+            {
+                yield return relative;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Создаёт папку в проекте: внутри выбранной в дереве папки (у файла — в его папке, ничего не выбрано — в корне активного проекта).
+    /// Имя спрашивается в окне; вложенные папки пишутся через слеш. Новая папка выделяется в дереве.
+    /// </summary>
+    [RelayCommand]
+    private async Task NewFolder()
+    {
+        var node = SelectedTreeNode;
+        var project = node?.Project ?? _workspace.Project;
+        if (project is null)
+        {
+            await _ui.Dialogs.MessageAsync(Loc.T("Msg_NewFolder"), Loc.T("Msg_OpenAProjectFolderFirst"));
+            return;
+        }
+
+        var parent = node switch
+        {
+            { FolderPath: { } folder } when Directory.Exists(folder) => folder,
+            { File: { } file } => Path.GetDirectoryName(file.FullPath) ?? project.RootPath,
+            _ => project.RootPath
+        };
+
+        string? name = string.Empty;
+        string? error = null;
+        while (true)
+        {
+            // Окно повторяется с тем же текстом, пока имя не годится или пользователь не откажется.
+            name = await _ui.Dialogs.PromptTextAsync(Loc.T("Msg_NewFolder"), Loc.T("Msg_NewFolderName"), name ?? string.Empty,
+                error ?? Loc.T("Msg_NewFolderHint"));
+            if (name is null)
+            {
+                return;
+            }
+
+            try
+            {
+                var created = ProjectFolders.Create(project, parent, name);
+                _workspace.ActivateProject(project);
+                RebuildTree();
+                SelectFolder(project, created);
+                _shell.StatusText = Loc.T("Msg_FolderCreated0", Path.GetRelativePath(project.RootPath, created));
+                return;
+            }
+            catch (ArgumentException ex)
+            {
+                error = ex.Message;
+            }
+            catch (IOException ex)
+            {
+                error = ex.Message;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                error = Loc.T("Msg_CouldNotCreateTheFolder0", ex.Message);
+            }
+        }
+    }
+
+    /// <summary>Выделяет папку в дереве и раскрывает все её родительские папки.</summary>
+    public void SelectFolder(DitaProject project, string folderPath)
+    {
+        var all = Tree.SelectMany(Flatten).ToList();
+        var target = all.FirstOrDefault(n => ReferenceEquals(n.Project, project) && string.Equals(n.FolderPath, folderPath, StringComparison.OrdinalIgnoreCase));
+        if (target is null)
+        {
+            return;
+        }
+
+        for (var holder = all.FirstOrDefault(n => n.Children.Contains(target)); holder is not null; holder = all.FirstOrDefault(n => n.Children.Contains(holder)))
+        {
+            holder.IsExpanded = true;
+        }
+
+        SelectedTreeNode = target;
+    }
 
     private static IEnumerable<ProjectTreeNode> Flatten(ProjectTreeNode node) => node.Children.SelectMany(Flatten).Prepend(node);
 

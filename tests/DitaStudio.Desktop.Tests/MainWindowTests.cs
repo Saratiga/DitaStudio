@@ -397,6 +397,57 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Новая папка в дереве проекта: имя спрашивается в окне, недопустимое имя оставляет окно с пояснением, папка создаётся внутри выбранной, видна пустой и выделяется.</summary>
+    [AvaloniaFact]
+    public async Task NewFolder_CreatesInsideSelectedFolder_ShowsEmptyFolderInTree()
+    {
+        var (window, vm) = await OpenAsync();
+        var panel = vm.ProjectPanel;
+        var concepts = panel.Tree.SelectMany(Descendants).First(n => n.FolderPath is not null && n.Name == "concepts");
+        panel.SelectedTreeNode = concepts;
+
+        async Task Enter(string text, string button)
+        {
+            var running = panel.NewFolderCommand.ExecuteAsync(null);
+            Dispatcher.UIThread.RunJobs();
+            var dialog = Assert.Single(window.OwnedWindows);
+            dialog.GetLogicalDescendants().OfType<TextBox>().First().Text = text;
+            dialog.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == button)
+                .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+            if (button == "ОК" && !Directory.Exists(Path.Combine(_project, "concepts", text.Replace('/', Path.DirectorySeparatorChar))))
+            {
+                // Недопустимое имя: окно открыто снова с пояснением — закрываем отказом.
+                Assert.Single(window.OwnedWindows).GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Отмена")
+                    .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+                Dispatcher.UIThread.RunJobs();
+            }
+
+            await running;
+        }
+
+        await Enter("a:b", "ОК");
+        Assert.False(Directory.Exists(Path.Combine(_project, "concepts", "a:b")));
+
+        await Enter("Новая/вложенная", "ОК");
+        var created = Path.Combine(_project, "concepts", "Новая", "вложенная");
+        Assert.True(Directory.Exists(created));
+        Assert.Contains("Папка создана", vm.StatusText);
+        var node = panel.Tree.SelectMany(Descendants).First(n => string.Equals(n.FolderPath, created, StringComparison.OrdinalIgnoreCase));
+        Assert.Same(node, panel.SelectedTreeNode);
+        Assert.Empty(node.Children);
+
+        // Пустая папка остаётся в дереве после обновления, а отказ ничего не создаёт.
+        panel.RebuildTree();
+        Assert.Contains(panel.Tree.SelectMany(Descendants), n => string.Equals(n.FolderPath, created, StringComparison.OrdinalIgnoreCase));
+        var before = Directory.GetDirectories(_project, "*", SearchOption.AllDirectories).Length;
+        await Enter("Не создавать", "Отмена");
+        Assert.Equal(before, Directory.GetDirectories(_project, "*", SearchOption.AllDirectories).Length);
+        window.Close();
+    }
+
+    private static IEnumerable<ProjectTreeNode> Descendants(ProjectTreeNode node) => node.Children.SelectMany(Descendants).Prepend(node);
+
     /// <summary>Значок рисунка: «с нумерацией» — блок fig с названием, «обычный» — просто image в позиции курсора, без fig и названия.</summary>
     [AvaloniaFact]
     public async Task InsertImageFile_NumberedMakesFigure_PlainIsJustImageAtCursor()

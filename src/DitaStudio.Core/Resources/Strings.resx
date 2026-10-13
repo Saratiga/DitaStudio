@@ -4763,4 +4763,55 @@ No — plain image at the cursor, without a title or number.</value>
   <data name="Author_CellsPastedColumnsDropped1" xml:space="preserve">
     <value>, columns beyond the table edge dropped: {0}</value>
   </data>
+  <data name="Core_TheFolderNameIsEmpty" xml:space="preserve">
+    <value>The folder name is empty.</value>
+  </data>
+  <data name="Core_TheFolderNameHasAnEmptyPart" xml:space="preserve">
+    <value>The folder name has an empty part (two slashes in a row or a slash at the edge).</value>
+  </data>
+  <data name="Core_TheFolderNameMustNotContain" xml:space="preserve">
+    <value>The folder name must not contain these characters: {0}</value>
+  </data>
+  <data name="Core_TheFolderNameMustNotEndWithADot" xml:space="preserve">
+    <value>The folder name must not end with a dot or consist of dots: {0}</value>
+  </data>
+  <data name="Core_TheFolderNameMustNotStartWithADot" xml:space="preserve">
+    <value>A folder name must not start with a dot (such folders are treated as service folders and are hidden): {0}</value>
+  </data>
+  <data name="Core_TheFolderName0IsReservedBy" xml:space="preserve">
+    <value>The name “{0}” is reserved by the system and cannot be used for a folder.</value>
+  </data>
+  <data name="Core_TheFolderNameIsTooLong" xml:space="preserve">
+    <value>The folder name is too long (up to 100 characters per part).</value>
+  </data>
+  <data name="Core_TheFolderMustBeInsideTheProject" xml:space="preserve">
+    <value>The folder must be inside the project folder.</value>
+  </data>
+  <data name="Core_TheFolder0AlreadyExists" xml:space="preserve">
+    <value>The folder or file “{0}” already exists.</value>
+  </data>
+  <data name="Msg_NewFolder" xml:space="preserve">
+    <value>New folder</value>
+  </data>
+  <data name="Msg_NewFolderName" xml:space="preserve">
+    <value>Folder name:</value>
+  </data>
+  <data name="Msg_NewFolderHint" xml:space="preserve">
+    <value>The folder is created inside the selected folder. A nested folder can be written with a slash: tasks/new.</value>
+  </data>
+  <data name="Msg_FolderCreated0" xml:space="preserve">
+    <value>Folder created: {0}</value>
+  </data>
+  <data name="Msg_CouldNotCreateTheFolder0" xml:space="preserve">
+    <value>Could not create the folder: {0}</value>
+  </data>
+  <data name="Btn_NewFolder" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="Menu_NewFolder" xml:space="preserve">
+    <value>New folder…</value>
+  </data>
+  <data name="Tip_NewFolder" xml:space="preserve">
+    <value>Create a folder in the selected folder of the project</value>
+  </data>
 </root>

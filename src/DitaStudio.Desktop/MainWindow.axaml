@@ -318,6 +318,8 @@
                         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4">
                             <Button Content="{loc:Tr Btn_Refresh}" Padding="8,3" Command="{Binding ProjectPanel.RescanProjectCommand}" />
                             <Button Content="{loc:Tr Btn_Create}" Padding="8,3" Margin="4,0,0,0" Command="{Binding ProjectPanel.NewDocumentCommand}" />
+                            <Button Content="{loc:Tr Btn_NewFolder}" Padding="8,3" Margin="4,0,0,0" Command="{Binding ProjectPanel.NewFolderCommand}"
+                                    ToolTip.Tip="{loc:Tr Tip_NewFolder}" />
                         </StackPanel>
                         <TreeView Name="ProjectTree"
                                   ItemsSource="{Binding ProjectPanel.Tree}"
@@ -325,6 +327,7 @@
                                   DoubleTapped="OnProjectTreeDoubleTapped">
                             <TreeView.ContextMenu>
                                 <ContextMenu>
+                                    <MenuItem Header="{loc:Tr Menu_NewFolder}" Command="{Binding ProjectPanel.NewFolderCommand}" />
                                     <MenuItem Header="{loc:Tr Menu_RenameMoveFile}" Command="{Binding ProjectPanel.MoveSelectedFileCommand}" />
                                     <MenuItem Header="{loc:Tr Menu_CloseProject}" Command="{Binding ProjectPanel.CloseProjectCommand}"
                                               ToolTip.Tip="{loc:Tr Tip_CloseProjectOfNode}" />
