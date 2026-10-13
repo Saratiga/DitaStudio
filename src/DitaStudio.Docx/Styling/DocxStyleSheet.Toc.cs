@@ -105,6 +105,11 @@ public sealed partial class DocxStyleSheet
             }
 
             _styles[style] = props;
+            if (props.FirstLinePt is { } firstLine && firstLine < 0 && _cssOverrides.TryGetValue(style, out var explicitProps))
+            {
+                explicitProps.IndentLeftPt = props.IndentLeftPt;
+                explicitProps.FirstLinePt = props.FirstLinePt;
+            }
         }
 
         TocMaxLevel = hiddenFrom - 1;
@@ -121,8 +126,15 @@ public sealed partial class DocxStyleSheet
         var box = new CssBox(props);
         var def = DocxStyleCatalog.Get(styleId);
         var baseSize = def?.BasedOn is { } parent ? FontSizeOf(parent) : FontSizeOf(DocxStyleCatalog.Normal);
-        CssApplier.Apply(box, declarations.Where(d => d.Property != "content").ToList(), baseSize, this, silent: true);
+        var applicable = declarations.Where(d => d.Property != "content").ToList();
+        CssApplier.Apply(box, applicable, baseSize, this, silent: true);
         box.ResolvePadding();
+
+        // Те же правила — в явные свойства стиля (для наложения на стили шаблона DOCX).
+        var explicitBox = new CssBox(_cssOverrides.TryGetValue(styleId, out var already) ? already.Clone() : new DocxStyleProps());
+        CssApplier.Apply(explicitBox, applicable, baseSize, this, silent: true);
+        explicitBox.ResolvePadding();
+        _cssOverrides[styleId] = explicitBox.Props;
         return box.Props;
     }
 

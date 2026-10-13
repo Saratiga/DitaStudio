@@ -4814,4 +4814,28 @@
   <data name="Tip_NewFolder" xml:space="preserve">
     <value>Создать папку в выбранной папке проекта</value>
   </data>
+  <data name="Core_TheDOCXTemplate0HasNoStyles" xml:space="preserve">
+    <value>В шаблоне DOCX «{0}» нет стилей; документ собран без него.</value>
+  </data>
+  <data name="Core_TheDOCXTemplate0CouldNotBeOpened" xml:space="preserve">
+    <value>Шаблон DOCX «{0}» не открылся ({1}); документ собран без него.</value>
+  </data>
+  <data name="Core_TheDOCXTemplate0WasNotFound" xml:space="preserve">
+    <value>Шаблон DOCX не найден: {0}; документ собран без него.</value>
+  </data>
+  <data name="Dlg_DOCXTemplate" xml:space="preserve">
+    <value>Шаблон DOCX</value>
+  </data>
+  <data name="Dlg_TemplateStylesFromTheFile" xml:space="preserve">
+    <value>Стили, шрифты и цвета из файла Word (.docx или .dotx); правила CSS проекта накладываются поверх них.</value>
+  </data>
+  <data name="Dlg_NoTemplate" xml:space="preserve">
+    <value>Шаблона нет</value>
+  </data>
+  <data name="Dlg_ChooseDOCXTemplate" xml:space="preserve">
+    <value>Выбор шаблона DOCX</value>
+  </data>
+  <data name="Dlg_WordFiles" xml:space="preserve">
+    <value>Файлы Word</value>
+  </data>
 </root>

@@ -4814,4 +4814,28 @@ No — plain image at the cursor, without a title or number.</value>
   <data name="Tip_NewFolder" xml:space="preserve">
     <value>Create a folder in the selected folder of the project</value>
   </data>
+  <data name="Core_TheDOCXTemplate0HasNoStyles" xml:space="preserve">
+    <value>The DOCX template “{0}” has no styles; the document is built without it.</value>
+  </data>
+  <data name="Core_TheDOCXTemplate0CouldNotBeOpened" xml:space="preserve">
+    <value>The DOCX template “{0}” could not be opened ({1}); the document is built without it.</value>
+  </data>
+  <data name="Core_TheDOCXTemplate0WasNotFound" xml:space="preserve">
+    <value>The DOCX template was not found: {0}; the document is built without it.</value>
+  </data>
+  <data name="Dlg_DOCXTemplate" xml:space="preserve">
+    <value>DOCX template</value>
+  </data>
+  <data name="Dlg_TemplateStylesFromTheFile" xml:space="preserve">
+    <value>Styles, fonts and colors of a Word file (.docx or .dotx); the rules of the project CSS are applied on top of it.</value>
+  </data>
+  <data name="Dlg_NoTemplate" xml:space="preserve">
+    <value>No template</value>
+  </data>
+  <data name="Dlg_ChooseDOCXTemplate" xml:space="preserve">
+    <value>Choose a DOCX template</value>
+  </data>
+  <data name="Dlg_WordFiles" xml:space="preserve">
+    <value>Word files</value>
+  </data>
 </root>

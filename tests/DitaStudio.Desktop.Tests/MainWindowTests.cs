@@ -1140,6 +1140,38 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Шаблон DOCX в диалоге «Оформление DOCX»: поле с путём показывается, «ОК» сохраняет путь, «Убрать» очищает.</summary>
+    [AvaloniaFact]
+    public async Task DocxLayoutDialog_TemplatePath_ShownKeptAndRemovable()
+    {
+        var (window, vm) = await OpenAsync();
+        vm.Project!.SetDocxLayout(new Core.Publishing.DocxLayout { TemplatePath = "templates/company.dotx" });
+
+        var asking = vm.Dialogs.DocxLayoutSettingsAsync(vm.Project);
+        Dispatcher.UIThread.RunJobs();
+        var dialog = Assert.Single(window.OwnedWindows);
+        var box = dialog.GetLogicalDescendants().OfType<TextBox>().First(t => t.Text == "templates/company.dotx");
+        Assert.Equal("Шаблон DOCX", Avalonia.Automation.AutomationProperties.GetName(box));
+        Save(dialog, "dialog-docx-template");
+        dialog.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "ОК")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("templates/company.dotx", (await asking)!.TemplatePath);
+
+        asking = vm.Dialogs.DocxLayoutSettingsAsync(vm.Project);
+        Dispatcher.UIThread.RunJobs();
+        dialog = Assert.Single(window.OwnedWindows);
+        var clear = dialog.GetLogicalDescendants().OfType<DockPanel>()
+            .First(d => d.GetLogicalDescendants().OfType<TextBox>().Any(t => t.Text == "templates/company.dotx"))
+            .GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Убрать");
+        clear.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        dialog.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "ОК")
+            .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(string.Empty, (await asking)!.TemplatePath);
+        window.Close();
+    }
+
     /// <summary>Г10: ПКМ по топику в карте — «Размещать на новой странице» и «Не размещать»: класс на строке карты, отметка в меню, отмена.</summary>
     [AvaloniaFact]
     public async Task MapMenu_PageBreakBefore_TogglesClassOnRow_AndIsUndoable()

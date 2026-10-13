@@ -137,6 +137,24 @@ public sealed class DocxLayout
     /// <summary>Автоматическая расстановка переносов.</summary>
     public bool AutoHyphenation { get; set; }
 
+    /// <summary>
+    /// Шаблон DOCX (<c>.docx</c> или <c>.dotx</c>): путь от папки проекта; пусто — шаблона нет. Его стили, шрифты и цвета берёт экспорт в DOCX,
+    /// правила CSS проекта накладываются поверх.
+    /// </summary>
+    public string TemplatePath { get; set; } = string.Empty;
+
+    /// <summary>Полный путь шаблона или null — не задан или файла нет.</summary>
+    public static string? ResolveTemplate(string projectRoot, string relative)
+    {
+        if (string.IsNullOrWhiteSpace(relative))
+        {
+            return null;
+        }
+
+        var full = System.IO.Path.GetFullPath(System.IO.Path.Combine(projectRoot, relative));
+        return File.Exists(full) ? full : null;
+    }
+
     /// <summary>Заголовок оглавления (DOCX, единый HTML и PDF); пусто — «Содержание» (по языку публикации).</summary>
     public string TocTitle { get; set; } = string.Empty;
 
@@ -298,6 +316,7 @@ public sealed class DocxLayout
         HeaderImageHeightMm = double.IsFinite(HeaderImageHeightMm) ? Math.Clamp(HeaderImageHeightMm, 3, 60) : 10;
         FooterImageHeightMm = double.IsFinite(FooterImageHeightMm) ? Math.Clamp(FooterImageHeightMm, 3, 60) : 10;
         TitleImage = TitleImage?.Trim() ?? string.Empty;
+        TemplatePath = TemplatePath?.Trim() ?? string.Empty;
         TitleImageHeightMm = double.IsFinite(TitleImageHeightMm) ? Math.Clamp(TitleImageHeightMm, 5, 250) : 40;
         FooterText ??= string.Empty;
         Language = string.IsNullOrWhiteSpace(Language) ? "ru-RU" : Language.Trim();

@@ -207,6 +207,13 @@ Svg.Skia тянет SkiaSharp 3/4 и ломает отрисовку). Ядро 
 - Порядок дочерних элементов rPr/pPr/tcPr/settings в OOXML строгий — `DocxPropsWriter`
   выдаёт их уже упорядоченными. Каждый DOCX в тестах проходит `OpenXmlValidator`
   (`CheckValidDocx`) — новые экспорты проверять так же.
+- Оглавление, таблицы и картинки из CSS идут через общий движок селекторов на «воображаемой» или настоящей разметке:
+  `DocxStyleSheet.Toc` (div.toc > h2.toc-title + ul > li.lvlN > span.num + a.text — такая же разметка в HTML), `.Tables` (`LookFor(table)` и
+  `CellLookFor(entry)` поверх общего вида; псевдонимы `td`/`th`/`tr`/`img`/`figure` в `CssSelector.MatchesHtmlName`), `.Images`. Справочник
+  для пользователя — `docs/CSS_REFERENCE.md`, правьте его вместе с кодом.
+- Шаблон DOCX (`DocxLayout.TemplatePath`, `Docx/DocxTemplate.cs`): стили, docDefaults и тема шаблона — основа; на его стили накладывается
+  `DocxStyleSheet.CssOverrides` (только явно заданное CSS), недостающие стили каталога добавляются; numPr в стилях шаблона снимается.
+  Порядок дочерних элементов pPr/rPr при слиянии — `ParagraphOrder`/`RunOrder` в `DocxTemplate`.
 - Символы маркеров из области частного использования Unicode (U+F0B7) писать только
   escape-последовательностью: при чтении и перезаписи файла они незаметно теряются.
 

@@ -308,6 +308,32 @@ public sealed partial class AvaloniaDialogService
             TextWrapping = TextWrapping.Wrap
         }));
 
+        // ---- шаблон
+        panel.Children.Add(Header(Loc.T("Dlg_DOCXTemplate")));
+        panel.Children.Add(Muted(new TextBlock { Text = Loc.T("Dlg_TemplateStylesFromTheFile"), TextWrapping = TextWrapping.Wrap }));
+        var templatePath = Named(new TextBox { Text = current.TemplatePath, Watermark = Loc.T("Dlg_NoTemplate"), Padding = new Thickness(4, 3, 4, 3) },
+            Loc.T("Dlg_DOCXTemplate"));
+        var browseTemplate = new Button { Content = Loc.T("Dlg_Browse"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(6, 0, 0, 0) };
+        browseTemplate.Click += async (_, _) =>
+        {
+            var file = await _files.OpenFileAsync(Loc.T("Dlg_ChooseDOCXTemplate"),
+                new[] { new FileFilter(Loc.T("Dlg_WordFiles"), "*.docx", "*.dotx") }, project.RootPath);
+            if (file is not null)
+            {
+                // Внутри проекта путь хранится относительным — проект переносится вместе с шаблоном.
+                var relative = System.IO.Path.GetRelativePath(project.RootPath, file).Replace('\\', '/');
+                templatePath.Text = relative.StartsWith("..", StringComparison.Ordinal) ? file : relative;
+            }
+        };
+        var clearTemplate = new Button { Content = Loc.T("Dlg_Remove"), Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(4, 0, 0, 0) };
+        clearTemplate.Click += (_, _) => templatePath.Text = string.Empty;
+        var templateTail = new StackPanel { Orientation = Orientation.Horizontal, Children = { browseTemplate, clearTemplate } };
+        var templateRow = new DockPanel { Margin = new Thickness(0, 6, 0, 0) };
+        DockPanel.SetDock(templateTail, Dock.Right);
+        templateRow.Children.Add(templateTail);
+        templateRow.Children.Add(templatePath);
+        panel.Children.Add(templateRow);
+
         // ---- титул
         panel.Children.Add(Header(Loc.T("Dlg_TitlePage")));
         var titlePage = Check(Loc.T("Dlg_ASeparateTitlePageWithThe"), current.TitlePage);
@@ -431,6 +457,7 @@ public sealed partial class AvaloniaDialogService
 
             var fresh = new DocxLayout
             {
+                TemplatePath = (templatePath.Text ?? string.Empty).Trim(),
                 TitlePage = titlePage.IsChecked == true,
                 Subtitle = (subtitle.Text ?? string.Empty).Trim(),
                 Author = (author.Text ?? string.Empty).Trim(),

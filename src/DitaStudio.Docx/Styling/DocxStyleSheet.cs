@@ -19,7 +19,15 @@ public sealed partial class DocxStyleSheet
     private readonly Dictionary<string, string> _variables = new(StringComparer.Ordinal);
     private readonly Diagnostics _diag = new();
 
+    private readonly Dictionary<string, DocxStyleProps> _cssOverrides = new(StringComparer.Ordinal);
+
     public IReadOnlyDictionary<string, DocxStyleProps> Styles => _styles;
+
+    /// <summary>
+    /// Только то, что CSS проекта задал стилю явно (без значений каталога по умолчанию): накладывается поверх стилей шаблона DOCX, не затирая
+    /// остальное в них. Нет записи — CSS стиль не трогал.
+    /// </summary>
+    public IReadOnlyDictionary<string, DocxStyleProps> CssOverrides => _cssOverrides;
     public DocxTableLook Table { get; } = new();
     public DocxBorder RevBorder { get; private set; } = new("single", 2.25, "D4380D", 4);
     public DocxPageSetup Page { get; private set; } = DocxPageSetup.A4;
@@ -192,6 +200,15 @@ public sealed partial class DocxStyleSheet
             }
 
             _styles[def.Id] = props;
+
+            if (matched is not null)
+            {
+                // То же правило CSS на пустом стиле — для наложения на стили шаблона.
+                var explicitBox = new CssBox(new DocxStyleProps());
+                CssApplier.Apply(explicitBox, Ordered(matched), def.BasedOn is { } basis ? FontSizeOf(basis) : DocxDefaults.FontSizePt, this, silent: true);
+                explicitBox.ResolvePadding();
+                _cssOverrides[def.Id] = def.Kind == DocxStyleKind.Character ? explicitBox.Props.RunOnly() : explicitBox.Props;
+            }
         }
 
         BuildTableLook(targets);

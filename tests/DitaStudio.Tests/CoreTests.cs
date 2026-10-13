@@ -50,6 +50,7 @@ public sealed class CoreTests
     [Fact] public void TableCssTests() => Run(CoreChecks.TableCssTests);
     [Fact] public void ImageCssTests() => Run(CoreChecks.ImageCssTests);
     [Fact] public void ProjectFolderTests() => Run(CoreChecks.ProjectFolderTests);
+    [Fact] public void DocxTemplateTests() => Run(CoreChecks.DocxTemplateTests);
     [Fact] public void HtmlPublisherMiscTests() => Run(CoreChecks.HtmlPublisherMiscTests);
     [Fact] public void KeyScopeTests() => Run(CoreChecks.KeyScopeTests);
     [Fact] public void KeyDefinitionMiscTests() => Run(CoreChecks.KeyDefinitionMiscTests);

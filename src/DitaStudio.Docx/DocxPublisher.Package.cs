@@ -149,21 +149,31 @@ public sealed partial class DocxPublisher
         }
     }
 
-    private static void AddStyles(MainDocumentPart mainPart, DocxStyleSheet sheet, DocxLayout layout)
+    private static void AddStyles(MainDocumentPart mainPart, DocxStyleSheet sheet, DocxLayout layout, DocxTemplate? template = null)
     {
         var stylesPart = mainPart.AddNewPart<StyleDefinitionsPart>();
-        var styles = new W.Styles();
+        var styles = template?.Styles ?? new W.Styles();
 
-        styles.Append(new W.DocDefaults(
-            new W.RunPropertiesDefault(new W.RunPropertiesBaseStyle(
-                new W.RunFonts
-                {
-                    Ascii = DocxDefaults.FontFamily, HighAnsi = DocxDefaults.FontFamily,
-                    ComplexScript = DocxDefaults.FontFamily, EastAsia = DocxDefaults.FontFamily
-                },
-                new W.FontSize { Val = ((int)(DocxDefaults.FontSizePt * 2)).ToString() },
-                new W.FontSizeComplexScript { Val = ((int)(DocxDefaults.FontSizePt * 2)).ToString() },
-                new W.Languages { Val = layout.Language }))));
+        if (template is null)
+        {
+            styles.Append(new W.DocDefaults(
+                new W.RunPropertiesDefault(new W.RunPropertiesBaseStyle(
+                    new W.RunFonts
+                    {
+                        Ascii = DocxDefaults.FontFamily, HighAnsi = DocxDefaults.FontFamily,
+                        ComplexScript = DocxDefaults.FontFamily, EastAsia = DocxDefaults.FontFamily
+                    },
+                    new W.FontSize { Val = ((int)(DocxDefaults.FontSizePt * 2)).ToString() },
+                    new W.FontSizeComplexScript { Val = ((int)(DocxDefaults.FontSizePt * 2)).ToString() },
+                    new W.Languages { Val = layout.Language }))));
+        }
+        else if (template.Theme is { } theme)
+        {
+            // Шрифты и цвета стилей шаблона нередко ссылаются на тему — переносится вместе со стилями.
+            var themePart = mainPart.AddNewPart<ThemePart>();
+            using var stream = new MemoryStream(theme);
+            themePart.FeedData(stream);
+        }
 
         foreach (var def in DocxStyleCatalog.Styles)
         {
@@ -196,9 +206,23 @@ public sealed partial class DocxPublisher
             }
 
             var primary = isHeading || plainHeading || def.Id is DocxStyleCatalog.Normal or DocxStyleCatalog.Title or DocxStyleCatalog.Subtitle;
+            var outline = plainHeading ? BodyTextOutlineLevel : def.OutlineLevel;
+            if (template?.Find(def.Id, def.Kind) is { } existing)
+            {
+                // Стиль есть в шаблоне: остаётся его вид, поверх — только явные правила CSS и то, что определяет сама публикация.
+                var overrides = sheet.CssOverrides.TryGetValue(def.Id, out var css) ? css.Clone() : new DocxStyleProps();
+                if (isHeading && def.OutlineLevel == 0 && layout.PageBreakBeforeTopLevel)
+                {
+                    overrides.PageBreakBefore = true;
+                }
+
+                DocxTemplate.Overlay(existing, def.Kind, overrides, numbering, outline);
+                continue;
+            }
+
             styles.Append(DocxStyleWriter.Create(def.Id, def.Name, def.Kind, def.BasedOn, props,
                 primary, next: isHeading || plainHeading ? DocxStyleCatalog.Normal : null, numbering,
-                plainHeading ? BodyTextOutlineLevel : def.OutlineLevel));
+                outline));
         }
 
         stylesPart.Styles = styles;

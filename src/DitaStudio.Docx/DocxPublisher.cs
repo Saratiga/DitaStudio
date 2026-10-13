@@ -69,6 +69,20 @@ public sealed partial class DocxPublisher
         }
 
         layout = layout.Clone();
+
+        // Шаблон DOCX: его стили, шрифты и цвета; нет файла или он не открылся — предупреждение, сборка без шаблона.
+        DocxTemplate? template = null;
+        if (layout.TemplatePath.Length > 0)
+        {
+            if (DocxLayout.ResolveTemplate(_project.RootPath, layout.TemplatePath) is { } templatePath)
+            {
+                template = DocxTemplate.Load(templatePath, warnings);
+            }
+            else
+            {
+                warnings.Add(Loc.T("Core_TheDOCXTemplate0WasNotFound", layout.TemplatePath));
+            }
+        }
         var culture = CultureFor(layout.Language);
         var date = DateTime.Now.ToString("d MMMM yyyy", culture);
 
@@ -107,7 +121,7 @@ public sealed partial class DocxPublisher
             var body = new W.Body();
             mainPart.Document = new W.Document(body);
 
-            AddStyles(mainPart, styles, layout);
+            AddStyles(mainPart, styles, layout, template);
             var numberingPart = AddNumbering(mainPart, styles, layout);
             AddSettings(wordDocument, layout);
             SetDocumentProperties(wordDocument, title, layout);
