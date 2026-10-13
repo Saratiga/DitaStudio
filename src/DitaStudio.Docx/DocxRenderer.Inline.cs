@@ -404,11 +404,17 @@ public sealed partial class DocxRenderer
         {
             // SVG Word не читает: на экспорте он растеризуется в PNG (вдвое плотнее экрана — чётче в печати), размер — как у обычной картинки.
             var (svgWidth, svgHeight) = ImageSize.ReadEmuSize(absolute, node.GetAttribute("width"), node.GetAttribute("height"));
+            var svgLook = Sheet.ImageLookFor(node, TextWidthPt);
+            if (svgLook is not null)
+            {
+                (svgWidth, svgHeight) = svgLook.Apply(svgWidth, svgHeight);
+            }
+
             const long emuPerPixel = 9525;
             var png = rasterizer.RasterizeSvg(absolute, (int)Math.Clamp(svgWidth * 2 / emuPerPixel, 1, 8000), (int)Math.Clamp(svgHeight * 2 / emuPerPixel, 1, 8000));
             if (png is { Length: > 0 } && DocxPictures.AddPng(_mainPart, png) is { } svgRelId)
             {
-                yield return DocxPictures.Inline(svgRelId, svgWidth, svgHeight, (uint)_nextImageId++, Path.GetFileName(absolute), alt);
+                yield return DocxPictures.Inline(svgRelId, svgWidth, svgHeight, (uint)_nextImageId++, Path.GetFileName(absolute), alt, svgLook?.Border);
                 yield break;
             }
 
@@ -428,7 +434,13 @@ public sealed partial class DocxRenderer
 
         var relId = DocxPictures.AddImage(_mainPart, absolute)!;
         var (widthEmu, heightEmu) = ImageSize.ReadEmuSize(absolute, node.GetAttribute("width"), node.GetAttribute("height"));
+        var look = Sheet.ImageLookFor(node, TextWidthPt);
+        if (look is not null)
+        {
+            (widthEmu, heightEmu) = look.Apply(widthEmu, heightEmu); // CSS перекрывает размер из атрибутов DITA
+        }
+
         var imageId = _nextImageId++;
-        yield return DocxPictures.Inline(relId, widthEmu, heightEmu, (uint)imageId, Path.GetFileName(absolute), alt);
+        yield return DocxPictures.Inline(relId, widthEmu, heightEmu, (uint)imageId, Path.GetFileName(absolute), alt, look?.Border);
     }
 }

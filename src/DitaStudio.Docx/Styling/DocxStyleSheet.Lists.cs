@@ -149,5 +149,5 @@ public sealed partial class DocxStyleSheet
 
     private static bool MentionsHtmlOnlyClass(string selector) =>
         Regex.Matches(selector, @"\.([A-Za-z_][\w-]*)").Any(m => DocxStyleCatalog.HtmlOnlyClasses.Contains(m.Groups[1].Value)) ||
-        Regex.IsMatch(selector, @"(^|[\s>+~])(nav|header|footer|aside|img|figure|svg|button|input|hr|iframe|video)\b", RegexOptions.IgnoreCase);
+        Regex.IsMatch(selector, @"(^|[\s>+~])(nav|header|footer|aside|svg|button|input|hr|iframe|video)\b", RegexOptions.IgnoreCase);
 }

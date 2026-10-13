@@ -9,6 +9,19 @@ public sealed class DocxTableLook
     public DocxBorder Outer { get; set; } = new("single", 0.5, "999999");
     public DocxBorder Inner { get; set; } = new("single", 0.5, "CCCCCC");
 
+    // Рамка отдельной стороны таблицы (CSS `border-top` и т. п. у конкретной таблицы); null — как общая внешняя.
+    public DocxBorder? Top { get; set; }
+    public DocxBorder? Left { get; set; }
+    public DocxBorder? Bottom { get; set; }
+    public DocxBorder? Right { get; set; }
+
+    public DocxBorder OuterTop => Top ?? Outer;
+    public DocxBorder OuterLeft => Left ?? Outer;
+    public DocxBorder OuterBottom => Bottom ?? Outer;
+    public DocxBorder OuterRight => Right ?? Outer;
+
+    public DocxTableLook Clone() => (DocxTableLook)MemberwiseClone();
+
     /// <summary>Заливка ячеек шапки; "" — без заливки.</summary>
     public string HeaderFill { get; set; } = "E8E8E8";
 

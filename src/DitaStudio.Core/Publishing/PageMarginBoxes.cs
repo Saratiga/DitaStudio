@@ -61,6 +61,23 @@ public sealed class MarginBox
 
     public double? HeightMm { get; init; }
 
+    /// <summary>Наименьшая высота области колонтитула, мм (<c>min-height</c>, а у поля без картинки — и <c>height</c>): область не ниже заданной.</summary>
+    public double? MinHeightMm { get; init; }
+
+    /// <summary>Заглавные буквы (<c>text-transform: uppercase</c>).</summary>
+    public bool Uppercase { get; init; }
+
+    /// <summary>Подчёркнутый текст (<c>text-decoration: underline</c>).</summary>
+    public bool Underline { get; init; }
+
+    /// <summary>Разрядка букв, пт (<c>letter-spacing</c>).</summary>
+    public double? LetterSpacingPt { get; init; }
+
+    /// <summary>Интервал над текстом и под ним, мм (<c>padding-top</c> / <c>padding-bottom</c>): расстояние от текста до линии и до края области.</summary>
+    public double? PaddingTopMm { get; init; }
+
+    public double? PaddingBottomMm { get; init; }
+
     public double? EdgeDistanceMm { get; init; }
 
     public bool IsTop => Position <= MarginBoxPosition.TopRight;
@@ -241,7 +258,9 @@ public sealed class PageMarginBoxes
     {
         var items = ParseContent(content, warnings, position);
         string? family = null;
-        double? size = null, height = null, edge = null;
+        double? size = null, height = null, edge = null, minHeight = null, spacing = null, padTop = null, padBottom = null;
+        var uppercase = false;
+        var underline = false;
         var bold = false;
         var italic = false;
         string? color = null;
@@ -302,6 +321,26 @@ public sealed class PageMarginBoxes
                     break;
                 case "height":
                     height = LengthPt(value, 10) is { } h ? h / 72 * 25.4 : null;
+                    minHeight ??= height;
+                    break;
+                case "min-height":
+                    minHeight = LengthPt(value, 10) is { } mh ? mh / 72 * 25.4 : null;
+                    break;
+                case "text-transform":
+                    uppercase = value.Trim().Equals("uppercase", StringComparison.OrdinalIgnoreCase);
+                    break;
+                case "text-decoration":
+                case "text-decoration-line":
+                    underline = value.Contains("underline", StringComparison.OrdinalIgnoreCase);
+                    break;
+                case "letter-spacing":
+                    spacing = LengthPt(value, 10);
+                    break;
+                case "padding-top":
+                    padTop = LengthPt(value, 10) is { } pt ? pt / 72 * 25.4 : null;
+                    break;
+                case "padding-bottom":
+                    padBottom = LengthPt(value, 10) is { } pb ? pb / 72 * 25.4 : null;
                     break;
                 case "margin-top" when top:
                 case "margin-bottom" when !top:
@@ -334,6 +373,12 @@ public sealed class PageMarginBoxes
             Color = color,
             Rule = rule,
             HeightMm = height,
+            MinHeightMm = minHeight,
+            Uppercase = uppercase,
+            Underline = underline,
+            LetterSpacingPt = spacing,
+            PaddingTopMm = padTop,
+            PaddingBottomMm = padBottom,
             EdgeDistanceMm = edge
         };
     }

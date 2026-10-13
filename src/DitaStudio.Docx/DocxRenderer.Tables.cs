@@ -40,6 +40,8 @@ public sealed partial class DocxRenderer
         }
 
         var allowSplit = HasOutputClass(node, "page-break-auto");
+        var outerLook = _tableLook;
+        _tableLook = Sheet.LookFor(node); // CSS для класса и селекторов этой таблицы (`table.synchro`, `.synchro td`)
         var outerBorders = _cellBorders;
         _cellBorders = CalsBorders.IsCustom(node) ? CalsBorders.Compute(node) : null;
         foreach (var tgroup in node.ElementChildren().Where(e => e.Name == "tgroup"))
@@ -49,6 +51,7 @@ public sealed partial class DocxRenderer
         }
 
         _cellBorders = outerBorders;
+        _tableLook = outerLook;
     }
 
     // Границы ячеек таблицы, у которой линии отключены (frame, rowsep, colsep); null — обычная таблица.
@@ -62,7 +65,7 @@ public sealed partial class DocxRenderer
             return null;
         }
 
-        var look = Sheet.Table;
+        var look = TableLook;
         var none = new DocxBorder("none", 0, "auto");
         return new W.TableCellBorders(
             DocxPropsWriter.Border(new W.TopBorder(), b.Top ? look.Inner : none),
@@ -237,12 +240,23 @@ public sealed partial class DocxRenderer
             props.Append(new W.VerticalMerge { Val = W.MergedCellValues.Restart });
         }
 
-        if (CellBordersFor(entry, col, span, 0) is { } cellBorders)
+        var cellLook = Sheet.CellLookFor(entry);
+        var cellBorders = CellBordersFor(entry, col, span, 0);
+        if (cellLook is { Top: not null } or { Left: not null } or { Bottom: not null } or { Right: not null })
+        {
+            cellBorders = OverlayBorders(cellBorders, cellLook);
+        }
+
+        if (cellBorders is not null)
         {
             props.TableCellBorders = cellBorders;
         }
 
-        if (CellShading(isHeader) is { } shading)
+        if (cellLook?.Fill is { } cellFill)
+        {
+            props.Append(DocxPropsWriter.Shading(cellFill));
+        }
+        else if (CellShading(isHeader) is { } shading)
         {
             props.Append(shading);
         }
@@ -356,6 +370,8 @@ public sealed partial class DocxRenderer
         var rows = node.ElementChildren().Where(e => e.Name is "strow" or "property" or "chrow").ToList();
         var numCols = Math.Max(1, rows.Select(r => r.ElementChildren().Count(c => rowNames.Contains(c.Name))).DefaultIfEmpty(headNames.Length).Max());
 
+        var outerLook = _tableLook;
+        _tableLook = Sheet.LookFor(node);
         var table = new W.Table();
         table.Append(TableProperties());
         var outerFractions = _columnFractions;
@@ -411,7 +427,28 @@ public sealed partial class DocxRenderer
         }
 
         _columnFractions = outerFractions;
+        _tableLook = outerLook;
         return table;
+    }
+
+    /// <summary>Границы ячейки, заданные CSS для неё самой (`td { border-bottom: … }`), поверх границ таблицы: сторона без правила остаётся прежней.</summary>
+    private static W.TableCellBorders OverlayBorders(W.TableCellBorders? current, DocxCellLook? look)
+    {
+        var borders = current ?? new W.TableCellBorders();
+        T? Replace<T>(T? existing, DocxBorder? spec) where T : W.BorderType, new() =>
+            spec is null ? existing : DocxPropsWriter.Border(new T(), spec);
+
+        // Порядок сторон в tcBorders строгий: top, start/left, bottom, end/right.
+        var top = Replace(borders.TopBorder, look?.Top);
+        var left = Replace(borders.LeftBorder, look?.Left);
+        var bottom = Replace(borders.BottomBorder, look?.Bottom);
+        var right = Replace(borders.RightBorder, look?.Right);
+        var result = new W.TableCellBorders();
+        if (top is not null) { result.Append(top.CloneNode(true)); }
+        if (left is not null) { result.Append(left.CloneNode(true)); }
+        if (bottom is not null) { result.Append(bottom.CloneNode(true)); }
+        if (right is not null) { result.Append(right.CloneNode(true)); }
+        return result;
     }
 
     // Доли ширины столбцов текущей таблицы (из colwidth / relcolwidth) — null, если не заданы.

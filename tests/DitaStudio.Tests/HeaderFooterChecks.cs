@@ -91,6 +91,40 @@ internal static partial class CoreChecks
             Check(footer.Descendants<Bold>().Any(), "font-weight: bold поля");
         });
 
+        // Размер и вид колонтитула из CSS: высота области, интервалы, регистр, подчёркивание, разрядка.
+        WithProject(new Dictionary<string, string>
+        {
+            ["t.dita"] = "<topic id=\"t\"><title>Т</title><body><p>Текст.</p></body></topic>",
+            ["m.ditamap"] = "<map><title>Книга</title><topicref href=\"t.dita\"/></map>",
+            ["custom.css"] = """
+                @page {
+                  margin: 30mm 20mm;
+                  @top-center { content: "Шапка"; height: 18mm; padding-bottom: 2mm; text-transform: uppercase; text-decoration: underline; letter-spacing: 1pt; font-size: 14pt }
+                  @bottom-left { content: "Низ"; min-height: 12mm; padding-top: 3mm }
+                }
+                """
+        }, (root, project) =>
+        {
+            project.SetCustomCssPath("custom.css");
+            project.SetDocxLayout(new DocxLayout { NoHeaderOnFirstPage = false });
+            var docx = Path.Combine(root, "d.docx");
+            var result = new DocxPublisher(project).Publish(Path.Combine(root, "m.ditamap"), new PublishOptions { Language = "ru" }, docx);
+            CheckValidDocx(docx, "размер колонтитула из CSS");
+            Check(!result.Warnings.Any(w => w.Contains("height") || w.Contains("text-transform") || w.Contains("letter-spacing") || w.Contains("padding")),
+                "свойства размера и вида колонтитула поддержаны, предупреждений нет: " + string.Join(" | ", result.Warnings));
+            using var doc = WordprocessingDocument.Open(docx, false);
+            var header = doc.MainDocumentPart!.HeaderParts.Single().Header!;
+            var footer = doc.MainDocumentPart.FooterParts.Single().Footer!;
+            var headerSpacing = header.Descendants<ParagraphProperties>().First().SpacingBetweenLines;
+            Check(headerSpacing?.Line?.Value == "1020" && headerSpacing.LineRule?.Value == LineSpacingRuleValues.AtLeast, "height: 18mm — область не ниже 18 мм (1020 твип): " + headerSpacing?.Line?.Value);
+            Check(headerSpacing?.After?.Value == "113", "padding-bottom: 2mm — 113 твип под текстом: " + headerSpacing?.After?.Value);
+            var run = header.Descendants<Run>().First(r => r.InnerText == "Шапка");
+            Check(run.RunProperties?.Caps is not null && run.RunProperties.Underline?.Val?.Value == UnderlineValues.Single && run.RunProperties.Spacing?.Val?.Value == 20 &&
+                  run.RunProperties.FontSize?.Val?.Value == "28", "uppercase, underline, letter-spacing: 1pt, 14pt — в свойствах прогона");
+            var footerSpacing = footer.Descendants<ParagraphProperties>().First().SpacingBetweenLines;
+            Check(footerSpacing?.Line?.Value == "680" && footerSpacing.Before?.Value == "170", "min-height: 12mm и padding-top: 3mm у нижнего поля: " + footerSpacing?.Line?.Value + "/" + footerSpacing?.Before?.Value);
+        });
+
         // Без CSS остаётся колонтитул из диалога.
         WithProject(new Dictionary<string, string>
         {

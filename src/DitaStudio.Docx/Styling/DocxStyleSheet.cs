@@ -197,6 +197,7 @@ public sealed partial class DocxStyleSheet
         BuildTableLook(targets);
         BuildRevBorder(targets);
         BuildPage(parsed);
+        BuildToc();
         CustomClasses = new HashSet<string>(_classRules.SelectMany(r => r.Classes), StringComparer.Ordinal);
     }
 

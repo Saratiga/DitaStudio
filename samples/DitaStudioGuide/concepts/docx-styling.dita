@@ -103,6 +103,21 @@ li::before { content: "▸ "; }</codeblock>
         вертикальным выравниванием страницы, колонтитулы и параметры листа те же.</p>
     </section>
 
+    <section id="css-toc-tables">
+      <title>Оглавление, таблицы, картинки и колонтитулы из CSS</title>
+      <p>Оглавление оформляется классами <codeph>.toc</codeph>, <codeph>.toc-title</codeph>,
+        <codeph>.toc .lvl1</codeph>…<codeph>.lvl6</codeph> и <codeph>.toc .lvl1 &gt; .num</codeph>:
+        шрифт, регистр (<codeph>text-transform: uppercase</codeph>), отступы, «таб» между номером и
+        текстом, своё название через <codeph>content</codeph>; <codeph>display: none</codeph> скрывает
+        уровень, название или всё оглавление. Правила CSS главнее диалога «Оформление DOCX».</p>
+      <p>Таблица со своим классом оформляется отдельно:
+        <codeph>table.blue-frame { border: 2px solid #1E90FF }</codeph> — внешние рамки,
+        <codeph>.blue-frame th</codeph> и <codeph>.blue-frame td</codeph> — заливка и рамки ячеек.
+        У картинок работают <codeph>width</codeph>, <codeph>height</codeph>, <codeph>max-width</codeph>
+        и <codeph>border</codeph>, а у полей колонтитулов — высота области, интервалы, регистр и
+        подчёркивание. Полный справочник — файл <codeph>docs/CSS_REFERENCE.md</codeph>.</p>
+    </section>
+
     <section id="layout">
       <title>Настройки «Оформление DOCX»</title>
       <p>Диалог <menucascade><uicontrol>Публикация</uicontrol><uicontrol>Оформление

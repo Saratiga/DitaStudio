@@ -89,5 +89,8 @@ public sealed partial class DocxRenderer
 
     private Labels L => _options.Labels;
 
+    /// <summary>Ширина текста на странице, пт — от неё считаются проценты ширины картинок из CSS.</summary>
+    private double TextWidthPt => Math.Max(72, Sheet.Page.WidthPt - Sheet.Page.LeftPt - Sheet.Page.RightPt);
+
     private bool Include(DitaNode node) => _options.Filter?.Invoke(node) ?? true;
 }

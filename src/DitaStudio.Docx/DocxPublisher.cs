@@ -75,6 +75,21 @@ public sealed partial class DocxPublisher
         var tree = MapTree.Build(_project, mapPath, node => PublishFilter.IsIncluded(node, options));
         var labels = Labels.For(options.Language ?? DocumentLanguage.ForPublication(_project.TryGetDocument(mapPath)));
         var topics = tree.PublicationOrder.ToList();
+
+        // Оглавление из CSS (.toc, .toc-title, .toc .lvlN): скрытие, название и глубина перекрывают настройки диалога.
+        if (styles.TocHidden || styles.TocMaxLevel < 1)
+        {
+            layout.TableOfContents = false;
+        }
+
+        layout.TocDepth = Math.Min(layout.TocDepth, Math.Max(1, styles.TocMaxLevel));
+        var tocTitle = layout.TocTitle.Length > 0 ? layout.TocTitle : labels.Contents;
+        if (styles.TocTitleText is { } cssTitle)
+        {
+            tocTitle = cssTitle.Replace(DocxStyleSheet.TocTitlePlaceholder, tocTitle);
+        }
+
+        layout.TocTitle = tocTitle;
         var bookmarks = AssignBookmarks(topics);
         var title = tree.Root.Title;
         var tocEntries = topics
@@ -98,7 +113,7 @@ public sealed partial class DocxPublisher
             SetDocumentProperties(wordDocument, title, layout);
 
             var frontPage = WithLayoutPage(styles.Page, layout);
-            WriteFrontMatter(body, mainPart, title, date, labels, layout, tocEntries,
+            WriteFrontMatter(body, mainPart, title, date, labels, layout, tocEntries, !styles.TocTitleHidden,
                 frontPage.WidthPt - frontPage.LeftPt - frontPage.RightPt - layout.GutterMm * DocxPageSetup.MmToPt, warnings);
 
             var renderOptions = new DocxRenderOptions

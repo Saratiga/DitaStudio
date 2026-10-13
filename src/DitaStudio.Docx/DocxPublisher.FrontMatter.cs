@@ -22,7 +22,7 @@ public sealed partial class DocxPublisher
     private sealed record TocEntry(int Level, string Text, string Bookmark);
 
     private void WriteFrontMatter(W.Body body, MainDocumentPart mainPart, string title, string date, Labels labels, DocxLayout layout,
-        IReadOnlyList<TocEntry> tocEntries, double textWidthPt, List<string> warnings)
+        IReadOnlyList<TocEntry> tocEntries, bool showTocTitle, double textWidthPt, List<string> warnings)
     {
         var any = false;
         if (layout.TitlePage)
@@ -79,7 +79,12 @@ public sealed partial class DocxPublisher
                 body.Append(PageBreakParagraph());
             }
 
-            body.Append(StyledParagraph(DocxStyleCatalog.TocHeading, layout.TocTitle.Length > 0 ? layout.TocTitle : labels.Contents));
+            if (showTocTitle)
+            {
+                body.Append(StyledParagraph(DocxStyleCatalog.TocHeading, layout.TocTitle.Length > 0 ? layout.TocTitle : labels.Contents));
+            }
+
+
             foreach (var paragraph in BuildTocParagraphs(layout.TocDepth, tocEntries))
             {
                 body.Append(paragraph);

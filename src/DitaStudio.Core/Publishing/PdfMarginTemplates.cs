@@ -34,6 +34,21 @@ public static class PdfMarginTemplates
                 .Append(Num(rule.WidthPt)).Append("pt solid #").Append(rule.Color).Append(";padding-").Append(list[0].IsTop ? "bottom" : "top").Append(":1mm;");
         }
 
+        if (list.Max(b => b.MinHeightMm) is { } minHeight)
+        {
+            style.Append("min-height:").Append(Num(minHeight)).Append("mm;");
+        }
+
+        if (list.Max(b => b.PaddingTopMm) is { } padTop)
+        {
+            style.Append("padding-top:").Append(Num(padTop)).Append("mm;");
+        }
+
+        if (list.Max(b => b.PaddingBottomMm) is { } padBottom)
+        {
+            style.Append("padding-bottom:").Append(Num(padBottom)).Append("mm;");
+        }
+
         var html = new StringBuilder("<div style=\"").Append(style).Append("\">");
         foreach (var (slot, align) in new[] { (0, "left"), (1, "center"), (2, "right") })
         {
@@ -94,6 +109,21 @@ public static class PdfMarginTemplates
         if (box.Color is { } color)
         {
             css.Append("color:#").Append(color).Append(';');
+        }
+
+        if (box.Uppercase)
+        {
+            css.Append("text-transform:uppercase;");
+        }
+
+        if (box.Underline)
+        {
+            css.Append("text-decoration:underline;");
+        }
+
+        if (box.LetterSpacingPt is { } spacing)
+        {
+            css.Append("letter-spacing:").Append(Num(spacing)).Append("pt;");
         }
 
         return css.Length == 0 ? inner : $"<span style=\"{css}\">{inner}</span>";

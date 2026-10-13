@@ -54,7 +54,7 @@ internal static partial class CoreChecks
             Check(indexHtml.IndexOf("Груша", StringComparison.Ordinal) < indexHtml.IndexOf("Ёж", StringComparison.Ordinal), "сайт: термины по алфавиту");
             var firstPage = File.ReadAllText(Path.Combine(site, "a.html"));
             Check(firstPage.Contains("href=\"index-terms.html\">Указатель</a>"), "сайт: ссылка на указатель есть в навигации и на первой странице");
-            Check(indexHtml.Contains("class=\"current\">Указатель</a>"), "сайт: на странице указателя пункт навигации текущий");
+            Check(indexHtml.Contains("class=\"text current\" href=\"index-terms.html\">Указатель</a>"), "сайт: на странице указателя пункт навигации текущий");
             Check(!firstPage.Contains("Яблоко<") && !firstPage.Contains("Прологовый"), "сайт: сами термины в тексте топика не выводятся");
 
             var plainSite = Path.Combine(root, "plain-site");

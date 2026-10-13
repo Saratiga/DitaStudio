@@ -92,7 +92,7 @@ public static class DocxStyleCatalog
     /// документе Word нет, и предупреждать о них бессмысленно.</summary>
     public static readonly IReadOnlySet<string> HtmlOnlyClasses = new HashSet<string>(StringComparer.Ordinal)
     {
-        "toc", "layout", "pager", "breadcrumbs", "index-terms", "chapter-heading", "toc-inline",
+        "layout", "pager", "breadcrumbs", "index-terms", "chapter-heading", "toc-inline",
         "unknown-element", "footnotes-list", "head", "current"
     };
 

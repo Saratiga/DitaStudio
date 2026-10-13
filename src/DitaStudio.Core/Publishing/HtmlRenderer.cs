@@ -103,6 +103,7 @@ public sealed partial class HtmlRenderer
         if (_nestedDepth == 0)
         {
             _levelOffset = (_options.TopicLevel ?? headingLevel) - headingLevel;
+            TopicNumber = null;
         }
 
         _document = document;
@@ -253,11 +254,24 @@ public sealed partial class HtmlRenderer
     private int _levelOffset;
     private int _nestedDepth;
 
+    /// <summary>Номер заголовка самого топика («2.3») после <see cref="RenderTopic"/>; null — заголовки не нумеруются или у топика нет заголовка. Нужен оглавлению.</summary>
+    public string? TopicNumber { get; private set; }
+
     /// <summary>Номер заголовка «2.3 » в разметке (или пусто) — счётчик идёт по всем заголовкам издания.</summary>
-    private string HeadingNumber(int pageLevel, bool unnumbered) =>
-        _options.Numbering?.Heading(pageLevel + _levelOffset, unnumbered) is { } number
-            ? $"<span class=\"heading-number\">{number}</span> "
-            : string.Empty;
+    private string HeadingNumber(int pageLevel, bool unnumbered)
+    {
+        if (_options.Numbering?.Heading(pageLevel + _levelOffset, unnumbered) is not { } number)
+        {
+            return string.Empty;
+        }
+
+        if (_nestedDepth == 0 && TopicNumber is null)
+        {
+            TopicNumber = number; // первый заголовок верхнего уровня — заголовок самого топика
+        }
+
+        return $"<span class=\"heading-number\">{number}</span> ";
+    }
 
     private bool Include(DitaNode node) => _options.Filter?.Invoke(node) ?? true;
 }

@@ -315,19 +315,24 @@ public sealed partial class DocxRenderer
     private static readonly DocxBorder NoBorder = new("none", 0, "auto");
 
     /// <summary>Свойства таблицы: ширина, рамки и поля ячеек из CSS (table, th, td).</summary>
+    /// <summary>Вид той таблицы, которая сейчас отрисовывается (общий вид документа и правила CSS для её класса и селекторов).</summary>
+    private DocxTableLook TableLook => _tableLook ?? Sheet.Table;
+
+    private DocxTableLook? _tableLook;
+
     private W.TableProperties TableProperties()
     {
-        var look = Sheet.Table;
+        var look = TableLook;
         var properties = new W.TableProperties(
             look.WidthPt is { } widthPt
                 ? new W.TableWidth { Width = DocxPropsWriter.Twips(widthPt).ToString(), Type = W.TableWidthUnitValues.Dxa }
                 : new W.TableWidth { Width = ((int)Math.Round((look.WidthPercent ?? 100) * 50)).ToString(), Type = W.TableWidthUnitValues.Pct },
             // У таблицы с отключёнными линиями всё задано в ячейках (tcBorders): на уровне таблицы границ нет.
             new W.TableBorders(
-                DocxPropsWriter.Border(new W.TopBorder(), _cellBorders is null ? look.Outer : NoBorder),
-                DocxPropsWriter.Border(new W.LeftBorder(), _cellBorders is null ? look.Outer : NoBorder),
-                DocxPropsWriter.Border(new W.BottomBorder(), _cellBorders is null ? look.Outer : NoBorder),
-                DocxPropsWriter.Border(new W.RightBorder(), _cellBorders is null ? look.Outer : NoBorder),
+                DocxPropsWriter.Border(new W.TopBorder(), _cellBorders is null ? look.OuterTop : NoBorder),
+                DocxPropsWriter.Border(new W.LeftBorder(), _cellBorders is null ? look.OuterLeft : NoBorder),
+                DocxPropsWriter.Border(new W.BottomBorder(), _cellBorders is null ? look.OuterBottom : NoBorder),
+                DocxPropsWriter.Border(new W.RightBorder(), _cellBorders is null ? look.OuterRight : NoBorder),
                 DocxPropsWriter.Border(new W.InsideHorizontalBorder(), _cellBorders is null ? look.Inner : NoBorder),
                 DocxPropsWriter.Border(new W.InsideVerticalBorder(), _cellBorders is null ? look.Inner : NoBorder)));
 
@@ -393,7 +398,7 @@ public sealed partial class DocxRenderer
     /// <summary>Заливка ячейки: шапка или тело таблицы; null — без заливки.</summary>
     private W.Shading? CellShading(bool isHeader)
     {
-        var fill = isHeader ? Sheet.Table.HeaderFill : Sheet.Table.BodyFill;
+        var fill = isHeader ? TableLook.HeaderFill : TableLook.BodyFill;
         return string.IsNullOrEmpty(fill) ? null : DocxPropsWriter.Shading(fill);
     }
 }

@@ -188,6 +188,7 @@ public sealed class HtmlPublisher
         // Страницы пишутся после обхода всех топиков: ссылка на указатель в навигации нужна и на первых страницах,
         // а есть ли термины, известно только после рендера последнего топика.
         var pages = new List<(string OutPath, MapItem Item, string Body)>();
+        var numbers = new Dictionary<MapItem, string>(ReferenceEqualityComparer.Instance);
 
         for (var i = 0; i < topics.Count; i++)
         {
@@ -212,14 +213,19 @@ public sealed class HtmlPublisher
             var body = renderer.RenderTopic(expanded, topicNode);
             var previous = i > 0 ? topics[i - 1] : null;
             var next = i + 1 < topics.Count ? topics[i + 1] : null;
+            if (renderer.TopicNumber is { } number)
+            {
+                numbers[item] = number;
+            }
+
             pages.Add((Path.Combine(options.OutputDirectory, fileNames[Path.GetFullPath(path)]), item, body + Pager(previous, next, fileNames)));
         }
 
         var hasIndex = renderer.HasIndexTerms;
-        var toc = BuildToc(tree, fileNames, null, hasIndex ? (IndexPageName, labels.Index, false) : null);
+        var toc = BuildToc(tree, fileNames, null, hasIndex ? (IndexPageName, labels.Index, false) : null, numbers);
         foreach (var (outPath, item, pageBody) in pages)
         {
-            var pageToc = BuildToc(tree, fileNames, item, hasIndex ? (IndexPageName, labels.Index, false) : null);
+            var pageToc = BuildToc(tree, fileNames, item, hasIndex ? (IndexPageName, labels.Index, false) : null, numbers);
             File.WriteAllText(outPath, Page(item.Title, pageToc, pageBody, labels, customCss), new UTF8Encoding(false));
             written.Add(outPath);
         }
@@ -229,7 +235,7 @@ public sealed class HtmlPublisher
             var indexTermsPath = Path.Combine(options.OutputDirectory, IndexPageName);
             var indexTermsBody = "<h1>" + HtmlRenderer.Escape(labels.Index) + "</h1>\n" + renderer.RenderIndexSection(heading: false);
             File.WriteAllText(indexTermsPath,
-                Page(labels.Index, BuildToc(tree, fileNames, null, (IndexPageName, labels.Index, true)), indexTermsBody, labels, customCss),
+                Page(labels.Index, BuildToc(tree, fileNames, null, (IndexPageName, labels.Index, true), numbers), indexTermsBody, labels, customCss),
                 new UTF8Encoding(false));
             written.Add(indexTermsPath);
         }
@@ -279,17 +285,8 @@ public sealed class HtmlPublisher
 
         body.Append("<h1 class=\"book-title\">").Append(HtmlRenderer.Escape(tree.Root.Title)).Append("</h1>\n");
         var tocTitle = _project.DocxLayout.TocTitle.Length > 0 ? _project.DocxLayout.TocTitle : labels.Contents;
-        body.Append("<nav class=\"toc-inline\">\n<h2>").Append(HtmlRenderer.Escape(tocTitle)).Append("</h2>\n<ul>\n");
-        foreach (var item in topics.Where(i => TocRules.Includes(_project, i)))
-        {
-            var full = Path.GetFullPath(item.TargetPath!);
-            var anchor = AnchorFor(full, item.TargetTopicId ?? RootIdOf(full));
-            body.Append("<li style=\"margin-left:").Append(Math.Max(0, item.Level - 1) * 16).Append("px\">")
-                .Append("<a href=\"#").Append(anchor).Append("\">")
-                .Append(HtmlRenderer.Escape(item.Title)).Append("</a></li>\n");
-        }
-
-        body.Append("</ul>\n</nav>\n");
+        var tocSlot = body.Length; // оглавление вставляется после обхода топиков: номера разделов известны только после их отрисовки
+        var topicNumbers = new Dictionary<MapItem, string>(ReferenceEqualityComparer.Instance);
 
         foreach (var item in topics)
         {
@@ -317,7 +314,31 @@ public sealed class HtmlPublisher
                 : null;
             body.Append(renderer.RenderTopic(expanded, topicNode, level));
             body.Append("</div>\n");
+            if (renderer.TopicNumber is { } topicNumber)
+            {
+                topicNumbers[item] = topicNumber;
+            }
         }
+
+        var toc = new StringBuilder("<nav class=\"toc toc-inline\">\n<h2 class=\"toc-title\">").Append(HtmlRenderer.Escape(tocTitle)).Append("</h2>\n<ul>\n");
+        foreach (var item in topics.Where(i => TocRules.Includes(_project, i)))
+        {
+            var full = Path.GetFullPath(item.TargetPath!);
+            var anchor = AnchorFor(full, item.TargetTopicId ?? RootIdOf(full));
+            var depth = Math.Clamp(item.Level, 1, 6);
+            var hasNumber = topicNumbers.TryGetValue(item, out var number);
+            toc.Append("<li class=\"lvl").Append(depth).Append(hasNumber ? " has-num" : string.Empty).Append("\" style=\"margin-left:")
+               .Append(Math.Max(0, item.Level - 1) * 16).Append("px\">");
+            if (hasNumber)
+            {
+                toc.Append("<span class=\"num\">").Append(HtmlRenderer.Escape(number!)).Append("</span> ");
+            }
+
+            toc.Append("<a class=\"text\" href=\"#").Append(anchor).Append("\">").Append(HtmlRenderer.Escape(item.Title)).Append("</a></li>\n");
+        }
+
+        toc.Append("</ul>\n</nav>\n");
+        body.Insert(tocSlot, toc.ToString());
 
         body.Append(renderer.RenderIndexSection());
 
@@ -508,18 +529,18 @@ public sealed class HtmlPublisher
     private const string IndexPageName = "index-terms.html";
 
     private static string BuildToc(MapTree tree, IReadOnlyDictionary<string, string> fileNames, MapItem? current,
-        (string Href, string Title, bool IsCurrent)? indexPage = null)
+        (string Href, string Title, bool IsCurrent)? indexPage = null, IReadOnlyDictionary<MapItem, string>? numbers = null)
     {
         var sb = new StringBuilder();
         sb.Append("<ul>\n");
         foreach (var child in tree.Root.Children)
         {
-            AppendTocItem(sb, child, fileNames, current);
+            AppendTocItem(sb, child, fileNames, current, 1, numbers);
         }
 
         if (indexPage is { } page)
         {
-            sb.Append("<li><a href=\"").Append(page.Href).Append('"').Append(page.IsCurrent ? " class=\"current\"" : string.Empty).Append('>')
+            sb.Append("<li class=\"lvl1\"><a class=\"text").Append(page.IsCurrent ? " current" : string.Empty).Append("\" href=\"").Append(page.Href).Append("\">")
               .Append(HtmlRenderer.Escape(page.Title)).Append("</a></li>\n");
         }
 
@@ -534,7 +555,9 @@ public sealed class HtmlPublisher
         StringBuilder sb,
         MapItem item,
         IReadOnlyDictionary<string, string> fileNames,
-        MapItem? current)
+        MapItem? current,
+        int depth,
+        IReadOnlyDictionary<MapItem, string>? numbers)
     {
         // Только ресурс (в том числе исключённая флажком ветка) без публикуемых потомков — в
         // навигации нечего показывать.
@@ -543,17 +566,26 @@ public sealed class HtmlPublisher
             return;
         }
 
-        sb.Append("<li");
+        // Разметка оглавления общая для CSS пользователя: li.lvlN > span.num + a.text (см. DocxStyleSheet.Toc).
+        string? number = null;
+        var hasNumber = item.TargetPath is not null && !item.IsBroken && !item.IsResourceOnly && numbers is not null && numbers.TryGetValue(item, out number);
+        sb.Append("<li class=\"lvl").Append(Math.Min(depth, 6));
         if (item.TargetPath is null || item.IsBroken || item.IsResourceOnly)
         {
-            sb.Append(" class=\"head\"><span>").Append(HtmlRenderer.Escape(item.Title)).Append("</span>");
+            sb.Append(" head\"><span>").Append(HtmlRenderer.Escape(item.Title)).Append("</span>");
         }
         else
         {
             var full = Path.GetFullPath(item.TargetPath);
             var href = fileNames.TryGetValue(full, out var name) ? name : "#";
-            var cls = ReferenceEquals(item, current) ? " class=\"current\"" : string.Empty;
-            sb.Append("><a href=\"").Append(href).Append('"').Append(cls).Append('>')
+            var cls = ReferenceEquals(item, current) ? " current" : string.Empty;
+            sb.Append(hasNumber ? " has-num\">" : "\">");
+            if (hasNumber)
+            {
+                sb.Append("<span class=\"num\">").Append(HtmlRenderer.Escape(number!)).Append("</span>");
+            }
+
+            sb.Append("<a class=\"text").Append(cls).Append("\" href=\"").Append(href).Append("\">")
               .Append(HtmlRenderer.Escape(item.Title)).Append("</a>");
         }
 
@@ -562,7 +594,7 @@ public sealed class HtmlPublisher
             sb.Append("\n<ul>\n");
             foreach (var child in item.Children)
             {
-                AppendTocItem(sb, child, fileNames, current);
+                AppendTocItem(sb, child, fileNames, current, depth + 1, numbers);
             }
 
             sb.Append("</ul>\n");
@@ -613,7 +645,7 @@ public sealed class HtmlPublisher
 
         if (toc is not null)
         {
-            sb.Append("<aside class=\"toc\">\n<h2>").Append(HtmlRenderer.Escape(labels.Contents)).Append("</h2>\n")
+            sb.Append("<aside class=\"toc\">\n<h2 class=\"toc-title\">").Append(HtmlRenderer.Escape(labels.Contents)).Append("</h2>\n")
               .Append(toc).Append("</aside>\n");
         }
 

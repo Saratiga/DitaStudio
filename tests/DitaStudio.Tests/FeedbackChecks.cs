@@ -435,7 +435,7 @@ internal static partial class CoreChecks
                 new PublishOptions { OutputDirectory = Path.Combine(root, "out"), SingleFile = true });
             var html = File.ReadAllText(single.EntryFile);
             var toc = html[html.IndexOf("toc-inline", StringComparison.Ordinal)..html.IndexOf("</nav>", StringComparison.Ordinal)];
-            Check(toc.Contains("<h2>Оглавление</h2>") && toc.Contains("Основная глава") && !toc.Contains("Введение") && !toc.Contains("Приложение"),
+            Check(toc.Contains("<h2 class=\"toc-title\">Оглавление</h2>") && toc.Contains("Основная глава") && !toc.Contains("Введение") && !toc.Contains("Приложение"),
                 "HTML: оглавление со своим названием, без заголовков без номера и toc=\"no\"");
         });
     }

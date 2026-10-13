@@ -47,7 +47,7 @@ public sealed partial class DocxStyleSheet
         return string.IsNullOrEmpty(content) ? null : content;
     }
 
-    private static string? ParseContent(string value, DitaNode node)
+    internal static string? ParseContent(string value, DitaNode node)
     {
         if (value.Trim() is "none" or "normal" or "")
         {

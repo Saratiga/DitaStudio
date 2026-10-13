@@ -1384,6 +1384,22 @@ BMP). Части через пробел склеиваются. У поля р�
 молча. `@font-face` не встраивает шрифт в
 документ: шрифт должен быть установлен там, где документ открывают.
 
+### Оглавление, таблицы, картинки и колонтитулы из CSS
+
+Полный список селекторов и свойств — в [docs/CSS_REFERENCE.md](docs/CSS_REFERENCE.md). Кратко:
+
+- **Оглавление.** Классы `.toc` (строки), `.toc-title` (название), `.toc .lvl1…lvl6` (уровни), `.toc .lvl1 > .num` (номер раздела);
+  `text-transform: uppercase` даёт капитель Word, `min-width` + `margin-right` у `.num` — «таб» между цифрой и текстом (висячий отступ),
+  `.toc-title::before { content: "Оглавление" }` или `.toc-title { content: "…" }` — своё название, `.toc .lvl4 { display: none }` убирает 4-й и
+  глубже уровни, `.toc-title { display: none }` — название, `.toc { display: none }` — всё оглавление. Правила главнее диалога «Оформление DOCX».
+  Та же разметка (`li.lvlN > span.num + a.text`) стоит в навигации HTML-сайта и в оглавлении единого HTML/PDF.
+- **Таблица со своим классом.** У `table` с `outputclass="blue-frame"`: `table.blue-frame { border: 2px solid #1E90FF }` — внешние рамки (можно по сторонам:
+  `border-top`…), `background-color` — заливка, `width` — ширина; `.blue-frame th`, `.blue-frame td`, `td:first-child`, `tr:nth-child(2n) td` — рамки сторон,
+  заливка и поля отдельных ячеек. Общий вид всех таблиц — по-прежнему `table`, `td`, `th`.
+- **Картинки.** `image`, `img`, `image.имя`: `width`, `height` (в `px`, `pt`, `mm`, `%` ширины текста), `max-width`, `max-height`, `border`.
+- **Колонтитулы.** В полях `@top-…`/`@bottom-…` кроме шрифта, цвета и линии работают `height`/`min-height` (высота области), `padding-top`/`padding-bottom`,
+  `text-transform: uppercase`, `text-decoration: underline`, `letter-spacing`.
+
 ### Настройки «Оформление DOCX»
 
 «Публикация → Оформление DOCX…» — окно с двумя вкладками: **«Оформление»** — то, что не

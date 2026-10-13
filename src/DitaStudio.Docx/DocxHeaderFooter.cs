@@ -72,6 +72,32 @@ internal static class DocxHeaderFooter
         properties.Tabs = new W.Tabs(
             new W.TabStop { Val = W.TabStopValues.Center, Position = (int)Math.Round(textWidthPt * 10) },
             new W.TabStop { Val = W.TabStopValues.Right, Position = (int)Math.Round(textWidthPt * 20) });
+
+        // Размер области колонтитула из CSS: наименьшая высота (height / min-height) и интервалы над текстом и под ним (padding-top / padding-bottom).
+        var minHeightMm = list.Max(b => b.MinHeightMm);
+        var padTopMm = list.Max(b => b.PaddingTopMm);
+        var padBottomMm = list.Max(b => b.PaddingBottomMm);
+        if (padTopMm is not null || padBottomMm is not null || minHeightMm is not null)
+        {
+            var spacing = new W.SpacingBetweenLines();
+            if (padTopMm is { } before)
+            {
+                spacing.Before = ((int)Math.Round(before * TwipsPerMm)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            if (padBottomMm is { } after)
+            {
+                spacing.After = ((int)Math.Round(after * TwipsPerMm)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            if (minHeightMm is { } minimum)
+            {
+                spacing.Line = Math.Max(20, (int)Math.Round(minimum * TwipsPerMm)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                spacing.LineRule = W.LineSpacingRuleValues.AtLeast;
+            }
+
+            properties.SpacingBetweenLines = spacing;
+        }
         properties.Justification = new W.Justification { Val = W.JustificationValues.Left };
         var paragraph = new W.Paragraph(properties);
 
@@ -142,14 +168,29 @@ internal static class DocxHeaderFooter
             props.Italic = new W.Italic();
         }
 
+        if (box.Uppercase)
+        {
+            props.Caps = new W.Caps();
+        }
+
         if (box.Color is { } color)
         {
             props.Color = new W.Color { Val = color };
         }
 
+        if (box.LetterSpacingPt is { } spacing)
+        {
+            props.Spacing = new W.Spacing { Val = (int)Math.Round(spacing * 20) };
+        }
+
         if (box.FontSizePt is { } size)
         {
             props.FontSize = new W.FontSize { Val = ((int)Math.Round(size * 2)).ToString(System.Globalization.CultureInfo.InvariantCulture) };
+        }
+
+        if (box.Underline)
+        {
+            props.Underline = new W.Underline { Val = W.UnderlineValues.Single };
         }
 
         if (props.HasChildren)

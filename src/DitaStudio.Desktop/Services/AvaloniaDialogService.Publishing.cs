@@ -187,7 +187,31 @@ public sealed partial class AvaloniaDialogService
    правила для собственных классов — стилями элементов с таким outputclass,
    @page { size; margin } — размером и полями страницы. Правила только для Word
    можно положить в @media docx { … } — браузер их не применит.
-   Титул, оглавление, колонтитулы и нумерация заголовков — «Публикация → Оформление DOCX…». */
+   Титул, колонтитулы, оглавление и нумерация заголовков настраиваются и в «Публикация → Оформление DOCX…»,
+   и здесь: правила CSS главнее диалога. Подробный справочник — docs/CSS_REFERENCE.md.
+
+   Примеры (уберите комментарии вокруг нужного):
+
+   Таблица с классом: внешние голубые рамки 2 px, шапка с заливкой (outputclass="blue-frame" у таблицы)
+   table.blue-frame { border: 2px solid #1E90FF; }
+   .blue-frame th { background-color: #DCEBFA; border-bottom: 2px solid #1E90FF; }
+
+   Оглавление: название, шрифт, уровни, «таб» между номером и текстом
+   .toc-title { text-transform: uppercase; font-family: "Arial Black", Arial, sans-serif; font-size: 14pt; font-weight: normal; margin: 0 0 0.3em 0; }
+   .toc-title::before { content: "Оглавление"; }
+   .toc { font-size: 12pt; font-weight: normal; }
+   .toc .lvl1, .toc .lvl2 { display: block; margin: 0; }
+   .toc .lvl3 { display: none; }
+   .toc .lvl1 > .num { display: inline-block; min-width: 1.2em; margin-right: 0.5em; }
+
+   Колонтитулы: высота области, размер текста, регистр, линия
+   @page { margin: 25mm 20mm;
+     @top-center { content: string(title); font-size: 10pt; text-transform: uppercase; height: 12mm; border-bottom: 0.5pt solid #999; }
+     @bottom-right { content: "Стр. " counter(page) " из " counter(pages); font-size: 9pt; } }
+
+   Картинки: размер и рамка
+   image { max-width: 100%; border: 1px solid #999; }
+   image.icon { width: 24px; } */
 
 """;
 

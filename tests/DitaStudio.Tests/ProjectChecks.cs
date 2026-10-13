@@ -467,8 +467,8 @@ internal static partial class CoreChecks
             // в оглавление как "голова без ссылки" (<li class="head">), а не как обычная <a>.
             var brokenSiteResult = publisher.Publish(Path.Combine(root, "broken.ditamap"), new PublishOptions { OutputDirectory = Path.Combine(root, "broken-out") });
             var brokenIndexHtml = File.ReadAllText(brokenSiteResult.EntryFile);
-            Check(System.Text.RegularExpressions.Regex.IsMatch(brokenIndexHtml, "<li class=\"head\"><span>[^<]*</span>"),
-                "оглавление многостраничной сборки: узел без валидной ссылки (битый href) отрисован как <li class=\"head\">, без <a>");
+            Check(System.Text.RegularExpressions.Regex.IsMatch(brokenIndexHtml, "<li class=\"lvl1 head\"><span>[^<]*</span>"),
+                "оглавление многостраничной сборки: узел без валидной ссылки (битый href) отрисован как <li class=\"lvl1 head\">, без <a>");
 
             // Карта без FilePath (ещё не сохранена на диск) — отдельная заглушка.
             var unsavedMap = DitaDocument.Parse("<map><title>Новая карта</title></map>");

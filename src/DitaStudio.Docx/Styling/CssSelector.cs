@@ -149,7 +149,7 @@ public sealed class CssSelector
 
         public bool Matches(DitaNode node)
         {
-            if (Type is not null && !string.Equals(Type, node.Name, StringComparison.OrdinalIgnoreCase))
+            if (Type is not null && !string.Equals(Type, node.Name, StringComparison.OrdinalIgnoreCase) && !MatchesHtmlName(Type, node))
             {
                 return false;
             }
@@ -170,6 +170,24 @@ public sealed class CssSelector
 
             return Attributes.All(a => a.Matches(node)) && Pseudos.All(p => p.Matches(node));
         }
+    }
+
+    /// <summary>
+    /// Имена HTML, под которыми публикация выводит элементы таблиц: CSS пишут для HTML (<c>td</c>, <c>th</c>, <c>tr</c>), а в дереве DITA это
+    /// <c>entry</c> (<c>th</c> — ячейка шапки или строки-заголовка) и <c>row</c>.
+    /// </summary>
+    private static bool MatchesHtmlName(string type, DitaNode node)
+    {
+        var inHead = node.Parent?.Parent?.Name is "thead" or "sthead";
+        return type.ToLowerInvariant() switch
+        {
+            "td" => node.Name is "entry" or "stentry" && !inHead,
+            "th" => node.Name is "entry" or "stentry" && inHead || node.Name is "sthead" or "prophead" or "chhead",
+            "tr" => node.Name is "row" or "strow" or "property" or "chrow",
+            "img" => node.Name == "image",
+            "figure" => node.Name == "fig",
+            _ => false
+        };
     }
 
     /// <summary>Классы элемента: значения <c>outputclass</c> и имя элемента — публикация HTML ставит его классом.</summary>
