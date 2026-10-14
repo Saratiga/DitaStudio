@@ -27,7 +27,7 @@ public sealed partial class AuthorView
 
         if (view is not null && AttributeNotesEnabled && AttributeNote(node) is { } note)
         {
-            view = WithAttributeNote(note, view);
+            view = WithAttributeNote(note, view, node.GetAttribute("status"));
         }
 
         if (view is not null)

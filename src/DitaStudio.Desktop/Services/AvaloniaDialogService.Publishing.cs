@@ -334,6 +334,28 @@ public sealed partial class AvaloniaDialogService
         templateRow.Children.Add(templatePath);
         panel.Children.Add(templateRow);
 
+        // Стиль таблиц из шаблона: для таблиц без своего стиля по классу (класс таблицы = название стиля таблицы в шаблоне).
+        var tableStyle = Named(new ComboBox { Width = 260, Padding = new Thickness(4, 3, 4, 3) }, Loc.T("Dlg_TableStyleFromTemplate"));
+        void FillTableStyles()
+        {
+            var noStyle = new TemplateTableStyle(string.Empty, Loc.T("Dlg_NoTableStyle"));
+            var items = new List<TemplateTableStyle> { noStyle };
+            if (DocxLayout.ResolveTemplate(project.RootPath, (templatePath.Text ?? string.Empty).Trim()) is { } templateFile)
+            {
+                items.AddRange(DitaStudio.Docx.DocxTemplateInfo.TableStyles(templateFile).Select(s => new TemplateTableStyle(s.Id, s.Name)));
+            }
+
+            var wanted = tableStyle.SelectedItem is TemplateTableStyle chosen ? chosen.Id : current.TableStyle;
+            tableStyle.ItemsSource = items;
+            tableStyle.SelectedItem = items.FirstOrDefault(i => i.Id.Length > 0 && (string.Equals(i.Id, wanted, StringComparison.OrdinalIgnoreCase) ||
+                                                                                   string.Equals(i.Name, wanted, StringComparison.OrdinalIgnoreCase))) ?? noStyle;
+            tableStyle.IsEnabled = items.Count > 1;
+        }
+
+        FillTableStyles();
+        templatePath.TextChanged += (_, _) => FillTableStyles();
+        panel.Children.Add(Row(Loc.T("Dlg_TableStyleFromTemplate2"), tableStyle));
+
         // ---- титул
         panel.Children.Add(Header(Loc.T("Dlg_TitlePage")));
         var titlePage = Check(Loc.T("Dlg_ASeparateTitlePageWithThe"), current.TitlePage);
@@ -458,6 +480,7 @@ public sealed partial class AvaloniaDialogService
             var fresh = new DocxLayout
             {
                 TemplatePath = (templatePath.Text ?? string.Empty).Trim(),
+                TableStyle = tableStyle.SelectedItem is TemplateTableStyle { Id.Length: > 0 } style ? style.Id : string.Empty,
                 TitlePage = titlePage.IsChecked == true,
                 Subtitle = (subtitle.Text ?? string.Empty).Trim(),
                 Author = (author.Text ?? string.Empty).Trim(),
@@ -596,5 +619,11 @@ public sealed partial class AvaloniaDialogService
             row.Children.Add(control);
             return row;
         }
+    }
+
+    /// <summary>Строка списка «Стиль таблиц»: id стиля таблицы в шаблоне и его название.</summary>
+    private sealed record TemplateTableStyle(string Id, string Name)
+    {
+        public override string ToString() => Name;
     }
 }

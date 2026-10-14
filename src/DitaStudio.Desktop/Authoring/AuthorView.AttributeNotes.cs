@@ -143,7 +143,7 @@ public sealed partial class AuthorView
 
         if (note is not null)
         {
-            view = WithAttributeNote(note, view);
+            view = WithAttributeNote(note, view, node.GetAttribute("status"));
         }
 
         _viewNodes.Remove(outer);
@@ -153,10 +153,23 @@ public sealed partial class AuthorView
         _replaceSlot = null;
     }
 
-    private static Control WithAttributeNote(string text, Control view)
+    /// <summary>Цвет пометки: правка по <c>status</c> — new зелёная, changed оранжевая, deleted красная; остальные пометки серые.</summary>
+    public static string NoteBrushKey(string? status) => status switch
+    {
+        "new" => "Success",
+        "changed" => "Warning",
+        "deleted" => "Danger",
+        _ => "EditorTag"
+    };
+
+    private static Control WithAttributeNote(string text, Control view, string? status = null)
     {
         var note = new TextBlock { Text = text, FontSize = 10.5, Margin = new Thickness(4, 2, 0, 0), Tag = "attribute-note", TextWrapping = TextWrapping.Wrap };
-        Themed(note, TextBlock.ForegroundProperty, "EditorTag");
+        Themed(note, TextBlock.ForegroundProperty, NoteBrushKey(status));
+        if (status is "new" or "changed" or "deleted")
+        {
+            note.FontWeight = FontWeight.SemiBold;
+        }
         ToolTip.SetTip(note, Loc.T("Author_ElementAttributesInAConditionalBuild") +
                              Loc.T("Author_EditOnTheAttributesPanelTo"));
         return new StackPanel { Tag = ViewWrapperTag, Children = { note, view } };

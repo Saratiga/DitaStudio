@@ -680,6 +680,45 @@
                         </TreeView.ItemTemplate>
                     </TreeView>
                 </TabItem>
+                <TabItem Header="{loc:Tr Tab_Changes}" Name="ChangesTab">
+                    <DockPanel>
+                        <DockPanel DockPanel.Dock="Top" Margin="6,6,6,2">
+                            <Button DockPanel.Dock="Right" Content="{loc:Tr Btn_Refresh}" Padding="8,3" Margin="4,0,0,0"
+                                    Command="{Binding Changes.RefreshCommand}" ToolTip.Tip="{loc:Tr Tip_ChangesRefresh}" />
+                            <ComboBox Name="ChangesFilter" ItemsSource="{Binding Changes.Filters}" SelectedIndex="{Binding Changes.FilterIndex}"
+                                      HorizontalAlignment="Stretch" />
+                        </DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Margin="8,2,8,4" Text="{Binding Changes.Summary}" TextWrapping="Wrap"
+                                   FontSize="11" Foreground="{DynamicResource TextMuted}" />
+                        <ListBox Name="ChangesList" ItemsSource="{Binding Changes.Items}" SelectedItem="{Binding Changes.SelectedItem}"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.Styles>
+                                <Style Selector="TextBlock.status.new">
+                                    <Setter Property="Foreground" Value="{DynamicResource Success}" />
+                                </Style>
+                                <Style Selector="TextBlock.status.changed">
+                                    <Setter Property="Foreground" Value="{DynamicResource Warning}" />
+                                </Style>
+                                <Style Selector="TextBlock.status.deleted">
+                                    <Setter Property="Foreground" Value="{DynamicResource Danger}" />
+                                </Style>
+                            </ListBox.Styles>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="vm:ChangeItem">
+                                    <StackPanel Spacing="1" ToolTip.Tip="{Binding File}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Classes="status" Classes.new="{Binding IsNew}" Classes.changed="{Binding IsChanged}"
+                                                       Classes.deleted="{Binding IsDeleted}" Text="{Binding StatusLabel}" FontWeight="SemiBold" FontSize="11" />
+                                            <TextBlock Text="{Binding Element}" FontFamily="{DynamicResource MonoFont}" FontSize="11" Foreground="{DynamicResource Accent}" />
+                                            <TextBlock Text="{Binding File}" FontSize="11" Foreground="{DynamicResource TextMuted}" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Text}" FontSize="12" TextWrapping="Wrap" MaxHeight="36" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </TabItem>
             </TabControl>
         </Grid>
     </DockPanel>

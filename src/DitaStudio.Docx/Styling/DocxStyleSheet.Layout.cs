@@ -48,25 +48,30 @@ public sealed partial class DocxStyleSheet
         {
             Table.Inner = cellBorder;
             Table.Outer = cellBorder;
+            Table.ExplicitBorders = true;
         }
 
         if (table is not null && AnySide(table.Props) is { } tableBorder)
         {
             Table.Outer = tableBorder;
+            Table.ExplicitBorders = true;
         }
 
         if (th?.Props.Background is { } headerFill)
         {
             Table.HeaderFill = headerFill;
+            Table.ExplicitHeaderFill = true;
         }
 
         if (td?.Props.Background is { } bodyFill)
         {
             Table.BodyFill = bodyFill;
+            Table.ExplicitBodyFill = true;
         }
         else if (table?.Props.Background is { } tableFill)
         {
             Table.BodyFill = tableFill;
+            Table.ExplicitBodyFill = true;
         }
 
         var padding = td?.PaddingLeft ?? td?.PaddingTop ?? th?.PaddingLeft ?? th?.PaddingTop;

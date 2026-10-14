@@ -29,7 +29,13 @@ internal static partial class CoreChecks
                     new RunFonts { Ascii = "Georgia", HighAnsi = "Georgia" }, new Bold(), new Color { Val = "123456" }, new FontSize { Val = "40" }))
             { Type = StyleValues.Paragraph, StyleId = "Heading1" },
             new Style(new StyleName { Val = "Шаблонный" }, new BasedOn { Val = "Normal" },
-                new StyleRunProperties(new Italic())) { Type = StyleValues.Paragraph, StyleId = "TemplateOnly" });
+                new StyleRunProperties(new Italic())) { Type = StyleValues.Paragraph, StyleId = "TemplateOnly" },
+            new Style(new StyleName { Val = "Table Grid" },
+                new StyleTableProperties(new TableBorders(new TopBorder { Val = BorderValues.Single, Size = 4 }, new BottomBorder { Val = BorderValues.Single, Size = 4 })))
+            { Type = StyleValues.Table, StyleId = "TableGrid" },
+            new Style(new StyleName { Val = "Фирменная таблица" },
+                new StyleTableProperties(new TableBorders(new TopBorder { Val = BorderValues.Double, Size = 8, Color = "1E90FF" })))
+            { Type = StyleValues.Table, StyleId = "Firm" });
         main.Document.Save();
     }
 
@@ -114,6 +120,60 @@ internal static partial class CoreChecks
             // --- путь шаблона сохраняется вместе с остальными настройками
             var restored = DocxLayout.FromJson(new DocxLayout { TemplatePath = "  шаблоны/a.dotx  " }.ToJson());
             Check(restored.TemplatePath == "шаблоны/a.dotx", "TemplatePath сохраняется и обрезается");
+        });
+    }
+
+    internal static void DocxTemplateTableStyleTests()
+    {
+        Section("Шаблон DOCX: стили таблиц");
+
+        WithProject(new Dictionary<string, string>
+        {
+            ["t.dita"] = """
+                <topic id="t"><title>Таблицы</title><body>
+                <table><tgroup cols="2"><thead><row><entry>A</entry><entry>B</entry></row></thead><tbody><row><entry>1</entry><entry>2</entry></row></tbody></tgroup></table>
+                <table outputclass="фирменная-таблица"><tgroup cols="1"><tbody><row><entry>Ф</entry></row></tbody></tgroup></table>
+                <table outputclass="red"><tgroup cols="1"><tbody><row><entry>К</entry></row></tbody></tgroup></table>
+                </body></topic>
+                """,
+            ["m.ditamap"] = "<map><title>Книга</title><topicref href=\"t.dita\"/></map>",
+            ["custom.css"] = "table.red { border: 2px solid #FF0000; }"
+        }, (root, project) =>
+        {
+            MakeTemplate(Path.Combine(root, "template.docx"));
+            project.SetCustomCssPath("custom.css");
+            var map = Path.Combine(root, "m.ditamap");
+            Check(DocxTemplateInfo.TableStyles(Path.Combine(root, "template.docx")).Select(t => t.Id).SequenceEqual(new[] { "TableGrid", "Firm" }),
+                "список стилей таблиц шаблона для «Оформление DOCX»");
+
+            project.SetDocxLayout(new DocxLayout { TitlePage = false, TableOfContents = false, TemplatePath = "template.docx", TableStyle = "TableGrid" });
+            var docx = Path.Combine(root, "styled.docx");
+            new DocxPublisher(project).Publish(map, new PublishOptions { Language = "ru" }, docx);
+            CheckValidDocx(docx, "стили таблиц из шаблона");
+            using (var doc = WordprocessingDocument.Open(docx, false))
+            {
+                var tables = doc.MainDocumentPart!.Document.Body!.Descendants<Table>().ToList();
+                string? StyleOf(int i) => tables[i].GetFirstChild<TableProperties>()?.TableStyle?.Val?.Value;
+                Check(StyleOf(0) == "TableGrid" && tables[0].GetFirstChild<TableProperties>()!.TableBorders is null,
+                    "таблица без класса — стиль из «Оформление DOCX», своих рамок нет");
+                Check(tables[0].GetFirstChild<TableProperties>()!.TableLook?.Val?.Value == "0420", "tblLook: оформление первой строки стиля включено");
+                Check(tables[0].Descendants<TableCell>().All(c => c.TableCellProperties?.Shading is null), "заливку шапки даёт стиль, своей нет");
+                Check(StyleOf(1) == "Firm", "класс «фирменная-таблица» выбирает стиль «Фирменная таблица»: " + StyleOf(1));
+                Check(StyleOf(2) == "TableGrid" && tables[2].GetFirstChild<TableProperties>()!.TableBorders?.TopBorder?.Color?.Value == "FF0000",
+                    "явная рамка из CSS (table.red) главнее стиля");
+            }
+
+            // --- без стиля по умолчанию: таблица без класса рисуется своими рамками, класс со стилем — стилем
+            project.SetDocxLayout(new DocxLayout { TitlePage = false, TableOfContents = false, TemplatePath = "template.docx" });
+            var plain = Path.Combine(root, "plain.docx");
+            new DocxPublisher(project).Publish(map, new PublishOptions { Language = "ru" }, plain);
+            using (var doc = WordprocessingDocument.Open(plain, false))
+            {
+                var tables = doc.MainDocumentPart!.Document.Body!.Descendants<Table>().ToList();
+                Check(tables[0].GetFirstChild<TableProperties>()!.TableStyle is null && tables[0].GetFirstChild<TableProperties>()!.TableBorders is not null,
+                    "стиль таблиц не выбран — таблица без класса со своими рамками");
+                Check(tables[1].GetFirstChild<TableProperties>()?.TableStyle?.Val?.Value == "Firm", "класс таблицы по-прежнему выбирает стиль шаблона");
+            }
         });
     }
 }

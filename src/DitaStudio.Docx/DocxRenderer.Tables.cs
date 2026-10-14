@@ -41,7 +41,9 @@ public sealed partial class DocxRenderer
 
         var allowSplit = HasOutputClass(node, "page-break-auto");
         var outerLook = _tableLook;
+        var outerStyle = _tableStyle;
         _tableLook = Sheet.LookFor(node); // CSS для класса и селекторов этой таблицы (`table.synchro`, `.synchro td`)
+        _tableStyle = _options.TableStyleFor?.Invoke(node);
         var outerBorders = _cellBorders;
         _cellBorders = CalsBorders.IsCustom(node) ? CalsBorders.Compute(node) : null;
         foreach (var tgroup in node.ElementChildren().Where(e => e.Name == "tgroup"))
@@ -52,6 +54,7 @@ public sealed partial class DocxRenderer
 
         _cellBorders = outerBorders;
         _tableLook = outerLook;
+        _tableStyle = outerStyle;
     }
 
     // Границы ячеек таблицы, у которой линии отключены (frame, rowsep, colsep); null — обычная таблица.
@@ -382,7 +385,9 @@ public sealed partial class DocxRenderer
         var numCols = Math.Max(1, rows.Select(r => r.ElementChildren().Count(c => rowNames.Contains(c.Name))).DefaultIfEmpty(headNames.Length).Max());
 
         var outerLook = _tableLook;
+        var outerStyle = _tableStyle;
         _tableLook = Sheet.LookFor(node);
+        _tableStyle = _options.TableStyleFor?.Invoke(node);
         var table = new W.Table();
         table.Append(TableProperties());
         var outerFractions = _columnFractions;
@@ -439,6 +444,7 @@ public sealed partial class DocxRenderer
 
         _columnFractions = outerFractions;
         _tableLook = outerLook;
+        _tableStyle = outerStyle;
         return table;
     }
 

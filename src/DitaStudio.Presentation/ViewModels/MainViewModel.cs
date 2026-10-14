@@ -79,6 +79,9 @@ public partial class MainViewModel : ObservableObject, IShellState
     // Правая панель (атрибуты, палитра, структура).
     public SidePanelsViewModel SidePanels { get; }
 
+    /// <summary>Панель «Правки»: блоки со статусом new / changed / deleted по проекту.</summary>
+    public ChangesViewModel Changes { get; }
+
     // Защита от потери данных: копии несохранённых правок и слежение за изменениями файлов другими программами.
     public AutoRecovery Recovery { get; }
     public ExternalChangeWatcher ExternalChanges { get; }
@@ -106,6 +109,7 @@ public partial class MainViewModel : ObservableObject, IShellState
         Publish = new PublishViewModel(context, Documents, Map);
         Insert = new InsertViewModel(context, Documents);
         SidePanels = new SidePanelsViewModel(context, Documents, Insert);
+        Changes = new ChangesViewModel(context, Documents);
 
         // Смена активного проекта: заголовок окна, затем всё, что показывает его данные.
         Workspace.ActiveProjectChanged += (_, _) =>

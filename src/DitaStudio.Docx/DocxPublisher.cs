@@ -135,6 +135,9 @@ public sealed partial class DocxPublisher
                 Labels = labels,
                 ShowDraftComments = options.ShowDraftComments,
                 ImageRasterizer = options.ImageRasterizer,
+                // Стиль таблицы из шаблона: по классу таблицы, иначе выбранный в «Оформление DOCX».
+                TableStyleFor = template is null ? null : table => template.TableStyleFor(
+                    (table.GetAttribute("outputclass") ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries), layout.TableStyle),
                 Filter = node => PublishFilter.IsIncluded(node, options),
                 TopicBookmark = (path, id) => bookmarks.TryGetValue(BookmarkKey(path, id), out var name) ? name : null,
                 Styles = styles,

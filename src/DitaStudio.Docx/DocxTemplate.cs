@@ -80,6 +80,42 @@ internal sealed class DocxTemplate
         }
     }
 
+    /// <summary>Стили таблиц шаблона: id и название.</summary>
+    public IReadOnlyList<(string Id, string Name)> TableStyles =>
+        Styles.Elements<W.Style>().Where(s => s.Type?.Value == W.StyleValues.Table && s.StyleId?.Value is { Length: > 0 })
+            .Select(s => (s.StyleId!.Value!, s.StyleName?.Val?.Value ?? s.StyleId!.Value!)).ToList();
+
+    /// <summary>
+    /// Стиль таблицы шаблона для таблицы с классами <paramref name="classes"/>: класс, совпадающий с id или названием стиля (без учёта регистра, пробелов,
+    /// дефисов и подчёркиваний), иначе стиль по умолчанию <paramref name="defaultStyle"/> (id или название); null — стиль не назначается.
+    /// </summary>
+    public string? TableStyleFor(IEnumerable<string> classes, string? defaultStyle)
+    {
+        var styles = TableStyles;
+        string? Find(string key)
+        {
+            var wanted = Normalize(key);
+            return wanted.Length == 0 ? null : styles.FirstOrDefault(s => Normalize(s.Id) == wanted || Normalize(s.Name) == wanted).Id;
+        }
+
+        foreach (var token in classes)
+        {
+            if (Find(token) is { } byClass)
+            {
+                return byClass;
+            }
+        }
+
+        return string.IsNullOrWhiteSpace(defaultStyle) ? null : Find(defaultStyle);
+    }
+
+    private static string Normalize(string value) =>
+        new string(value.Where(c => !char.IsWhiteSpace(c) && c is not '-' and not '_').ToArray()).ToLowerInvariant();
+
+    /// <summary>Стили таблиц файла шаблона — для списка в «Оформление DOCX»; пусто, если файла нет или он не открылся.</summary>
+    public static IReadOnlyList<(string Id, string Name)> ReadTableStyles(string path) =>
+        Load(path, new List<string>())?.TableStyles ?? Array.Empty<(string, string)>();
+
     /// <summary>Стиль шаблона с таким id (и тем же видом — абзац или знак); иначе null.</summary>
     public W.Style? Find(string id, DocxStyleKind kind)
     {

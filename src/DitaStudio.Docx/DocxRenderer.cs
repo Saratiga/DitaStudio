@@ -17,6 +17,9 @@ public sealed class DocxRenderOptions
 
     public bool ShowDraftComments { get; set; }
 
+    /// <summary>Стиль таблицы Word (id) для таблицы DITA — из шаблона DOCX; null — таблица рисуется своими рамками, как без шаблона.</summary>
+    public Func<DitaNode, string?>? TableStyleFor { get; set; }
+
     /// <summary>Растеризатор SVG: нет его — SVG заменяется плашкой с именем файла.</summary>
     public IImageRasterizer? ImageRasterizer { get; set; }
 

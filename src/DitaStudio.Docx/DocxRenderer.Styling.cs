@@ -330,9 +330,17 @@ public sealed partial class DocxRenderer
 
     private DocxTableLook? _tableLook;
 
+    // Стиль таблицы из шаблона для таблицы, которая сейчас отрисовывается; null — свои рамки и заливка.
+    private string? _tableStyle;
+
     private W.TableProperties TableProperties()
     {
         var look = TableLook;
+        if (_tableStyle is { } styleId)
+        {
+            return StyledTableProperties(styleId, look);
+        }
+
         var properties = new W.TableProperties(
             look.WidthPt is { } widthPt
                 ? new W.TableWidth { Width = DocxPropsWriter.Twips(widthPt).ToString(), Type = W.TableWidthUnitValues.Dxa }
@@ -356,6 +364,39 @@ public sealed partial class DocxRenderer
                 new W.TableCellRightMargin { Width = (short)DocxPropsWriter.Twips(padding), Type = W.TableWidthValues.Dxa }));
         }
 
+        return properties;
+    }
+
+    /// <summary>
+    /// Таблица со стилем из шаблона: рамки, заливку и поля даёт стиль; от CSS — только то, что в нём задано явно. Флаги tblLook включают условное
+    /// оформление первой строки и чередование строк, как у таблицы, вставленной в Word.
+    /// </summary>
+    private W.TableProperties StyledTableProperties(string styleId, DocxTableLook look)
+    {
+        var properties = new W.TableProperties
+        {
+            TableStyle = new W.TableStyle { Val = styleId },
+            TableWidth = look.WidthPt is { } widthPt
+                ? new W.TableWidth { Width = DocxPropsWriter.Twips(widthPt).ToString(), Type = W.TableWidthUnitValues.Dxa }
+                : new W.TableWidth { Width = ((int)Math.Round((look.WidthPercent ?? 100) * 50)).ToString(), Type = W.TableWidthUnitValues.Pct }
+        };
+
+        if (look.ExplicitBorders && _cellBorders is null)
+        {
+            properties.TableBorders = new W.TableBorders(
+                DocxPropsWriter.Border(new W.TopBorder(), look.OuterTop),
+                DocxPropsWriter.Border(new W.LeftBorder(), look.OuterLeft),
+                DocxPropsWriter.Border(new W.BottomBorder(), look.OuterBottom),
+                DocxPropsWriter.Border(new W.RightBorder(), look.OuterRight),
+                DocxPropsWriter.Border(new W.InsideHorizontalBorder(), look.Inner),
+                DocxPropsWriter.Border(new W.InsideVerticalBorder(), look.Inner));
+        }
+
+        properties.TableLook = new W.TableLook
+        {
+            // Битовая маска схемы 2007 (атрибуты firstRow… — только с Word 2010): 0x0020 — первая строка, 0x0400 — без чередования столбцов.
+            Val = "0420"
+        };
         return properties;
     }
 
@@ -408,6 +449,12 @@ public sealed partial class DocxRenderer
     /// <summary>Заливка ячейки: шапка или тело таблицы; null — без заливки.</summary>
     private W.Shading? CellShading(bool isHeader)
     {
+        // У таблицы со стилем из шаблона заливку даёт стиль; своя — только заданная в CSS.
+        if (_tableStyle is not null && !(isHeader ? TableLook.ExplicitHeaderFill : TableLook.ExplicitBodyFill))
+        {
+            return null;
+        }
+
         var fill = isHeader ? TableLook.HeaderFill : TableLook.BodyFill;
         return string.IsNullOrEmpty(fill) ? null : DocxPropsWriter.Shading(fill);
     }

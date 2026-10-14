@@ -143,6 +143,9 @@ public sealed class DocxLayout
     /// </summary>
     public string TemplatePath { get; set; } = string.Empty;
 
+    /// <summary>Стиль таблиц из шаблона (id или название) для таблиц без своего стиля по классу; пусто — таблицы рисуются своими рамками.</summary>
+    public string TableStyle { get; set; } = string.Empty;
+
     /// <summary>Полный путь шаблона или null — не задан или файла нет.</summary>
     public static string? ResolveTemplate(string projectRoot, string relative)
     {
@@ -317,6 +320,7 @@ public sealed class DocxLayout
         FooterImageHeightMm = double.IsFinite(FooterImageHeightMm) ? Math.Clamp(FooterImageHeightMm, 3, 60) : 10;
         TitleImage = TitleImage?.Trim() ?? string.Empty;
         TemplatePath = TemplatePath?.Trim() ?? string.Empty;
+        TableStyle = TableStyle?.Trim() ?? string.Empty;
         TitleImageHeightMm = double.IsFinite(TitleImageHeightMm) ? Math.Clamp(TitleImageHeightMm, 5, 250) : 40;
         FooterText ??= string.Empty;
         Language = string.IsNullOrWhiteSpace(Language) ? "ru-RU" : Language.Trim();

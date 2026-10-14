@@ -61,6 +61,14 @@ public partial class MainWindow : Window
 
         DataContext = ViewModel;
         InitializeComponent();
+        // Вкладка «Правки» собирает список при открытии: правки могли появиться в любом документе.
+        RightTabs.SelectionChanged += (_, e) =>
+        {
+            if (ReferenceEquals(e.Source, RightTabs) && ReferenceEquals(RightTabs.SelectedItem, ChangesTab))
+            {
+                ViewModel.Changes.Refresh();
+            }
+        };
 
         ThemeMenuItem.IsChecked = Application.Current?.RequestedThemeVariant == ThemeVariant.Dark;
         RefreshRecentProjectsMenu();

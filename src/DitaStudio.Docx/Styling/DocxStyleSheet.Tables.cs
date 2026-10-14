@@ -37,12 +37,14 @@ public sealed partial class DocxStyleSheet
             look.Left = sides.Left;
             look.Bottom = sides.Bottom;
             look.Right = sides.Right;
+            look.ExplicitBorders = true;
             changed = true;
         }
 
         if (props.Background is { } fill)
         {
             look.BodyFill = fill;
+            look.ExplicitBodyFill = true;
             changed = true;
         }
 

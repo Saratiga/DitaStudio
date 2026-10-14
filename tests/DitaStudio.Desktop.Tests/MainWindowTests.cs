@@ -448,6 +448,46 @@ public sealed class MainWindowTests : IDisposable
 
     private static IEnumerable<ProjectTreeNode> Descendants(ProjectTreeNode node) => node.Children.SelectMany(Descendants).Prepend(node);
 
+    /// <summary>Панель «Правки»: блоки со status по проекту, фильтр, переход к блоку; пометки правок в «Авторе» цветные.</summary>
+    [AvaloniaFact]
+    public async Task ChangesPanel_ListsStatusBlocks_OpensTopicAtBlock_NotesColored()
+    {
+        // Правки в двух топиках проекта: новый абзац и удалённый.
+        var about = Path.Combine(_project, "concepts", "about.dita");
+        var install = Path.Combine(_project, "tasks", "install.dita");
+        var aboutText = File.ReadAllText(about);
+        var at = aboutText.IndexOf("<p>", StringComparison.Ordinal);
+        File.WriteAllText(about, aboutText[..at] + "<p status=\"new\">Добавленный абзац.</p>" + aboutText[at..]);
+        var installText = File.ReadAllText(install);
+        var pAt = installText.IndexOf("<p>", StringComparison.Ordinal);
+        Assert.True(pAt > 0);
+        File.WriteAllText(install, installText[..pAt] + "<p status=\"deleted\">Удалённый абзац.</p>" + installText[pAt..]);
+
+        var (window, vm) = await OpenAsync();
+        var tabs = window.GetLogicalDescendants().OfType<TabControl>().Single(t => t.Name == "RightTabs");
+        tabs.SelectedItem = tabs.Items.OfType<TabItem>().Single(t => t.Name == "ChangesTab");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(2, vm.Changes.Items.Count);
+        Assert.Contains("Правок: 2", vm.Changes.Summary);
+        vm.Changes.FilterIndex = 3; // удалённые
+        Assert.Equal("deleted", Assert.Single(vm.Changes.Items).Status);
+        vm.Changes.FilterIndex = 0;
+        Save(window, "changes-panel");
+
+        // Щелчок по строке: топик открыт, курсор в блоке правки, пометка над блоком — зелёная.
+        vm.Changes.SelectedItem = vm.Changes.Items.First(i => i.Status == "new");
+        Dispatcher.UIThread.RunJobs();
+        var pane = (DocumentView)vm.Documents.Current!;
+        Assert.Equal(about, pane.FilePath);
+        Assert.Equal("new", pane.Author.CurrentNode?.GetAttribute("status"));
+        var note = pane.AuthorEditor.GetLogicalDescendants().OfType<TextBlock>().First(t => Equals(t.Tag, "attribute-note") && t.Text!.Contains("status: new"));
+        Assert.True(window.TryFindResource("Success", window.ActualThemeVariant, out var success));
+        Assert.Equal(((Avalonia.Media.ISolidColorBrush)success!).Color, ((Avalonia.Media.ISolidColorBrush)note.Foreground!).Color);
+        Assert.Equal("Danger", Authoring.AuthorView.NoteBrushKey("deleted"));
+        Assert.Equal("Warning", Authoring.AuthorView.NoteBrushKey("changed"));
+        window.Close();
+    }
+
     /// <summary>Значок рисунка: «с нумерацией» — блок fig с названием, «обычный» — просто image в позиции курсора, без fig и названия.</summary>
     [AvaloniaFact]
     public async Task InsertImageFile_NumberedMakesFigure_PlainIsJustImageAtCursor()
@@ -1152,6 +1192,9 @@ public sealed class MainWindowTests : IDisposable
         var dialog = Assert.Single(window.OwnedWindows);
         var box = dialog.GetLogicalDescendants().OfType<TextBox>().First(t => t.Text == "templates/company.dotx");
         Assert.Equal("Шаблон DOCX", Avalonia.Automation.AutomationProperties.GetName(box));
+        var tableStyles = dialog.GetLogicalDescendants().OfType<ComboBox>().First(c => Avalonia.Automation.AutomationProperties.GetName(c) == "Стиль таблиц из шаблона");
+        Assert.False(tableStyles.IsEnabled); // файла шаблона нет — выбирать не из чего
+        Assert.Equal("Без стиля (свои рамки)", tableStyles.SelectedItem?.ToString());
         Save(dialog, "dialog-docx-template");
         dialog.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "ОК")
             .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));

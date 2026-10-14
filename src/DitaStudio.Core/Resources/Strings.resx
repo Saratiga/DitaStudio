@@ -4868,4 +4868,46 @@ No — plain image at the cursor, without a title or number.</value>
   <data name="Menu_CaptionNameItem" xml:space="preserve">
     <value>Figure or table name…</value>
   </data>
+  <data name="Dlg_TableStyleFromTemplate" xml:space="preserve">
+    <value>Table style from the template</value>
+  </data>
+  <data name="Dlg_TableStyleFromTemplate2" xml:space="preserve">
+    <value>Table style (template):</value>
+  </data>
+  <data name="Dlg_NoTableStyle" xml:space="preserve">
+    <value>No style (own borders)</value>
+  </data>
+  <data name="Tab_Changes" xml:space="preserve">
+    <value>Changes</value>
+  </data>
+  <data name="Changes_StatusNew" xml:space="preserve">
+    <value>new</value>
+  </data>
+  <data name="Changes_StatusChanged" xml:space="preserve">
+    <value>changed</value>
+  </data>
+  <data name="Changes_StatusDeleted" xml:space="preserve">
+    <value>deleted</value>
+  </data>
+  <data name="Changes_FilterAll" xml:space="preserve">
+    <value>all</value>
+  </data>
+  <data name="Changes_NoText" xml:space="preserve">
+    <value>(no text)</value>
+  </data>
+  <data name="Changes_NoChanges" xml:space="preserve">
+    <value>No blocks with status new, changed or deleted in the project.</value>
+  </data>
+  <data name="Changes_Summary0123" xml:space="preserve">
+    <value>Changes: {0} (new: {1}, changed: {2}, deleted: {3})</value>
+  </data>
+  <data name="Changes_Opened01" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="Changes_ListIsOutdated" xml:space="preserve">
+    <value>The document has changed since the list was built; the list is rebuilt.</value>
+  </data>
+  <data name="Tip_ChangesRefresh" xml:space="preserve">
+    <value>Rebuild the list of changes</value>
+  </data>
 </root>

@@ -4868,4 +4868,46 @@
   <data name="Menu_CaptionNameItem" xml:space="preserve">
     <value>Наименование рисунка или таблицы…</value>
   </data>
+  <data name="Dlg_TableStyleFromTemplate" xml:space="preserve">
+    <value>Стиль таблиц из шаблона</value>
+  </data>
+  <data name="Dlg_TableStyleFromTemplate2" xml:space="preserve">
+    <value>Стиль таблиц (из шаблона):</value>
+  </data>
+  <data name="Dlg_NoTableStyle" xml:space="preserve">
+    <value>Без стиля (свои рамки)</value>
+  </data>
+  <data name="Tab_Changes" xml:space="preserve">
+    <value>Правки</value>
+  </data>
+  <data name="Changes_StatusNew" xml:space="preserve">
+    <value>новое</value>
+  </data>
+  <data name="Changes_StatusChanged" xml:space="preserve">
+    <value>изменено</value>
+  </data>
+  <data name="Changes_StatusDeleted" xml:space="preserve">
+    <value>удалено</value>
+  </data>
+  <data name="Changes_FilterAll" xml:space="preserve">
+    <value>все</value>
+  </data>
+  <data name="Changes_NoText" xml:space="preserve">
+    <value>(без текста)</value>
+  </data>
+  <data name="Changes_NoChanges" xml:space="preserve">
+    <value>В проекте нет блоков со статусом new, changed или deleted.</value>
+  </data>
+  <data name="Changes_Summary0123" xml:space="preserve">
+    <value>Правок: {0} (новых: {1}, изменённых: {2}, удалённых: {3})</value>
+  </data>
+  <data name="Changes_Opened01" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="Changes_ListIsOutdated" xml:space="preserve">
+    <value>Документ изменился после сбора списка — список собран заново.</value>
+  </data>
+  <data name="Tip_ChangesRefresh" xml:space="preserve">
+    <value>Собрать список правок заново</value>
+  </data>
 </root>

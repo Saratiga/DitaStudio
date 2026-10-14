@@ -22,6 +22,11 @@ public sealed class DocxTableLook
 
     public DocxTableLook Clone() => (DocxTableLook)MemberwiseClone();
 
+    // Что задано правилами CSS явно (а не значениями по умолчанию): у таблицы со стилем из шаблона пишется только оно — остальное даёт стиль.
+    public bool ExplicitBorders { get; set; }
+    public bool ExplicitHeaderFill { get; set; }
+    public bool ExplicitBodyFill { get; set; }
+
     /// <summary>Заливка ячеек шапки; "" — без заливки.</summary>
     public string HeaderFill { get; set; } = "E8E8E8";
 
