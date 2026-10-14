@@ -97,6 +97,8 @@ public sealed class BlockEditor : TextEditor
 
         TextArea.TextView.LineTransformers.Add(new InlineColorizer(this));
         TextArea.TextView.ElementGenerators.Add(new ChipGenerator(this));
+        TextArea.Caret.PositionChanged += (_, _) => CaretMoved?.Invoke(this, EventArgs.Empty);
+        TextArea.SelectionChanged += (_, _) => CaretMoved?.Invoke(this, EventArgs.Empty);
         TextArea.TextView.BackgroundRenderers.Add(new SpellingRenderer(this));
         TextArea.AddHandler(PointerPressedEvent, OnPointerPressedTunnel, RoutingStrategies.Tunnel);
         // Щелчок по плашке: поле Capture у TextArea уводит отпускание кнопки на себя, поэтому ловим и нажатие, и отпускание здесь.
@@ -333,6 +335,71 @@ public sealed class BlockEditor : TextEditor
         CommitFormatting();
         return true;
     }
+
+    /// <summary>Фразовые элементы у курсора (у всего выделения).</summary>
+    public IReadOnlyList<DitaNode> FormattingAtCaret()
+    {
+        var selection = TextArea.Selection;
+        return selection.IsEmpty
+            ? _content.FormattingIn(CaretOffset, 0)
+            : _content.FormattingIn(selection.SurroundingSegment.Offset, selection.SurroundingSegment.Length);
+    }
+
+    /// <summary>
+    /// Что сделает кнопка <paramref name="elementName"/>: true — снимет оформление, false — обернёт выделение, null — ничего (курсор не в таком
+    /// тексте и выделения нет).
+    /// </summary>
+    public bool? ToggleMode(string elementName)
+    {
+        if (FormattingAtCaret().Any(n => n.Name == elementName))
+        {
+            return true;
+        }
+
+        return TextArea.Selection.IsEmpty ? null : false;
+    }
+
+    /// <summary>
+    /// Переключает фразовое оформление: у оформленного текста снимает его (с выделенной части или со всего элемента под курсором), иначе оборачивает
+    /// выделение. false — ничего не изменилось.
+    /// </summary>
+    public bool ToggleInline(string elementName)
+    {
+        switch (ToggleMode(elementName))
+        {
+            case false:
+                return WrapSelection(elementName);
+            case null:
+                return false;
+        }
+
+        var selection = TextArea.Selection;
+        int start, length;
+        if (!selection.IsEmpty)
+        {
+            (start, length) = (selection.SurroundingSegment.Offset, selection.SurroundingSegment.Length);
+        }
+        else if (FormattingAtCaret().LastOrDefault(n => n.Name == elementName) is { } element && _content.ExtentOf(element) is { } extent)
+        {
+            (start, length) = extent;
+        }
+        else
+        {
+            return false;
+        }
+
+        if (!_content.Unwrap(start, length, elementName))
+        {
+            return false;
+        }
+
+        CommitFormatting();
+        CaretMoved?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
+    /// <summary>Курсор или выделение сдвинулись — панель обновляет вид кнопок оформления.</summary>
+    public event EventHandler? CaretMoved;
 
     /// <summary>Снимает фразовое оформление с выделения.</summary>
     public bool ClearFormatting()

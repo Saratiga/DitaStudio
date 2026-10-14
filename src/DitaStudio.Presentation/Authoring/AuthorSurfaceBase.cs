@@ -573,6 +573,12 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         return true;
     }
 
+    /// <summary>Переключает фразовое оформление (см. <see cref="IAuthorSurface.ToggleCurrentInline"/>); в базе — только обёртка.</summary>
+    public virtual bool ToggleCurrentInline(string element) => WrapCurrentInline(element);
+
+    /// <summary>Оформление у курсора для кнопок панели; в базе — неизвестно.</summary>
+    public virtual CaretFormatting? FormattingAtCursor() => null;
+
     /// <summary>Серые пометки у блока узла после изменения атрибутов извне; в базе — ничего (пометки рисует оболочка).</summary>
     public virtual void RefreshAttributeNotes(DitaNode node)
     {

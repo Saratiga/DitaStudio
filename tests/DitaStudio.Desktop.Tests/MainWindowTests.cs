@@ -488,6 +488,42 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>Кнопки панели показывают оформление под курсором: Ж нажата в жирном тексте, отжатие снимает жирный; размер — в поле размера.</summary>
+    [AvaloniaFact]
+    public async Task FormatButtons_ReflectCaret_AndPressingActiveRemovesFormatting()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.Length > 10);
+        var bold = window.GetLogicalDescendants().OfType<Button>().Single(b => b.Name == "BoldButton");
+        var editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(0);
+        editor.Select(0, 5);
+        vm.Insert.FormatBoldCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+
+        editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(2);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains("active", bold.Classes);
+        Save(window, "format-buttons-active");
+
+        editor.FocusEditor(8);
+        Dispatcher.UIThread.RunJobs();
+        Assert.DoesNotContain("active", bold.Classes);
+
+        // Курсор снова в жирном — нажатие кнопки снимает жирный.
+        editor.FocusEditor(2);
+        Dispatcher.UIThread.RunJobs();
+        vm.Insert.FormatBoldCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        pane.AuthorEditor.FlushPendingEdits();
+        Assert.DoesNotContain(p.Descendants(), n => n.Name == "b");
+        Assert.DoesNotContain("active", bold.Classes);
+        window.Close();
+    }
+
     /// <summary>Значок рисунка: «с нумерацией» — блок fig с названием, «обычный» — просто image в позиции курсора, без fig и названия.</summary>
     [AvaloniaFact]
     public async Task InsertImageFile_NumberedMakesFigure_PlainIsJustImageAtCursor()

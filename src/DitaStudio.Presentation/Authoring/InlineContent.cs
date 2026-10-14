@@ -548,6 +548,89 @@ public sealed class InlineContent
         return nodes.Count > 0;
     }
 
+    /// <summary>
+    /// Фразовые элементы у позиции: для выделения — те, что есть у каждого знака участка, для курсора (<paramref name="length"/> = 0) — у знака
+    /// перед курсором (в начале блока — у первого знака). Плашки (картинка, ссылка) не считаются.
+    /// </summary>
+    public IReadOnlyList<DitaNode> FormattingIn(int start, int length)
+    {
+        if (_chains.Count == 0)
+        {
+            return Array.Empty<DitaNode>();
+        }
+
+        if (length <= 0)
+        {
+            var at = Math.Clamp(start > 0 ? start - 1 : 0, 0, _chains.Count - 1);
+            return _chains[at].Nodes;
+        }
+
+        start = Math.Clamp(start, 0, _chains.Count);
+        var end = Math.Clamp(start + length, start, _chains.Count);
+        IEnumerable<DitaNode>? common = null;
+        for (var i = start; i < end; i++)
+        {
+            if (_chains[i].IsChip)
+            {
+                continue;
+            }
+
+            common = common is null ? _chains[i].Nodes.ToList() : common.Where(n => _chains[i].Nodes.Any(m => ReferenceEquals(m, n))).ToList();
+        }
+
+        return (common ?? Array.Empty<DitaNode>()).ToList();
+    }
+
+    /// <summary>Участок, который занимает фразовый элемент <paramref name="node"/> (первый и последний его знак); null — элемента нет в блоке.</summary>
+    public (int Start, int Length)? ExtentOf(DitaNode node)
+    {
+        var first = -1;
+        var last = -1;
+        for (var i = 0; i < _chains.Count; i++)
+        {
+            if (_chains[i].Nodes.Any(n => ReferenceEquals(n, node)))
+            {
+                if (first < 0)
+                {
+                    first = i;
+                }
+
+                last = i;
+            }
+        }
+
+        return first < 0 ? null : (first, last - first + 1);
+    }
+
+    /// <summary>
+    /// Снимает фразовое оформление <paramref name="elementName"/> с участка: элементы с этим именем уходят из цепочек его знаков. Если участок —
+    /// середина элемента, при записи он разрезается на два (до и после участка). true — что-то снято.
+    /// </summary>
+    public bool Unwrap(int start, int length, string elementName)
+    {
+        var changed = false;
+        var mapped = new Dictionary<InlineChain, InlineChain>(ReferenceEqualityComparer.Instance);
+        for (var i = Math.Max(start, 0); i < Math.Min(start + length, _chains.Count); i++)
+        {
+            var chain = _chains[i];
+            if (!chain.Nodes.Any(n => n.Name == elementName))
+            {
+                continue;
+            }
+
+            if (!mapped.TryGetValue(chain, out var updated))
+            {
+                updated = new InlineChain(chain.Nodes.Where(n => n.Name != elementName).ToArray(), chain.Chip);
+                mapped[chain] = updated;
+            }
+
+            _chains[i] = updated;
+            changed = true;
+        }
+
+        return changed;
+    }
+
     /// <summary>Снимает фразовое оформление с участка; плашки остаются, но выходят из фразовых элементов.</summary>
     public void ClearFormatting(int start, int length)
     {

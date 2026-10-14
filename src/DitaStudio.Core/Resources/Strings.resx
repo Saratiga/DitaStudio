@@ -4910,4 +4910,7 @@ No — plain image at the cursor, without a title or number.</value>
   <data name="Tip_ChangesRefresh" xml:space="preserve">
     <value>Rebuild the list of changes</value>
   </data>
+  <data name="Author_RemoveFormatting0" xml:space="preserve">
+    <value>Remove formatting &lt;{0}&gt;</value>
+  </data>
 </root>

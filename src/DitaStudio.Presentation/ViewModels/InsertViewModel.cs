@@ -125,7 +125,7 @@ public partial class InsertViewModel : ObservableObject
             return;
         }
 
-        if (!pane.Author.WrapCurrentInline(element))
+        if (!pane.Author.ToggleCurrentInline(element))
         {
             _shell.StatusText = Loc.T("Msg_SelectTextInAuthorMode");
             return;

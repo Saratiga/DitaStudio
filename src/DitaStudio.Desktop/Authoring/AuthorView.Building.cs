@@ -468,7 +468,15 @@ public sealed partial class AuthorView
         editor.MouseSelectionFinished += (_, _) => OnMouseSelectionFinished(editor);
         editor.BlocksPasteRequested += (_, _) => _ = PasteBlocksAsync(editor.Node);
         editor.TablePasteRequested += (_, e) => e.Handled = PasteTabularText(editor.Node, e.Text);
-        editor.WrapRequested += (_, element) => Surface.WrapCurrentInline(element);
+        // Ctrl+B/I/U и т. п. — переключатели, как кнопки панели: у оформленного текста снимают оформление.
+        editor.WrapRequested += (_, element) => Surface.ToggleCurrentInline(element);
+        editor.CaretMoved += (_, _) =>
+        {
+            if (ReferenceEquals(_activeEditor, editor))
+            {
+                CaretFormattingChanged?.Invoke(this, EventArgs.Empty);
+            }
+        };
         editor.StructureRequested += OnStructureRequested;
 
         _editors.TryAdd(node, editor);

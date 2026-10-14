@@ -26,6 +26,7 @@ public partial class MainWindow
         }
 
         view.AuthorEditor.CaptionNameRequested += (_, _) => ViewModel.Insert.RenameCaptionCommand.Execute(null);
+        view.AuthorEditor.CaretFormattingChanged += (_, _) => RefreshFormatButtons();
         view.AuthorEditor.ContextMenuBuilding += (_, items) =>
         {
             if (ViewModel.Current?.Author.CurrentNode is { } node && TableCommands.CellOf(node) is not null)
@@ -258,6 +259,35 @@ public partial class MainWindow
     }
 
     /// <summary>Кнопка «Маркер»: подсвечена, пока включена кисть; полоска под буквой — цвет кисти.</summary>
+    /// <summary>
+    /// Кнопки оформления показывают оформление текста под курсором: Ж, К, Ч, код и выравнивание — нажатыми, размер — в поле размера, цвет текста
+    /// и маркера — полоской под кнопкой. Повторное нажатие нажатой кнопки снимает оформление (см. InsertViewModel.Format).
+    /// </summary>
+    internal void RefreshFormatButtons()
+    {
+        var formatting = ViewModel.Current?.Author.FormattingAtCursor() ?? Presentation.Authoring.CaretFormatting.None;
+        BoldButton.Classes.Set("active", formatting.Has("b"));
+        ItalicButton.Classes.Set("active", formatting.Has("i"));
+        UnderlineButton.Classes.Set("active", formatting.Has("u"));
+        CodeButton.Classes.Set("active", formatting.Has("codeph"));
+        var align = formatting.Align;
+        AlignLeftButton.Classes.Set("active", align == "left");
+        AlignCenterButton.Classes.Set("active", align == "center");
+        AlignRightButton.Classes.Set("active", align == "right");
+        AlignJustifyButton.Classes.Set("active", align == "justify");
+
+        // Размер под курсором — подсказкой в поле (выбор пункта сразу применил бы размер).
+        FontSizeBox.PlaceholderText = formatting.SizePt is { } size
+            ? size.ToString("0.#", System.Globalization.CultureInfo.CurrentCulture) + Loc.T("Win_Pt")
+            : Loc.T("Ph_FontSize");
+        ColorButton.Classes.Set("active", formatting.ColorHex is not null);
+        ColorSwatch.Fill = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse(formatting.ColorHex ?? "#C00000"));
+        if (ViewModel.Current?.Author.MarkerPenActive != true)
+        {
+            MarkerSwatch.Fill = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse(formatting.MarkHex ?? "#FFFF00"));
+        }
+    }
+
     internal void RefreshMarkerButton()
     {
         var author = ViewModel.Current?.Author;

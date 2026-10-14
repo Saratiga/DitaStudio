@@ -213,12 +213,12 @@
                 <Button Classes="tool" Content="↩" Command="{Binding Insert.UndoCommand}" ToolTip.Tip="{loc:Tr Tip_UndoStructural}" />
                 <Button Classes="tool" Content="↪" Command="{Binding Insert.RedoCommand}" ToolTip.Tip="{loc:Tr Tip_Redo}" />
                 <Rectangle Classes="separator" />
-                <Button Classes="tool" Content="{loc:Tr Btn_BoldLetter}" FontWeight="Bold" Command="{Binding Insert.FormatBoldCommand}" ToolTip.Tip="{loc:Tr Tip_Bold}" />
-                <Button Classes="tool" Content="{loc:Tr Btn_ItalicLetter}" FontStyle="Italic" Command="{Binding Insert.FormatItalicCommand}" ToolTip.Tip="{loc:Tr Tip_Italic}" />
-                <Button Classes="tool" Command="{Binding Insert.FormatUnderlineCommand}" ToolTip.Tip="{loc:Tr Tip_Underline}">
+                <Button Classes="tool" Name="BoldButton" Content="{loc:Tr Btn_BoldLetter}" FontWeight="Bold" Command="{Binding Insert.FormatBoldCommand}" ToolTip.Tip="{loc:Tr Tip_Bold}" />
+                <Button Classes="tool" Name="ItalicButton" Content="{loc:Tr Btn_ItalicLetter}" FontStyle="Italic" Command="{Binding Insert.FormatItalicCommand}" ToolTip.Tip="{loc:Tr Tip_Italic}" />
+                <Button Classes="tool" Name="UnderlineButton" Command="{Binding Insert.FormatUnderlineCommand}" ToolTip.Tip="{loc:Tr Tip_Underline}">
                     <TextBlock Text="{loc:Tr Btn_UnderlineLetter}" TextDecorations="Underline" />
                 </Button>
-                <Button Classes="tool" Content="&lt;/&gt;" FontFamily="{DynamicResource MonoFont}" FontSize="12" Command="{Binding Insert.FormatCodeCommand}" ToolTip.Tip="{loc:Tr Menu_InlineCode}" />
+                <Button Classes="tool" Name="CodeButton" Content="&lt;/&gt;" FontFamily="{DynamicResource MonoFont}" FontSize="12" Command="{Binding Insert.FormatCodeCommand}" ToolTip.Tip="{loc:Tr Menu_InlineCode}" />
                 <Rectangle Classes="separator" />
                 <Button Classes="tool" Content="🔗" Command="{Binding Insert.InsertXrefCommand}" ToolTip.Tip="{loc:Tr Menu_CrossReference}" />
                 <Button Classes="tool" Content="🖼" Command="{Binding Insert.InsertImageCommand}" ToolTip.Tip="{loc:Tr Menu_InsertImage}" />
@@ -239,7 +239,7 @@
                 <Button Classes="tool" Name="ColorButton" ToolTip.Tip="{loc:Tr Tip_TextColor}">
                     <StackPanel Spacing="1">
                         <TextBlock Text="{loc:Tr Btn_TextColorLetter}" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                        <Rectangle Height="3" Width="14" Fill="#C00000" />
+                        <Rectangle Name="ColorSwatch" Height="3" Width="14" Fill="#C00000" />
                     </StackPanel>
                 </Button>
                 <Button Classes="tool" Name="MarkerButton" ToolTip.Tip="{loc:Tr Tip_Marker}">
@@ -250,16 +250,16 @@
                         <Rectangle Name="MarkerSwatch" Height="3" Width="14" Fill="#FFFF00" />
                     </StackPanel>
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-left" ToolTip.Tip="{loc:Tr Tip_AlignLeft}">
+                <Button Classes="tool" Name="AlignLeftButton" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-left" ToolTip.Tip="{loc:Tr Tip_AlignLeft}">
                     <Path Classes="icon" Data="M1,3 H15 M1,6.5 H10 M1,10 H15 M1,13.5 H10" />
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-center" ToolTip.Tip="{loc:Tr Tip_AlignCenter}">
+                <Button Classes="tool" Name="AlignCenterButton" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-center" ToolTip.Tip="{loc:Tr Tip_AlignCenter}">
                     <Path Classes="icon" Data="M1,3 H15 M3.5,6.5 H12.5 M1,10 H15 M3.5,13.5 H12.5" />
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-right" ToolTip.Tip="{loc:Tr Tip_AlignRight}">
+                <Button Classes="tool" Name="AlignRightButton" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-right" ToolTip.Tip="{loc:Tr Tip_AlignRight}">
                     <Path Classes="icon" Data="M1,3 H15 M6,6.5 H15 M1,10 H15 M6,13.5 H15" />
                 </Button>
-                <Button Classes="tool" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-justify" ToolTip.Tip="{loc:Tr Tip_AlignJustify}">
+                <Button Classes="tool" Name="AlignJustifyButton" Command="{Binding Insert.SetAlignmentCommand}" CommandParameter="align-justify" ToolTip.Tip="{loc:Tr Tip_AlignJustify}">
                     <Path Classes="icon" Data="M1,3 H15 M1,6.5 H15 M1,10 H15 M1,13.5 H15" />
                 </Button>
                 <Button Classes="tool" Content="№" Command="{Binding Insert.ToggleNumberedParagraphCommand}" ToolTip.Tip="{loc:Tr Tip_NumberedParagraphToolbar}" />

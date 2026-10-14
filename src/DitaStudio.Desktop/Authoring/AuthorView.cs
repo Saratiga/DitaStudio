@@ -125,6 +125,15 @@ public sealed partial class AuthorView : UserControl
     /// <summary>Меню правой кнопки у блока строится — можно добавить свои пункты.</summary>
     public event Action<BlockEditor, List<Control>>? ContextMenuBuilding;
 
+    /// <summary>Курсор сдвинулся в тексте — кнопки оформления на панели показывают оформление под ним.</summary>
+    public event EventHandler? CaretFormattingChanged;
+
+    /// <summary>Оформление у курсора активного редактора; null — курсора в тексте нет.</summary>
+    public CaretFormatting? CurrentFormatting() =>
+        _activeEditor is { } editor && editor.GetVisualRoot() is not null && editor.Node is { } block
+            ? CaretFormatting.Of(editor.FormattingAtCaret(), block)
+            : null;
+
     /// <summary>Редакторы блоков в порядке документа (для тестов и переходов).</summary>
     public IReadOnlyList<BlockEditor> Editors => _order;
 
@@ -655,6 +664,19 @@ public sealed partial class AuthorView : UserControl
         }
 
         public override void FlushPendingEdits() => _view.FlushPendingEdits();
+
+        public override CaretFormatting? FormattingAtCursor() => _view.CurrentFormatting();
+
+        public override bool ToggleCurrentInline(string element)
+        {
+            if (CurrentNode is null || _view.ActiveEditorFor(CurrentNode) is not { } editor || editor.ToggleMode(element) is not { } unwrap)
+            {
+                return false;
+            }
+
+            _view.BeforeStructuralEdit?.Invoke(_view, unwrap ? Loc.T("Author_RemoveFormatting0", element) : Loc.T("Author_Formatting0", element));
+            return editor.ToggleInline(element);
+        }
 
         public override void RefreshAttributeNotes(DitaNode node) => _view.RefreshMarks(node);
 

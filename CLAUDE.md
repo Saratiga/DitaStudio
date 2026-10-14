@@ -46,6 +46,10 @@ CefGlue); логика окна — общие ViewModel'и `src/DitaStudio.Pres
 `PART_…`** — к ним цепляются стили темы Fluent. Проверка — `tests/DitaStudio.Desktop.Tests`
 (Avalonia.Headless, снимки окон в `bin/.../screenshots`, в CI — артефакт `desktop-screenshots`).
 
+Контекстные меню «Автора» открываются только через `AuthorMenus.Open` (одно меню, закрытие щелчком в «Авторе» и уходом из окна).
+Кнопки оформления — переключатели: `IAuthorSurface.ToggleCurrentInline`/`FormattingAtCursor` (`CaretFormatting`, `InlineContent.FormattingIn`/`Unwrap`),
+обновление по `AuthorView.CaretFormattingChanged` → `MainWindow.RefreshFormatButtons`. Панель «Правки» — `ChangesViewModel` + `Core/Project/ProjectChanges`.
+
 «Автор» в Avalonia (`Desktop/Authoring`) — без RichTextBox: блок = `BlockEditor`
 (AvaloniaEdit, одна строка), фразовые элементы — `Presentation/Authoring/InlineContent`
 (цепочка элементов на символ; плашка — символ U+FFFC), раскраска и плашки — через
@@ -214,6 +218,10 @@ Svg.Skia тянет SkiaSharp 3/4 и ломает отрисовку). Ядро 
 - Шаблон DOCX (`DocxLayout.TemplatePath`, `Docx/DocxTemplate.cs`): стили, docDefaults и тема шаблона — основа; на его стили накладывается
   `DocxStyleSheet.CssOverrides` (только явно заданное CSS), недостающие стили каталога добавляются; numPr в стилях шаблона снимается.
   Порядок дочерних элементов pPr/rPr при слиянии — `ParagraphOrder`/`RunOrder` в `DocxTemplate`.
+- Правила CSS для частей таблицы (`entry`, `row`, `table`… — `DocxRenderer.TableParts`) в производный стиль абзаца несут только текст
+  (`DocxStyleProps.TextOnly`); рамки/заливка/поля — в `tcBorders`/`shd`/`tcMar` (`DocxStyleSheet.CellLookFor`). Стиль таблицы шаблона —
+  `DocxRenderOptions.TableStyleFor` (`DocxTemplate.TableStyleFor`, `DocxLayout.TableStyle`): со стилем пишется только явно заданное в CSS
+  (`DocxTableLook.Explicit*`), `tblLook` — битовой маской `0420` (атрибуты firstRow… валидатор схемы 2007 не принимает).
 - Символы маркеров из области частного использования Unicode (U+F0B7) писать только
   escape-последовательностью: при чтении и перезаписи файла они незаметно теряются.
 

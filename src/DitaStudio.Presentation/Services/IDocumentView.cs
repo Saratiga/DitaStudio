@@ -122,6 +122,15 @@ public interface IAuthorSurface
     /// </summary>
     bool? ToggleCaption() => null;
 
+    /// <summary>
+    /// Кнопка фразового оформления (Ж, К, Ч, код): у текста с этим оформлением снимает его (с выделения — только с выделенной части, без выделения —
+    /// со всего элемента под курсором), иначе оборачивает выделение. false — ни снять, ни обернуть нечего.
+    /// </summary>
+    bool ToggleCurrentInline(string element) => WrapCurrentInline(element);
+
+    /// <summary>Оформление у курсора для кнопок панели; null — оболочка не умеет или курсора в тексте нет.</summary>
+    Authoring.CaretFormatting? FormattingAtCursor() => null;
+
     /// <summary>Рисунок или таблица под курсором (<c>fig</c> / <c>table</c>) или null.</summary>
     DitaNode? CaptionedAtCursor() => null;
 

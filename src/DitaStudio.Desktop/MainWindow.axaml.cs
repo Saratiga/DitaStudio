@@ -51,6 +51,7 @@ public partial class MainWindow : Window
             ViewModel.SidePanels.Refresh();
             ViewModel.SidePanels.RefreshOutline();
             RefreshMarkerButton();
+            RefreshFormatButtons();
         };
         hooks.RefreshProjectTree = ViewModel.ProjectPanel.RebuildTree;
         hooks.RefreshMapSelector = ViewModel.Map.RefreshMaps;
