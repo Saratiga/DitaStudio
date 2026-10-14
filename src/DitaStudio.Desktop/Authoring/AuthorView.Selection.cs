@@ -501,7 +501,7 @@ public sealed partial class AuthorView
         delete.Click += (_, _) => DeleteSelectedBlocks();
         var clear = new MenuItem { Header = Loc.T("Author_ClearSelection"), InputGesture = new KeyGesture(Key.Escape) };
         clear.Click += (_, _) => Deselect();
-        new ContextMenu { ItemsSource = new List<Control> { wrap, new Separator(), copy, cut, paste, new Separator(), delete, clear } }.Open(this);
+        AuthorMenus.Open(new ContextMenu { ItemsSource = new List<Control> { wrap, new Separator(), copy, cut, paste, new Separator(), delete, clear } }, this);
     }
 
     protected override void OnKeyDown(KeyEventArgs e)

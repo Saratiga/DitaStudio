@@ -715,7 +715,7 @@ public sealed class BlockEditor : TextEditor
         }
 
         TextArea.Focus();
-        BuildContextMenu(offset).Open(this);
+        AuthorMenus.Open(BuildContextMenu(offset), this);
         e.Handled = true;
     }
 

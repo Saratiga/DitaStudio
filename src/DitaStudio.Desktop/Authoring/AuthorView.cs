@@ -65,11 +65,25 @@ public sealed partial class AuthorView : UserControl
         };
         _root.Children.Add(_scroll);
         _scroll.AddHandler(PointerPressedEvent, OnScrollPointerPressed, RoutingStrategies.Bubble, handledEventsToo: false);
+
+        // Любой щелчок в «Авторе» (до того, как блок откроет своё меню), прокрутка и уход из окна закрывают открытое контекстное меню.
+        AddHandler(PointerPressedEvent, (_, _) => AuthorMenus.Close(), RoutingStrategies.Tunnel, handledEventsToo: true);
+        _scroll.AddHandler(PointerWheelChangedEvent, (_, _) => AuthorMenus.Close(), RoutingStrategies.Tunnel, handledEventsToo: true);
+        AttachedToVisualTree += (_, _) =>
+        {
+            if (TopLevel.GetTopLevel(this) is Window window)
+            {
+                window.Deactivated -= OnWindowDeactivated;
+                window.Deactivated += OnWindowDeactivated;
+            }
+        };
         Content = _root;
         Focusable = true;
         Themed(this, BackgroundProperty, "Surface");
         Surface = new AuthorViewSurface(this);
     }
+
+    private static void OnWindowDeactivated(object? sender, EventArgs e) => AuthorMenus.Close();
 
     public DitaDocument? Document { get; private set; }
 

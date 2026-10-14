@@ -25,11 +25,17 @@ public partial class MainWindow
             view.ShowLivePreview = true;
         }
 
+        view.AuthorEditor.CaptionNameRequested += (_, _) => ViewModel.Insert.RenameCaptionCommand.Execute(null);
         view.AuthorEditor.ContextMenuBuilding += (_, items) =>
         {
             if (ViewModel.Current?.Author.CurrentNode is { } node && TableCommands.CellOf(node) is not null)
             {
                 items.AddRange(BuildTableMenuItems());
+                items.Add(new Separator());
+            }
+            else if (ViewModel.Current?.Author.CaptionedAtCursor() is { Name: "fig" })
+            {
+                items.Add(CommandItem(Loc.T("Menu_FigureName"), ViewModel.Insert.RenameCaptionCommand));
                 items.Add(new Separator());
             }
 
@@ -76,6 +82,7 @@ public partial class MainWindow
 
         return new List<Control>
         {
+            new MenuItem { Header = Loc.T("Menu_TableName"), Command = insert.RenameCaptionCommand },
             cellAttributes,
             new Separator(),
             Table(Loc.T("Menu_InsertRowAbove"), TableOperation.InsertRowAbove),
@@ -325,6 +332,7 @@ public partial class MainWindow
             CommandItem(Loc.T("Menu_InsertImage"), insert.InsertImageCommand),
             CommandItem(Loc.T("Menu_ImageAsFigure"), insert.WrapImageAsFigureCommand),
             CommandItem(Loc.T("Menu_ToggleCaption"), insert.ToggleCaptionCommand),
+            CommandItem(Loc.T("Menu_CaptionNameItem"), insert.RenameCaptionCommand),
             CommandItem(Loc.T("Menu_CrossReference"), insert.InsertXrefCommand),
             CommandItem(Loc.T("Menu_InsertTable"), insert.InsertTableCommand),
             new Separator(),

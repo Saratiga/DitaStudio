@@ -112,6 +112,20 @@ public sealed class DocxStyleProps
         PageBreakBefore = other.PageBreakBefore ?? PageBreakBefore;
     }
 
+    /// <summary>
+    /// Без свойств «коробки» — рамок, заливки, полей и интервалов: для абзаца внутри ячейки, когда правило CSS относится к самой ячейке или таблице
+    /// (иначе рамка ячейки превратилась бы ещё и в рамку абзаца — лишние линии над и под текстом).
+    /// </summary>
+    public DocxStyleProps TextOnly()
+    {
+        var copy = Clone();
+        copy.BorderTop = copy.BorderBottom = copy.BorderLeft = copy.BorderRight = null;
+        copy.Background = null;
+        copy.SpaceBeforePt = copy.SpaceAfterPt = null;
+        copy.IndentLeftPt = copy.IndentRightPt = null;
+        return copy;
+    }
+
     /// <summary>Только свойства знака — для символьных стилей.</summary>
     public DocxStyleProps RunOnly()
     {

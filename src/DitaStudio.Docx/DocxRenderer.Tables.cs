@@ -261,6 +261,17 @@ public sealed partial class DocxRenderer
             props.Append(shading);
         }
 
+        if (cellLook?.PaddingPt is { } padding)
+        {
+            // Поля ячейки из CSS (padding у td/th/entry) — внутренние поля ячейки Word, а не отступы абзаца.
+            var twips = DocxPropsWriter.Twips(Math.Clamp(padding, 0, 72)).ToString(CultureInfo.InvariantCulture);
+            props.Append(new W.TableCellMargin(
+                new W.TopMargin { Width = twips, Type = W.TableWidthUnitValues.Dxa },
+                new W.LeftMargin { Width = twips, Type = W.TableWidthUnitValues.Dxa },
+                new W.BottomMargin { Width = twips, Type = W.TableWidthUnitValues.Dxa },
+                new W.RightMargin { Width = twips, Type = W.TableWidthUnitValues.Dxa }));
+        }
+
         var valign = entry.GetAttribute("valign");
         if (valign == "top")
         {

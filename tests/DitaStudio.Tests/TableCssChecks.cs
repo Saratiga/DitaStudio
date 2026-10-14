@@ -23,6 +23,7 @@ internal static partial class CoreChecks
         table.blue-frame { border: 2px solid #1E90FF; }
         .blue-frame th { background-color: #DCEBFA; border-bottom: 2px solid #1E90FF; }
         .blue-frame td:first-child { background-color: #F2F7FD; }
+        .blue-frame td { border-bottom: 1px solid #1E90FF; padding: 4px; }
         """;
 
     internal static void TableCssTests()
@@ -63,6 +64,17 @@ internal static partial class CoreChecks
 
             var simple = tables[2].GetFirstChild<TableProperties>()!.TableBorders!;
             Check(IsBlue(simple.TopBorder) && IsBlue(simple.RightBorder), "simpletable с тем же классом — те же рамки");
+
+            // Замечание: рамки ячеек из CSS не должны становиться ещё и рамками абзацев внутри ячеек (лишние линии над и под текстом).
+            var cellParagraphs = tables.SelectMany(t => t.Descendants<Paragraph>()).ToList();
+            Check(!cellParagraphs.Any(p => p.ParagraphProperties?.ParagraphBorders is not null), "в абзацах ячеек нет рамок абзаца (pBdr)");
+            var styleIds = cellParagraphs.Select(p => p.ParagraphProperties?.ParagraphStyleId?.Val?.Value).Where(v => v is not null).Distinct().ToList();
+            var stylesById = doc.MainDocumentPart.StyleDefinitionsPart!.Styles!.Elements<Style>().ToDictionary(st => st.StyleId!.Value!);
+            Check(styleIds.All(id => stylesById[id!].StyleParagraphProperties?.ParagraphBorders is null && stylesById[id!].StyleParagraphProperties?.Shading is null),
+                "стили абзацев в ячейках без рамок и заливки: " + string.Join(", ", styleIds));
+            var bodyCell = cells[2].TableCellProperties!;
+            Check(bodyCell.TableCellBorders?.BottomBorder?.Color?.Value == "1E90FF" && bodyCell.TableCellMargin?.LeftMargin?.Width?.Value == "60",
+                ".blue-frame td: нижняя рамка ячейки и поля 4px (3 пт) — в свойствах ячейки: " + bodyCell.OuterXml);
         });
 
         // --- у каждой стороны своя рамка

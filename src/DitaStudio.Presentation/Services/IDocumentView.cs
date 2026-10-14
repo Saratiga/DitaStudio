@@ -122,6 +122,15 @@ public interface IAuthorSurface
     /// </summary>
     bool? ToggleCaption() => null;
 
+    /// <summary>Рисунок или таблица под курсором (<c>fig</c> / <c>table</c>) или null.</summary>
+    DitaNode? CaptionedAtCursor() => null;
+
+    /// <summary>
+    /// Наименование рисунка или таблицы под курсором: текст пишется в <c>title</c> (его нет — создаётся), пустой текст убирает наименование, подпись
+    /// с номером остаётся. false — здесь нет ни рисунка, ни таблицы.
+    /// </summary>
+    bool SetCaptionName(string text) => false;
+
     /// <summary>Границы таблицы CALS под курсором одним выбором (все, внешняя рамка, горизонтальные, без границ). false — курсор не в таблице.</summary>
     bool SetTableBorders(TableBorderMode mode) => false;
 

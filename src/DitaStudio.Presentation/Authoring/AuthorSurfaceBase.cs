@@ -294,6 +294,47 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         return DeleteCurrent();
     }
 
+    /// <summary>Рисунок или таблица, в которых стоит курсор (или сам выбранный рисунок/таблица).</summary>
+    public DitaNode? CaptionedAtCursor()
+    {
+        var captioned = CurrentNode;
+        while (captioned is not null && captioned.Name is not ("fig" or "table"))
+        {
+            captioned = captioned.Parent;
+        }
+
+        return captioned;
+    }
+
+    /// <summary>Наименование рисунка или таблицы под курсором (см. <see cref="IAuthorSurface.SetCaptionName"/>) — одна структурная правка.</summary>
+    public bool SetCaptionName(string text)
+    {
+        if (Document is null || CaptionedAtCursor() is not { } captioned)
+        {
+            return false;
+        }
+
+        text = text.Trim();
+        var title = captioned.FirstElement("title");
+        if ((title?.InnerText ?? string.Empty) == text && (title is not null || text.Length == 0))
+        {
+            return true; // ничего не изменилось — правки и отмены нет
+        }
+
+        FlushPendingEdits();
+        BeforeStructuralEdit(Loc.T("Msg_CaptionName"));
+        if (title is null)
+        {
+            title = DitaNode.Element("title");
+            captioned.Insert(0, title);
+        }
+
+        // Пустой title — подпись «Таблица N» без наименования (номер сохраняется).
+        title.SetText(text);
+        Changed(title, captioned.Parent, captioned);
+        return true;
+    }
+
     /// <summary>Подпись рисунка или таблицы: есть <c>title</c> — убрать, нет — добавить пустой (см. <see cref="IAuthorSurface.ToggleCaption"/>).</summary>
     public bool? ToggleCaption()
     {

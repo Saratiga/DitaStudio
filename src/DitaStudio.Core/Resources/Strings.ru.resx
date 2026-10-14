@@ -4838,4 +4838,34 @@
   <data name="Dlg_WordFiles" xml:space="preserve">
     <value>Файлы Word</value>
   </data>
+  <data name="Menu_TableName" xml:space="preserve">
+    <value>Наименование таблицы…</value>
+  </data>
+  <data name="Menu_FigureName" xml:space="preserve">
+    <value>Наименование рисунка…</value>
+  </data>
+  <data name="Msg_TableName" xml:space="preserve">
+    <value>Наименование таблицы</value>
+  </data>
+  <data name="Msg_FigureName" xml:space="preserve">
+    <value>Наименование рисунка</value>
+  </data>
+  <data name="Msg_CaptionNameLabel" xml:space="preserve">
+    <value>Наименование:</value>
+  </data>
+  <data name="Msg_CaptionNameHint" xml:space="preserve">
+    <value>Пустое поле убирает наименование: подпись с номером («Таблица N») остаётся.</value>
+  </data>
+  <data name="Msg_CaptionNameSet0" xml:space="preserve">
+    <value>Наименование задано: {0}</value>
+  </data>
+  <data name="Msg_CaptionNameCleared" xml:space="preserve">
+    <value>Наименование убрано, подпись с номером осталась.</value>
+  </data>
+  <data name="Msg_CaptionName" xml:space="preserve">
+    <value>Наименование подписи</value>
+  </data>
+  <data name="Menu_CaptionNameItem" xml:space="preserve">
+    <value>Наименование рисунка или таблицы…</value>
+  </data>
 </root>

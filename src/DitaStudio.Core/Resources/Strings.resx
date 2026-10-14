@@ -4838,4 +4838,34 @@ No — plain image at the cursor, without a title or number.</value>
   <data name="Dlg_WordFiles" xml:space="preserve">
     <value>Word files</value>
   </data>
+  <data name="Menu_TableName" xml:space="preserve">
+    <value>Table name…</value>
+  </data>
+  <data name="Menu_FigureName" xml:space="preserve">
+    <value>Figure name…</value>
+  </data>
+  <data name="Msg_TableName" xml:space="preserve">
+    <value>Table name</value>
+  </data>
+  <data name="Msg_FigureName" xml:space="preserve">
+    <value>Figure name</value>
+  </data>
+  <data name="Msg_CaptionNameLabel" xml:space="preserve">
+    <value>Name:</value>
+  </data>
+  <data name="Msg_CaptionNameHint" xml:space="preserve">
+    <value>Leave the field empty to remove the name: the caption with the number (“Table N”) stays.</value>
+  </data>
+  <data name="Msg_CaptionNameSet0" xml:space="preserve">
+    <value>Name set: {0}</value>
+  </data>
+  <data name="Msg_CaptionNameCleared" xml:space="preserve">
+    <value>The name is removed; the caption with the number stays.</value>
+  </data>
+  <data name="Msg_CaptionName" xml:space="preserve">
+    <value>Caption name</value>
+  </data>
+  <data name="Menu_CaptionNameItem" xml:space="preserve">
+    <value>Figure or table name…</value>
+  </data>
 </root>

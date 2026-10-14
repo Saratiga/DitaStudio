@@ -234,7 +234,10 @@ public sealed partial class AuthorView
     }
 
     /// <summary>Меню по правой кнопке на выделенных ячейках: строки и столбцы, объединение, очистка, выравнивание, границы.</summary>
-    public void ShowCellMenu() => BuildCellMenu().Open(this);
+    /// <summary>Пункт «Наименование таблицы…» в меню ячеек: окно наименования показывает оболочка.</summary>
+    public event EventHandler? CaptionNameRequested;
+
+    public void ShowCellMenu() => AuthorMenus.Open(BuildCellMenu(), this);
 
     /// <summary>Меню действий над выделенными ячейками (для окна и тестов).</summary>
     public ContextMenu BuildCellMenu()
@@ -271,6 +274,8 @@ public sealed partial class AuthorView
 
         var items = new List<Control>
         {
+            Item(Loc.T("Menu_TableName"), () => CaptionNameRequested?.Invoke(this, EventArgs.Empty)),
+            new Separator(),
             Item(Loc.T("Menu_InsertRowAbove"), () => Edit(TableOperation.InsertRowAbove, rows > 1 ? Loc.T("Author_RowsInsertedAbove0", rows) : Loc.T("Author_RowInsertedAbove"))),
             Item(Loc.T("Menu_InsertRowBelow"), () => Edit(TableOperation.InsertRowBelow, rows > 1 ? Loc.T("Author_RowsInsertedBelow0", rows) : Loc.T("Author_RowInsertedBelow"))),
             Item(Loc.T("Menu_InsertColumnLeft"), () => Edit(TableOperation.InsertColumnLeft, columns > 1 ? Loc.T("Author_ColumnsInsertedToTheLeft0", columns) : Loc.T("Author_ColumnInsertedToTheLeft"))),

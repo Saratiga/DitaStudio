@@ -57,7 +57,30 @@ public sealed class ResizableImage : Panel
         PointerExited += (_, _) => _thumb.IsVisible = _dragStart is not null;
         _thumb.PointerPressed += OnThumbPressed;
         _thumb.PointerMoved += OnThumbMoved;
-        _thumb.PointerReleased += OnThumbReleased;
+        // Отпускание кнопки редактор текста вокруг (AvaloniaEdit) помечает обработанным раньше маркера — без handledEventsToo ширина не записалась бы.
+        _thumb.AddHandler(PointerReleasedEvent, OnThumbReleased, Avalonia.Interactivity.RoutingStrategies.Bubble, handledEventsToo: true);
+        _thumb.AddHandler(PointerCaptureLostEvent, (_, _) =>
+        {
+            if (_dragStart is not null)
+            {
+                FinishDrag(); // захват потерян посреди протаскивания — то, что уже видно, записывается
+            }
+        });
+    }
+
+    /// <summary>Сколько места у картинки в её блоке (ячейке, абзаце, примечании): шире протащить нельзя.</summary>
+    private double AvailableWidth()
+    {
+        // Ближайший блок «Автора» — редактор текста или рамка блока; без них — прежний предел.
+        foreach (var ancestor in this.GetVisualAncestors().OfType<Control>())
+        {
+            if (ancestor is BlockEditor || ancestor is Border { Tag: DitaStudio.Core.Model.DitaNode })
+            {
+                return ancestor.Bounds.Width > 0 ? ancestor.Bounds.Width - 8 : 4000;
+            }
+        }
+
+        return 4000;
     }
 
     /// <summary>Источник события — маркер размера (а не сама картинка).</summary>
@@ -132,7 +155,7 @@ public sealed class ResizableImage : Panel
         }
 
         var delta = e.GetPosition(this) - start;
-        _image.Width = Math.Clamp(_startWidth + Math.Max(delta.X, delta.Y / Math.Max(_aspect, 0.01)), Smallest, 4000);
+        _image.Width = Math.Clamp(_startWidth + Math.Max(delta.X, delta.Y / Math.Max(_aspect, 0.01)), Smallest, Math.Max(Smallest, AvailableWidth()));
         UpdateTip();
         e.Handled = true;
     }
@@ -144,12 +167,21 @@ public sealed class ResizableImage : Panel
             return;
         }
 
-        _dragStart = null;
-        e.Pointer.Capture(null);
         e.Handled = true;
+        FinishDrag();
+        e.Pointer.Capture(null);
+    }
+
+    private void FinishDrag()
+    {
+        _dragStart = null;
+        _thumb.IsVisible = IsPointerOver;
         if (Math.Abs(_image.Width - _startWidth) >= 1)
         {
-            _resized(Math.Round(_image.Width));
+            // После того, как событие мыши дойдёт до конца: запись ширины перерисовывает строку текста, в которой стоит сама картинка,
+            // а перерисовка посреди обработки отпускания кнопки ломает раскладку редактора (AvaloniaEdit).
+            var width = Math.Round(_image.Width);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => _resized(width));
         }
     }
 }

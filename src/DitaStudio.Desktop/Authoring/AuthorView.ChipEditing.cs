@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using DitaStudio.Core.Localization;
 using DitaStudio.Core.Model;
 using DitaStudio.Presentation.Authoring;
@@ -24,7 +25,8 @@ public sealed partial class AuthorView
         }
 
         ChipEditor?.Commit();
-        var popup = new ChipEditPopup(anchor, ChipEdit.Title(node), ChipEdit.Fields(node), values => ApplyChipEdit(node, values, editor));
+        var popup = new ChipEditPopup(anchor, ChipEdit.Title(node), ChipEdit.Fields(node), values => ApplyChipEdit(node, values, editor),
+            node.Name == "image" ? BrowseImageAsync : null);
         popup.Cancelled += (_, _) => editor?.FocusEditor(editor.CaretOffset);
         popup.Closed += (_, _) =>
         {
@@ -38,6 +40,25 @@ public sealed partial class AuthorView
         ChipEditor = popup;
         popup.IsOpen = true;
         return true;
+    }
+
+    /// <summary>Выбор файла картинки для поля «Файл»: путь от документа (как пишет «Вставка → Изображение»).</summary>
+    private async Task<string?> BrowseImageAsync()
+    {
+        if (TopLevel.GetTopLevel(this)?.StorageProvider is not { } storage || Document?.FilePath is not { } documentPath)
+        {
+            return null;
+        }
+
+        var start = await storage.TryGetFolderFromPathAsync(new Uri(Path.GetDirectoryName(documentPath)! + Path.DirectorySeparatorChar));
+        var files = await storage.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = Loc.T("Msg_ChooseAnImage"),
+            AllowMultiple = false,
+            SuggestedStartLocation = start,
+            FileTypeFilter = new[] { new Avalonia.Platform.Storage.FilePickerFileType(Loc.T("Dlg_Images")) { Patterns = new[] { "*.png", "*.jpg", "*.jpeg", "*.gif", "*.svg", "*.bmp" } } }
+        });
+        return files.Count == 1 && files[0].TryGetLocalPath() is { } chosen ? Core.Project.RefResolver.MakeRelative(documentPath, chosen) : null;
     }
 
     private void ApplyChipEdit(DitaNode node, IReadOnlyDictionary<string, string> values, BlockEditor? editor)

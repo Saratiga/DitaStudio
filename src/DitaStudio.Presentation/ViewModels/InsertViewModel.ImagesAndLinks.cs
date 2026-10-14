@@ -118,6 +118,37 @@ public partial class InsertViewModel
         }
     }
 
+    /// <summary>Наименование таблицы или рисунка под курсором: окно с текущим текстом; пустое поле убирает наименование, подпись с номером остаётся.</summary>
+    [RelayCommand]
+    private async Task RenameCaption()
+    {
+        if (_docs.Current is not { } pane || pane.Author.CaptionedAtCursor() is not { } captioned)
+        {
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInAFigure");
+            return;
+        }
+
+        var isTable = captioned.Name == "table";
+        var current = captioned.FirstElement("title")?.InnerText.Trim() ?? string.Empty;
+        if (current == Authoring.AuthorSurfaceBase.FigureTitlePlaceholder)
+        {
+            current = string.Empty;
+        }
+
+        var text = await _ui.Dialogs.PromptTextAsync(Loc.T(isTable ? "Msg_TableName" : "Msg_FigureName"), Loc.T("Msg_CaptionNameLabel"),
+            current, Loc.T("Msg_CaptionNameHint"), allowEmpty: true);
+        if (text is null)
+        {
+            return;
+        }
+
+        if (pane.Author.SetCaptionName(text))
+        {
+            _shell.StatusText = text.Trim().Length > 0 ? Loc.T("Msg_CaptionNameSet0", text.Trim()) : Loc.T("Msg_CaptionNameCleared");
+            _docs.RefreshAllTabTitles();
+        }
+    }
+
     /// <summary>Изображение из абзаца под курсором — в рисунок с названием и номером.</summary>
     [RelayCommand]
     private void WrapImageAsFigure()

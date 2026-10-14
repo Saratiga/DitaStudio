@@ -17,14 +17,22 @@ public sealed class ChipEditPopup : Popup
     private readonly Action<IReadOnlyDictionary<string, string>> _apply;
     private bool _finished;
 
-    public ChipEditPopup(Control target, string title, IReadOnlyList<ChipField> fields, Action<IReadOnlyDictionary<string, string>> apply)
+    /// <summary>Ширина окна: длинный путь к файлу не растягивает его, а сокращается многоточием.</summary>
+    public const double PopupWidth = 300;
+
+    /// <summary>Сколько знаков пути видно в поле; длиннее — многоточие в начале, полный путь в подсказке.</summary>
+    public const int ShownPathLength = 24;
+
+    /// <param name="browse">Выбор файла для поля адреса (<c>href</c>) — путь от документа; null — кнопки «Обзор…» нет.</param>
+    public ChipEditPopup(Control target, string title, IReadOnlyList<ChipField> fields, Action<IReadOnlyDictionary<string, string>> apply,
+        Func<Task<string?>>? browse = null)
     {
         _apply = apply;
         PlacementTarget = target;
         Placement = PlacementMode.Bottom;
         IsLightDismissEnabled = true;
 
-        var panel = new StackPanel { Spacing = 4, MinWidth = 280 };
+        var panel = new StackPanel { Spacing = 4, Width = PopupWidth };
         panel.Children.Add(new TextBlock { Text = title, FontWeight = Avalonia.Media.FontWeight.SemiBold, Margin = new Thickness(0, 0, 0, 2) });
         foreach (var field in fields)
         {
@@ -37,12 +45,11 @@ public sealed class ChipEditPopup : Popup
             }
             else
             {
-                var box = new TextBox { Text = field.Value, Padding = new Thickness(4, 3, 4, 3) };
-                editor = box;
+                editor = new TextBox { Text = field.Value, Padding = new Thickness(4, 3, 4, 3) };
             }
 
             _editors[field.Key] = editor;
-            panel.Children.Add(editor);
+            panel.Children.Add(field.Key == ChipEdit.Href && editor is TextBox pathBox ? PathRow(pathBox, browse) : editor);
         }
 
         var border = new Border { Padding = new Thickness(8), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(4), Child = panel };
@@ -51,9 +58,70 @@ public sealed class ChipEditPopup : Popup
         border.AddHandler(KeyDownEvent, OnKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         Child = border;
 
-        Opened += (_, _) => (_editors.Values.OfType<TextBox>().FirstOrDefault() as Control)?.Focus();
+        Opened += (_, _) => (_editors.Values.OfType<TextBox>().FirstOrDefault(b => b.IsVisible) as Control)?.Focus();
         // Щелчок мимо закрывает окно — введённое записывается, как при уходе фокуса из поля.
         Closed += (_, _) => Commit();
+    }
+
+    /// <summary>Путь, сокращённый для показа: не длиннее <see cref="ShownPathLength"/> знаков, лишнее начало заменено многоточием.</summary>
+    public static string ShortPath(string path) =>
+        path.Length <= ShownPathLength ? path : "…" + path[^(ShownPathLength - 1)..];
+
+    /// <summary>
+    /// Адрес файла или ссылки: сокращённая строка с полным путём в подсказке (окно не растягивается); щелчок по ней открывает поле правки,
+    /// «Обзор…» выбирает файл.
+    /// </summary>
+    private Control PathRow(TextBox box, Func<Task<string?>>? browse)
+    {
+        var shown = new TextBlock
+        {
+            Text = ShortPath(box.Text ?? string.Empty),
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+            TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis,
+            Cursor = new Cursor(StandardCursorType.Ibeam),
+            Tag = "path-short"
+        };
+        ToolTip.SetTip(shown, box.Text);
+        var shownHost = new Border { Child = shown, Padding = new Thickness(4, 3, 4, 3), Background = Avalonia.Media.Brushes.Transparent, BorderThickness = new Thickness(1) };
+        shownHost.Bind(Border.BorderBrushProperty, shownHost.GetResourceObservable("Line"));
+        box.IsVisible = false;
+        box.TextChanged += (_, _) =>
+        {
+            shown.Text = ShortPath(box.Text ?? string.Empty);
+            ToolTip.SetTip(shown, box.Text);
+        };
+
+        void StartEditing()
+        {
+            shownHost.IsVisible = false;
+            box.IsVisible = true;
+            box.Focus();
+            box.CaretIndex = box.Text?.Length ?? 0;
+        }
+
+        shownHost.PointerPressed += (_, e) =>
+        {
+            StartEditing();
+            e.Handled = true;
+        };
+
+        var row = new DockPanel();
+        if (browse is not null)
+        {
+            var button = new Button { Content = Loc.T("Dlg_Browse"), Padding = new Thickness(8, 3, 8, 3), Margin = new Thickness(4, 0, 0, 0) };
+            button.Click += async (_, _) =>
+            {
+                if (await browse() is { } chosen)
+                {
+                    box.Text = chosen;
+                }
+            };
+            DockPanel.SetDock(button, Dock.Right);
+            row.Children.Add(button);
+        }
+
+        row.Children.Add(new Panel { Children = { shownHost, box } });
+        return row;
     }
 
     /// <summary>Редакторы полей по ключам <see cref="ChipField.Key"/>.</summary>

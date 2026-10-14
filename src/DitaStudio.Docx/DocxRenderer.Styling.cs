@@ -18,7 +18,17 @@ public sealed partial class DocxRenderer
 
     private DocxStyleSheet Sheet => _options.Styles;
 
-    private sealed record ClassContext(string Key, IReadOnlyList<string> Classes, IReadOnlyList<DocxSelectorRule> Rules);
+    /// <summary>Классы и правила элемента для производного стиля. <paramref name="TextOnly"/> — элемент таблицы (ячейка, строка, таблица): его рамки,
+    /// заливка и поля — свойства ячейки и таблицы, в стиль абзаца внутри идёт только оформление текста.</summary>
+    private sealed record ClassContext(string Key, IReadOnlyList<string> Classes, IReadOnlyList<DocxSelectorRule> Rules, bool TextOnly = false);
+
+    // Части таблиц DITA: правила CSS для них оформляют ячейку или таблицу, а не абзацы внутри.
+    private static readonly HashSet<string> TableParts = new(StringComparer.Ordinal)
+    {
+        "table", "tgroup", "thead", "tbody", "row", "entry", "simpletable", "sthead", "strow", "stentry",
+        "properties", "prophead", "property", "proptypehd", "propvaluehd", "propdeschd", "proptype", "propvalue", "propdesc",
+        "choicetable", "chhead", "chrow", "choptionhd", "chdeschd", "choption", "chdesc"
+    };
 
     private sealed class Scope : IDisposable
     {
@@ -104,7 +114,7 @@ public sealed partial class DocxRenderer
             key += (key.Length > 0 ? " · " : string.Empty) + string.Join(" · ", rules.Select(r => r.Selector.Text));
         }
 
-        return new ClassContext(key, classes, rules);
+        return new ClassContext(key, classes, rules, TableParts.Contains(node.Name));
     }
 
     private static bool IsHighlightMark(string token) =>
@@ -161,7 +171,7 @@ public sealed partial class DocxRenderer
         {
             if (Sheet.PropsFor(context.Classes, context.Rules, baseSize) is { } overlay)
             {
-                props.Overlay(overlay);
+                props.Overlay(context.TextOnly ? overlay.TextOnly() : overlay);
             }
         }
 

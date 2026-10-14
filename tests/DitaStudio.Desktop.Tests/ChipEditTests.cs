@@ -239,4 +239,45 @@ public sealed class ChipEditTests
 
         window.Close();
     }
+    [AvaloniaFact]
+    public void LongImagePath_ShortenedWithTooltip_ClickOpensEditor_PopupStaysNarrow()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "DitaStudioImageTests", Guid.NewGuid().ToString("N"), "очень-длинная-папка", "ещё-одна-вложенная");
+        Directory.CreateDirectory(dir);
+        File.WriteAllBytes(Path.Combine(dir, "схема-подключения-оборудования.png"), Convert.FromBase64String(Png));
+        var root = Path.GetDirectoryName(Path.GetDirectoryName(dir))!;
+        var href = "очень-длинная-папка/ещё-одна-вложенная/схема-подключения-оборудования.png";
+        var path = Path.Combine(root, "topic.dita");
+        File.WriteAllText(path, "<concept id=\"c\"><title>Т</title><conbody><p>Схема <image href=\"" + href + "\"/>.</p></conbody></concept>");
+        var document = DitaDocument.Load(path);
+        var author = new AuthorView();
+        author.Load(document);
+        var window = new Window { Width = 900, Height = 500, Content = author };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        Click(window, author.GetVisualDescendants().OfType<ResizableImage>().Single());
+        var popup = author.ChipEditor!;
+        var box = (TextBox)popup.Editors["href"];
+        Assert.False(box.IsVisible);
+        var shown = ((Visual)popup.Child!).GetVisualDescendants().OfType<TextBlock>().Single(t => Equals(t.Tag, "path-short"));
+        Assert.True(shown.Text!.Length <= ChipEditPopup.ShownPathLength && shown.Text.StartsWith("…") && shown.Text.EndsWith("оборудования.png"), shown.Text);
+        Assert.Equal(href, ToolTip.GetTip(shown));
+        Assert.Equal(ChipEditPopup.PopupWidth, ((Visual)popup.Child!).GetVisualDescendants().OfType<StackPanel>().First().Width);
+        Assert.Contains(((Visual)popup.Child!).GetVisualDescendants().OfType<Button>(), b => b.Content as string == "Обзор…");
+
+        var screenshots = Path.Combine(AppContext.BaseDirectory, "screenshots");
+        Directory.CreateDirectory(screenshots);
+        window.CaptureRenderedFrame()?.Save(Path.Combine(screenshots, "author-image-properties-long-path.png"));
+
+        // Щелчок по сокращённому пути — поле правки с полным путём.
+        var host = shown.FindAncestorOfType<Border>()!;
+        host.RaiseEvent(new PointerPressedEventArgs(host, new Pointer(1, PointerType.Mouse, true), host, default, 0,
+            new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed), KeyModifiers.None));
+        Assert.True(box.IsVisible);
+        Assert.Equal(href, box.Text);
+        popup.Cancel();
+        window.Close();
+    }
 }
+

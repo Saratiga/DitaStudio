@@ -39,7 +39,7 @@ public interface IDialogService
     Task<T?> PickOneAsync<T>(string title, string prompt, IReadOnlyList<T> items, Func<T, string> display) where T : class;
 
     /// <summary>Запрашивает одну строку текста; null — отмена. Оболочки без такого окна возвращают null.</summary>
-    Task<string?> PromptTextAsync(string title, string label, string initial, string hint, string? okText = null) => Task.FromResult<string?>(null);
+    Task<string?> PromptTextAsync(string title, string label, string initial, string hint, string? okText = null, bool allowEmpty = false) => Task.FromResult<string?>(null);
 
     /// <summary>Окно выбора цвета: палитра и шестнадцатеричный код. Возвращает «#RRGGBB» или null (отмена). Оболочки без такого окна возвращают null.</summary>
     Task<string?> PickColorAsync(string title, string? initialHex) => Task.FromResult<string?>(null);

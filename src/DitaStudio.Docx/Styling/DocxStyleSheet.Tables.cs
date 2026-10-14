@@ -81,8 +81,7 @@ public sealed partial class DocxStyleSheet
 
         var box = new CssBox(new DocxStyleProps());
         CssApplier.Apply(box, declarations, FontSizeOf(DocxStyleCatalog.TableText), this, silent: true);
-        box.ResolvePadding();
-        var props = box.Props;
+        var props = box.Props; // padding ячейки — её поля (tcMar), а не зазор у рамки или отступ абзаца: ResolvePadding здесь не нужен
         var sides = SideBorders(props);
         var padding = box.PaddingLeft ?? box.PaddingTop;
         if (sides is null && props.Background is null && padding is null)

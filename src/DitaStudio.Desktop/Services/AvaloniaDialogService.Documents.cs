@@ -355,7 +355,7 @@ public sealed partial class AvaloniaDialogService
         return await ShowAsync(window) ? result : null;
     }
 
-    public async Task<string?> PromptTextAsync(string title, string label, string initial, string hint, string? okText = null)
+    public async Task<string?> PromptTextAsync(string title, string label, string initial, string hint, string? okText = null, bool allowEmpty = false)
     {
         var panel = new StackPanel { Margin = new Thickness(16) };
         panel.Children.Add(Label(label));
@@ -368,7 +368,7 @@ public sealed partial class AvaloniaDialogService
         panel.Children.Add(Buttons(window, () =>
         {
             var value = (box.Text ?? string.Empty).Trim();
-            if (value.Length > 0)
+            if (value.Length > 0 || allowEmpty)
             {
                 result = value;
             }
