@@ -26,6 +26,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\DitaStudio.Desktop\DitaStudio.Desktop.csproj" />
+    <!-- Только порядок сборки: SamplePluginTests грузят пример плагинов из его собственной папки вывода, как редактор. -->
+    <ProjectReference Include="..\..\samples\plugins\DitaStudio.SamplePlugins\DitaStudio.SamplePlugins.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

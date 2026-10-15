@@ -68,6 +68,36 @@ internal static partial class CoreChecks
 
         var missing = PluginLoader.Load<IValidationRulePlugin>(Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N")));
         Check(missing.Instances.Count == 0 && missing.Warnings.Count == 0, "несуществующая папка плагинов — пустой результат без ошибок");
+
+        // Подпапка plugins/<Имя>/<Имя>.dll — плагин со своими зависимостями: грузится только сборка с именем папки.
+        var plugins = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        try
+        {
+            var own = Path.Combine(plugins, "TestPlugin");
+            Directory.CreateDirectory(own);
+            File.Copy(testPluginDll, Path.Combine(own, "TestPlugin.dll"));
+            File.Copy(testPluginDll, Path.Combine(own, "SomeDependency.dll")); // «зависимость» — та же сборка под другим именем
+            File.WriteAllText(Path.Combine(plugins, "broken.dll"), "не сборка");
+            var files = PluginLoader.PluginFiles(plugins).Select(Path.GetFileName).ToList();
+            Check(files.SequenceEqual(new[] { "broken.dll", "TestPlugin.dll" }),
+                "сборки плагинов: .dll в папке и <Имя>/<Имя>.dll в подпапке, прочие .dll подпапки — нет: " + string.Join(", ", files));
+            var fromFolder = PluginLoader.Load<IValidationRulePlugin>(plugins);
+            Check(fromFolder.Instances.Count == 1 && fromFolder.Instances[0].Name == "TestPlugin.NoteFlaggingRule",
+                "плагин из подпапки загружен один раз (зависимость рядом с ним плагином не считается)");
+            Check(fromFolder.Warnings.Count == 1 && fromFolder.Warnings[0].StartsWith("broken.dll", StringComparison.Ordinal),
+                "битая .dll — предупреждение с именем файла, остальные плагины грузятся: " + string.Join("; ", fromFolder.Warnings));
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(plugins, true);
+            }
+            catch
+            {
+                // сборки, загруженные в AssemblyLoadContext, могут быть заняты до конца прогона
+            }
+        }
     }
 
     /// <summary>Правило, которое всегда падает — проверяет, что DitaProject.ValidateAll не роняет

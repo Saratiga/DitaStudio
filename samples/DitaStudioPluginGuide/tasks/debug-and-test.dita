@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="debug-and-test" xml:lang="ru-RU">
+  <title>Отладка и тесты</title>
+  <shortdesc>Правила проверки и форматы публикации проверяются обычными модульными тестами без редактора; для отладки в редакторе к нему подключается отладчик.</shortdesc>
+  <taskbody>
+    <steps>
+      <step>
+        <cmd>Создайте проект тестов xUnit рядом с плагином.</cmd>
+        <stepxmp><codeblock outputclass="language-shell">dotnet new xunit -n CompanyRules.Tests -f net8.0
+dotnet add CompanyRules.Tests reference CompanyRules</codeblock></stepxmp>
+        <info>
+          <p>В проекте тестов ссылка на <filepath>DitaStudio.Core.dll</filepath> — обычная, с копированием: тесты запускаются
+            без редактора, и сборка должна лежать рядом.</p>
+          <codeblock outputclass="language-xml">&lt;ItemGroup&gt;
+  &lt;!-- В тестах сборки редактора нужны в выводе: Private по умолчанию (true). --&gt;
+  &lt;Reference Include="DitaStudio.Core"&gt;
+    &lt;HintPath&gt;C:\Programs\DitaStudio\DitaStudio.Core.dll&lt;/HintPath&gt;
+  &lt;/Reference&gt;
+  &lt;ProjectReference Include="..\CompanyRules\CompanyRules.csproj" /&gt;
+&lt;/ItemGroup&gt;</codeblock>
+        </info>
+      </step>
+      <step>
+        <cmd>Проверьте правило на документе из строки и на целом проекте.</cmd>
+        <stepxmp><codeblock outputclass="language-csharp">using DitaStudio.Core.Model;
+using DitaStudio.Core.Project;
+using DitaStudio.Core.Validation;
+using Xunit;
+
+public class NoTodoRuleTests
+{
+    [Fact]
+    public void FindsTodoInText()
+    {
+        var doc = DitaDocument.Parse("&lt;topic id=\"t\"&gt;&lt;title&gt;Тема&lt;/title&gt;&lt;body&gt;&lt;p&gt;TODO: дописать&lt;/p&gt;&lt;/body&gt;&lt;/topic&gt;");
+        var issue = Assert.Single(new NoTodoRule().Check(doc));
+        Assert.Equal(IssueSeverity.Error, issue.Severity);
+        Assert.Equal("p", issue.Node?.Name);
+    }
+
+    [Fact]
+    public void WholeProject()
+    {
+        var project = new DitaProject(@"..\..\..\TestProject");
+        project.Scan();
+        var issues = project.ValidateAll(new IValidationRulePlugin[] { new NoTodoRule() });
+        Assert.DoesNotContain(issues, i =&gt; i.Message.Contains("TODO"));
+    }
+}</codeblock></stepxmp>
+        <info><p><codeph>DitaDocument.Parse</codeph> разбирает XML из строки, <codeph>DitaProject</codeph> +
+          <codeph>Scan()</codeph> — папку проекта целиком. <codeph>ValidateAll(plugins)</codeph> — то же, что
+          <shortcut>F7</shortcut> в редакторе: встроенная проверка плюс ваши правила.</p></info>
+      </step>
+      <step>
+        <cmd>Формат публикации проверяйте так же: <codeph>new MyFormat().Publish(project, mapPath, new PublishOptions(),
+          outputPath)</codeph> и сравнение результата.</cmd>
+      </step>
+      <step>
+        <cmd>Чтобы отладить плагин в редакторе, подключите отладчик к процессу
+          <filepath>DitaStudio.Desktop</filepath>.</cmd>
+        <info>
+          <p>В Visual Studio — <menucascade><uicontrol>Отладка</uicontrol><uicontrol>Присоединиться к
+            процессу</uicontrol></menucascade>, в Rider — <uicontrol>Attach to Process</uicontrol>. Точки останова в коде плагина
+            сработают, если рядом со сборкой лежит её <filepath>.pdb</filepath>.</p>
+          <p>Другой способ — запуск редактора из среды разработки: в свойствах отладки проекта плагина укажите программу
+            <filepath>C:\Programs\DitaStudio\DitaStudio.Desktop.exe</filepath>, а сборка с целью
+            <codeph>InstallPlugin</codeph> сама положит плагин на место. Остановиться в самом начале можно вызовом
+            <codeph>System.Diagnostics.Debugger.Launch()</codeph> в коде плагина (уберите его перед выпуском).</p>
+        </info>
+      </step>
+    </steps>
+    <result>
+      <p>Команды «Автора» требуют открытого документа, их удобнее проверять в редакторе. Пример полного набора тестов для
+        всех трёх видов — <filepath>tests/DitaStudio.Desktop.Tests/SamplePluginTests.cs</filepath> в репозитории редактора.</p>
+    </result>
+  </taskbody>
+</task>

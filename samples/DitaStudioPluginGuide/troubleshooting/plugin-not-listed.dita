@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE troubleshooting PUBLIC "-//OASIS//DTD DITA Troubleshooting//EN" "troubleshooting.dtd">
+<troubleshooting id="plugin-not-listed" xml:lang="ru-RU">
+  <title>Плагина нет в списке</title>
+  <shortdesc>Сборка лежит в папке plugins, ошибок загрузки нет, но в окне «Справка → Плагины…» плагина нет.</shortdesc>
+  <troublebody>
+    <condition><p>Окно «Плагины» не показывает ваш плагин и не называет его сборку среди незагрузившихся.</p></condition>
+    <troubleSolution>
+      <cause><p>Рядом с плагином лежит своя копия <filepath>DitaStudio.Core.dll</filepath> (или
+        <filepath>DitaStudio.Presentation.dll</filepath>). Плагин получил свои интерфейсы вместо интерфейсов редактора, и
+        редактор не узнаёт его классы.</p></cause>
+      <remedy>
+        <title>Убрать сборки редактора из вывода плагина</title>
+        <steps>
+          <step><cmd>Поставьте у ссылок на сборки редактора <codeph>&lt;Private&gt;false&lt;/Private&gt;</codeph> (или
+            <codeph>Private="false"</codeph> у <codeph>ProjectReference</codeph>).</cmd></step>
+          <step><cmd>Удалите <filepath>DitaStudio.*.dll</filepath> из папки плагина, пересоберите и установите его заново.</cmd></step>
+        </steps>
+      </remedy>
+    </troubleSolution>
+    <troubleSolution>
+      <cause><p>Класс плагина не подходит: не <codeph>public</codeph>, абстрактный, вложен в другой непубличный класс или у
+        него нет открытого конструктора без параметров.</p></cause>
+      <remedy>
+        <title>Сделать класс открытым</title>
+        <steps>
+          <step><cmd>Объявите класс как <codeph>public sealed class … : IValidationRulePlugin</codeph> и уберите параметры
+            конструктора (настройки читайте из файла или констант).</cmd></step>
+        </steps>
+      </remedy>
+    </troubleSolution>
+    <troubleSolution>
+      <cause><p>Сборка лежит в подпапке под другим именем: в <filepath>plugins/Rules/</filepath> редактор ищет только
+        <filepath>Rules.dll</filepath>.</p></cause>
+      <remedy>
+        <title>Назвать подпапку по сборке</title>
+        <steps>
+          <step><cmd>Переименуйте подпапку по имени сборки или положите сборку прямо в <filepath>plugins</filepath>.</cmd></step>
+        </steps>
+      </remedy>
+    </troubleSolution>
+    <troubleSolution>
+      <cause><p>Редактор не перезапускали после установки плагина.</p></cause>
+      <remedy>
+        <title>Перезапустить редактор</title>
+        <steps><step><cmd>Закройте редактор и запустите его снова.</cmd></step></steps>
+      </remedy>
+    </troubleSolution>
+  </troublebody>
+</troubleshooting>

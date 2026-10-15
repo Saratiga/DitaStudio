@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="publish-format" xml:lang="ru-RU">
+  <title>Формат публикации</title>
+  <shortdesc>Класс с интерфейсом IPublishFormatPlugin получает проект, карту, условия сборки и путь к файлу результата — и записывает публикацию в своём формате.</shortdesc>
+  <taskbody>
+    <context>
+      <p>Пользователь выбирает карту на вкладке <uicontrol>Карта</uicontrol>, затем
+        <menucascade><uicontrol>Публикация</uicontrol><uicontrol>Публикация плагином…</uicontrol></menucascade>. Редактор
+        сохраняет открытые документы, пересобирает ключи, спрашивает формат (если плагинов несколько) и имя файла и вызывает
+        <codeph>Publish</codeph>. Готовый файл он открывает программой по умолчанию.</p>
+      <fig><title>Выбор формата публикации</title><image href="../images/screens/plugin-format-picker.png" placement="break"><alt>Окно «Выберите формат публикации» со строкой «Пример: Markdown (один файл)»</alt></image></fig>
+    </context>
+    <steps>
+      <step>
+        <cmd>Создайте класс, реализующий <codeph>IPublishFormatPlugin</codeph>.</cmd>
+        <stepxmp><codeblock outputclass="language-csharp">public sealed class MarkdownFormat : IPublishFormatPlugin
+{
+    public string Name =&gt; "Пример: Markdown (один файл)";
+
+    public string FileExtension =&gt; "md";   // без точки: окно сохранения предложит *.md
+
+    public void Publish(DitaProject project, string mapPath, PublishOptions options, string outputPath)
+    {
+        // 1. Дерево карты без строк, исключённых условиями сборки.
+        var tree = MapTree.Build(project, mapPath, node =&gt; PublishFilter.IsIncluded(node, options));
+        var sb = new StringBuilder("# " + tree.Root.Title + "\n\n");
+
+        // 2. Топики и разделы без своего топика (topichead) в порядке карты.
+        foreach (var item in tree.PublicationOrderWithHeadings)
+        {
+            var level = Math.Clamp(item.Level + 1, 2, 6);
+            if (item.IsHeadingOnly)
+            {
+                sb.Append(new string('#', level)).Append(' ').Append(item.Title).Append("\n\n");
+                continue;
+            }
+
+            // 3. Документ топика с подставленными conref.
+            var document = RefResolver.ExpandConrefs(project, project.GetDocument(item.TargetPath!));
+            // ... перевод элементов в Markdown; элементы с исключёнными условиями пропускаются:
+            //     PublishFilter.IsIncluded(element, options); текст ключей — project.TextWithKeys(element, item.KeyScopeChain)
+        }
+
+        // 4. Запись через временный файл: при сбое прежний результат не портится.
+        AtomicFile.WriteAllText(outputPath, sb.ToString(), new UTF8Encoding(false));
+    }
+}</codeblock></stepxmp>
+      </step>
+      <step>
+        <cmd>Постройте дерево карты с учётом условий сборки.</cmd>
+        <info><p><codeph>PublishOptions</codeph> приходит уже с исключениями из «Условий сборки» и подключённого
+          <filepath>.ditaval</filepath>. <codeph>MapTree.Build</codeph> с фильтром <codeph>PublishFilter.IsIncluded</codeph>
+          убирает исключённые строки карты вместе с ветками; внутри топиков тот же фильтр вызывается для каждого элемента.</p></info>
+      </step>
+      <step>
+        <cmd>Обойдите <codeph>PublicationOrderWithHeadings</codeph>.</cmd>
+        <info><p>Это порядок издания: топики (<codeph>TargetPath</codeph> — файл) и разделы без своего топика
+          (<codeph>IsHeadingOnly</codeph>, у них только <codeph>Title</codeph>). <codeph>Level</codeph> — глубина в карте:
+          1 — глава, 2 — раздел главы. Строки «только ресурс» и битые ссылки сюда не входят.</p></info>
+      </step>
+      <step>
+        <cmd>Для каждого топика подставьте <codeph>conref</codeph> и ключи.</cmd>
+        <info><p><codeph>RefResolver.ExpandConrefs</codeph> возвращает копию документа с подставленными фрагментами; исходный
+          документ не меняется. Текст пустого элемента с ключом (<codeph>&lt;keyword keyref="product"/&gt;</codeph>) —
+          <codeph>project.TextWithKeys(element, item.KeyScopeChain)</codeph>.</p></info>
+      </step>
+      <step>
+        <cmd>Запишите результат через <codeph>AtomicFile</codeph>.</cmd>
+        <info><p><codeph>AtomicFile.WriteAllText</codeph> пишет во временный файл рядом и заменяет результат, только когда он
+          готов целиком. Картинки и другие файлы рядом с результатом — <codeph>Path.GetDirectoryName(outputPath)</codeph>.</p></info>
+      </step>
+      <step>
+        <cmd>Сообщайте об ошибках исключением.</cmd>
+        <info><p>Текст исключения редактор показывает в окне и пишет в «Журнал сборки». Отдельного списка предупреждений у
+          плагина публикации нет.</p></info>
+      </step>
+    </steps>
+    <result>
+      <p>Так выглядит начало результата примера для учебного проекта <filepath>samples/GuideSample</filepath>:</p>
+      <codeblock outputclass="language-markdown"># Руководство пользователя «Пример»
+
+## О продукте
+
+_Пример 2.0 — учебный пример проекта DITA, на котором удобно посмотреть, как устроены концепции, задачи, справка и глоссарий._
+
+### Установка
+
+1. Запустите `setup.exe`.
+   Если появится запрос контроля учётных записей, подтвердите его.
+
+3. Выберите вариант установки.
+   | Вариант | Когда выбирать |
+   | --- | --- |
+   | Обычная | Подходит большинству пользователей. |
+
+&gt; **Совет.** Начните с задачи Установка, если хотите сразу попробовать продукт.</codeblock>
+      <p>Полный код — <filepath>MarkdownFormat.cs</filepath> в проекте примера: заголовки, краткое описание, абзацы, списки и шаги,
+        примечания, блоки кода, рисунки, таблицы всех видов, списки определений и параметров, фразовое оформление и ссылки.</p>
+    </result>
+  </taskbody>
+</task>

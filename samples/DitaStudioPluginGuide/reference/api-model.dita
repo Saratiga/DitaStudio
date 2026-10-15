@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="api-model" xml:lang="ru-RU">
+  <title>Документ и элементы</title>
+  <shortdesc>DitaDocument — разобранный файл DITA, DitaNode — узел его дерева: элемент, текст или комментарий. С ними работают все три вида плагинов.</shortdesc>
+  <refbody>
+<table><title>DitaDocument (DitaStudio.Core.Model)</title><tgroup cols="2"><colspec colname="c1" colwidth="2*"/><colspec colname="c2" colwidth="5*"/><thead><row><entry>Член</entry><entry>Что даёт</entry></row></thead><tbody>
+<row><entry><codeph>Root</codeph></entry><entry>Корневой элемент: топик (concept, task…) или карта</entry></row>
+<row><entry><codeph>FilePath</codeph></entry><entry>Полный путь к файлу; null у документа из строки</entry></row>
+<row><entry><codeph>Title</codeph></entry><entry>Заголовок топика или карты (у статьи глоссария — glossterm)</entry></row>
+<row><entry><codeph>Id</codeph></entry><entry>id корневого элемента</entry></row>
+<row><entry><codeph>Kind</codeph></entry><entry>Вид: топик, карта и т. п. (DitaDocumentKind)</entry></row>
+<row><entry><codeph>IsDirty</codeph></entry><entry>Есть несохранённые правки</entry></row>
+<row><entry><codeph>DitaDocument.Parse(xml)</codeph></entry><entry>Документ из строки — для тестов</entry></row>
+<row><entry><codeph>DitaDocument.Load(path)</codeph></entry><entry>Документ из файла (в редакторе лучше project.GetDocument — с кэшем)</entry></row>
+<row><entry><codeph>ToXmlString()</codeph></entry><entry>XML документа</entry></row>
+</tbody></tgroup></table>
+<table><title>DitaNode (DitaStudio.Core.Model)</title><tgroup cols="2"><colspec colname="c1" colwidth="3*"/><colspec colname="c2" colwidth="4*"/><thead><row><entry>Член</entry><entry>Что даёт</entry></row></thead><tbody>
+<row><entry><codeph>Kind</codeph></entry><entry>NodeKind.Element, Text, Comment, ProcessingInstruction</entry></row>
+<row><entry><codeph>Name</codeph></entry><entry>Имя элемента (p, step, keyword…); у текста — #text</entry></row>
+<row><entry><codeph>Value</codeph></entry><entry>Текст текстового узла и комментария (можно менять)</entry></row>
+<row><entry><codeph>InnerText</codeph></entry><entry>Весь текст элемента со всеми вложенными (ключи не подставлены)</entry></row>
+<row><entry><codeph>GetAttribute(name)</codeph>, <codeph>HasAttribute</codeph>, <codeph>SetAttribute(name, value)</codeph>, <codeph>RemoveAttribute</codeph></entry><entry>Атрибуты; SetAttribute с null удаляет атрибут</entry></row>
+<row><entry><codeph>Parent</codeph>, <codeph>Children</codeph>, <codeph>ElementChildren()</codeph></entry><entry>Родитель, все дети, только дочерние элементы</entry></row>
+<row><entry><codeph>Descendants()</codeph>, <codeph>DescendantsAndSelf()</codeph>, <codeph>Ancestors()</codeph></entry><entry>Обход поддерева и цепочки предков</entry></row>
+<row><entry><codeph>FirstElement(name)</codeph>, <codeph>FindDescendant(name)</codeph>, <codeph>Closest(name)</codeph></entry><entry>Первый дочерний, первый вложенный, ближайший предок (или сам) с таким именем</entry></row>
+<row><entry><codeph>PreviousSibling</codeph>, <codeph>NextSibling</codeph>, <codeph>IndexInParent</codeph></entry><entry>Соседи и место у родителя</entry></row>
+<row><entry><codeph>DitaNode.Element(name)</codeph>, <codeph>DitaNode.Text(value)</codeph></entry><entry>Новые узлы</entry></row>
+<row><entry><codeph>Add</codeph>, <codeph>Insert(index, node)</codeph>, <codeph>Remove</codeph>, <codeph>RemoveSelf()</codeph>, <codeph>ReplaceWith</codeph>, <codeph>SetText(text)</codeph></entry><entry>Правка дерева (в командах «Автора»)</entry></row>
+<row><entry><codeph>CloneDeep()</codeph></entry><entry>Копия поддерева</entry></row>
+<row><entry><codeph>Line</codeph>, <codeph>Column</codeph></entry><entry>Место в исходном файле</entry></row>
+</tbody></tgroup></table>
+  </refbody>
+</reference>

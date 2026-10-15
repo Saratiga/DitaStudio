@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="validation-rule" xml:lang="ru-RU">
+  <title>Правило проверки</title>
+  <shortdesc>Класс с интерфейсом IValidationRulePlugin получает каждый документ проекта и возвращает замечания — они появляются на вкладке «Проверка» рядом со встроенными.</shortdesc>
+  <taskbody>
+    <context>
+      <p>Правило вызывается для каждого файла проекта при <menucascade><uicontrol>Правка</uicontrol><uicontrol>Проверить
+        проект</uicontrol></menucascade> и для открытого документа при «Проверить документ». Правило получает
+        <codeph>DitaDocument</codeph> — разобранный файл с деревом элементов — и ничего в нём не меняет.</p>
+    </context>
+    <steps>
+      <step>
+        <cmd>Создайте открытый класс, реализующий <codeph>IValidationRulePlugin</codeph>.</cmd>
+        <stepxmp><codeblock outputclass="language-csharp">using DitaStudio.Core.Model;
+using DitaStudio.Core.Validation;
+
+namespace CompanyRules;
+
+public sealed class NoTodoRule : IValidationRulePlugin
+{
+    public string Name =&gt; "Нет пометок TODO";
+
+    public IEnumerable&lt;ValidationIssue&gt; Check(DitaDocument document)
+    {
+        foreach (var node in document.Root.DescendantsAndSelf())
+        {
+            if (node.Kind == NodeKind.Text &amp;&amp; node.Value.Contains("TODO", StringComparison.Ordinal))
+            {
+                yield return new ValidationIssue(IssueSeverity.Error,
+                    "В тексте осталась пометка TODO", node.Parent, document.FilePath);
+            }
+        }
+    }
+}</codeblock></stepxmp>
+        <info>
+          <ul>
+            <li><codeph>Name</codeph> — название в окне «Плагины» и в сообщении, если правило упадёт;</li>
+            <li><codeph>Check</codeph> — обход дерева документа и замечания через <codeph>yield return</codeph>.</li>
+          </ul>
+        </info>
+      </step>
+      <step>
+        <cmd>Выберите уровень замечания.</cmd>
+        <choicetable>
+          <chhead><choptionhd>Уровень</choptionhd><chdeschd>Когда</chdeschd></chhead>
+          <chrow><choption><codeph>IssueSeverity.Error</codeph></choption><chdesc>документ нельзя публиковать: битая ссылка,
+            запрещённое содержимое, пометка TODO</chdesc></chrow>
+          <chrow><choption><codeph>IssueSeverity.Warning</codeph></choption><chdesc>стоит исправить: нарушение словаря
+            стиля</chdesc></chrow>
+          <chrow><choption><codeph>IssueSeverity.Info</codeph></choption><chdesc>рекомендация: длинная фраза, нет
+            иллюстрации</chdesc></chrow>
+        </choicetable>
+      </step>
+      <step>
+        <cmd>Передайте в замечание элемент и путь к файлу.</cmd>
+        <info><p>Третий параметр <codeph>ValidationIssue</codeph> — узел, к которому переходит двойной щелчок по строке
+          замечания; передавайте элемент (<codeph>node.Parent</codeph> для текста), а не текстовый узел. Четвёртый —
+          <codeph>document.FilePath</codeph>: при проверке всего проекта по нему открывается нужный файл.</p></info>
+      </step>
+      <step>
+        <cmd>Соберите, установите, перезапустите редактор и нажмите <shortcut>F7</shortcut>.</cmd>
+        <stepresult>
+          <p>Замечания правила — в общем списке. На снимке — два правила из примера: «слова-паразиты» (предупреждение) и
+            «длинные абзацы» (сведения).</p>
+          <fig><title>Замечания правил из плагина на вкладке «Проверка»</title><image href="../images/screens/plugin-validation.png" placement="break"><alt>Предупреждение «„просто“: в инструкции лучше без этого слова», сведения о кратком описании и «&lt;p&gt;: 73 слова — длиннее 60»</alt></image></fig>
+        </stepresult>
+      </step>
+    </steps>
+    <result>
+      <p>Правило работает со всеми видами топиков и с картами — проверяйте имя корневого элемента
+        (<codeph>document.Root.Name</codeph>), если правило относится только к задачам или только к картам. Правило видит один
+        файл: связи между файлами (ссылки, ключи) проверяет сам редактор.</p>
+    </result>
+    <example>
+      <title>Пример: два правила стиля</title>
+      <p>Файл <filepath>StyleRules.cs</filepath> примера: «длинные абзацы и команды» (слова считаются по
+        <codeph>InnerText</codeph>, для команды шага предел строже) и «слова-паразиты» (текст внутри кода не проверяется).</p>
+      <codeblock outputclass="language-csharp">using DitaStudio.Core.Model;
+using DitaStudio.Core.Validation;
+
+namespace DitaStudio.SamplePlugins;
+
+/// &lt;summary&gt;
+/// Правило проверки: слишком длинные абзацы, пункты списков и команды шагов. Длинную фразу трудно прочитать с первого раза,
+/// а команду шага — выполнить. Замечание уровня «Сведения»: рекомендация, а не ошибка.
+/// &lt;/summary&gt;
+public sealed class LongBlockRule : IValidationRulePlugin
+{
+    /// &lt;summary&gt;Больше скольких слов — уже «длинно».&lt;/summary&gt;
+    private const int MaxWords = 60;
+
+    /// &lt;summary&gt;Для команды шага предел строже: одно действие — одно короткое предложение.&lt;/summary&gt;
+    private const int MaxCommandWords = 25;
+
+    private static readonly HashSet&lt;string&gt; Blocks = new(StringComparer.Ordinal) { "p", "li", "cmd" };
+
+    public string Name =&gt; "Пример: длинные абзацы и команды";
+
+    public IEnumerable&lt;ValidationIssue&gt; Check(DitaDocument document)
+    {
+        foreach (var node in document.Root.Descendants())
+        {
+            if (node.Kind != NodeKind.Element || !Blocks.Contains(node.Name))
+            {
+                continue;
+            }
+
+            var words = node.InnerText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
+            var limit = node.Name == "cmd" ? MaxCommandWords : MaxWords;
+            if (words &gt; limit)
+            {
+                // Узел — для перехода двойным щелчком из вкладки «Проверка», путь к файлу — для проверки всего проекта.
+                yield return new ValidationIssue(IssueSeverity.Info,
+                    $"&lt;{node.Name}&gt;: {words} слов — длиннее {limit}. Разбейте на несколько предложений или блоков.",
+                    node, document.FilePath);
+            }
+        }
+    }
+}
+
+/// &lt;summary&gt;
+/// Правило проверки по словарю стиля: слова, которых в технической документации лучше избегать («просто», «очевидно»…).
+/// Код и имена файлов не проверяются — в них такие слова могут быть частью имени.
+/// &lt;/summary&gt;
+public sealed class StopWordsRule : IValidationRulePlugin
+{
+    private static readonly string[] StopWords = { "просто", "очевидно", "легко", "всего лишь", "и т. д." };
+
+    /// &lt;summary&gt;Элементы, текст которых не проверяется.&lt;/summary&gt;
+    private static readonly HashSet&lt;string&gt; CodeElements = new(StringComparer.Ordinal)
+    {
+        "codeph", "codeblock", "filepath", "cmdname", "varname", "parmname", "apiname", "userinput", "systemoutput", "msgph", "screen"
+    };
+
+    public string Name =&gt; "Пример: слова-паразиты";
+
+    public IEnumerable&lt;ValidationIssue&gt; Check(DitaDocument document)
+    {
+        foreach (var text in document.Root.Descendants().Where(n =&gt; n.Kind == NodeKind.Text))
+        {
+            if (text.Ancestors().Any(a =&gt; CodeElements.Contains(a.Name)))
+            {
+                continue;
+            }
+
+            foreach (var word in StopWords)
+            {
+                if (ContainsWord(text.Value, word))
+                {
+                    // Замечание ставится на элемент, в котором стоит текст: к нему переходит двойной щелчок.
+                    yield return new ValidationIssue(IssueSeverity.Warning,
+                        $"«{word}»: в инструкции лучше без этого слова — читателю может быть совсем не просто.",
+                        text.Parent, document.FilePath);
+                }
+            }
+        }
+    }
+
+    /// &lt;summary&gt;Слово целиком, без учёта регистра: «просто» находится, «простой» — нет.&lt;/summary&gt;
+    private static bool ContainsWord(string text, string word)
+    {
+        for (var at = text.IndexOf(word, StringComparison.OrdinalIgnoreCase); at &gt;= 0;
+             at = text.IndexOf(word, at + 1, StringComparison.OrdinalIgnoreCase))
+        {
+            var before = at == 0 || !char.IsLetter(text[at - 1]);
+            var end = at + word.Length;
+            var after = end &gt;= text.Length || !char.IsLetter(text[end]);
+            if (before &amp;&amp; after)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}</codeblock>
+    </example>
+  </taskbody>
+</task>

@@ -1,0 +1,60 @@
+/* Стили публикации руководства «Создание плагинов DITA Studio». Один файл для HTML, PDF и DOCX. */
+
+/* ---------------------------------------------------------------- оформление примера
+   Одни и те же правила действуют на сайт, PDF и DOCX. Правила только для Word — в конце,
+   в @media docx. */
+
+:root {
+  --accent: #613583;
+  --accent-light: #f1ebf7;
+  --muted: #5e6672;
+  --code: #a51d2d;
+}
+
+body { color: #1f2328; }
+
+h1, h2, h3, h4 { color: var(--accent); }
+h1 { border-bottom: 1.5pt solid var(--accent); padding-bottom: 3pt; }
+
+.shortdesc { color: var(--muted); }
+
+p { margin: 0 0 6pt; line-height: 1.4; }
+
+/* примечания: цветная полоса слева и лёгкая заливка */
+.note { border-left: 3pt solid var(--accent); background-color: var(--accent-light); padding: 4pt 8pt; }
+.note.tip { border-left-color: #26a269; background-color: #eaf7ee; }
+.note.caution, .note.warning, .note.attention { border-left-color: #e66100; background-color: #fff4e5; }
+.note.danger { border-left-color: #c01c28; background-color: #fdecec; }
+
+code, .codeph, .filepath, .parmname, .cmdname, .option { color: var(--code); }
+/* рисунки — снимки экрана: тонкая рамка, чтобы светлое окно не сливалось со страницей */
+.fig image, figure img { border: 0.75pt solid #c8ccd2; }
+
+pre, .codeblock { background-color: #f4f6f9; border: 0.75pt solid #d0d7de; padding: 4pt; font-size: 9pt; }
+
+.uicontrol, .wintitle { color: var(--accent); }
+
+table { border: 1pt solid var(--accent); }
+th, td { border: 0.5pt solid #cdbde0; padding: 3pt; }
+th { background-color: #e9e0f3; font-weight: bold; }
+
+ul { list-style-type: square; }
+ul ul { list-style-type: "–"; }
+li::marker { color: var(--accent); }
+
+@page { size: A4; margin: 20mm 15mm 20mm 25mm; }
+
+/* Колонтитулы — поля страницы; они перекрывают колонтитулы из «Оформление DOCX» */
+@page {
+  @top-right { content: string(title); font-size: 9pt; color: #6b7a90; border-bottom: 0.5pt solid #cdbde0; }
+  @bottom-center { content: "Стр. " counter(page) " из " counter(pages); font-family: "Segoe UI", sans-serif; font-size: 9pt; color: #6b7a90; }
+}
+
+/* ---------------------------------------------------------------- только для Word */
+@media docx {
+  body { font-family: "Segoe UI", sans-serif; font-size: 10.5pt; }
+  h1 { font-size: 20pt; }
+  h2 { font-size: 15pt; }
+  h3 { font-size: 12.5pt; }
+  p { text-align: justify; }
+}

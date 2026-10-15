@@ -15,7 +15,7 @@ internal static partial class CoreChecks
         Section("Учебные проекты samples/: проверка и сборка");
 
         var samples = Path.Combine(RepositoryRoot(), "samples");
-        foreach (var name in new[] { "GuideSample", "DitaStudioGuide", "DitaStudioBeginnerGuide" })
+        foreach (var name in new[] { "GuideSample", "DitaStudioGuide", "DitaStudioBeginnerGuide", "DitaStudioPluginGuide" })
         {
             CheckSampleProject(Path.Combine(samples, name), name);
         }

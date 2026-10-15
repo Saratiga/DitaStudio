@@ -10,6 +10,7 @@ using Avalonia.VisualTree;
 using DitaStudio.Core.Model;
 using DitaStudio.Desktop.Authoring;
 using DitaStudio.Desktop.Views;
+using DitaStudio.Presentation.Plugins;
 using DitaStudio.Presentation.ViewModels;
 using SkiaSharp;
 using Xunit;
@@ -32,7 +33,8 @@ public sealed class GuideScreenshots : IDisposable
     {
         Beginner = 1,
         Expert = 2,
-        Both = Beginner | Expert
+        Both = Beginner | Expert,
+        Plugins = 4
     }
 
     private readonly string _project;
@@ -78,7 +80,7 @@ public sealed class GuideScreenshots : IDisposable
 
             Directory.Delete(Path.GetDirectoryName(_project)!, true);
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // временные файлы удалятся системой
         }
@@ -201,6 +203,11 @@ public sealed class GuideScreenshots : IDisposable
         if (guide.HasFlag(Guide.Expert))
         {
             yield return Path.Combine(samples, "DitaStudioGuide", "images", "screens");
+        }
+
+        if (guide.HasFlag(Guide.Plugins))
+        {
+            yield return Path.Combine(samples, "DitaStudioPluginGuide", "images", "screens");
         }
     }
 
@@ -489,6 +496,91 @@ public sealed class GuideScreenshots : IDisposable
         Dispatcher.UIThread.RunJobs();
         Shot(window, "status-notes", Guide.Expert, crop: Bounds(about, window));
         Close(window);
+    }
+
+    /// <summary>
+    /// Руководство по плагинам: окно «Справка → Плагины…» (без ошибок и с ошибкой загрузки), замечания правил из плагина на вкладке
+    /// «Проверка», выбор команды «Автора» и формата публикации. Плагины — пример samples/plugins/DitaStudio.SamplePlugins.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task PluginDialogs()
+    {
+        if (!Enabled)
+        {
+            return;
+        }
+
+        var configuration = new DirectoryInfo(AppContext.BaseDirectory).Parent!.Name;
+        var built = Path.Combine(RepositoryRoot(), "samples", "plugins", "DitaStudio.SamplePlugins", "bin", configuration, "net8.0", "DitaStudio.SamplePlugins.dll");
+        var plugins = Path.Combine(Path.GetTempPath(), "DitaStudioGuideShots", Guid.NewGuid().ToString("N"), "plugins");
+        Directory.CreateDirectory(Path.Combine(plugins, "DitaStudio.SamplePlugins"));
+        File.Copy(built, Path.Combine(plugins, "DitaStudio.SamplePlugins", "DitaStudio.SamplePlugins.dll"));
+        const string shownFolder = @"C:\Programs\DitaStudio\plugins"; // в окне — папка установленной программы, а не временная
+
+        // Текст для правил примера: длинная команда шага и «просто».
+        var install = Path.Combine(_project, "tasks", "install.dita");
+        File.WriteAllText(install, File.ReadAllText(install)
+            .Replace("<cmd>Запустите", "<cmd>Это просто: запустите")
+            .Replace("<p>Продукт установлен", "<p>" + string.Join(' ', Enumerable.Repeat("Длинный текст абзаца,", 22)) + " продукт установлен"));
+
+        PluginRegistry.Load(plugins);
+        try
+        {
+            var (window, vm) = await OpenAsync();
+
+            async Task DialogShot(Func<Task> show, string name)
+            {
+                var task = show();
+                Dispatcher.UIThread.RunJobs();
+                var dialog = Assert.Single(window.OwnedWindows);
+                Dispatcher.UIThread.RunJobs();
+                var replaced = 0;
+                foreach (var text in dialog.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Text?.Contains(plugins, StringComparison.OrdinalIgnoreCase) == true))
+                {
+                    text.Text = text.Text!.Replace(plugins, shownFolder, StringComparison.OrdinalIgnoreCase);
+                    replaced++;
+                }
+
+                Assert.True(replaced > 0 || name.Contains("picker"), "временный путь к плагинам в окне подменён");
+                // Окно подбирает высоту под текст: после подмены пути — заново.
+                dialog.SizeToContent = SizeToContent.Manual;
+                dialog.SizeToContent = SizeToContent.Height;
+                Dispatcher.UIThread.RunJobs();
+                Shot(dialog, name, Guide.Plugins);
+                dialog.Close();
+                Dispatcher.UIThread.RunJobs();
+                await task;
+            }
+
+            await DialogShot(() => vm.Help.ShowPluginsCommand.ExecuteAsync(null), "plugins-dialog");
+
+            // Проверка проекта: замечания правил из плагина вместе со встроенными.
+            var bottom = Named<TabControl>(window, "BottomTabs");
+            ((Grid)bottom.Parent!).RowDefinitions[2].Height = new GridLength(260);
+            vm.Validation.ValidateProjectCommand.Execute(null);
+            Dispatcher.UIThread.RunJobs();
+            Shot(window, "plugin-validation", Guide.Plugins, crop: Bounds(bottom, window));
+
+            Open(vm, "tasks/install.dita");
+            await DialogShot(() => vm.Insert.RunAuthorCommandPluginCommand.ExecuteAsync(null), "plugin-command-picker");
+            await DialogShot(() => vm.Publish.PublishWithPluginCommand.ExecuteAsync(null), "plugin-format-picker");
+
+            // Ошибка загрузки: в папке — .dll, которая не является сборкой .NET.
+            File.WriteAllText(Path.Combine(plugins, "OldPlugin.dll"), "не сборка");
+            PluginRegistry.Load(plugins);
+            await DialogShot(() => vm.Help.ShowPluginsCommand.ExecuteAsync(null), "plugins-dialog-error");
+
+            foreach (var pane in vm.Documents.Panes.Values)
+            {
+                pane.Document.IsDirty = false;
+            }
+
+            Close(window);
+        }
+        finally
+        {
+            PluginRegistry.Load(Path.Combine(plugins, "..", "none")); // остальные тесты — без плагинов
+        }
     }
 
     /// <summary>Публикация: меню, условия, CSS, оформление DOCX, параметры страницы, XLIFF.</summary>

@@ -199,6 +199,7 @@
                 <MenuItem Name="ThemeMenuItem" Header="{loc:Tr Menu_DarkTheme}" ToggleType="CheckBox" Click="OnToggleTheme" />
                 <MenuItem Name="LanguageMenu" Header="{loc:Tr Menu_Language}" />
                 <Separator />
+                <MenuItem Header="{loc:Tr Menu_Plugins}" Command="{Binding Help.ShowPluginsCommand}" />
                 <MenuItem Header="{loc:Tr Menu_About}" Command="{Binding Help.AboutCommand}" />
             </MenuItem>
         </Menu>
@@ -541,7 +542,7 @@
                     <TabItem Header="{loc:Tr Tab_Validation}">
                         <DataGrid Name="IssuesGrid" ItemsSource="{Binding Validation.Issues}" SelectedItem="{Binding Validation.SelectedIssue}" DoubleTapped="OnIssueDoubleTapped">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="{loc:Tr Col_Level}" Width="110" Binding="{Binding SeverityText}" />
+                                <DataGridTextColumn Header="{loc:Tr Col_Level}" Width="140" Binding="{Binding SeverityText}" />
                                 <DataGridTextColumn Header="{loc:Tr Col_Message}" Width="620" Binding="{Binding Message}" />
                                 <DataGridTextColumn Header="{loc:Tr Col_Location}" Width="220" Binding="{Binding Location}" />
                                 <DataGridTextColumn Header="{loc:Tr Col_File}" Width="260" Binding="{Binding FilePath}" />

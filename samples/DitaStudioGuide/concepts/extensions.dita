@@ -40,7 +40,13 @@
         <li>команды режима «Автор» — <menucascade><uicontrol>Структура</uicontrol>
           <uicontrol>Команда плагина…</uicontrol></menucascade>.</li>
       </ul>
-      <p>Ошибка внутри плагина не закрывает редактор — она показывается как предупреждение.</p>
+      <p>Плагин кладётся прямо в <filepath>plugins</filepath> или в свою подпапку с тем же именем
+        (<filepath>plugins/CompanyRules/CompanyRules.dll</filepath>) — тогда рядом лежат и его зависимости. Ошибка внутри
+        плагина не закрывает редактор — она показывается как предупреждение. Что загрузилось и что нет — в окне
+        <menucascade><uicontrol>Справка</uicontrol><uicontrol>Плагины…</uicontrol></menucascade>.</p>
+      <p>Как написать свой плагин — отдельное руководство «Создание плагинов DITA Studio»
+        (<filepath>docs/guides/DitaStudio-Plugin-Guide.pdf</filepath>); пример всех трёх видов —
+        <filepath>samples/plugins/DitaStudio.SamplePlugins</filepath>.</p>
     </section>
   </conbody>
 </concept>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE troubleshooting PUBLIC "-//OASIS//DTD DITA Troubleshooting//EN" "troubleshooting.dtd">
+<troubleshooting id="plugin-load-error" xml:lang="ru-RU">
+  <title>Сборка не загрузилась</title>
+  <shortdesc>При запуске в строке состояния «Плагины: не загрузилось N», в окне «Справка → Плагины…» — раздел «Не загрузились» с причиной.</shortdesc>
+  <troublebody>
+    <condition>
+      <p>В окне «Плагины» — строка вида «ИмяСборки.dll: причина».</p>
+      <fig><title>Сборка, которая не загрузилась</title><image href="../images/screens/plugins-dialog-error.png" placement="break"><alt>Окно «Плагины»: загруженные плагины примера и раздел «Не загрузились» — OldPlugin.dll: Bad IL format</alt></image></fig>
+    </condition>
+    <troubleSolution>
+      <cause><p><msgph>Bad IL format</msgph>, <msgph>is not a valid .NET assembly</msgph> — в папке лежит не сборка .NET:
+        нативная библиотека, обрезанный при копировании файл или <filepath>.dll</filepath> от другой программы.</p></cause>
+      <remedy>
+        <title>Убрать лишний файл</title>
+        <steps><step><cmd>Удалите файл из <filepath>plugins</filepath>; нативные зависимости плагина положите в его подпапку —
+          там они плагинами не считаются.</cmd></step></steps>
+      </remedy>
+    </troubleSolution>
+    <troubleSolution>
+      <cause><p><msgph>Could not load file or assembly …</msgph> — не нашлась зависимость плагина.</p></cause>
+      <remedy>
+        <title>Положить зависимости рядом</title>
+        <steps><step><cmd>Скопируйте весь вывод сборки плагина (вместе с <filepath>.deps.json</filepath>, кроме сборок
+          редактора) в его подпапку <filepath>plugins/&lt;Имя&gt;/</filepath>.</cmd></step></steps>
+      </remedy>
+    </troubleSolution>
+    <troubleSolution>
+      <cause><p><msgph>Method not found</msgph>, <msgph>Could not load type</msgph>, другая версия
+        <filepath>DitaStudio.Core</filepath> — плагин собран для другой версии редактора, или целевая платформа плагина не
+        <codeph>net8.0</codeph>.</p></cause>
+      <remedy>
+        <title>Пересобрать для этой версии</title>
+        <steps><step><cmd>Пересоберите плагин со сборками установленного редактора и <codeph>&lt;TargetFramework&gt;net8.0&lt;/TargetFramework&gt;</codeph>.</cmd></step></steps>
+      </remedy>
+    </troubleSolution>
+  </troublebody>
+</troubleshooting>

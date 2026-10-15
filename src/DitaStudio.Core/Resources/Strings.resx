@@ -4913,4 +4913,32 @@ No — plain image at the cursor, without a title or number.</value>
   <data name="Author_RemoveFormatting0" xml:space="preserve">
     <value>Remove formatting &lt;{0}&gt;</value>
   </data>
+  <data name="Menu_Plugins" xml:space="preserve">
+    <value>Plugins…</value>
+  </data>
+  <data name="Dlg_Plugins" xml:space="preserve">
+    <value>Plugins</value>
+  </data>
+  <data name="Msg_PluginsFolder0" xml:space="preserve">
+    <value>Plugin folder: {0}
+A plugin is a .dll in this folder or MyPlugin/MyPlugin.dll in a subfolder. Plugins are loaded at startup — restart the editor after adding or replacing one.</value>
+  </data>
+  <data name="Msg_NoPluginsLoaded" xml:space="preserve">
+    <value>No plugins loaded.</value>
+  </data>
+  <data name="Msg_PluginsValidationRules" xml:space="preserve">
+    <value>Validation rules (Edit → Validate project):</value>
+  </data>
+  <data name="Msg_PluginsPublishFormats" xml:space="preserve">
+    <value>Publication formats (Publish → Publish with a plugin…):</value>
+  </data>
+  <data name="Msg_PluginsAuthorCommands" xml:space="preserve">
+    <value>Author commands (Structure → Plugin command…):</value>
+  </data>
+  <data name="Msg_PluginLoadErrors" xml:space="preserve">
+    <value>Could not load:</value>
+  </data>
+  <data name="Msg_PluginsFailedToLoad0" xml:space="preserve">
+    <value>Plugins: {0} could not be loaded — see Help → Plugins…</value>
+  </data>
 </root>

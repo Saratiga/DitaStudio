@@ -118,6 +118,8 @@ li { margin: .3em 0; }
   h1 { page-break-before: always; }
   h1:first-of-type { page-break-before: avoid; }
   table, figure, pre { page-break-inside: avoid; }
+  /* На бумаге прокрутки нет: длинные строки кода переносятся, а не обрезаются краем листа. */
+  pre, .codeblock, .screen, .msgblock, .pre { white-space: pre-wrap; overflow-wrap: anywhere; overflow: visible; }
   /* Ставится через outputclass="page-break-before" на заголовке (title) —
      заголовок при конвертации в PDF/печати начинается с новой страницы. */
   .page-break-before { page-break-before: always; break-before: page; }

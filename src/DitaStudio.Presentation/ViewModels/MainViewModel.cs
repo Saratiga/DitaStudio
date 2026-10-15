@@ -14,7 +14,9 @@ namespace DitaStudio.Presentation.ViewModels;
 public partial class MainViewModel : ObservableObject, IShellState
 {
     [ObservableProperty]
-    private string statusText = Loc.T("Msg_Ready");
+    private string statusText = Plugins.PluginRegistry.Warnings.Count > 0
+        ? Loc.T("Msg_PluginsFailedToLoad0", Plugins.PluginRegistry.Warnings.Count) // подробности — «Справка → Плагины…»
+        : Loc.T("Msg_Ready");
 
     // Заголовок окна: «DITA Studio» или «DITA Studio — проект».
     [ObservableProperty]

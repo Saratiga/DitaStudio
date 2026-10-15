@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="author-command" xml:lang="ru-RU">
+  <title>Команда режима «Автор»</title>
+  <shortdesc>Класс с интерфейсом IAuthorCommandPlugin получает открытый документ и меняет его: правит текст, вставляет элементы, работает с элементом под курсором. Отмена — одним шагом.</shortdesc>
+  <taskbody>
+    <context>
+      <p>Пользователь открывает документ и выбирает
+        <menucascade><uicontrol>Структура</uicontrol><uicontrol>Команда плагина…</uicontrol></menucascade>. Редактор переносит в
+        модель недописанный ввод, вызывает <codeph>Execute</codeph>, а затем сам помечает документ изменённым, перестраивает
+        «Автор» и панель атрибутов и пишет в строке состояния «Команда плагина … выполнена».</p>
+      <fig><title>Выбор команды плагина</title><image href="../images/screens/plugin-command-picker.png" placement="break"><alt>Окно «Выберите команду» со строкой «Пример: типографские кавычки «»»</alt></image></fig>
+    </context>
+    <steps>
+      <step>
+        <cmd>Добавьте в проект ссылку на <filepath>DitaStudio.Presentation.dll</filepath> (с <codeph>Private=false</codeph>) и
+          создайте класс, реализующий <codeph>IAuthorCommandPlugin</codeph>.</cmd>
+      </step>
+      <step>
+        <cmd>Первым делом в <codeph>Execute</codeph> вызовите <codeph>pane.PushUndo(Name)</codeph>.</cmd>
+        <info><p>Это снимок документа до правки: пункт «Отменить структурное изменение» (<shortcut>Ctrl+Alt+Z</shortcut>) вернёт
+          документ одним шагом. Без снимка правку плагина не отменить.</p></info>
+      </step>
+      <step>
+        <cmd>Меняйте модель: <codeph>pane.Document</codeph> (всё дерево) или <codeph>pane.Author.CurrentNode</codeph>
+          (элемент под курсором).</cmd>
+        <info>
+          <p>Узлы правятся методами <codeph>DitaNode</codeph>: <codeph>Value</codeph> текстового узла,
+            <codeph>SetAttribute</codeph>, <codeph>Add</codeph>/<codeph>Insert</codeph>/<codeph>RemoveSelf</codeph>,
+            <codeph>DitaNode.Element("p")</codeph> и <codeph>DitaNode.Text("…")</codeph> для новых узлов. Готовые структурные
+            операции «Автора» — через <codeph>pane.Author</codeph>: <codeph>InsertElement</codeph>,
+            <codeph>WrapCurrentInline</codeph>, <codeph>MoveCurrent</codeph>, <codeph>DeleteCurrent</codeph> (см.
+            <xref href="../reference/api-author.dita">Документ в «Авторе»</xref>).</p>
+          <note type="important">Редактор не проверяет результат по контент-модели DITA, как делает при правке руками. Вставляйте
+            только допустимые элементы и проверяйте результат (<shortcut>F7</shortcut>) — например, в тестах плагина.</note>
+        </info>
+      </step>
+      <step>
+        <cmd>Если нужно показать элемент, вызовите <codeph>pane.FocusNode(node)</codeph>.</cmd>
+        <info><p>Курсор встанет в блок с этим элементом; <codeph>false</codeph> — элемент в «Авторе» не показывается (например,
+          в прологе).</p></info>
+      </step>
+    </steps>
+    <result>
+      <p>Пример — команда «Типографские кавычки»: прямые кавычки во всём документе становятся «ёлочками», код не трогается.</p>
+      <codeblock outputclass="language-csharp">using System.Text;
+using DitaStudio.Core.Model;
+using DitaStudio.Presentation.Plugins;
+using DitaStudio.Presentation.Services;
+
+namespace DitaStudio.SamplePlugins;
+
+/// &lt;summary&gt;
+/// Команда режима «Автор»: прямые кавычки "…" во всём открытом документе заменяются «ёлочками». Код, имена файлов и команд не трогаются.
+/// Показывает главное для команды: снимок для отмены до правки (&lt;see cref="IDocumentView.PushUndo"/&gt;), правку модели документа и
+/// что редактор делает после команды сам (помечает документ изменённым и перестраивает «Автор»).
+/// &lt;/summary&gt;
+public sealed class TypographicQuotesCommand : IAuthorCommandPlugin
+{
+    private static readonly HashSet&lt;string&gt; CodeElements = new(StringComparer.Ordinal)
+    {
+        "codeph", "codeblock", "pre", "screen", "filepath", "cmdname", "varname", "parmname", "apiname", "userinput", "systemoutput", "msgph"
+    };
+
+    public string Name =&gt; "Пример: типографские кавычки «»";
+
+    /// &lt;summary&gt;Сколько кавычек заменено при последнем запуске (для тестов и отладки).&lt;/summary&gt;
+    public int LastReplaced { get; private set; }
+
+    public void Execute(IDocumentView pane)
+    {
+        // Снимок ДО правки: «Отменить структурное изменение» (Ctrl+Alt+Z) вернёт документ одним шагом.
+        pane.PushUndo(Name);
+
+        LastReplaced = 0;
+        var previous = ' '; // символ перед кавычкой — по нему видно, открывающая она или закрывающая
+        foreach (var text in pane.Document.Root.Descendants().Where(n =&gt; n.Kind == NodeKind.Text).ToList())
+        {
+            if (text.Ancestors().Any(a =&gt; CodeElements.Contains(a.Name)))
+            {
+                previous = 'x';
+                continue;
+            }
+
+            var sb = new StringBuilder(text.Value.Length);
+            foreach (var c in text.Value)
+            {
+                if (c == '"')
+                {
+                    // После пробела, начала текста или открывающей скобки — открывающая, иначе закрывающая.
+                    sb.Append(char.IsWhiteSpace(previous) || previous is '(' or '[' or '«' ? '«' : '»');
+                    LastReplaced++;
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+
+                previous = c;
+            }
+
+            text.Value = sb.ToString();
+        }
+
+        // Ничего больше делать не нужно: после Execute редактор помечает документ изменённым, перестраивает «Автор» и пишет
+        // в строке состояния «Команда плагина … выполнена». Сообщить пользователю что-то своё плагин может исключением —
+        // его текст редактор покажет в окне (так делают с ошибками, а не с обычным итогом).
+    }
+}</codeblock>
+    </result>
+  </taskbody>
+</task>

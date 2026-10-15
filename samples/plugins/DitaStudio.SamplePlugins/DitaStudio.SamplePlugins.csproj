@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Пример плагинов DITA Studio — по одному каждого вида (правила проверки, формат публикации, команда «Автора»).
+       Разобран в руководстве «Создание плагинов DITA Studio» (samples/DitaStudioPluginGuide, docs/guides/DitaStudio-Plugin-Guide.pdf).
+
+       Сборка: dotnet build -c Release. Установка: скопируйте bin/Release/net8.0/DitaStudio.SamplePlugins.dll
+       в папку plugins/DitaStudio.SamplePlugins/ рядом с DitaStudio.Desktop.exe и перезапустите редактор. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>DitaStudio.SamplePlugins</RootNamespace>
+    <!-- В вывод — только сборка плагина. -->
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <!-- Только прямые ссылки: зависимости хоста (DitaStudio.Docx и др.) в вывод плагина не попадают. -->
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+    <!-- Где лежат исходники редактора (в репозитории) и сама программа (в архиве выпуска пример лежит в samples/plugins/ рядом с ней). -->
+    <DitaStudioSources>$(MSBuildThisFileDirectory)..\..\..\src\</DitaStudioSources>
+    <DitaStudioDir Condition="'$(DitaStudioDir)' == ''">$(MSBuildThisFileDirectory)..\..\..\</DitaStudioDir>
+  </PropertyGroup>
+
+  <!-- Private="false": DitaStudio.Core.dll и DitaStudio.Presentation.dll НЕ копируются в вывод плагина, иначе плагин получит свою копию
+       контрактов, и редактор его не увидит («тот же интерфейс, но другая сборка»). -->
+
+  <!-- В репозитории — ссылки на исходники редактора. -->
+  <ItemGroup Condition="Exists('$(DitaStudioSources)DitaStudio.Core\DitaStudio.Core.csproj')">
+    <ProjectReference Include="$(DitaStudioSources)DitaStudio.Core\DitaStudio.Core.csproj" Private="false" />
+    <ProjectReference Include="$(DitaStudioSources)DitaStudio.Presentation\DitaStudio.Presentation.csproj" Private="false" />
+  </ItemGroup>
+
+  <!-- Вне репозитория — сборки установленной программы. Другая папка: dotnet build -p:DitaStudioDir=C:\Programs\DitaStudio\ -->
+  <ItemGroup Condition="!Exists('$(DitaStudioSources)DitaStudio.Core\DitaStudio.Core.csproj')">
+    <Reference Include="DitaStudio.Core">
+      <HintPath>$(DitaStudioDir)DitaStudio.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="DitaStudio.Presentation">
+      <HintPath>$(DitaStudioDir)DitaStudio.Presentation.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

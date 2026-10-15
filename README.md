@@ -257,10 +257,13 @@ dotnet test tests\DitaStudio.Tests --settings tests\DitaStudio.Tests\coverage.ru
   шпаргалка элементов, «если что-то не получается», словарик;
 - **«Руководство пользователя DITA Studio»** (`DitaStudio-User-Guide.pdf`) — для знающих DITA: режим
   «Автор», таблицы, ключи, условия и `.ditaval`, оформление DOCX через CSS и шаблон, рецензирование,
-  XLIFF, плагины и специализации.
+  XLIFF, плагины и специализации;
+- **«Создание плагинов DITA Studio»** (`DitaStudio-Plugin-Guide.pdf`) — для разработчиков на .NET: проект плагина,
+  установка и проверка, правила проверки, форматы публикации и команды «Автора» с примерами, справочник API, отладка,
+  тесты, распространение, неполадки. Пример всех трёх видов — `samples/plugins/DitaStudio.SamplePlugins`.
 
-Оба руководства — DITA-проекты (`samples/DitaStudioBeginnerGuide`, `samples/DitaStudioGuide`): их
-можно открыть в редакторе как живой пример.
+Все руководства — DITA-проекты (`samples/DitaStudioBeginnerGuide`, `samples/DitaStudioGuide`,
+`samples/DitaStudioPluginGuide`): их можно открыть в редакторе как живой пример.
 
 1. **Файл → Открыть папку проекта** и выберите `samples\DitaStudioGuide` — руководство
    пользователя по самому DITA Studio, оформленное как DITA-проект (заодно демонстрирует
@@ -334,7 +337,9 @@ tests/TestPlugin/               пример плагина
 samples/GuideSample/            небольшой учебный DITA-проект
 samples/DitaStudioGuide/        руководство пользователя по DITA Studio (для знающих DITA), DITA-проект
 samples/DitaStudioBeginnerGuide/ руководство «DITA Studio для начинающих», DITA-проект
-docs/guides/                    оба руководства в PDF и DOCX
+samples/DitaStudioPluginGuide/  руководство «Создание плагинов DITA Studio», DITA-проект
+samples/plugins/                пример плагинов всех трёх видов (DitaStudio.SamplePlugins)
+docs/guides/                    руководства в PDF и DOCX
 docs/TESTPLAN.md                чек-лист функционального тестирования
 ```
 

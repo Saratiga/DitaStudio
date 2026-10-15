@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="overview" xml:lang="ru-RU">
+  <title>Что такое плагин</title>
+  <shortdesc>Плагин — библиотека .NET, которая добавляет в <keyword keyref="product-name"/> правила проверки, форматы публикации или команды режима «Автор». Редактор подхватывает её при запуске, исходный код редактора менять не нужно.</shortdesc>
+  <conbody>
+    <p>Плагин нужен, когда в команде есть свои правила, которых нет во встроенных: словарь стиля, требования заказчика к
+      структуре, свой формат выдачи (вики, база знаний, система поддержки), повторяющаяся правка текста. Плагин пишется на C# (или
+      любом языке .NET), собирается в <filepath>.dll</filepath> и кладётся в папку <filepath>plugins</filepath> рядом с программой.</p>
+
+    <table>
+      <title>Три вида плагинов</title>
+      <tgroup cols="3">
+        <colspec colname="c1" colwidth="3*"/>
+        <colspec colname="c2" colwidth="4*"/>
+        <colspec colname="c3" colwidth="5*"/>
+        <thead>
+          <row><entry>Вид и интерфейс</entry><entry>Где появляется</entry><entry>Что получает и что делает</entry></row>
+        </thead>
+        <tbody>
+          <row>
+            <entry><p>Правило проверки</p><p><codeph>IValidationRulePlugin</codeph></p></entry>
+            <entry><menucascade><uicontrol>Правка</uicontrol><uicontrol>Проверить проект</uicontrol></menucascade>
+              (<shortcut>F7</shortcut>) и «Проверить документ» — замечания на вкладке <uicontrol>Проверка</uicontrol></entry>
+            <entry>Документ (<codeph>DitaDocument</codeph>); возвращает список замечаний с уровнем, текстом и элементом</entry>
+          </row>
+          <row>
+            <entry><p>Формат публикации</p><p><codeph>IPublishFormatPlugin</codeph></p></entry>
+            <entry><menucascade><uicontrol>Публикация</uicontrol><uicontrol>Публикация плагином…</uicontrol></menucascade></entry>
+            <entry>Проект, карту, условия сборки и путь к файлу результата; записывает результат</entry>
+          </row>
+          <row>
+            <entry><p>Команда «Автора»</p><p><codeph>IAuthorCommandPlugin</codeph></p></entry>
+            <entry><menucascade><uicontrol>Структура</uicontrol><uicontrol>Команда плагина…</uicontrol></menucascade></entry>
+            <entry>Открытый документ (<codeph>IDocumentView</codeph>): текст, курсор, отмена; меняет документ</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+
+    <p>Одна <filepath>.dll</filepath> может содержать сколько угодно плагинов любых видов: каждый — отдельный открытый класс.
+      Если плагинов одного вида несколько, редактор показывает список и предлагает выбрать.</p>
+
+    <section>
+      <title>Что нужно знать заранее</title>
+      <ul>
+        <li><b>.NET 8 и C#.</b> Плагин — библиотека классов <codeph>net8.0</codeph>. Подойдёт Visual Studio, Rider, VS Code или
+          просто <cmdname>dotnet</cmdname> из командной строки.</li>
+        <li><b>Немного DITA.</b> Плагин работает с деревом элементов документа: <codeph>topic</codeph>,
+          <codeph>p</codeph>, <codeph>step</codeph>… Хватит знаний из руководства пользователя.</li>
+        <li><b>Загрузка — при запуске.</b> Плагины читаются один раз, когда запускается редактор. Новый или пересобранный
+          плагин начинает работать после перезапуска.</li>
+      </ul>
+    </section>
+
+    <section>
+      <title>Безопасность</title>
+      <p>Плагин — обычный код, он выполняется с правами пользователя: может читать и писать файлы, обращаться к сети. Ставьте
+        только плагины, которым доверяете, лучше — собранные из исходников вашей команды. Ошибка внутри плагина не закрывает
+        редактор: она превращается в сообщение или замечание проверки.</p>
+    </section>
+
+    <section>
+      <title>Пример к руководству</title>
+      <p>Все примеры собраны в проекте <filepath>samples/plugins/DitaStudio.SamplePlugins</filepath> репозитория: два правила
+        проверки, экспорт в Markdown и команда «Типографские кавычки». Его можно собрать, установить и использовать как
+        заготовку своего плагина.</p>
+    </section>
+  </conbody>
+</concept>

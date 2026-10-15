@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="create-project" xml:lang="ru-RU">
+  <title>Создаём проект плагина</title>
+  <shortdesc>Библиотека классов .NET 8 со ссылками на сборки установленного редактора — без копирования их в вывод плагина.</shortdesc>
+  <taskbody>
+    <prereq>
+      <p>Установлены .NET 8 SDK (<cmdname>dotnet --version</cmdname> показывает 8.x или новее) и <keyword keyref="product-name"/> — например, в
+        <filepath>C:\Programs\DitaStudio</filepath>. В папке программы лежат <filepath>DitaStudio.Core.dll</filepath> и
+        <filepath>DitaStudio.Presentation.dll</filepath> — на них и ссылается плагин.</p>
+    </prereq>
+    <steps>
+      <step>
+        <cmd>Создайте библиотеку классов.</cmd>
+        <stepxmp><codeblock outputclass="language-shell">dotnet new classlib -n CompanyRules -f net8.0
+cd CompanyRules</codeblock></stepxmp>
+        <info><p>Имя проекта станет именем сборки и папки плагина: <filepath>plugins/CompanyRules/CompanyRules.dll</filepath>.</p></info>
+      </step>
+      <step>
+        <cmd>Замените содержимое <filepath>CompanyRules.csproj</filepath>.</cmd>
+        <stepxmp><codeblock outputclass="language-xml">&lt;Project Sdk="Microsoft.NET.Sdk"&gt;
+
+  &lt;PropertyGroup&gt;
+    &lt;TargetFramework&gt;net8.0&lt;/TargetFramework&gt;
+    &lt;ImplicitUsings&gt;enable&lt;/ImplicitUsings&gt;
+    &lt;Nullable&gt;enable&lt;/Nullable&gt;
+    &lt;!-- В вывод — только сборка плагина. --&gt;
+    &lt;CopyLocalLockFileAssemblies&gt;false&lt;/CopyLocalLockFileAssemblies&gt;
+    &lt;!-- Папка установленного редактора: ссылки на его сборки и установка плагина после сборки. --&gt;
+    &lt;DitaStudioDir&gt;C:\Programs\DitaStudio&lt;/DitaStudioDir&gt;
+  &lt;/PropertyGroup&gt;
+
+  &lt;ItemGroup&gt;
+    &lt;!-- Private=false: сборки редактора НЕ копируются в вывод плагина. --&gt;
+    &lt;Reference Include="DitaStudio.Core"&gt;
+      &lt;HintPath&gt;$(DitaStudioDir)\DitaStudio.Core.dll&lt;/HintPath&gt;
+      &lt;Private&gt;false&lt;/Private&gt;
+    &lt;/Reference&gt;
+    &lt;!-- Нужна только командам «Автора» (IAuthorCommandPlugin, IDocumentView). --&gt;
+    &lt;Reference Include="DitaStudio.Presentation"&gt;
+      &lt;HintPath&gt;$(DitaStudioDir)\DitaStudio.Presentation.dll&lt;/HintPath&gt;
+      &lt;Private&gt;false&lt;/Private&gt;
+    &lt;/Reference&gt;
+  &lt;/ItemGroup&gt;
+
+  &lt;!-- После сборки — копия в plugins/&lt;Имя&gt;/ установленного редактора (перезапустите его). --&gt;
+  &lt;Target Name="InstallPlugin" AfterTargets="Build" Condition="Exists('$(DitaStudioDir)')"&gt;
+    &lt;Copy SourceFiles="$(TargetPath)" DestinationFolder="$(DitaStudioDir)\plugins\$(AssemblyName)" /&gt;
+  &lt;/Target&gt;
+
+&lt;/Project&gt;</codeblock></stepxmp>
+        <info>
+          <p>Что здесь важно:</p>
+          <ul>
+            <li><codeph>Private=false</codeph> у ссылок на сборки редактора — их не должно быть в выводе плагина (см.
+              <xref href="../concepts/loading.dita">Как редактор загружает плагины</xref>);</li>
+            <li><codeph>DitaStudioDir</codeph> — папка установленного редактора; поменяйте на свою;</li>
+            <li>цель <codeph>InstallPlugin</codeph> после каждой сборки кладёт плагин в
+              <filepath>plugins/CompanyRules/</filepath> — остаётся перезапустить редактор.</li>
+          </ul>
+          <p>Ссылка на <filepath>DitaStudio.Presentation.dll</filepath> нужна только для команд «Автора»; правилам проверки и
+            форматам публикации хватает <filepath>DitaStudio.Core.dll</filepath>.</p>
+        </info>
+      </step>
+      <step>
+        <cmd>Удалите заготовку <filepath>Class1.cs</filepath> и добавьте класс плагина.</cmd>
+        <info><p>Как написать каждый вид — в следующих главах. Для пробы годится правило из главы
+          <xref href="validation-rule.dita">Правило проверки</xref>.</p></info>
+      </step>
+      <step>
+        <cmd>Соберите проект.</cmd>
+        <stepxmp><codeblock outputclass="language-shell">dotnet build -c Release</codeblock></stepxmp>
+        <stepresult><p>В <filepath>bin/Release/net8.0</filepath> — <filepath>CompanyRules.dll</filepath> (и
+          <filepath>.pdb</filepath>, <filepath>.deps.json</filepath>), но <b>нет</b> <filepath>DitaStudio.Core.dll</filepath>.
+          Если она там есть — ссылка поставлена без <codeph>Private=false</codeph>.</p></stepresult>
+      </step>
+    </steps>
+    <result>
+      <p>Проект готов. В репозитории редактора есть такой же проект с примерами всех трёх видов —
+        <filepath>samples/plugins/DitaStudio.SamplePlugins</filepath>. В репозитории он ссылается на исходники редактора, а в
+        архиве выпуска (папка <filepath>samples/plugins</filepath> рядом с программой) — на сборки самой программы и собирается
+        сразу: <cmdname>dotnet build -c Release</cmdname>.</p>
+    </result>
+  </taskbody>
+</task>

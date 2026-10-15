@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="project-files" xml:lang="ru-RU">
+  <title>Шаблоны файлов</title>
+  <shortdesc>Файл проекта плагина и заготовки классов всех трёх видов — для копирования.</shortdesc>
+  <refbody>
+    <section><title>CompanyRules.csproj</title><codeblock outputclass="language-xml">&lt;Project Sdk="Microsoft.NET.Sdk"&gt;
+
+  &lt;PropertyGroup&gt;
+    &lt;TargetFramework&gt;net8.0&lt;/TargetFramework&gt;
+    &lt;ImplicitUsings&gt;enable&lt;/ImplicitUsings&gt;
+    &lt;Nullable&gt;enable&lt;/Nullable&gt;
+    &lt;!-- В вывод — только сборка плагина. --&gt;
+    &lt;CopyLocalLockFileAssemblies&gt;false&lt;/CopyLocalLockFileAssemblies&gt;
+    &lt;!-- Папка установленного редактора: ссылки на его сборки и установка плагина после сборки. --&gt;
+    &lt;DitaStudioDir&gt;C:\Programs\DitaStudio&lt;/DitaStudioDir&gt;
+  &lt;/PropertyGroup&gt;
+
+  &lt;ItemGroup&gt;
+    &lt;!-- Private=false: сборки редактора НЕ копируются в вывод плагина. --&gt;
+    &lt;Reference Include="DitaStudio.Core"&gt;
+      &lt;HintPath&gt;$(DitaStudioDir)\DitaStudio.Core.dll&lt;/HintPath&gt;
+      &lt;Private&gt;false&lt;/Private&gt;
+    &lt;/Reference&gt;
+    &lt;!-- Нужна только командам «Автора» (IAuthorCommandPlugin, IDocumentView). --&gt;
+    &lt;Reference Include="DitaStudio.Presentation"&gt;
+      &lt;HintPath&gt;$(DitaStudioDir)\DitaStudio.Presentation.dll&lt;/HintPath&gt;
+      &lt;Private&gt;false&lt;/Private&gt;
+    &lt;/Reference&gt;
+  &lt;/ItemGroup&gt;
+
+  &lt;!-- После сборки — копия в plugins/&lt;Имя&gt;/ установленного редактора (перезапустите его). --&gt;
+  &lt;Target Name="InstallPlugin" AfterTargets="Build" Condition="Exists('$(DitaStudioDir)')"&gt;
+    &lt;Copy SourceFiles="$(TargetPath)" DestinationFolder="$(DitaStudioDir)\plugins\$(AssemblyName)" /&gt;
+  &lt;/Target&gt;
+
+&lt;/Project&gt;</codeblock></section>
+    <section><title>Правило проверки</title><codeblock outputclass="language-csharp">using DitaStudio.Core.Model;
+using DitaStudio.Core.Validation;
+
+namespace CompanyRules;
+
+public sealed class NoTodoRule : IValidationRulePlugin
+{
+    public string Name =&gt; "Нет пометок TODO";
+
+    public IEnumerable&lt;ValidationIssue&gt; Check(DitaDocument document)
+    {
+        foreach (var node in document.Root.DescendantsAndSelf())
+        {
+            if (node.Kind == NodeKind.Text &amp;&amp; node.Value.Contains("TODO", StringComparison.Ordinal))
+            {
+                yield return new ValidationIssue(IssueSeverity.Error,
+                    "В тексте осталась пометка TODO", node.Parent, document.FilePath);
+            }
+        }
+    }
+}</codeblock></section>
+    <section><title>Формат публикации</title><codeblock outputclass="language-csharp">using System.Text;
+using DitaStudio.Core.IO;
+using DitaStudio.Core.Project;
+using DitaStudio.Core.Publishing;
+
+namespace CompanyRules;
+
+public sealed class PlainTextFormat : IPublishFormatPlugin
+{
+    public string Name =&gt; "Простой текст";
+
+    public string FileExtension =&gt; "txt";
+
+    public void Publish(DitaProject project, string mapPath, PublishOptions options, string outputPath)
+    {
+        var tree = MapTree.Build(project, mapPath, node =&gt; PublishFilter.IsIncluded(node, options));
+        var sb = new StringBuilder();
+        foreach (var item in tree.PublicationOrderWithHeadings)
+        {
+            sb.AppendLine(item.Title.ToUpperInvariant());
+            if (item.TargetPath is not null)
+            {
+                var doc = RefResolver.ExpandConrefs(project, project.GetDocument(item.TargetPath));
+                sb.AppendLine(doc.Root.FirstElement("shortdesc")?.InnerText.Trim());
+            }
+
+            sb.AppendLine();
+        }
+
+        AtomicFile.WriteAllText(outputPath, sb.ToString(), new UTF8Encoding(false));
+    }
+}</codeblock></section>
+    <section><title>Команда «Автора»</title><codeblock outputclass="language-csharp">using DitaStudio.Core.Model;
+using DitaStudio.Presentation.Plugins;
+using DitaStudio.Presentation.Services;
+
+namespace CompanyRules;
+
+public sealed class MarkDraftCommand : IAuthorCommandPlugin
+{
+    public string Name =&gt; "Пометить блок как черновик";
+
+    public void Execute(IDocumentView pane)
+    {
+        if (pane.Author.CurrentNode is not { } node)
+        {
+            throw new InvalidOperationException("Поставьте курсор в блок.");
+        }
+
+        pane.PushUndo(Name);
+        node.SetAttribute("status", "new");
+        node.SetAttribute("rev", "draft");
+    }
+}</codeblock></section>
+  </refbody>
+</reference>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="api-author" xml:lang="ru-RU">
+  <title>Документ в «Авторе»: IDocumentView</title>
+  <shortdesc>Интерфейс IAuthorCommandPlugin и вкладка документа IDocumentView с операциями режима «Автор» IAuthorSurface (DitaStudio.Presentation).</shortdesc>
+  <refbody>
+    <section><title>IAuthorCommandPlugin (DitaStudio.Presentation.Plugins)</title><codeblock outputclass="language-csharp">public interface IAuthorCommandPlugin
+{
+    string Name { get; }
+    void Execute(IDocumentView pane);
+}</codeblock></section>
+<table><title>IDocumentView (DitaStudio.Presentation.Services)</title><tgroup cols="2"><colspec colname="c1" colwidth="2*"/><colspec colname="c2" colwidth="5*"/><thead><row><entry>Член</entry><entry>Что даёт</entry></row></thead><tbody>
+<row><entry><codeph>Document</codeph></entry><entry>Модель документа (DitaDocument) — её и меняет команда</entry></row>
+<row><entry><codeph>FilePath</codeph>, <codeph>Title</codeph>, <codeph>IsDirty</codeph></entry><entry>Файл, заголовок вкладки, признак несохранённости</entry></row>
+<row><entry><codeph>Mode</codeph></entry><entry>Режим вкладки: Author, Source, Preview</entry></row>
+<row><entry><codeph>Author</codeph></entry><entry>Операции «Автора» (IAuthorSurface)</entry></row>
+<row><entry><codeph>PushUndo(description)</codeph></entry><entry>Снимок для отмены — до правки</entry></row>
+<row><entry><codeph>FocusNode(node)</codeph></entry><entry>Показать элемент и поставить в него курсор</entry></row>
+<row><entry><codeph>GoToSourceLine(line)</codeph></entry><entry>Перейти к строке исходного кода</entry></row>
+<row><entry><codeph>ReloadViews()</codeph></entry><entry>Перестроить все режимы из модели (редактор делает это и сам после команды)</entry></row>
+<row><entry><codeph>Save(out error)</codeph></entry><entry>Сохранить документ</entry></row>
+</tbody></tgroup></table>
+<table><title>IAuthorSurface: главное</title><tgroup cols="2"><colspec colname="c1" colwidth="3*"/><colspec colname="c2" colwidth="5*"/><thead><row><entry>Член</entry><entry>Что даёт</entry></row></thead><tbody>
+<row><entry><codeph>CurrentNode</codeph></entry><entry>Элемент под курсором</entry></row>
+<row><entry><codeph>HasTextSelection</codeph>, <codeph>HasCellSelection</codeph></entry><entry>Есть выделенный текст / выделены ячейки таблицы</entry></row>
+<row><entry><codeph>InsertElement(name)</codeph></entry><entry>Вставить элемент после текущего блока (по контент-модели)</entry></row>
+<row><entry><codeph>InsertInlineNode(node)</codeph></entry><entry>Вставить фразовый узел на место курсора</entry></row>
+<row><entry><codeph>WrapCurrentInline(name)</codeph>, <codeph>ToggleCurrentInline(name)</codeph></entry><entry>Обернуть выделение (b, codeph…) / снять оформление</entry></row>
+<row><entry><codeph>MoveCurrent(up)</codeph>, <codeph>DeleteCurrent()</codeph></entry><entry>Переставить и удалить текущий элемент</entry></row>
+<row><entry><codeph>ToggleCurrentOutputClass(name)</codeph></entry><entry>Класс в outputclass текущего элемента</entry></row>
+<row><entry><codeph>MarkCurrentInserted()</codeph>, <codeph>MarkCurrentDeleted()</codeph></entry><entry>Пометки правок status</entry></row>
+<row><entry><codeph>Rebuild()</codeph></entry><entry>Перестроить «Автор» из модели</entry></row>
+</tbody></tgroup></table>
+  </refbody>
+</reference>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="distribute" xml:lang="ru-RU">
+  <title>Распространение и обновление</title>
+  <shortdesc>Плагин передаётся папкой со сборкой; при обновлении редактора его стоит пересобрать с новыми сборками редактора и прогнать тесты.</shortdesc>
+  <taskbody>
+    <steps>
+      <step>
+        <cmd>Упакуйте подпапку плагина в архив.</cmd>
+        <info><p>В архиве — папка <filepath>CompanyRules</filepath> с <filepath>CompanyRules.dll</filepath> и, если есть,
+          зависимостями и <filepath>.deps.json</filepath>. Пользователь распаковывает её в <filepath>plugins</filepath> и
+          перезапускает редактор. Сборок редактора в архиве быть не должно.</p></info>
+      </step>
+      <step>
+        <cmd>Укажите в описании плагина версию <keyword keyref="product-name"/>, для которой он собран.</cmd>
+        <info><p>Задайте и версию самой сборки (<codeph>&lt;Version&gt;1.2.0&lt;/Version&gt;</codeph> в
+          <filepath>.csproj</filepath>) — по ней видно, какая сборка установлена.</p></info>
+      </step>
+      <step>
+        <cmd>После обновления редактора пересоберите плагин с новыми <filepath>DitaStudio.Core.dll</filepath> и
+          <filepath>DitaStudio.Presentation.dll</filepath> и прогоните тесты.</cmd>
+        <info><p>Интерфейсы плагинов меняются редко и стараются оставаться совместимыми, но классы ядра, которыми пользуется
+          плагин (<codeph>MapTree</codeph>, <codeph>PublishOptions</codeph>…), могут меняться между версиями. Ошибка вида
+          <msgph>Method not found</msgph> или <msgph>Could not load type</msgph> в окне «Плагины» или при запуске плагина —
+          признак того, что плагин собран для другой версии.</p></info>
+      </step>
+    </steps>
+    <result>
+      <p>Для команды удобно хранить плагины в одном репозитории с документацией и собирать их вместе с ней в CI: тесты
+        плагина заодно проверяют проект документации.</p>
+    </result>
+  </taskbody>
+</task>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE map PUBLIC "-//OASIS//DTD DITA Map//EN" "map.dtd">
+<map xml:lang="ru-RU">
+  <title>Создание плагинов DITA Studio</title>
+
+  <keydef keys="product-name">
+    <topicmeta>
+      <keywords>
+        <keyword>DITA Studio</keyword>
+      </keywords>
+    </topicmeta>
+  </keydef>
+
+  <topicref href="concepts/overview.dita"/>
+  <topicref href="concepts/loading.dita"/>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Первый плагин</navtitle>
+    </topicmeta>
+    <topicref href="tasks/create-project.dita"/>
+    <topicref href="tasks/install.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Три вида плагинов</navtitle>
+    </topicmeta>
+    <topicref href="tasks/validation-rule.dita"/>
+    <topicref href="tasks/publish-format.dita"/>
+    <topicref href="tasks/author-command.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Разработка и выпуск</navtitle>
+    </topicmeta>
+    <topicref href="tasks/debug-and-test.dita"/>
+    <topicref href="tasks/distribute.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Справочник API</navtitle>
+    </topicmeta>
+    <topicref href="reference/api-model.dita"/>
+    <topicref href="reference/api-validation.dita"/>
+    <topicref href="reference/api-publishing.dita"/>
+    <topicref href="reference/api-author.dita"/>
+    <topicref href="reference/project-files.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Если плагин не работает</navtitle>
+    </topicmeta>
+    <topicref href="troubleshooting/plugin-not-listed.dita"/>
+    <topicref href="troubleshooting/plugin-load-error.dita"/>
+    <topicref href="troubleshooting/plugin-failed.dita"/>
+  </topichead>
+</map>

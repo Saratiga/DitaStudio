@@ -4913,4 +4913,32 @@
   <data name="Author_RemoveFormatting0" xml:space="preserve">
     <value>Снятие оформления &lt;{0}&gt;</value>
   </data>
+  <data name="Menu_Plugins" xml:space="preserve">
+    <value>Плагины…</value>
+  </data>
+  <data name="Dlg_Plugins" xml:space="preserve">
+    <value>Плагины</value>
+  </data>
+  <data name="Msg_PluginsFolder0" xml:space="preserve">
+    <value>Папка плагинов: {0}
+Плагин — .dll в этой папке или MyPlugin/MyPlugin.dll в подпапке. Плагины загружаются при запуске — после добавления или замены перезапустите редактор.</value>
+  </data>
+  <data name="Msg_NoPluginsLoaded" xml:space="preserve">
+    <value>Плагины не загружены.</value>
+  </data>
+  <data name="Msg_PluginsValidationRules" xml:space="preserve">
+    <value>Правила проверки (Правка → Проверить проект):</value>
+  </data>
+  <data name="Msg_PluginsPublishFormats" xml:space="preserve">
+    <value>Форматы публикации (Публикация → Публикация плагином…):</value>
+  </data>
+  <data name="Msg_PluginsAuthorCommands" xml:space="preserve">
+    <value>Команды «Автора» (Структура → Команда плагина…):</value>
+  </data>
+  <data name="Msg_PluginLoadErrors" xml:space="preserve">
+    <value>Не загрузились:</value>
+  </data>
+  <data name="Msg_PluginsFailedToLoad0" xml:space="preserve">
+    <value>Плагины: не загрузилось {0} — см. «Справка → Плагины…»</value>
+  </data>
 </root>

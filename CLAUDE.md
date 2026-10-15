@@ -69,12 +69,14 @@ CefGlue); логика окна — общие ViewModel'и `src/DitaStudio.Pres
 при добавлении/изменении функций: `README.md` (обзор, сборка, ограничения),
 `USAGE.md` (пошаговое руководство по всем пунктам меню), `samples/DitaStudioGuide`
 (руководство для знающих DITA как DITA-проект, новый топик добавить в `guide.ditamap`) и
-`samples/DitaStudioBeginnerGuide` (для начинающих: понятия DITA и уроки). Снимки экрана руководств —
+`samples/DitaStudioBeginnerGuide` (для начинающих: понятия DITA и уроки), а для разработчиков — `samples/DitaStudioPluginGuide`
+(плагины; при изменении контрактов плагинов, `PluginLoader` или API ядра, которым пользуются примеры, править его и
+`samples/plugins`). Снимки экрана руководств —
 `images/screens/*.png`, их делает `tests/DitaStudio.Desktop.Tests/GuideScreenshots.cs`
 (`DITASTUDIO_GUIDE_SHOTS=1`, настоящее окно на копии `samples/GuideSample`, пометки — красные рамки с номером);
 PDF и DOCX в `docs/guides` собирает `GuideBuild.cs` (`DITASTUDIO_GUIDE_BUILD=1`) — после правки руководств или
 интерфейса пересобрать снимки и руководства. Все три проекта
-из `samples/` проверяет тест `SampleProjectsTests`: ноль ошибок и предупреждений валидации,
+из `samples/` (DITA-проекты) проверяет тест `SampleProjectsTests`: ноль ошибок и предупреждений валидации,
 HTML и DOCX собираются без предупреждений (кроме SVG в DOCX: тест собирает без растеризатора) — после правки прогнать `dotnet test`. Чек-лист тестирования — `docs/TESTPLAN.md`.
 
 ## Устройство
@@ -113,7 +115,8 @@ tests/DitaStudio.Tests/  проверки ядра (xUnit)
 tests/DitaStudio.Desktop.Tests/ headless-тесты интерфейса (+ CefPreviewTests, MultiProjectTests)
 tests/TestPlugin/        пример плагина
 samples/GuideSample/     учебный DITA-проект
-samples/DitaStudioGuide/, samples/DitaStudioBeginnerGuide/  руководства (DITA), docs/guides — их PDF и DOCX
+samples/DitaStudioGuide/, samples/DitaStudioBeginnerGuide/, samples/DitaStudioPluginGuide/  руководства (DITA), docs/guides — PDF и DOCX
+samples/plugins/         пример плагинов (DitaStudio.SamplePlugins)
 ```
 
 Зависимости Avalonia-версии: **Avalonia 11.3**, **AvaloniaEdit** (исходный XML и редактор
@@ -242,7 +245,10 @@ Svg.Skia тянет SkiaSharp 3/4 и ломает отрисовку). Ядро 
 через возврат `null` из `Load`, откатываясь на уже загруженную в хосте сборку —
 иначе `typeof(T).IsAssignableFrom(type)` не сработает через границу сборки. Автор
 плагина ссылается на `DitaStudio.Core.dll`/`DitaStudio.Presentation.dll` с `Private=false`
-(не копировать в свой вывод) — см. `tests/TestPlugin` как пример.
+(не копировать в свой вывод) — см. `tests/TestPlugin` и `samples/plugins/DitaStudio.SamplePlugins` (пример всех трёх видов
+из руководства `samples/DitaStudioPluginGuide`; его проверяет `SamplePluginTests` — код руководства должен оставаться
+рабочим). Сборки плагинов — `PluginLoader.PluginFiles`: `.dll` в `plugins/` и `plugins/<Имя>/<Имя>.dll` (остальные `.dll`
+подпапки — зависимости). «Справка → Плагины…» — `HelpViewModel.PluginReport` (`PluginRegistry.All`, `Warnings`).
 
 Три контракта: `IValidationRulePlugin` (Core/Validation, доп. правила стиля —
 `DitaProject.ValidateAll(plugins)`), `IPublishFormatPlugin` (Core/Publishing, свой

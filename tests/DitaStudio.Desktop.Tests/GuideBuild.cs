@@ -7,7 +7,7 @@ using Xunit;
 namespace DitaStudio.Desktop.Tests;
 
 /// <summary>
-/// Сборка руководств пользователя в PDF и DOCX (docs/guides) из samples/DitaStudioBeginnerGuide и samples/DitaStudioGuide — тем же
+/// Сборка руководств пользователя в PDF и DOCX (docs/guides) из samples/DitaStudioBeginnerGuide, samples/DitaStudioGuide и samples/DitaStudioPluginGuide — тем же
 /// кодом, что и команды «Публикация» редактора: единый HTML печатается в PDF установленным Edge/Chrome, DOCX — со снимками
 /// SVG, растеризованными Skia. Обычный прогон тестов её пропускает, сборка — только с переменной окружения
 /// <c>DITASTUDIO_GUIDE_BUILD=1</c>:
@@ -28,6 +28,7 @@ public sealed class GuideBuild
         Directory.CreateDirectory(target);
         Build(Path.Combine(root, "samples", "DitaStudioBeginnerGuide"), Path.Combine(target, "DitaStudio-Beginner-Guide"));
         Build(Path.Combine(root, "samples", "DitaStudioGuide"), Path.Combine(target, "DitaStudio-User-Guide"));
+        Build(Path.Combine(root, "samples", "DitaStudioPluginGuide"), Path.Combine(target, "DitaStudio-Plugin-Guide"));
     }
 
     private static void Build(string projectRoot, string outputBase)

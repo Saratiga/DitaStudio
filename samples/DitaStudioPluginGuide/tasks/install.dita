@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="install" xml:lang="ru-RU">
+  <title>Устанавливаем и проверяем плагин</title>
+  <shortdesc>Плагин копируется в папку plugins рядом с программой, редактор перезапускается, а окно «Справка → Плагины…» показывает, что он загрузился.</shortdesc>
+  <taskbody>
+    <steps>
+      <step>
+        <cmd>Закройте <keyword keyref="product-name"/>.</cmd>
+        <info><p>Запущенный редактор держит загруженные сборки плагинов открытыми: заменить файл не получится, а новый не
+          подхватится до перезапуска.</p></info>
+      </step>
+      <step>
+        <cmd>Скопируйте сборку плагина в <filepath>plugins/&lt;Имя плагина&gt;/</filepath> рядом с программой.</cmd>
+        <stepxmp><codeblock outputclass="language-shell">mkdir "C:\Programs\DitaStudio\plugins\CompanyRules"
+copy bin\Release\net8.0\CompanyRules.dll "C:\Programs\DitaStudio\plugins\CompanyRules\"</codeblock></stepxmp>
+        <info><p>У плагина есть свои зависимости (библиотеки NuGet)? Скопируйте в ту же подпапку весь вывод сборки, кроме
+          сборок редактора. Цель <codeph>InstallPlugin</codeph> из шаблона проекта делает копирование сама.</p></info>
+      </step>
+      <step>
+        <cmd>Запустите редактор и откройте
+          <menucascade><uicontrol>Справка</uicontrol><uicontrol>Плагины…</uicontrol></menucascade></cmd>
+        <stepresult>
+          <p>Плагин — в списке своего вида, рядом с ним — имя файла сборки.</p>
+          <fig><title>Загруженные плагины</title><image href="../images/screens/plugins-dialog.png" placement="break"><alt>Окно «Плагины» с двумя правилами проверки, форматом Markdown и командой «Типографские кавычки» из DitaStudio.SamplePlugins.dll</alt></image></fig>
+        </stepresult>
+      </step>
+      <step>
+        <cmd>Запустите плагин там, где он появляется.</cmd>
+        <choicetable>
+          <chhead><choptionhd>Вид</choptionhd><chdeschd>Как запустить</chdeschd></chhead>
+          <chrow><choption>Правило проверки</choption><chdesc><shortcut>F7</shortcut> — замечания плагина на вкладке
+            <uicontrol>Проверка</uicontrol> вместе со встроенными</chdesc></chrow>
+          <chrow><choption>Формат публикации</choption><chdesc>выберите карту на вкладке <uicontrol>Карта</uicontrol>, затем
+            <menucascade><uicontrol>Публикация</uicontrol><uicontrol>Публикация плагином…</uicontrol></menucascade></chdesc></chrow>
+          <chrow><choption>Команда «Автора»</choption><chdesc>откройте документ, затем
+            <menucascade><uicontrol>Структура</uicontrol><uicontrol>Команда плагина…</uicontrol></menucascade></chdesc></chrow>
+        </choicetable>
+      </step>
+    </steps>
+    <result>
+      <p>Чтобы удалить плагин, закройте редактор и удалите его подпапку из <filepath>plugins</filepath>.</p>
+    </result>
+  </taskbody>
+</task>

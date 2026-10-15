@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE troubleshooting PUBLIC "-//OASIS//DTD DITA Troubleshooting//EN" "troubleshooting.dtd">
+<troubleshooting id="plugin-failed" xml:lang="ru-RU">
+  <title>Плагин падает при работе</title>
+  <shortdesc>Плагин загрузился, но при проверке, публикации или команде появляется «Плагин … упал».</shortdesc>
+  <troublebody>
+    <condition>
+      <p>Правило проверки: на вкладке <uicontrol>Проверка</uicontrol> — предупреждение «Плагин … упал при проверке» с текстом
+        исключения. Формат публикации или команда: окно «Плагин … упал: …».</p>
+    </condition>
+    <troubleSolution>
+      <cause><p>Плагин не ожидал такого документа: нет нужного элемента (<codeph>FirstElement</codeph> вернул null), пустой
+        атрибут, документ — карта, а не топик, или <codeph>FilePath</codeph> равен null у документа, открытого не из файла.</p></cause>
+      <remedy>
+        <title>Найти и исправить место</title>
+        <steps>
+          <step><cmd>Повторите действие с подключённым отладчиком (см. <xref href="../tasks/debug-and-test.dita">Отладка и
+            тесты</xref>) и включите остановку на исключениях.</cmd></step>
+          <step><cmd>Добавьте проверки на null и тест на документ, на котором плагин падал.</cmd></step>
+        </steps>
+      </remedy>
+    </troubleSolution>
+  </troublebody>
+</troubleshooting>

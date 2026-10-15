@@ -16,6 +16,7 @@ public sealed record PluginLoadResult<T>(IReadOnlyList<T> Instances, IReadOnlyLi
 /// null из Load — тогда рантайм откатывается к уже загруженной в хосте сборке, и типы совпадают
 /// (иначе typeof(T).IsAssignableFrom(type) не сработает: "тот же класс, но другая сборка").
 /// Сломанный/несовместимый плагин не должен ронять всё приложение — ошибки идут в Warnings.
+/// Где искать сборки — <see cref="PluginFiles"/>: в самой папке и по одной в подпапке с именем подпапки.
 /// </summary>
 public static class PluginLoader
 {
@@ -29,7 +30,7 @@ public static class PluginLoader
             return new PluginLoadResult<T>(instances, warnings);
         }
 
-        foreach (var dllPath in Directory.EnumerateFiles(pluginsDirectory, "*.dll"))
+        foreach (var dllPath in PluginFiles(pluginsDirectory))
         {
             try
             {
@@ -56,6 +57,33 @@ public static class PluginLoader
         }
 
         return new PluginLoadResult<T>(instances, warnings);
+    }
+
+    /// <summary>
+    /// Сборки плагинов в папке: каждая .dll в самой папке и по одной в каждой подпапке — с именем подпапки
+    /// (<c>plugins/MyRules/MyRules.dll</c>). Подпапка — место для плагина с собственными зависимостями: его NuGet-библиотеки
+    /// лежат рядом с ним, но плагинами не считаются (их находит <see cref="AssemblyDependencyResolver"/> по <c>.deps.json</c>).
+    /// </summary>
+    public static IEnumerable<string> PluginFiles(string pluginsDirectory)
+    {
+        if (!Directory.Exists(pluginsDirectory))
+        {
+            yield break;
+        }
+
+        foreach (var dll in Directory.EnumerateFiles(pluginsDirectory, "*.dll").OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+        {
+            yield return dll;
+        }
+
+        foreach (var folder in Directory.EnumerateDirectories(pluginsDirectory).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+        {
+            var main = Path.Combine(folder, Path.GetFileName(folder) + ".dll");
+            if (File.Exists(main))
+            {
+                yield return main;
+            }
+        }
     }
 
     private sealed class PluginLoadContext : AssemblyLoadContext

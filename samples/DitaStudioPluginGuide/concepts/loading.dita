@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="loading" xml:lang="ru-RU">
+  <title>Как редактор загружает плагины</title>
+  <shortdesc>Где редактор ищет сборки, какие классы считает плагинами и почему ссылки на сборки редактора не копируются в вывод плагина.</shortdesc>
+  <conbody>
+    <p>При запуске <keyword keyref="product-name"/> просматривает папку <filepath>plugins</filepath> рядом со своим исполняемым файлом
+      (<filepath>DitaStudio.Desktop.exe</filepath> в Windows, <filepath>DitaStudio.Desktop</filepath> в Linux и macOS). Папка
+      создаётся при первом запуске.</p>
+
+    <section>
+      <title>Какие файлы считаются плагинами</title>
+      <ul>
+        <li>каждая <filepath>.dll</filepath> прямо в папке <filepath>plugins</filepath>;</li>
+        <li>в каждой подпапке — одна сборка с именем подпапки:
+          <filepath>plugins/MyRules/MyRules.dll</filepath>. Остальные <filepath>.dll</filepath> подпапки — зависимости плагина
+          (например, библиотеки NuGet), плагинами они не считаются.</li>
+      </ul>
+      <p>Подпапка — рекомендуемый способ: всё, что относится к плагину, лежит вместе, удаляется одной папкой, и библиотеки
+        разных плагинов не путаются.</p>
+      <codeblock outputclass="language-text">plugins/
+  DitaStudio.SamplePlugins/
+    DitaStudio.SamplePlugins.dll       плагин
+  CompanyRules/
+    CompanyRules.dll                   плагин
+    CompanyRules.deps.json             список зависимостей
+    YamlDotNet.dll                     зависимость, не плагин
+  QuickFix.dll                         простой плагин без зависимостей</codeblock>
+    </section>
+
+    <section>
+      <title>Какие классы становятся плагинами</title>
+      <p>В каждой сборке редактор ищет классы, которые:</p>
+      <ul>
+        <li>открытые (<codeph>public</codeph>) и не абстрактные;</li>
+        <li>реализуют один из интерфейсов плагинов;</li>
+        <li>имеют открытый конструктор без параметров — редактор создаёт экземпляр сам.</li>
+      </ul>
+      <p>Сборка просматривается трижды — по разу на каждый вид. Класс, реализующий два интерфейса, будет создан дважды, по
+        экземпляру на вид; храните общее состояние в статических полях, если оно нужно.</p>
+    </section>
+
+    <section>
+      <title>Свой контекст загрузки и общие интерфейсы</title>
+      <p>Каждая сборка плагина грузится в свой <codeph>AssemblyLoadContext</codeph>: у разных плагинов могут быть разные версии
+        одной и той же библиотеки. Но интерфейсы плагинов (<filepath>DitaStudio.Core.dll</filepath>,
+        <filepath>DitaStudio.Presentation.dll</filepath>) должны быть <b>те же самые</b>, что у редактора, иначе
+        <codeph>IValidationRulePlugin</codeph> плагина и редактора окажутся двумя разными типами с одинаковым именем, и плагин не
+        найдётся.</p>
+      <p>Поэтому в проекте плагина ссылки на сборки редактора ставятся с <codeph>Private=false</codeph> — они не копируются в вывод
+        плагина, и при загрузке плагин получает уже загруженные сборки редактора. Это главное правило; почти все случаи «плагин
+        не появился» — его нарушение (см. <xref href="../troubleshooting/plugin-not-listed.dita">Плагина нет в списке</xref>).</p>
+    </section>
+
+    <section>
+      <title>Как проверить, что загрузилось</title>
+      <p><menucascade><uicontrol>Справка</uicontrol><uicontrol>Плагины…</uicontrol></menucascade> показывает папку плагинов,
+        загруженные плагины по видам с именами файлов и сборки, которые не загрузились, — с причиной.</p>
+      <fig><title>Окно «Справка → Плагины…»</title><image href="../images/screens/plugins-dialog.png" placement="break"><alt>Папка плагинов C:\Programs\DitaStudio\plugins; правила проверки, форматы публикации и команды «Автора» из DitaStudio.SamplePlugins.dll</alt></image></fig>
+      <p>Если какая-то сборка не загрузилась, при запуске в строке состояния появляется «Плагины: не загрузилось N — см.
+        „Справка → Плагины…“».</p>
+    </section>
+
+    <section>
+      <title>Ошибки во время работы</title>
+      <p>Исключение из плагина не закрывает редактор:</p>
+      <ul>
+        <li>правило проверки — предупреждение «Плагин … упал при проверке» на вкладке <uicontrol>Проверка</uicontrol> для
+          каждого файла, на котором это случилось, остальные правила и файлы проверяются;</li>
+        <li>формат публикации и команда «Автора» — окно с текстом исключения, в журнале сборки — строка ошибки.</li>
+      </ul>
+    </section>
+  </conbody>
+</concept>

@@ -110,7 +110,9 @@ jobs:
         run: |
           mkdir -p publish/docs publish/samples
           cp docs/guides/* publish/docs/
-          cp -r samples/GuideSample samples/DitaStudioGuide samples/DitaStudioBeginnerGuide publish/samples/
+          cp -r samples/GuideSample samples/DitaStudioGuide samples/DitaStudioBeginnerGuide samples/DitaStudioPluginGuide publish/samples/
+          mkdir -p publish/samples/plugins
+          cp -r samples/plugins/DitaStudio.SamplePlugins publish/samples/plugins/
 
       - name: Архив (zip)
         if: matrix.archive == 'zip'
@@ -177,6 +179,6 @@ jobs:
 
           Предпросмотр и печать в PDF — встроенный Chromium. Если он не запустится, предпросмотр откроется внешним браузером, а PDF напечатается установленным Edge/Chrome.
 
-          В архиве рядом с программой — папка \`docs\` с руководствами пользователя в PDF и DOCX («DITA Studio для начинающих» и «Руководство пользователя» для знающих DITA) и папка \`samples\` с учебными проектами — их исходниками в DITA.
+          В архиве рядом с программой — папка \`docs\` с руководствами пользователя в PDF и DOCX («DITA Studio для начинающих», «Руководство пользователя» для знающих DITA и «Создание плагинов» для разработчиков) и папка \`samples\` с учебными проектами — их исходниками в DITA — и примером плагинов.
           EOF
           gh release create "$TAG" assets/* --draft --title "DITA Studio $TAG" --notes-file notes.md

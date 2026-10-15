@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="api-validation" xml:lang="ru-RU">
+  <title>Правила проверки: интерфейс и замечания</title>
+  <shortdesc>Интерфейс IValidationRulePlugin и класс замечания ValidationIssue.</shortdesc>
+  <refbody>
+    <section><title>IValidationRulePlugin (DitaStudio.Core.Validation)</title><codeblock outputclass="language-csharp">public interface IValidationRulePlugin
+{
+    string Name { get; }
+    IEnumerable&lt;ValidationIssue&gt; Check(DitaDocument document);
+}</codeblock></section>
+<table><title>ValidationIssue</title><tgroup cols="2"><colspec colname="c1" colwidth="2*"/><colspec colname="c2" colwidth="5*"/><thead><row><entry>Параметр конструктора</entry><entry>Что задаёт</entry></row></thead><tbody>
+<row><entry><codeph>IssueSeverity severity</codeph></entry><entry><codeph>Error</codeph>, <codeph>Warning</codeph> или <codeph>Info</codeph> — столбец «Уровень»</entry></row>
+<row><entry><codeph>string message</codeph></entry><entry>Текст замечания</entry></row>
+<row><entry><codeph>DitaNode? node</codeph></entry><entry>Элемент для перехода двойным щелчком и пути в столбце «Место»; null — без перехода</entry></row>
+<row><entry><codeph>string? filePath</codeph></entry><entry>Файл; при проверке проекта передавайте <codeph>document.FilePath</codeph></entry></row>
+</tbody></tgroup></table>
+  </refbody>
+</reference>

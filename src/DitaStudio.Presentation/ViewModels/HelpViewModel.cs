@@ -51,4 +51,53 @@ public partial class HelpViewModel : ObservableObject
 
     [RelayCommand]
     private Task About() => _ui.Dialogs.AboutAsync();
+
+    /// <summary>«Справка → Плагины…»: папка плагинов, загруженные плагины по видам и ошибки загрузки — проверка для автора плагина.</summary>
+    [RelayCommand]
+    private Task ShowPlugins() => _ui.Dialogs.MessageAsync(Loc.T("Dlg_Plugins"), PluginReport());
+
+    /// <summary>Текст окна «Плагины».</summary>
+    public static string PluginReport()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append(Loc.T("Msg_PluginsFolder0", Plugins.PluginRegistry.PluginsDirectory ?? "—")).Append("\n\n");
+        var all = Plugins.PluginRegistry.All.ToList();
+        if (all.Count == 0)
+        {
+            sb.Append(Loc.T("Msg_NoPluginsLoaded")).Append('\n');
+        }
+
+        foreach (var (kind, title) in new[]
+                 {
+                     ("validation", Loc.T("Msg_PluginsValidationRules")),
+                     ("publish", Loc.T("Msg_PluginsPublishFormats")),
+                     ("author", Loc.T("Msg_PluginsAuthorCommands"))
+                 })
+        {
+            var group = all.Where(p => p.Kind == kind).ToList();
+            if (group.Count == 0)
+            {
+                continue;
+            }
+
+            sb.Append(title).Append('\n');
+            foreach (var plugin in group)
+            {
+                sb.Append("  • ").Append(plugin.Name).Append(" — ").Append(plugin.File).Append('\n');
+            }
+
+            sb.Append('\n');
+        }
+
+        if (Plugins.PluginRegistry.Warnings.Count > 0)
+        {
+            sb.Append(Loc.T("Msg_PluginLoadErrors")).Append('\n');
+            foreach (var warning in Plugins.PluginRegistry.Warnings)
+            {
+                sb.Append("  • ").Append(warning).Append('\n');
+            }
+        }
+
+        return sb.ToString().TrimEnd();
+    }
 }
