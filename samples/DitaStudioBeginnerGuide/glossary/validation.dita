@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary Entry//EN" "glossentry.dtd">
+<glossentry id="validation" xml:lang="ru-RU">
+  <glossterm>проверка</glossterm>
+  <glossdef>Поиск ошибок во всём проекте (F7): нарушения правил DITA, ссылки на несуществующие файлы, повторяющиеся идентификаторы, рекомендации по стилю.</glossdef>
+</glossentry>

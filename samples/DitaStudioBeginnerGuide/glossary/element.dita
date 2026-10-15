@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary Entry//EN" "glossentry.dtd">
+<glossentry id="element" xml:lang="ru-RU">
+  <glossterm>элемент</glossterm>
+  <glossdef>Часть текста с меткой, которая говорит, что это: абзац (p), пункт списка (li), шаг (step), полужирный текст (b). Элементы вкладываются друг в друга по правилам DITA.</glossdef>
+</glossentry>

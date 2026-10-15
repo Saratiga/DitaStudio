@@ -12,6 +12,15 @@
       собираются разные публикации. Например, название этого редактора —
       <keyword keyref="product-name"/> — в руководстве взято из ключа
       <codeph>product-name</codeph>.</p>
+    <p>Ключи корневой области всех карт проекта видны на вкладке <uicontrol>Ключи</uicontrol>
+      слева: имя и цель (файл или адрес). Список пересобирается при сохранении карты.</p>
+    <fig>
+      <title>Вкладка «Ключи»</title>
+      <image href="../images/screens/keys-tab.png" placement="break">
+        <alt>Вкладка «Ключи» со столбцами «Ключ» и «Цель»: glossary-api — glossary/api.dita,
+          product-name без цели</alt>
+      </image>
+    </fig>
 
     <section id="define">
       <title>Как определить и использовать ключ</title>

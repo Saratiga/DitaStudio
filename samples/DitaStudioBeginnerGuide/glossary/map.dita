@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary Entry//EN" "glossentry.dtd">
+<glossentry id="map" xml:lang="ru-RU">
+  <glossterm>карта</glossterm>
+  <glossdef>Файл .ditamap со списком топиков в нужном порядке и с нужной вложенностью. По карте собирается публикация: сайт, PDF или документ Word.</glossdef>
+</glossentry>

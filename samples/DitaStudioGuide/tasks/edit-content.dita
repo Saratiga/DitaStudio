@@ -2,45 +2,117 @@
 <!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
 <task id="edit-content" xml:lang="ru-RU">
   <title>Редактирование текста и структуры</title>
-  <shortdesc>Основные приёмы работы в режиме «Автор»: набор текста, форматирование, списки и
-    шаги.</shortdesc>
+  <shortdesc>Основные приёмы работы в режиме «Автор»: набор текста, подсказка по Enter,
+    оформление-переключатели, выделение и перенос блоков, обёртывание, пометки
+    атрибутов.</shortdesc>
   <taskbody>
     <context>
       <p>Откройте любой топик проекта и переключитесь на вкладку <b>Автор</b> над областью
-        редактирования.</p>
+        редактирования. Каждый блок (<codeph>p</codeph>, <codeph>li</codeph>,
+        <codeph>cmd</codeph>, <codeph>title</codeph>…) — отдельная строка редактирования;
+        контейнеры (<codeph>section</codeph>, <codeph>div</codeph>, <codeph>fig</codeph>,
+        <codeph>note</codeph>) обведены полосой слева с подписью.</p>
     </context>
 
     <steps>
       <step>
-        <cmd>Наберите текст абзаца обычным образом. <uicontrol>Enter</uicontrol> в конце абзаца
-          создаёт следующий абзац (или следующий шаг списка), <uicontrol>Enter</uicontrol> в
-          середине разбивает текст на два блока по позиции курсора.</cmd>
+        <cmd>Наберите текст абзаца и нажмите <shortcut>Enter</shortcut> в конце блока.</cmd>
+        <info>
+          <p>Открывается подсказка: первая строка — обычное действие (следующий абзац, шаг,
+            пункт), ниже — все элементы, допустимые после блока по контент-модели, а в конце
+            пункта списка или раздела — и после самого контейнера. Справа — описание из
+            каталога. Набор текста фильтрует список, двойной <shortcut>Enter</shortcut>
+            выбирает первую строку. <shortcut>Ctrl+Enter</shortcut> открывает то же меню для
+            вставки <b>после внешнего</b> блока — так выходят из таблицы, <codeph>div</codeph>,
+            списка.</p>
+          <fig>
+            <title>Подсказка по Enter в конце команды шага</title>
+            <image href="../images/screens/enter-suggestions.png" placement="break">
+              <alt>Окно подсказки у четвёртого шага задачи: «Следующий шаг — как обычно»,
+                choices, tutorialinfo, substeps, info, stepxmp, note; справа описание</alt>
+            </image>
+          </fig>
+          <p>Окно растягивается за любой угол, размер запоминается. Выключить подсказку —
+            <menucascade><uicontrol>Структура</uicontrol><uicontrol>Подсказка по
+            Enter</uicontrol></menucascade>.</p>
+        </info>
       </step>
       <step>
-        <cmd><uicontrol>Backspace</uicontrol> в начале пустого или короткого блока объединяет его
-          с предыдущим — оба действия проверяются по модели содержимого и не выполнятся, если
-          результат окажется невалидным.</cmd>
+        <cmd><shortcut>Enter</shortcut> в середине текста разбивает блок по позиции курсора,
+          <shortcut>Backspace</shortcut> в начале блока объединяет его с предыдущим.</cmd>
+        <info><p>Обе операции идут через <codeph>EditCommands</codeph> и не выполняются, если
+          результат нарушил бы контент-модель; причина — в строке состояния.</p></info>
       </step>
       <step>
-        <cmd>В списке или в шагах задачи <uicontrol>Tab</uicontrol> и <uicontrol>Shift+Tab</uicontrol>
-          повышают и понижают уровень вложенности — например, превращают шаг в подшаг.</cmd>
+        <cmd>В списке или в шагах задачи <shortcut>Tab</shortcut> и
+          <shortcut>Shift+Tab</shortcut> меняют уровень вложенности — например, превращают шаг
+          в подшаг (<codeph>substeps</codeph>).</cmd>
       </step>
       <step>
-        <cmd>Выделите часть текста и примените оформление: <shortcut>Ctrl+B</shortcut> —
-          полужирный, <shortcut>Ctrl+I</shortcut> — курсив, <shortcut>Ctrl+U</shortcut> —
-          подчёркнутый, <shortcut>Ctrl+`</shortcut> — код, <shortcut>Ctrl+Shift+U</shortcut> —
-          элемент интерфейса (<codeph>uicontrol</codeph>). <shortcut>Ctrl+Shift+Space</shortcut>
-          снимает оформление.</cmd>
+        <cmd>Оформите текст: <shortcut>Ctrl+B</shortcut> — <codeph>b</codeph>,
+          <shortcut>Ctrl+I</shortcut> — <codeph>i</codeph>, <shortcut>Ctrl+U</shortcut> —
+          <codeph>u</codeph>, <shortcut>Ctrl+`</shortcut> — <codeph>codeph</codeph>,
+          <shortcut>Ctrl+Shift+U</shortcut> — <codeph>uicontrol</codeph>.</cmd>
+        <info>
+          <p>Кнопки и сочетания — переключатели: когда курсор или выделение в оформленном
+            тексте, кнопка подсвечена, повторное нажатие снимает элемент — с выделенной части
+            (элемент разрезается) или со всего элемента под курсором. Поле
+            <uicontrol>Размер</uicontrol>, полоски цвета и маркера и кнопки выравнивания
+            показывают оформление под курсором.
+            <shortcut>Ctrl+Shift+Space</shortcut> снимает всё оформление.</p>
+          <fig>
+            <title>Курсор в полужирном тексте: «Ж» нажата (1); кнопка codeph (2)</title>
+            <image href="../images/screens/format-buttons.png" placement="break">
+              <alt>Фрагмент панели инструментов с подсвеченной кнопкой «Ж» (рамка 1) и кнопкой
+                «&lt;/&gt;» (рамка 2)</alt>
+            </image>
+          </fig>
+          <p>Размер, цвет, маркер и выравнивание пишутся классами <codeph>outputclass</codeph>
+            (<codeph>size-10</codeph>, <codeph>color-red</codeph>,
+            <codeph>mark-yellow</codeph>, <codeph>align-center</codeph>), которые публикация
+            переводит в оформление; CSS проекта может их переопределить.</p>
+        </info>
       </step>
       <step>
-        <cmd>Чтобы вставить новый элемент, откройте палитру вставки справа
-          (<shortcut>Ctrl+E</shortcut>) — в ней показаны только элементы, допустимые в текущей
-          позиции курсора; список можно отфильтровать вводом текста.</cmd>
+        <cmd>Выделите блок целиком: щёлкните по его подписи, рамке или полю вокруг, а не по
+          тексту.</cmd>
+        <info><p>Блок обводится контуром; <shortcut>Delete</shortcut> удаляет его одним шагом
+          отмены, <shortcut>Esc</shortcut> снимает выделение. Протяжка мышью из одного блока в
+          другой выделяет диапазон блоков (у вложенных берётся внешний),
+          <shortcut>Shift</shortcut>+щелчок продлевает его.</p></info>
       </step>
       <step>
-        <cmd>Переставить или удалить элемент можно без мыши: <shortcut>Ctrl+Shift+↑</shortcut> и
-          <shortcut>Ctrl+Shift+↓</shortcut> двигают элемент вверх и вниз, удаление — через меню
-          «Структура» (с подтверждением).</cmd>
+        <cmd>С выделенными блоками: <shortcut>Ctrl+C</shortcut>, <shortcut>Ctrl+X</shortcut>,
+          <shortcut>Ctrl+V</shortcut>, <shortcut>Enter</shortcut> — «Обернуть в…».</cmd>
+        <info><p>В буфер идёт XML блоков (его можно вставить и в «Исходный код»). Вставка
+          проверяется по контент-модели: если сразу за блоком нельзя, блоки встают после
+          ближайшего подходящего предка; повторяющиеся <codeph>id</codeph> у копий
+          заменяются. «Обернуть в…» предлагает только допустимые обёртки
+          (<codeph>note</codeph>, <codeph>section</codeph>, <codeph>div</codeph>,
+          <codeph>fig</codeph>, <codeph>example</codeph>…).</p></info>
+      </step>
+      <step>
+        <cmd>Переставьте блок без мыши: <shortcut>Ctrl+Shift+↑</shortcut> /
+          <shortcut>Ctrl+Shift+↓</shortcut>.</cmd>
+      </step>
+      <step>
+        <cmd>Следите за атрибутами по серым пометкам над блоками.</cmd>
+        <info>
+          <p>Над блоком с атрибутами — строка вида «product: Альфа · rev: 2 · class:
+            warning-box»: сначала условные атрибуты, затем остальные, последним
+            <codeph>outputclass</codeph>. Пометка <codeph>status</codeph> цветная:
+            <codeph>new</codeph> — зелёная, <codeph>changed</codeph> — оранжевая,
+            <codeph>deleted</codeph> — красная. Выключить —
+            <menucascade><uicontrol>Структура</uicontrol><uicontrol>Показывать пометки
+            атрибутов</uicontrol></menucascade>.</p>
+          <fig>
+            <title>Пометка status: deleted над абзацем</title>
+            <image href="../images/screens/status-notes.png" placement="break">
+              <alt>Топик «О продукте»: над абзацем «Устаревший абзац о старой версии» красная
+                пометка «status: deleted», над примечанием серая «type: tip»</alt>
+            </image>
+          </fig>
+        </info>
       </step>
     </steps>
 
@@ -50,12 +122,15 @@
         английского языков: слова с ошибкой подчёркиваются волнистой линией, правый клик по слову
         предлагает варианты замены и команду <uicontrol>Пропустить все</uicontrol>. Код, пути к
         файлам и имена команд не проверяются.</p>
+      <p>Изменили заголовок топика — редактор предложит переименовать файл по нему; ссылки на
+        файл обновятся.</p>
     </result>
 
     <postreq>
-      <p>Про вставку таблиц, изображений и ссылок — в задаче
-        <xref href="insert-elements.dita#insert-elements">Вставка таблиц, изображений и
-        ссылок</xref>.</p>
+      <p>Про вставку изображений и ссылок — в задаче
+        <xref href="insert-elements.dita#insert-elements">Вставка изображений, ссылок и
+        сносок</xref>, про таблицы — <xref href="tables.dita#tables">Таблицы в режиме
+        «Автор»</xref>.</p>
     </postreq>
   </taskbody>
 </task>

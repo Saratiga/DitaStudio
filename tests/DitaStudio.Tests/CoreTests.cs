@@ -70,6 +70,7 @@ public sealed class CoreTests
     [Fact] public void DtdCatalogLoaderPropertyTests() => Run(CoreChecks.DtdCatalogLoaderPropertyTests);
     [Fact] public void ProjectCatalogTests() => Run(CoreChecks.ProjectCatalogTests);
     [Fact] public void SampleProjectsTests() => Run(CoreChecks.SampleProjectsTests);
+    [Fact] public void MapHeadingTests() => Run(CoreChecks.MapHeadingTests);
     [Fact] public void PluginLoaderTests() => Run(CoreChecks.PluginLoaderTests);
     [Fact] public void DitaProjectValidateAllWithPluginsTests() => Run(CoreChecks.DitaProjectValidateAllWithPluginsTests);
     [Fact] public void DitavalFlagTests() => Run(CoreChecks.DitavalFlagTests);

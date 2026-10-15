@@ -89,6 +89,7 @@ public sealed partial class DocxPublisher
         var tree = MapTree.Build(_project, mapPath, node => PublishFilter.IsIncluded(node, options));
         var labels = Labels.For(options.Language ?? DocumentLanguage.ForPublication(_project.TryGetDocument(mapPath)));
         var topics = tree.PublicationOrder.ToList();
+        var sections = tree.PublicationOrderWithHeadings.ToList();
 
         // Оглавление из CSS (.toc, .toc-title, .toc .lvlN): скрытие, название и глубина перекрывают настройки диалога.
         if (styles.TocHidden || styles.TocMaxLevel < 1)
@@ -105,10 +106,20 @@ public sealed partial class DocxPublisher
 
         layout.TocTitle = tocTitle;
         var bookmarks = AssignBookmarks(topics);
+        // Разделы карты без своего топика (topichead) — заголовок с закладкой для оглавления.
+        var headBookmarks = new Dictionary<MapItem, string>(ReferenceEqualityComparer.Instance);
+        foreach (var head in sections.Where(i => i.IsHeadingOnly))
+        {
+            headBookmarks[head] = "_head_" + (headBookmarks.Count + 1);
+        }
+
+        string BookmarkOf(MapItem item) =>
+            headBookmarks.TryGetValue(item, out var name) ? name : bookmarks[BookmarkKey(item.TargetPath!, item.TargetTopicId)];
+
         var title = tree.Root.Title;
-        var tocEntries = topics
-            .Where(i => i.TargetPath is not null && Math.Clamp(i.Level, 1, 6) <= layout.TocDepth && TocRules.Includes(_project, i))
-            .Select(i => new TocEntry(Math.Clamp(i.Level, 1, 6), i.Title, bookmarks[BookmarkKey(i.TargetPath!, i.TargetTopicId)]))
+        var tocEntries = sections
+            .Where(i => Math.Clamp(i.Level, 1, 6) <= layout.TocDepth && TocRules.Includes(_project, i))
+            .Select(i => new TocEntry(Math.Clamp(i.Level, 1, 6), i.Title, BookmarkOf(i)))
             .ToList();
 
         // Документ собирается во временный файл рядом и подменяет прежний, только когда готов
@@ -147,8 +158,15 @@ public sealed partial class DocxPublisher
             };
             var renderer = new DocxRenderer(_project, mainPart, numberingPart, renderOptions);
 
-            foreach (var item in topics)
+            foreach (var item in sections)
             {
+                if (item.IsHeadingOnly)
+                {
+                    renderer.RenderHeadingOnly(item.Title, body, Math.Clamp(item.Level, 1, 6), headBookmarks[item],
+                        unnumbered: TocRules.IsHiddenInMap(item.Node), pageBreakBefore: TopicPageBreak.Of(item.Node));
+                    continue;
+                }
+
                 var doc = _project.TryGetDocument(item.TargetPath!);
                 if (doc is null)
                 {

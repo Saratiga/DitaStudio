@@ -1,0 +1,21 @@
+{
+  "TitlePage": true,
+  "Subtitle": "Первые шаги: DITA и редактор за девять уроков",
+  "Author": "Команда DITA Studio",
+  "TitlePageDate": true,
+  "TableOfContents": true,
+  "TocDepth": 2,
+  "NumberHeadings": true,
+  "NumberingDepth": 3,
+  "PageBreakBeforeTopLevel": true,
+  "NumberFiguresAndTables": true,
+  "HeaderText": "{title}",
+  "HeaderAlignment": "Right",
+  "FooterText": "Стр. {page} из {pages}",
+  "FooterAlignment": "Center",
+  "NoHeaderOnFirstPage": true,
+  "MirrorMargins": false,
+  "GutterMm": 0,
+  "Language": "ru-RU",
+  "AutoHyphenation": true
+}

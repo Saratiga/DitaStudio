@@ -78,7 +78,9 @@ public sealed partial class DocxRenderer
     /// элемента (HTML-публикация ставит его классом, так что «.keyword {…}» работает и тут).</summary>
     private ClassContext? ContextFor(DitaNode node)
     {
-        if (node.Kind != NodeKind.Element)
+        // Правила для картинки (размер, рамка) — свойства самого рисунка (DocxStyleSheet.Images), а не абзаца вокруг: иначе рамка
+        // .fig image { border } ложилась ещё и на абзац — линией во всю ширину страницы.
+        if (node.Kind != NodeKind.Element || node.Name == "image")
         {
             return null;
         }

@@ -215,6 +215,16 @@ dotnet test tests\DitaStudio.Desktop.Tests  # интерфейс Avalonia (headl
 проверяется отдельно, под X-сервером:
 `DITASTUDIO_CEF_TESTS=1 xvfb-run -a dotnet test tests/DitaStudio.Desktop.Tests --filter FullyQualifiedName~CefPreviewTests`.
 
+Снимки экрана для руководств и сами руководства пересобираются отдельно (обычный прогон тестов их пропускает):
+
+```powershell
+$env:DITASTUDIO_GUIDE_SHOTS=1; dotnet test tests\DitaStudio.Desktop.Tests --filter GuideScreenshots   # снимки → samples/*Guide/images/screens
+$env:DITASTUDIO_GUIDE_BUILD=1; dotnet test tests\DitaStudio.Desktop.Tests --filter GuideBuild         # PDF и DOCX → docs/guides
+```
+
+Снимки делаются с настоящего главного окна (Avalonia.Headless) на копии `samples/GuideSample`, области
+пронумерованы красными рамками; PDF печатается установленным Edge/Chrome.
+
 Проверки ядра — проект xUnit: каждый раздел проверок (каталог, валидация, DOCX и т. д.) —
 отдельный тест, и упавший тест перечисляет все непрошедшие проверки раздела, а не только
 первую. Помимо примеров там есть property-based проверки (контент-модели, DTD, XLIFF,
@@ -237,6 +247,20 @@ dotnet test tests\DitaStudio.Tests --settings tests\DitaStudio.Tests\coverage.ru
 Полный чек-лист функционального тестирования — [docs/TESTPLAN.md](docs/TESTPLAN.md).
 
 ## С чего начать
+
+**Руководства пользователя со снимками экрана** — в [docs/guides](docs/guides) (PDF и DOCX; в архиве
+выпуска — папка `docs` рядом с программой):
+
+- **«DITA Studio для начинающих»** (`DitaStudio-Beginner-Guide.pdf`) — для тех, кто не знаком с DITA:
+  топики, карты и правила простыми словами, главное окно с пронумерованными областями и девять уроков
+  от пустой папки до готовых HTML, PDF и Word; повторное использование, условная сборка, правки;
+  шпаргалка элементов, «если что-то не получается», словарик;
+- **«Руководство пользователя DITA Studio»** (`DitaStudio-User-Guide.pdf`) — для знающих DITA: режим
+  «Автор», таблицы, ключи, условия и `.ditaval`, оформление DOCX через CSS и шаблон, рецензирование,
+  XLIFF, плагины и специализации.
+
+Оба руководства — DITA-проекты (`samples/DitaStudioBeginnerGuide`, `samples/DitaStudioGuide`): их
+можно открыть в редакторе как живой пример.
 
 1. **Файл → Открыть папку проекта** и выберите `samples\DitaStudioGuide` — руководство
    пользователя по самому DITA Studio, оформленное как DITA-проект (заодно демонстрирует
@@ -308,7 +332,9 @@ tests/DitaStudio.Tests/         проверки ядра и DOCX-экспорт
 tests/DitaStudio.Desktop.Tests/ тесты интерфейса Avalonia (Avalonia.Headless, снимки окон)
 tests/TestPlugin/               пример плагина
 samples/GuideSample/            небольшой учебный DITA-проект
-samples/DitaStudioGuide/        руководство пользователя по DITA Studio, оформленное как DITA-проект
+samples/DitaStudioGuide/        руководство пользователя по DITA Studio (для знающих DITA), DITA-проект
+samples/DitaStudioBeginnerGuide/ руководство «DITA Studio для начинающих», DITA-проект
+docs/guides/                    оба руководства в PDF и DOCX
 docs/TESTPLAN.md                чек-лист функционального тестирования
 ```
 

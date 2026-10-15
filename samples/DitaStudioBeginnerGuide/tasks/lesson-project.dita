@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="lesson-project" xml:lang="ru-RU">
+  <title>Урок 1. Создаём проект</title>
+  <shortdesc>Проект — обычная папка на диске. В этом уроке вы создадите папку проекта,
+    разложите в ней подпапки для разных видов топиков и заведёте карту будущего
+    руководства.</shortdesc>
+  <taskbody>
+    <context>
+      <p>Отдельного «файла проекта» в <keyword keyref="product-name"/> нет: проектом считается
+        любая папка с топиками и картами. Всё, что вы создаёте, — обычные файлы, которые можно
+        копировать, хранить в облаке или в системе контроля версий.</p>
+      <p>В уроках мы напишем короткое руководство к вымышленному прибору — метеостанции.</p>
+    </context>
+    <steps>
+      <step>
+        <cmd>Создайте пустую папку для проекта, например <filepath>Документы\Метеостанция</filepath>.</cmd>
+        <info><p>Папку можно создать в Проводнике (Finder, файловом менеджере) — как
+          обычно.</p></info>
+      </step>
+      <step>
+        <cmd>Откройте папку в редакторе:
+          <menucascade><uicontrol>Файл</uicontrol><uicontrol>Открыть папку проекта…</uicontrol></menucascade>
+          (<shortcut>Ctrl+Shift+O</shortcut>).</cmd>
+        <stepresult><p>Слева на вкладке <uicontrol>Проект</uicontrol> появляется корень
+          дерева с именем папки. Пока он пустой — это нормально.</p></stepresult>
+      </step>
+      <step>
+        <cmd>Создайте подпапки <filepath>concepts</filepath>, <filepath>tasks</filepath>,
+          <filepath>reference</filepath> и <filepath>images</filepath>: выделите корень дерева и
+          нажмите кнопку <uicontrol>Папка</uicontrol> над деревом.</cmd>
+        <info>
+          <p>В окне введите имя папки и нажмите <uicontrol>OK</uicontrol>. Вложенную папку
+            можно указать сразу через косую черту: <filepath>tasks/setup</filepath>.</p>
+          <fig>
+            <title>Окно новой папки</title>
+            <image href="../images/screens/new-folder-dialog.png" placement="break">
+              <alt>Окно с полем «Имя папки», в котором введено tasks/setup, и кнопками OK и
+                Отмена</alt>
+            </image>
+          </fig>
+          <p>Раскладывать топики по папкам необязательно, но так проще ориентироваться:
+            объяснения — в <filepath>concepts</filepath>, инструкции — в
+            <filepath>tasks</filepath>, справка — в <filepath>reference</filepath>, рисунки — в
+            <filepath>images</filepath>.</p>
+        </info>
+      </step>
+      <step>
+        <cmd>Создайте карту: <menucascade><uicontrol>Файл</uicontrol><uicontrol>Создать
+          документ…</uicontrol></menucascade> (<shortcut>Ctrl+N</shortcut>), в списке
+          <uicontrol>Тип документа</uicontrol> выберите <uicontrol>Карта</uicontrol>.</cmd>
+        <info>
+          <p>В поле <uicontrol>Заголовок</uicontrol> напишите название руководства —
+            «Метеостанция. Руководство пользователя». Имя файла редактор предложит сам
+            (русские буквы он заменяет латинскими), папку оставьте корневой. Нажмите
+            <uicontrol>Создать</uicontrol>.</p>
+        </info>
+        <stepresult><p>В дереве появляется файл карты со значком книги, а сама карта открывается
+          во вкладке.</p></stepresult>
+      </step>
+      <step>
+        <cmd>Посмотрите на дерево проекта.</cmd>
+        <info>
+          <fig>
+            <title>Вкладка «Проект»: кнопки (1) и дерево файлов (2)</title>
+            <image href="../images/screens/project-tree.png" placement="break">
+              <alt>Вкладка «Проект»: рамкой 1 отмечены кнопки «Обновить», «Создать…» и «Папка»,
+                рамкой 2 — дерево папок concepts, glossary, reference, tasks, troubleshooting с
+                файлами топиков и картой guide.ditamap</alt>
+            </image>
+          </fig>
+          <p>Так выглядит проект «Пример» — у вас файлов пока меньше. Рядом с именем файла
+            серым — заголовок топика. Двойной щелчок по файлу открывает его. Правая кнопка мыши
+            — меню: создать, переименовать, переместить, удалить, найти ссылки.</p>
+        </info>
+      </step>
+    </steps>
+    <result>
+      <p>У вас есть проект с папками и пустой картой. В следующем уроке появится первый
+        топик.</p>
+      <note type="important">Переименовывайте и переносите файлы проекта только в самом
+        редакторе (правой кнопкой мыши в дереве), а не в Проводнике. Тогда редактор сам
+        исправит все ссылки на перенесённый файл.</note>
+    </result>
+  </taskbody>
+</task>

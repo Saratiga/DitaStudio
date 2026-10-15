@@ -45,6 +45,24 @@
           <parmname>tcauthor</parmname> и <parmname>tcdate</parmname>).</info>
       </step>
       <step>
+        <cmd>Просмотрите все правки проекта на вкладке <uicontrol>Правки</uicontrol> справа.</cmd>
+        <info>
+          <p>В списке — блоки со <parmname>status</parmname> <codeph>new</codeph>,
+            <codeph>changed</codeph> и <codeph>deleted</codeph> по всем топикам и картам: статус,
+            элемент, файл и начало текста; фильтр по статусу и кнопка
+            <uicontrol>Обновить</uicontrol>. Щелчок по строке открывает топик и ставит курсор в
+            блок. Список собирается при открытии вкладки и после сохранения документа. Пометки
+            над блоками в «Авторе» того же цвета: <codeph>new</codeph> — зелёная,
+            <codeph>changed</codeph> — оранжевая, <codeph>deleted</codeph> — красная.</p>
+          <fig>
+            <title>Вкладка «Правки»</title>
+            <image href="../images/screens/changes-panel.png" placement="break">
+              <alt>Фильтр «все», кнопка «Обновить», итог «Правок: 3 (новых: 1, изменённых: 1, удалённых: 1)» и три строки с файлами about.dita и no-start.dita</alt>
+            </image>
+          </fig>
+        </info>
+      </step>
+      <step>
         <cmd>Чтобы сравнить два файла, выберите <menucascade><uicontrol>Правка</uicontrol>
           <uicontrol>Сравнить файлы…</uicontrol></menucascade> и укажите оба файла.</cmd>
         <stepresult>Различия показываются построчно, как в обычном diff.</stepresult>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE troubleshooting PUBLIC "-//OASIS//DTD DITA Troubleshooting//EN" "troubleshooting.dtd">
+<troubleshooting id="cannot-insert" xml:lang="ru-RU">
+  <title>Нужного элемента нет в подсказке</title>
+  <shortdesc>Хочется вставить таблицу, абзац или примечание, а редактор его не предлагает или
+    пишет, что сюда вставить нельзя.</shortdesc>
+  <troublebody>
+    <condition>
+      <p>В подсказке по <shortcut>Enter</shortcut> и на вкладке <uicontrol>Вставка</uicontrol>
+        нужного элемента нет, пункт меню недоступен, а в строке состояния — «Сюда вставить
+        нельзя».</p>
+    </condition>
+
+    <troubleSolution>
+      <cause>
+        <p>Курсор стоит там, где этот элемент запрещён правилами DITA. Например, абзац
+          нельзя вставить между пунктами списка, а таблицу — внутрь команды шага.</p>
+      </cause>
+      <remedy>
+        <title>Выйти на уровень выше</title>
+        <steps>
+          <step>
+            <cmd>Поставьте курсор в конец блока и нажмите <shortcut>Ctrl+Enter</shortcut>.</cmd>
+            <info><p>Откроется список того, что можно вставить <b>после</b> текущего блока, —
+              в том числе после списка, таблицы или примечания, в котором вы
+              находитесь.</p></info>
+          </step>
+          <step>
+            <cmd>Если элемента нет и там, нажмите <shortcut>F1</shortcut>.</cmd>
+            <stepresult><p>Справка по элементу под курсором покажет, что может быть внутри
+              него.</p></stepresult>
+          </step>
+        </steps>
+      </remedy>
+    </troubleSolution>
+
+    <troubleSolution>
+      <cause>
+        <p>Элемент не подходит к виду топика. В задаче нет разделов с подзаголовками, а в
+          концепции — шагов.</p>
+      </cause>
+      <remedy>
+        <title>Выбрать подходящий вид топика</title>
+        <steps>
+          <step>
+            <cmd>Подумайте, не разделить ли текст на два топика: объяснение — в концепцию,
+              инструкцию — в задачу.</cmd>
+            <info><p>См. <xref href="../concepts/topic-types.dita">Виды топиков</xref>.</p></info>
+          </step>
+        </steps>
+      </remedy>
+    </troubleSolution>
+  </troublebody>
+</troubleshooting>

@@ -14,6 +14,12 @@
       <codeph>bodydiv</codeph>, <codeph>section</codeph>, <codeph>sectiondiv</codeph>,
       <codeph>fig</codeph> — обведены полосой слева с подписью, чтобы было видно, где они
       начинаются и кончаются.</p>
+    <fig>
+      <title>Задача в режиме «Автор»</title>
+      <image href="../images/screens/author-task.png" placement="break">
+        <alt>Шаги задачи с номерами, подписи cmd, info, stepxmp, stepresult слева, таблица выбора внутри шага и раздел «Результат»</alt>
+      </image>
+    </fig>
 
     <p><uicontrol>Enter</uicontrol> в конце блока открывает подсказку — какой элемент вставить
       дальше, с описанием выбранного справа. Первая строка — обычное действие Enter (следующий
@@ -117,6 +123,24 @@
       проекту и переводит к ним щелчком. Правая кнопка по таблице или рисунку — «Наименование
       таблицы…» / «Наименование рисунка…». Размер картинки меняется мышью в любом блоке, в том числе
       в ячейке таблицы.</p>
+
+    <p>Справа — три панели о текущем элементе: <uicontrol>Атрибуты</uicontrol> (имя элемента,
+      атрибуты с описанием из каталога, «Добавить атрибут»; у перечислений — список значений, у
+      <parmname>product</parmname> — флажки продуктов проекта), <uicontrol>Вставка</uicontrol>
+      (палитра допустимых элементов) и <uicontrol>Структура</uicontrol> (дерево топика, переход
+      щелчком).</p>
+    <fig>
+      <title>Панель «Атрибуты» для абзаца</title>
+      <image href="../images/screens/attributes-panel.png" placement="break">
+        <alt>Вкладка «Атрибуты»: &lt;p&gt; Абзац, атрибут @id со значением reusable-note и описанием, список «Добавить атрибут»</alt>
+      </image>
+    </fig>
+    <fig>
+      <title>Панель «Структура»</title>
+      <image href="../images/screens/structure-panel.png" placement="break">
+        <alt>Дерево топика concept: title, shortdesc с keyword, conbody с абзацами, списком ul и примечанием note с xref</alt>
+      </image>
+    </fig>
 
     <note type="important">Не все элементы можно редактировать в режиме «Автор». Инлайн-элементы
       без собственного текста — вставки по

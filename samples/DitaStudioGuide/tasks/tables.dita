@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="tables" xml:lang="ru-RU">
+  <title>Таблицы в режиме «Автор»</title>
+  <shortdesc>Таблицы CALS правятся как в текстовом процессоре: вставка, выделение ячеек
+    мышью, строки и столбцы, объединение, границы, ширина столбцов, название, обмен ячейками с
+    Excel. В файл пишутся стандартные атрибуты CALS.</shortdesc>
+  <taskbody>
+    <steps>
+      <step>
+        <cmd>Вставьте таблицу: <menucascade><uicontrol>Вставка</uicontrol><uicontrol>Таблица…</uicontrol></menucascade>.</cmd>
+        <info>
+          <fig>
+            <title>Окно вставки таблицы</title>
+            <image href="../images/screens/insert-table-dialog.png" placement="break">
+              <alt>Окно: заголовок таблицы, число строк и колонок, флажок «Строка заголовков»,
+                кнопки «Вставить» и «Отмена»</alt>
+            </image>
+          </fig>
+          <p>Пустой заголовок — таблица без <codeph>title</codeph> (без подписи и номера).
+            Флажок «Строка заголовков» создаёт <codeph>thead</codeph>: она повторяется на
+            каждой странице PDF и DOCX у таблицы с классом
+            <codeph>page-break-auto</codeph>.</p>
+        </info>
+      </step>
+      <step>
+        <cmd>Откройте меню ячейки правой кнопкой мыши.</cmd>
+        <info>
+          <fig>
+            <title>Меню ячейки</title>
+            <image href="../images/screens/cell-menu.png" placement="break">
+              <alt>Меню ячейки: Вырезать, Копировать, Вставить, Наименование таблицы…, Атрибуты
+                ячейки…, вставка и удаление строк и столбцов, объединение с ячейкой справа и
+                снизу, Разделить ячейку, Выделить строку и столбец, Границы, Свойства таблицы…,
+                Обернуть в…, Оформление, Вставить элемент</alt>
+            </image>
+          </fig>
+          <p>Объединённые ячейки учитываются: строка посреди растянутой вниз ячейки удлиняет
+            её (<parmname>morerows</parmname>), при удалении строки растянутая ячейка переезжает
+            в следующую с текстом, столбец внутри горизонтального объединения его расширяет
+            (<parmname>namest</parmname>/<parmname>nameend</parmname>). У
+            <codeph>simpletable</codeph> работают строки и столбцы (<parmname>relcolwidth</parmname>
+            и <parmname>keycol</parmname> пересчитываются), у <codeph>properties</codeph> и
+            <codeph>choicetable</codeph> — только строки. <shortcut>Ctrl+Alt+→</shortcut> и
+            <shortcut>Ctrl+Alt+↓</shortcut> объединяют ячейку с соседней справа и снизу.</p>
+        </info>
+      </step>
+      <step>
+        <cmd>Выделите прямоугольник ячеек протяжкой мыши (или
+          <shortcut>Shift</shortcut>+щелчком).</cmd>
+        <info>
+          <fig>
+            <title>Выделенные ячейки</title>
+            <image href="../images/screens/cells-selected.png" placement="break">
+              <alt>Таблица «Параметры файла конфигурации», две строки первых двух столбцов
+                подсвечены</alt>
+            </image>
+          </fig>
+          <p>Меню выделения вставляет и удаляет столько строк и столбцов, сколько выделено,
+            объединяет ячейки (содержимое собирается в левой верхней), очищает, выравнивает и
+            ставит границы. Объединить нельзя через границу <codeph>thead</codeph> и
+            <codeph>tbody</codeph> и так, чтобы у строки не осталось ячеек.</p>
+          <p><shortcut>Ctrl+C</shortcut>/<shortcut>Ctrl+X</shortcut>/<shortcut>Ctrl+V</shortcut>
+            работают с ячейками: в буфер идёт текст с табуляциями (как в Excel), внутри редактора
+            сохраняется разметка ячеек. Вставка прямоугольником от левой верхней ячейки;
+            нехватка строк удлиняет таблицу. Текст с табуляциями вне таблицы вставляется новой
+            таблицей.</p>
+        </info>
+      </step>
+      <step>
+        <cmd>Задайте границы: значок «Границы» на панели или
+          <menucascade><uicontrol>Структура</uicontrol><uicontrol>Таблица</uicontrol><uicontrol>Границы
+          выделенных ячеек</uicontrol></menucascade>.</cmd>
+        <info><p>Нижняя, верхняя, левая, правая, нет границы, все, внешние, внутренние — как в
+          Word, пункты переключаются. Линия между ячейками — <parmname>rowsep</parmname>/
+          <parmname>colsep</parmname> ячейки, край таблицы — <parmname>frame</parmname>;
+          нестандартная рамка пишется классами <codeph>frame-top</codeph>,
+          <codeph>frame-bottom</codeph>, <codeph>frame-left</codeph>,
+          <codeph>frame-right</codeph>. Вид линий (толщина, цвет) задаёт CSS — см.
+          <xref href="../concepts/docx-styling.dita">Оформление DOCX</xref>.</p></info>
+      </step>
+      <step>
+        <cmd>Ширина столбца и высота строки — протяжкой границы мышью.</cmd>
+        <info><p>Ширина пишется долями (<codeph>colwidth="75*"</codeph>,
+          <parmname>relcolwidth</parmname>), высота — классом
+          <codeph>row-height-15mm</codeph>; двойной щелчок по нижней границе строки возвращает
+          высоту по содержимому.</p></info>
+      </step>
+      <step>
+        <cmd>Название: <uicontrol>Наименование таблицы…</uicontrol> в меню ячейки.</cmd>
+        <info><p>Нет <codeph>title</codeph> — он создаётся; пустое поле очищает название, подпись
+          «Таблица N» остаётся. <menucascade><uicontrol>Вставка</uicontrol><uicontrol>Подпись
+          рисунка / таблицы: добавить или убрать</uicontrol></menucascade> добавляет или убирает
+          сам <codeph>title</codeph>.</p></info>
+      </step>
+    </steps>
+    <result>
+      <p>Щелчок по полю над таблицей или под ней (вне ячеек) выделяет таблицу целиком —
+        <shortcut>Delete</shortcut> удаляет её одним шагом отмены. Выделение ячеек и границы
+        доступны только у таблиц CALS (<codeph>table</codeph>), не у
+        <codeph>simpletable</codeph>.</p>
+    </result>
+  </taskbody>
+</task>

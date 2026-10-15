@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="lesson-publish" xml:lang="ru-RU">
+  <title>Урок 9. Публикуем: сайт, PDF и Word</title>
+  <shortdesc>Собираем руководство по карте в три формата и настраиваем внешний вид:
+    титульный лист, оглавление, колонтитулы, размер страницы и стили.</shortdesc>
+  <taskbody>
+    <prereq>
+      <p>Карта собрана (урок 7), проверка не показывает ошибок (урок 8). На вкладке
+        <uicontrol>Карта</uicontrol> выбрана нужная карта — публикуется именно она.</p>
+    </prereq>
+    <steps>
+      <step>
+        <cmd>Откройте меню <uicontrol>Публикация</uicontrol>.</cmd>
+        <info>
+          <fig>
+            <title>Меню «Публикация»</title>
+            <image href="../images/screens/publish-menu.png" placement="break">
+              <alt>Открытое меню «Публикация»: «Собрать сайт HTML…» (F5), «Собрать один
+                HTML…», «Экспорт в PDF…», «Экспорт в DOCX…», «Параметры страницы…»,
+                «Оформление DOCX…», условия сборки, CSS, колонтитулы, XLIFF</alt>
+            </image>
+          </fig>
+        </info>
+      </step>
+      <step>
+        <cmd>Выберите формат и папку для результата.</cmd>
+        <choicetable>
+          <chhead>
+            <choptionhd>Пункт</choptionhd>
+            <chdeschd>Что получится</chdeschd>
+          </chhead>
+          <chrow>
+            <choption>Собрать сайт HTML… (<shortcut>F5</shortcut>)</choption>
+            <chdesc>Сайт из многих страниц с оглавлением слева и переходами «назад» и
+              «вперёд». Откройте <filepath>index.html</filepath> в браузере.</chdesc>
+          </chrow>
+          <chrow>
+            <choption>Собрать один HTML…</choption>
+            <chdesc>Всё руководство одной страницей — удобно для печати и пересылки.</chdesc>
+          </chrow>
+          <chrow>
+            <choption>Экспорт в PDF…</choption>
+            <chdesc>PDF с оглавлением, нумерацией страниц и колонтитулами.</chdesc>
+          </chrow>
+          <chrow>
+            <choption>Экспорт в DOCX…</choption>
+            <chdesc>Документ Word с настоящими стилями, оглавлением и сносками — его можно
+              дальше править в Word.</chdesc>
+          </chrow>
+        </choicetable>
+        <info><p>Сборку удобно класть в папку <filepath>out</filepath> внутри проекта — её
+          редактор предлагает сам и не показывает в дереве проекта. Несохранённые топики перед
+          сборкой сохраняются автоматически.</p></info>
+        <stepresult><p>Внизу, на вкладке <uicontrol>Журнал сборки</uicontrol>, — итог и
+          предупреждения, если что-то не нашлось (например, картинка).</p></stepresult>
+      </step>
+      <step>
+        <cmd>Настройте страницу:
+          <menucascade><uicontrol>Публикация</uicontrol><uicontrol>Параметры
+          страницы…</uicontrol></menucascade>.</cmd>
+        <info>
+          <p>Размер бумаги, ориентация и поля — для PDF и Word. Схема листа сразу показывает,
+            что получится.</p>
+          <fig>
+            <title>Параметры страницы</title>
+            <image href="../images/screens/page-setup-dialog.png" placement="break">
+              <alt>Вкладка «Страница»: размер бумаги, ориентация книжная или альбомная, поля
+                сверху, снизу, слева и справа и схема листа A4</alt>
+            </image>
+          </fig>
+        </info>
+      </step>
+      <step>
+        <cmd>Настройте устройство документа:
+          <menucascade><uicontrol>Публикация</uicontrol><uicontrol>Оформление
+          DOCX…</uicontrol></menucascade>.</cmd>
+        <info>
+          <p>Здесь — титульная страница (подзаголовок, автор, дата, картинка), оглавление и
+            его глубина, нумерация заголовков, рисунков и таблиц, колонтитулы, шаблон Word.
+            Большинство настроек действует и на PDF.</p>
+          <fig>
+            <title>Оформление DOCX</title>
+            <image href="../images/screens/docx-layout-dialog.png" placement="break">
+              <alt>Вкладка «Оформление»: шаблон DOCX, стиль таблиц, титульная страница с
+                подзаголовком и автором, картинка на титуле, оглавление и число уровней</alt>
+            </image>
+          </fig>
+        </info>
+      </step>
+      <step>
+        <cmd>Чтобы поменять шрифты, цвета и отступы, выберите
+          <menucascade><uicontrol>Публикация</uicontrol><uicontrol>Пользовательский
+          CSS…</uicontrol></menucascade>.</cmd>
+        <info>
+          <p>Внешний вид задаётся файлом стилей CSS — одним для сайта, PDF и Word. Редактор
+            может создать заготовку с примерами. Например, правило</p>
+          <codeblock>h1 { color: #1a5fb4; }</codeblock>
+          <p>делает заголовки глав синими во всех трёх форматах. Если CSS вам незнаком, можно
+            обойтись без него: оформление по умолчанию аккуратное.</p>
+        </info>
+      </step>
+    </steps>
+    <result>
+      <p>Руководство собрано. Проверьте результат и при необходимости поправьте топики —
+        следующая сборка займёт секунды.</p>
+      <note type="tip">Вкладка <uicontrol>Предпросмотр</uicontrol> у карты показывает весь
+        документ целиком — удобно просмотреть его перед сборкой.</note>
+    </result>
+  </taskbody>
+</task>

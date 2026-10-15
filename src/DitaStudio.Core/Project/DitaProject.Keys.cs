@@ -7,6 +7,43 @@ public sealed partial class DitaProject
 {
     // ---------------------------------------------------------------- ключи
 
+    /// <summary>
+    /// Текст элемента, как его увидит читатель: пустой элемент с <c>keyref</c> (<c>&lt;keyword keyref="product"/&gt;</c>) заменяется
+    /// текстом ключа — по спецификации DITA текст ключа идёт только в пустой элемент. Нужен названиям строк карты и оглавлению:
+    /// <see cref="DitaNode.InnerText"/> ключей не знает, и «О &lt;keyword keyref…/&gt;» превращался в «О ».
+    /// </summary>
+    public string TextWithKeys(DitaNode node, IReadOnlyList<string>? scopeChain = null)
+    {
+        var sb = new System.Text.StringBuilder();
+        Append(node);
+        return sb.ToString();
+
+        void Append(DitaNode n)
+        {
+            if (n.Kind == NodeKind.Text)
+            {
+                sb.Append(n.Value);
+                return;
+            }
+
+            if (n.Kind != NodeKind.Element)
+            {
+                return;
+            }
+
+            if (n.Children.Count == 0 && n.GetAttribute("keyref") is { Length: > 0 } keyref)
+            {
+                sb.Append(ResolveKey(keyref.Split('/')[0], scopeChain)?.KeyText);
+                return;
+            }
+
+            foreach (var child in n.Children)
+            {
+                Append(child);
+            }
+        }
+    }
+
     /// <summary>Область видимости ключей (keyscope): свои ключи плюс именованные дочерние
     /// области. Несколько имён keyscope на одном узле — алиасы одной и той же области.</summary>
     private sealed class KeySpace

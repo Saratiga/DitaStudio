@@ -205,6 +205,27 @@ public sealed partial class HtmlRenderer
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Заголовок раздела без своего топика — строка карты <c>topichead</c> (<see cref="MapItem.IsHeadingOnly"/>) в едином HTML и PDF:
+    /// номер идёт тем же счётчиком, что у заголовков топиков, <see cref="TopicNumber"/> — для оглавления.
+    /// </summary>
+    public string RenderHeadingOnly(string title, int headingLevel, string? anchor)
+    {
+        _levelOffset = (_options.TopicLevel ?? headingLevel) - headingLevel;
+        TopicNumber = null;
+        var sb = new StringBuilder("<article class=\"topichead\"");
+        if (!string.IsNullOrEmpty(anchor))
+        {
+            sb.Append(" id=\"").Append(Escape(anchor!)).Append('"');
+        }
+
+        sb.Append(">\n<").Append(H(headingLevel)).Append('>')
+          .Append(HeadingNumber(headingLevel, _options.TopicUnnumbered))
+          .Append(Escape(title))
+          .Append("</").Append(H(headingLevel)).Append(">\n</article>\n");
+        return sb.ToString();
+    }
+
     /// <summary>Автоматический блок «Смотрите также» из таблицы соответствий (reltable) —
     /// отдельно от авторского related-links, который топик мог указать в разметке сам.</summary>
     private string RenderReltableLinks()

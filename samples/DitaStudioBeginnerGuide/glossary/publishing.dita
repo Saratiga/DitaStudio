@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary Entry//EN" "glossentry.dtd">
+<glossentry id="publishing" xml:lang="ru-RU">
+  <glossterm>публикация</glossterm>
+  <glossdef>Готовый документ, собранный по карте, — сайт HTML, PDF или DOCX; а также сама сборка. Из одних и тех же топиков по разным картам получаются разные публикации.</glossdef>
+</glossentry>

@@ -25,7 +25,13 @@
           и переносится в другой проект импортом; значение <parmname>product</parmname> выбирается флажками на
           панели <uicontrol>Атрибуты</uicontrol>. Ниже — остальные условные атрибуты: отметьте значения,
           которые нужно исключить, и при необходимости включите показ черновых комментариев
-          (<codeph>draft-comment</codeph>).</stepresult>
+          (<codeph>draft-comment</codeph>).
+          <fig>
+            <title>Окно «Условия сборки»</title>
+            <image href="../images/screens/conditions-dialog.png" placement="break">
+              <alt>Продукты «Стандарт» и «Профи» флажками, кнопка «Список продуктов…», значения audience и platform для исключения, флажок черновых комментариев</alt>
+            </image>
+          </fig></stepresult>
       </step>
       <step>
         <cmd>Подтверждённые условия сохраняются вместе с проектом и применяются автоматически
@@ -61,7 +67,14 @@
           полем оглавления.</cmd>
         <info>Перед сборкой несохранённые документы сохраняются автоматически. Предупреждения
           сборки (битые ссылки, SVG, который не удалось отрисовать для DOCX) — на вкладке «Журнал сборки». Как оформить документ
-          Word — <xref href="../concepts/docx-styling.dita#docx-styling">Оформление DOCX</xref>.</info>
+          Word — <xref href="../concepts/docx-styling.dita#docx-styling">Оформление DOCX</xref>.
+          <fig>
+            <title>Меню «Публикация»</title>
+            <image href="../images/screens/publish-menu.png" placement="break">
+              <alt>Пункты: собрать сайт HTML (F5), один HTML, экспорт в PDF и DOCX, параметры страницы, оформление DOCX, публикация плагином, список продуктов, условия сборки, .ditaval, пользовательский CSS, колонтитулы PDF, XLIFF</alt>
+            </image>
+          </fig>
+        </info>
       </step>
       <step>
         <cmd>По умолчанию PDF печатается без колонтитулов. Чтобы включить их или задать свой текст,
@@ -86,6 +99,32 @@
           <menucascade><uicontrol>Публикация</uicontrol>
           <uicontrol>Пользовательский CSS…</uicontrol></menucascade> — путь к файлу тоже
           сохраняется вместе с проектом.</cmd>
+        <info>
+          <fig>
+            <title>Окно «Пользовательский CSS»</title>
+            <image href="../images/screens/css-dialog.png" placement="break">
+              <alt>Пояснение о подключении файла стилей, строка «Подключённый файл: не подключён», кнопки «Создать новый файл…», «Подключить существующий…», «Отключить» и «Закрыть»</alt>
+            </image>
+          </fig>
+          <p>«Создать новый файл…» записывает заготовку с готовыми классами разрывов страниц и
+            примерами. Справочник селекторов и свойств — <filepath>docs/CSS_REFERENCE.md</filepath>
+            в репозитории редактора.</p>
+        </info>
+      </step>
+      <step>
+        <cmd>Размер бумаги, ориентацию и поля для PDF и DOCX задайте в
+          <menucascade><uicontrol>Публикация</uicontrol><uicontrol>Параметры
+          страницы…</uicontrol></menucascade>.</cmd>
+        <info>
+          <fig>
+            <title>Параметры страницы</title>
+            <image href="../images/screens/page-setup-dialog.png" placement="break">
+              <alt>Вкладка «Страница»: размер бумаги «Как в CSS проекта», ориентация, поля сверху, снизу, слева, справа, схема листа A4</alt>
+            </image>
+          </fig>
+          <p>Пустое поле — значение из <codeph>@page</codeph> пользовательского CSS (без него A4 с
+            полями 20 мм); заданное в окне главнее CSS.</p>
+        </info>
       </step>
     </steps>
 

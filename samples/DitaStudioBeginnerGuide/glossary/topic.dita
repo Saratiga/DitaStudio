@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary Entry//EN" "glossentry.dtd">
+<glossentry id="topic" xml:lang="ru-RU">
+  <glossterm>топик</glossterm>
+  <glossdef>Небольшой самостоятельный текст на одну тему с заголовком и кратким описанием; хранится в своём файле .dita. Виды: концепция, задача, справка, устранение неполадки, статья глоссария.</glossdef>
+</glossentry>

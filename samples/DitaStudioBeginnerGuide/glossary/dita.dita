@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary Entry//EN" "glossentry.dtd">
+<glossentry id="dita" xml:lang="ru-RU">
+  <glossterm>DITA</glossterm>
+  <glossdef>Открытый стандарт технической документации (Darwin Information Typing Architecture): текст пишется небольшими топиками разных видов, а публикации собираются из них по картам.</glossdef>
+</glossentry>

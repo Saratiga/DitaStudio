@@ -103,6 +103,15 @@ jobs:
           dotnet publish src/DitaStudio.Desktop -c Release -r ${{ matrix.rid }} --self-contained true
           -p:DebugType=None -p:DebugSymbols=false -o publish
 
+      # Руководства пользователя (PDF, DOCX — собираются локально, см. tests/DitaStudio.Desktop.Tests/GuideBuild.cs)
+      # и учебные DITA-проекты — рядом с программой.
+      - name: Руководства и примеры
+        shell: bash
+        run: |
+          mkdir -p publish/docs publish/samples
+          cp docs/guides/* publish/docs/
+          cp -r samples/GuideSample samples/DitaStudioGuide samples/DitaStudioBeginnerGuide publish/samples/
+
       - name: Архив (zip)
         if: matrix.archive == 'zip'
         shell: pwsh
@@ -167,5 +176,7 @@ jobs:
           - **macOS** — \`DitaStudio-$TAG-osx-x64.tar.gz\`, файл \`DitaStudio.Desktop\`. Сборка под Intel, на Apple Silicon работает через Rosetta 2. Приложение не подписано: при первом запуске откройте его через контекстное меню → «Открыть».
 
           Предпросмотр и печать в PDF — встроенный Chromium. Если он не запустится, предпросмотр откроется внешним браузером, а PDF напечатается установленным Edge/Chrome.
+
+          В архиве рядом с программой — папка \`docs\` с руководствами пользователя в PDF и DOCX («DITA Studio для начинающих» и «Руководство пользователя» для знающих DITA) и папка \`samples\` с учебными проектами — их исходниками в DITA.
           EOF
           gh release create "$TAG" assets/* --draft --title "DITA Studio $TAG" --notes-file notes.md

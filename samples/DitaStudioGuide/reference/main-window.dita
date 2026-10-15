@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="main-window" xml:lang="ru-RU">
+  <title>Главное окно</title>
+  <shortdesc>Области главного окна, их вкладки и назначение. Номера в таблице соответствуют
+    рамкам на снимке.</shortdesc>
+  <refbody>
+    <section>
+      <fig>
+        <title>Главное окно с открытым топиком</title>
+        <image href="../images/screens/main-window.png" placement="break">
+          <alt>Главное окно: рамки 1 — меню, 2 — панель инструментов, 3 — вкладки «Проект»,
+            «Карта», «Ключи», 4 — документ с режимами «Автор», «Исходный код», «Предпросмотр»,
+            5 — вкладки «Атрибуты», «Вставка», «Структура», «Правки», 6 — «Проверка», «Поиск»,
+            «Журнал сборки», 7 — строка состояния</alt>
+        </image>
+      </fig>
+    </section>
+    <table>
+      <title>Области окна</title>
+      <tgroup cols="3">
+        <colspec colname="c1" colwidth="1*"/>
+        <colspec colname="c2" colwidth="3*"/>
+        <colspec colname="c3" colwidth="8*"/>
+        <thead>
+          <row>
+            <entry>№</entry>
+            <entry>Область</entry>
+            <entry>Назначение</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry>1</entry>
+            <entry>Меню</entry>
+            <entry>Файл, Правка, Вставка, Структура, Публикация, Справка. Пункты, недоступные в
+              текущей позиции курсора, выключены.</entry>
+          </row>
+          <row>
+            <entry>2</entry>
+            <entry>Панель инструментов</entry>
+            <entry>Проект и файлы; отмена структурных правок; оформление-переключатели
+              (<codeph>b</codeph>, <codeph>i</codeph>, <codeph>u</codeph>,
+              <codeph>codeph</codeph>); ссылка, изображение, сноска; раздел, абзац, списки;
+              размер, цвет, маркер, выравнивание, нумерованный абзац; таблица — строки, столбцы,
+              объединение, границы; перемещение и удаление элемента; проверка и сборка. В узком
+              окне переносится на вторую строку.</entry>
+          </row>
+          <row>
+            <entry>3</entry>
+            <entry>Проект, Карта, Ключи</entry>
+            <entry>Дерево файлов (несколько проектов — несколько корней), структура выбранной
+              карты, ключи корневой области.</entry>
+          </row>
+          <row>
+            <entry>4</entry>
+            <entry>Документы</entry>
+            <entry>Вкладки открытых файлов (закрепление, «Закрыть остальные» — правой кнопкой) и
+              режимы документа: Автор, Исходный код, Предпросмотр (HTML, PDF, DOCX
+              приближённо, живые страницы).</entry>
+          </row>
+          <row>
+            <entry>5</entry>
+            <entry>Атрибуты, Вставка, Структура, Правки</entry>
+            <entry>Атрибуты элемента под курсором, палитра допустимых элементов
+              (<shortcut>Ctrl+E</shortcut>), дерево топика, блоки со
+              <parmname>status</parmname> по проекту.</entry>
+          </row>
+          <row>
+            <entry>6</entry>
+            <entry>Проверка, Поиск, Журнал сборки</entry>
+            <entry>Результаты <shortcut>F7</shortcut> с переходом к месту, поиск и замена по
+              проекту (<shortcut>Ctrl+Shift+F</shortcut>), вывод последней публикации.</entry>
+          </row>
+          <row>
+            <entry>7</entry>
+            <entry>Строка состояния</entry>
+            <entry>Итог последней операции или причина отказа; справа — путь к элементу под
+              курсором (<codeph>/concept/conbody/p[1]</codeph>).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+  </refbody>
+</reference>

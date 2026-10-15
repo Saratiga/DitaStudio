@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="install" xml:lang="ru-RU">
+  <title>Установка и первый запуск</title>
+  <shortdesc><keyword keyref="product-name"/> не требует установщика: архив распаковывается в
+    любую папку, и программа сразу готова к работе.</shortdesc>
+  <taskbody>
+    <prereq>
+      <p>Нужен компьютер с Windows 10 или новее, Linux или macOS (на Apple Silicon программа
+        работает через Rosetta 2). Права администратора не нужны.</p>
+    </prereq>
+    <steps>
+      <step>
+        <cmd>Скачайте архив для своей системы со страницы выпусков проекта.</cmd>
+        <choicetable>
+          <chhead>
+            <choptionhd>Система</choptionhd>
+            <chdeschd>Архив и файл программы</chdeschd>
+          </chhead>
+          <chrow>
+            <choption>Windows</choption>
+            <chdesc><filepath>DitaStudio-…-win-x64.zip</filepath>, программа —
+              <filepath>DitaStudio.Desktop.exe</filepath></chdesc>
+          </chrow>
+          <chrow>
+            <choption>Linux</choption>
+            <chdesc><filepath>DitaStudio-…-linux-x64.tar.gz</filepath>, программа —
+              <filepath>DitaStudio.Desktop</filepath></chdesc>
+          </chrow>
+          <chrow>
+            <choption>macOS</choption>
+            <chdesc><filepath>DitaStudio-…-osx-x64.tar.gz</filepath>, программа —
+              <filepath>DitaStudio.Desktop</filepath></chdesc>
+          </chrow>
+        </choicetable>
+      </step>
+      <step>
+        <cmd>Распакуйте архив в удобную папку, например <filepath>C:\Programs\DitaStudio</filepath>.</cmd>
+        <info>
+          <p>Не запускайте программу прямо из архива: ей нужны соседние файлы (словари
+            орфографии, встроенный браузер для предпросмотра).</p>
+        </info>
+      </step>
+      <step>
+        <cmd>Запустите файл программы.</cmd>
+        <info>
+          <p>В macOS приложение не подписано: при первом запуске откройте его через
+            контекстное меню → <uicontrol>Открыть</uicontrol>.</p>
+        </info>
+        <stepresult>
+          <p>Открывается главное окно. Слева пусто — проект ещё не открыт.</p>
+        </stepresult>
+      </step>
+      <step>
+        <cmd>Если нужно, выберите язык и тему оформления в меню
+          <uicontrol>Справка</uicontrol>.</cmd>
+        <info>
+          <p><menucascade><uicontrol>Справка</uicontrol><uicontrol>Язык</uicontrol></menucascade>
+            — русский или английский интерфейс,
+            <menucascade><uicontrol>Справка</uicontrol><uicontrol>Тёмная тема</uicontrol></menucascade>
+            — светлая или тёмная тема. Выбор запоминается.</p>
+        </info>
+      </step>
+    </steps>
+    <result>
+      <p>Редактор готов. Следующий шаг — открыть учебный проект или создать свой: урок
+        <xref href="lesson-project.dita">Создаём проект</xref>.</p>
+    </result>
+  </taskbody>
+</task>

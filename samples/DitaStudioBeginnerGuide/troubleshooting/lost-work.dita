@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE troubleshooting PUBLIC "-//OASIS//DTD DITA Troubleshooting//EN" "troubleshooting.dtd">
+<troubleshooting id="lost-work" xml:lang="ru-RU">
+  <title>Редактор закрылся, а правки не сохранены</title>
+  <shortdesc>Пропало питание или программа завершилась аварийно до того, как вы сохранили
+    топики.</shortdesc>
+  <troublebody>
+    <condition>
+      <p>Редактор закрылся неожиданно, во вкладках оставались несохранённые правки (точка «•»
+        перед именем).</p>
+    </condition>
+
+    <troubleSolution>
+      <cause>
+        <p>Правки ещё не были записаны в файлы. Но каждые 30 секунд редактор кладёт копию
+          несохранённых вкладок в свою служебную папку — её и можно восстановить.</p>
+      </cause>
+      <remedy>
+        <title>Восстановить из копии</title>
+        <steps>
+          <step>
+            <cmd>Запустите редактор и откройте тот же проект.</cmd>
+            <stepresult><p>Появится окно «Восстановление после сбоя» со списком
+              документов.</p></stepresult>
+          </step>
+          <step>
+            <cmd>Нажмите <uicontrol>Да</uicontrol>.</cmd>
+            <info><p><uicontrol>Нет</uicontrol> удалит копии, <uicontrol>Отмена</uicontrol>
+              отложит решение до следующего открытия проекта.</p></info>
+            <stepresult><p>Документы откроются с восстановленными правками.</p></stepresult>
+          </step>
+          <step>
+            <cmd>Проверьте текст и сохраните все документы
+              (<shortcut>Ctrl+Shift+S</shortcut>).</cmd>
+            <info><p>Пометка «файл с тех пор менялся» значит, что файл на диске изменили уже
+              после копии — например, коллега. Сравните версии, прежде чем
+              сохранять.</p></info>
+          </step>
+        </steps>
+      </remedy>
+    </troubleSolution>
+  </troublebody>
+</troubleshooting>

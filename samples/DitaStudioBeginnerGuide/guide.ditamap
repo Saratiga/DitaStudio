@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE map PUBLIC "-//OASIS//DTD DITA Map//EN" "map.dtd">
+<map xml:lang="ru-RU">
+  <title>DITA Studio для начинающих</title>
+
+  <keydef keys="product-name">
+    <topicmeta>
+      <keywords>
+        <keyword>DITA Studio</keyword>
+      </keywords>
+    </topicmeta>
+  </keydef>
+
+  <topicref href="concepts/welcome.dita"/>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Знакомство с DITA</navtitle>
+    </topicmeta>
+    <topicref href="concepts/what-is-dita.dita"/>
+    <topicref href="concepts/topics.dita"/>
+    <topicref href="concepts/topic-types.dita"/>
+    <topicref href="concepts/maps.dita"/>
+    <topicref href="concepts/rules.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Знакомство с редактором</navtitle>
+    </topicmeta>
+    <topicref href="tasks/install.dita"/>
+    <topicref href="concepts/main-window.dita"/>
+    <topicref href="concepts/editing-modes.dita"/>
+    <topicref href="concepts/side-panels.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Первый проект: уроки</navtitle>
+    </topicmeta>
+    <topicref href="tasks/lesson-project.dita"/>
+    <topicref href="tasks/lesson-concept.dita"/>
+    <topicref href="tasks/lesson-formatting.dita"/>
+    <topicref href="tasks/lesson-task.dita"/>
+    <topicref href="tasks/lesson-table.dita"/>
+    <topicref href="tasks/lesson-image.dita"/>
+    <topicref href="tasks/lesson-map.dita"/>
+    <topicref href="tasks/lesson-check.dita"/>
+    <topicref href="tasks/lesson-publish.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Следующие шаги</navtitle>
+    </topicmeta>
+    <topicref href="concepts/reuse.dita"/>
+    <topicref href="tasks/use-keys.dita"/>
+    <topicref href="tasks/versions.dita"/>
+    <topicref href="tasks/review.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Справка</navtitle>
+    </topicmeta>
+    <topicref href="reference/shortcuts.dita"/>
+    <topicref href="reference/element-cheatsheet.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Если что-то не получается</navtitle>
+    </topicmeta>
+    <topicref href="troubleshooting/cannot-insert.dita"/>
+    <topicref href="troubleshooting/broken-link.dita"/>
+    <topicref href="troubleshooting/lost-work.dita"/>
+  </topichead>
+
+  <topichead>
+    <topicmeta>
+      <navtitle>Словарик</navtitle>
+    </topicmeta>
+    <topicref href="glossary/dita.dita"/>
+    <topicref href="glossary/topic.dita"/>
+    <topicref href="glossary/map.dita"/>
+    <topicref href="glossary/element.dita"/>
+    <topicref href="glossary/attribute.dita"/>
+    <topicref href="glossary/shortdesc.dita"/>
+    <topicref href="glossary/key.dita"/>
+    <topicref href="glossary/conref.dita"/>
+    <topicref href="glossary/validation.dita"/>
+    <topicref href="glossary/publishing.dita"/>
+  </topichead>
+</map>

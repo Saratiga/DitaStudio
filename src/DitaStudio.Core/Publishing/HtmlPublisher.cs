@@ -167,7 +167,7 @@ public sealed class HtmlPublisher
                 return id is null ? "#" : "#" + id;
             };
 
-            var entry = PublishSingleFile(tree, topics, renderOptions, options, labels, customCss);
+            var entry = PublishSingleFile(tree, renderOptions, options, labels, customCss);
             written.Add(entry);
             return new PublishResult(entry, written, warnings);
         }
@@ -259,7 +259,6 @@ public sealed class HtmlPublisher
 
     private string PublishSingleFile(
         MapTree tree,
-        List<MapItem> topics,
         RenderOptions renderOptions,
         PublishOptions options,
         Labels labels,
@@ -287,9 +286,31 @@ public sealed class HtmlPublisher
         var tocTitle = _project.DocxLayout.TocTitle.Length > 0 ? _project.DocxLayout.TocTitle : labels.Contents;
         var tocSlot = body.Length; // оглавление вставляется после обхода топиков: номера разделов известны только после их отрисовки
         var topicNumbers = new Dictionary<MapItem, string>(ReferenceEqualityComparer.Instance);
+        var headAnchors = new Dictionary<MapItem, string>(ReferenceEqualityComparer.Instance);
+        var sections = tree.PublicationOrderWithHeadings.ToList();
 
-        foreach (var item in topics)
+        foreach (var item in sections)
         {
+            if (item.IsHeadingOnly)
+            {
+                // Раздел карты без своего топика (topichead) — только заголовок своего уровня.
+                var headAnchor = "head-" + (headAnchors.Count + 1);
+                headAnchors[item] = headAnchor;
+                body.Append("<div class=\"topic-chunk").Append(item.Level == 1 ? " chapter-heading" : string.Empty)
+                    .Append(TopicPageBreak.Of(item.Node) switch { true => " " + TopicPageBreak.Before, false => " " + TopicPageBreak.None, _ => string.Empty })
+                    .Append("\" id=\"").Append(headAnchor).Append("\">\n");
+                renderOptions.TopicLevel = Math.Clamp(item.Level, 1, 9);
+                renderOptions.TopicUnnumbered = TocRules.IsHiddenInMap(item.Node);
+                body.Append(renderer.RenderHeadingOnly(item.Title, Math.Clamp(item.Level, 1, 5), null));
+                body.Append("</div>\n");
+                if (renderer.TopicNumber is { } headNumber)
+                {
+                    topicNumbers[item] = headNumber;
+                }
+
+                continue;
+            }
+
             var doc = _project.TryGetDocument(item.TargetPath!);
             if (doc is null)
             {
@@ -321,10 +342,11 @@ public sealed class HtmlPublisher
         }
 
         var toc = new StringBuilder("<nav class=\"toc toc-inline\">\n<h2 class=\"toc-title\">").Append(HtmlRenderer.Escape(tocTitle)).Append("</h2>\n<ul>\n");
-        foreach (var item in topics.Where(i => TocRules.Includes(_project, i)))
+        foreach (var item in sections.Where(i => TocRules.Includes(_project, i)))
         {
-            var full = Path.GetFullPath(item.TargetPath!);
-            var anchor = AnchorFor(full, item.TargetTopicId ?? RootIdOf(full));
+            var anchor = headAnchors.TryGetValue(item, out var headAnchor)
+                ? headAnchor
+                : AnchorFor(Path.GetFullPath(item.TargetPath!), item.TargetTopicId ?? RootIdOf(Path.GetFullPath(item.TargetPath!)));
             var depth = Math.Clamp(item.Level, 1, 6);
             var hasNumber = topicNumbers.TryGetValue(item, out var number);
             toc.Append("<li class=\"lvl").Append(depth).Append(hasNumber ? " has-num" : string.Empty).Append("\" style=\"margin-left:")

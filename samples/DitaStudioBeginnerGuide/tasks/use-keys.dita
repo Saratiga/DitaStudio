@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="use-keys" xml:lang="ru-RU">
+  <title>Название продукта в одном месте</title>
+  <shortdesc>Заводим ключ с названием метеостанции и подставляем его в топики. После этого
+    переименовать продукт во всём руководстве можно одной правкой.</shortdesc>
+  <taskbody>
+    <steps>
+      <step>
+        <cmd>Откройте карту двойным щелчком в дереве проекта и переключитесь в режим
+          <uicontrol>Исходный код</uicontrol>.</cmd>
+      </step>
+      <step>
+        <cmd>Сразу после строки с <codeph>&lt;title&gt;</codeph> карты вставьте определение
+          ключа.</cmd>
+        <stepxmp>
+          <codeblock>&lt;keydef keys="product"&gt;
+  &lt;topicmeta&gt;
+    &lt;keywords&gt;&lt;keyword&gt;Метео-100&lt;/keyword&gt;&lt;/keywords&gt;
+  &lt;/topicmeta&gt;
+&lt;/keydef&gt;</codeblock>
+        </stepxmp>
+        <info><p><codeph>product</codeph> — имя ключа (латиницей, без пробелов),
+          «Метео-100» — его значение.</p></info>
+      </step>
+      <step>
+        <cmd>Сохраните карту (<shortcut>Ctrl+S</shortcut>) и откройте вкладку
+          <uicontrol>Ключи</uicontrol> слева.</cmd>
+        <stepresult>
+          <p>Ключ появился в списке. Если ключ ведёт на файл, в столбце
+            <uicontrol>Цель</uicontrol> — путь к нему.</p>
+          <fig>
+            <title>Вкладка «Ключи»</title>
+            <image href="../images/screens/keys-tab.png" placement="break">
+              <alt>Вкладка «Ключи» со столбцами «Ключ» и «Цель»: glossary-api ведёт на
+                glossary/api.dita, product-name — текстовый ключ без цели</alt>
+            </image>
+          </fig>
+        </stepresult>
+      </step>
+      <step>
+        <cmd>В топике поставьте курсор туда, где должно быть название, откройте вкладку
+          <uicontrol>Вставка</uicontrol> справа и дважды щёлкните
+          <codeph>keyword</codeph>.</cmd>
+      </step>
+      <step>
+        <cmd>На вкладке <uicontrol>Атрибуты</uicontrol> выберите в списке <uicontrol>Добавить
+          атрибут</uicontrol> атрибут <codeph>keyref</codeph> и впишите имя ключа —
+          <codeph>product</codeph>.</cmd>
+        <info><p>Текст ключа подставляется только в пустой элемент. Если внутри
+          <codeph>keyword</codeph> остался текст заготовки, удалите его.</p></info>
+        <stepresult><p>На месте элемента — плашка, а в предпросмотре и публикации — «Метео-100».</p></stepresult>
+      </step>
+    </steps>
+    <result>
+      <p>Чтобы переименовать продукт, исправьте значение ключа в карте и сохраните её —
+        название поменяется во всех топиках.</p>
+    </result>
+  </taskbody>
+</task>

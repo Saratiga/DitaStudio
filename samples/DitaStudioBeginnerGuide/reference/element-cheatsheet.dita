@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="element-cheatsheet" xml:lang="ru-RU">
+  <title>Шпаргалка: какой элемент выбрать</title>
+  <shortdesc>Самые нужные элементы DITA: что вы хотите написать и какой элемент для этого
+    подходит. Имя элемента видно серой подписью в режиме «Автор» и в палитре
+    «Вставка».</shortdesc>
+  <refbody>
+    <table>
+      <title>Блоки</title>
+      <tgroup cols="3">
+        <colspec colname="c1" colwidth="3*"/>
+        <colspec colname="c2" colwidth="2*"/>
+        <colspec colname="c3" colwidth="4*"/>
+        <thead>
+          <row>
+            <entry>Хочу написать…</entry>
+            <entry>Элемент</entry>
+            <entry>Где взять</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row><entry>Абзац</entry><entry><codeph>p</codeph></entry><entry><shortcut>Enter</shortcut> в конце абзаца</entry></row>
+          <row><entry>Список с маркерами</entry><entry><codeph>ul</codeph></entry><entry>Подсказка по <shortcut>Enter</shortcut>, кнопка на панели</entry></row>
+          <row><entry>Нумерованный список</entry><entry><codeph>ol</codeph></entry><entry>Подсказка по <shortcut>Enter</shortcut>, кнопка на панели</entry></row>
+          <row><entry>Примечание, совет, предупреждение</entry><entry><codeph>note</codeph></entry><entry>Подсказка по <shortcut>Enter</shortcut>, меню <uicontrol>Вставка</uicontrol>; вид — атрибут <codeph>type</codeph></entry></row>
+          <row><entry>Таблица</entry><entry><codeph>table</codeph></entry><entry><menucascade><uicontrol>Вставка</uicontrol><uicontrol>Таблица…</uicontrol></menucascade></entry></row>
+          <row><entry>Рисунок с названием</entry><entry><codeph>fig</codeph></entry><entry><menucascade><uicontrol>Вставка</uicontrol><uicontrol>Изображение…</uicontrol></menucascade> → «Да»</entry></row>
+          <row><entry>Пример кода, команды</entry><entry><codeph>codeblock</codeph></entry><entry>Подсказка по <shortcut>Enter</shortcut>, меню <uicontrol>Вставка</uicontrol></entry></row>
+          <row><entry>Термин и его объяснение (список определений)</entry><entry><codeph>dl</codeph></entry><entry>Подсказка по <shortcut>Enter</shortcut></entry></row>
+          <row><entry>Раздел с подзаголовком внутри топика</entry><entry><codeph>section</codeph></entry><entry>Подсказка по <shortcut>Enter</shortcut> (в концепции и справке)</entry></row>
+          <row><entry>Шаг инструкции</entry><entry><codeph>step</codeph> + <codeph>cmd</codeph></entry><entry><shortcut>Enter</shortcut> в конце команды шага (в задаче)</entry></row>
+          <row><entry>Пояснение к шагу</entry><entry><codeph>info</codeph></entry><entry>Подсказка по <shortcut>Enter</shortcut> в шаге</entry></row>
+          <row><entry>Что получится после шага</entry><entry><codeph>stepresult</codeph></entry><entry>Подсказка по <shortcut>Enter</shortcut> в шаге</entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+
+    <table>
+      <title>Слова в строке</title>
+      <tgroup cols="3">
+        <colspec colname="c1" colwidth="3*"/>
+        <colspec colname="c2" colwidth="2*"/>
+        <colspec colname="c3" colwidth="4*"/>
+        <thead>
+          <row>
+            <entry>Хочу выделить…</entry>
+            <entry>Элемент</entry>
+            <entry>Как</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row><entry>Важное слово</entry><entry><codeph>b</codeph></entry><entry><shortcut>Ctrl+B</shortcut></entry></row>
+          <row><entry>Кнопку, пункт меню, поле</entry><entry><codeph>uicontrol</codeph></entry><entry><shortcut>Ctrl+Shift+U</shortcut></entry></row>
+          <row><entry>Путь меню (Файл → Сохранить)</entry><entry><codeph>menucascade</codeph></entry><entry>Палитра <uicontrol>Вставка</uicontrol></entry></row>
+          <row><entry>Имя файла или папки</entry><entry><codeph>filepath</codeph></entry><entry>Правая кнопка мыши → <uicontrol>Вставить элемент</uicontrol></entry></row>
+          <row><entry>Код, команду в строке</entry><entry><codeph>codeph</codeph></entry><entry><shortcut>Ctrl+`</shortcut></entry></row>
+          <row><entry>Новый термин</entry><entry><codeph>term</codeph></entry><entry>Правая кнопка мыши → <uicontrol>Вставить элемент</uicontrol></entry></row>
+          <row><entry>Ссылку на другой топик</entry><entry><codeph>xref</codeph></entry><entry><menucascade><uicontrol>Вставка</uicontrol><uicontrol>Перекрёстная ссылка…</uicontrol></menucascade></entry></row>
+          <row><entry>Сноску</entry><entry><codeph>fn</codeph></entry><entry><menucascade><uicontrol>Вставка</uicontrol><uicontrol>Сноска</uicontrol></menucascade></entry></row>
+          <row><entry>Значение ключа (название продукта)</entry><entry><codeph>keyword</codeph> + <codeph>keyref</codeph></entry><entry>См. <xref href="../tasks/use-keys.dita">Название продукта в одном месте</xref></entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+  </refbody>
+</reference>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="shortcuts" xml:lang="ru-RU">
+  <title>Главные клавиши</title>
+  <shortdesc>Сочетания клавиш, которые экономят больше всего времени. Полный список — в
+    подсказках кнопок и пунктах меню.</shortdesc>
+  <refbody>
+    <table>
+      <title>Файлы и проект</title>
+      <tgroup cols="2">
+        <colspec colname="c1" colwidth="3*"/>
+        <colspec colname="c2" colwidth="2*"/>
+        <thead>
+          <row>
+            <entry>Действие</entry>
+            <entry>Клавиши</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row><entry>Открыть папку проекта</entry><entry><shortcut>Ctrl+Shift+O</shortcut></entry></row>
+          <row><entry>Создать документ</entry><entry><shortcut>Ctrl+N</shortcut></entry></row>
+          <row><entry>Сохранить / сохранить все</entry><entry><shortcut>Ctrl+S</shortcut> / <shortcut>Ctrl+Shift+S</shortcut></entry></row>
+          <row><entry>Закрыть вкладку</entry><entry><shortcut>Ctrl+W</shortcut></entry></row>
+          <row><entry>Найти в проекте</entry><entry><shortcut>Ctrl+Shift+F</shortcut></entry></row>
+          <row><entry>Проверить проект</entry><entry><shortcut>F7</shortcut></entry></row>
+          <row><entry>Собрать сайт HTML</entry><entry><shortcut>F5</shortcut></entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+
+    <table>
+      <title>Текст в режиме «Автор»</title>
+      <tgroup cols="2">
+        <colspec colname="c1" colwidth="3*"/>
+        <colspec colname="c2" colwidth="2*"/>
+        <thead>
+          <row>
+            <entry>Действие</entry>
+            <entry>Клавиши</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row><entry>Следующий блок или подсказка, что вставить</entry><entry><shortcut>Enter</shortcut></entry></row>
+          <row><entry>Вставить после текущего блока (выйти из списка, таблицы)</entry><entry><shortcut>Ctrl+Enter</shortcut></entry></row>
+          <row><entry>Соединить с предыдущим блоком</entry><entry><shortcut>Backspace</shortcut> в начале блока</entry></row>
+          <row><entry>Сдвинуть пункт или шаг вглубь / обратно</entry><entry><shortcut>Tab</shortcut> / <shortcut>Shift+Tab</shortcut></entry></row>
+          <row><entry>Полужирный, курсив, подчёркнутый</entry><entry><shortcut>Ctrl+B</shortcut>, <shortcut>Ctrl+I</shortcut>, <shortcut>Ctrl+U</shortcut></entry></row>
+          <row><entry>Код в строке</entry><entry><shortcut>Ctrl+`</shortcut></entry></row>
+          <row><entry>Элемент интерфейса (кнопка, меню)</entry><entry><shortcut>Ctrl+Shift+U</shortcut></entry></row>
+          <row><entry>Снять оформление</entry><entry><shortcut>Ctrl+Shift+Space</shortcut></entry></row>
+          <row><entry>Переместить блок вверх / вниз</entry><entry><shortcut>Ctrl+Shift+↑</shortcut> / <shortcut>Ctrl+Shift+↓</shortcut></entry></row>
+          <row><entry>Перейти к палитре «Вставка»</entry><entry><shortcut>Ctrl+E</shortcut></entry></row>
+          <row><entry>Справка по элементу под курсором</entry><entry><shortcut>F1</shortcut></entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+
+    <table>
+      <title>Отмена</title>
+      <tgroup cols="2">
+        <colspec colname="c1" colwidth="3*"/>
+        <colspec colname="c2" colwidth="2*"/>
+        <thead>
+          <row>
+            <entry>Действие</entry>
+            <entry>Клавиши</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row><entry>Отменить / повторить набор текста</entry><entry><shortcut>Ctrl+Z</shortcut> / <shortcut>Ctrl+Y</shortcut></entry></row>
+          <row><entry>Отменить / повторить действие со структурой (вставка, удаление, перенос блока)</entry><entry><shortcut>Ctrl+Alt+Z</shortcut> / <shortcut>Ctrl+Alt+Y</shortcut></entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+  </refbody>
+</reference>

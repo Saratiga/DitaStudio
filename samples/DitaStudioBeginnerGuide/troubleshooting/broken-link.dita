@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE troubleshooting PUBLIC "-//OASIS//DTD DITA Troubleshooting//EN" "troubleshooting.dtd">
+<troubleshooting id="broken-link" xml:lang="ru-RU">
+  <title>Проверка нашла битую ссылку</title>
+  <shortdesc>В списке проверки — ошибка «Файл по ссылке не найден», а строка карты или ссылка
+    в тексте подсвечена красным.</shortdesc>
+  <troublebody>
+    <condition>
+      <p>После <shortcut>F7</shortcut> на вкладке <uicontrol>Проверка</uicontrol> есть строка
+        «Файл по ссылке … не найден». В карте такая строка красная.</p>
+    </condition>
+
+    <troubleSolution>
+      <cause>
+        <p>Файл переименовали, перенесли или удалили вне редактора — в Проводнике, другой
+          программе или системе контроля версий. Ссылки на него остались прежними.</p>
+      </cause>
+      <remedy>
+        <title>Исправить ссылку</title>
+        <steps>
+          <step>
+            <cmd>Дважды щёлкните по ошибке на вкладке <uicontrol>Проверка</uicontrol>.</cmd>
+            <stepresult><p>Откроется топик или карта с битой ссылкой.</p></stepresult>
+          </step>
+          <step>
+            <cmd>Выберите, что сделать.</cmd>
+            <choicetable>
+              <chhead>
+                <choptionhd>Если…</choptionhd>
+                <chdeschd>Сделайте</chdeschd>
+              </chhead>
+              <chrow>
+                <choption>файл переименован или перенесён</choption>
+                <chdesc>в карте: двойной щелчок по красной строке → <uicontrol>Выбрать другой
+                  файл…</uicontrol>; в тексте — удалите ссылку и вставьте заново</chdesc>
+              </chrow>
+              <chrow>
+                <choption>файла ещё нет</choption>
+                <chdesc>двойной щелчок по красной строке карты → <uicontrol>Создать файл по
+                  ссылке</uicontrol></chdesc>
+              </chrow>
+              <chrow>
+                <choption>ссылка больше не нужна</choption>
+                <chdesc><uicontrol>Убрать строку из карты</uicontrol> или удалите ссылку из
+                  текста</chdesc>
+              </chrow>
+            </choicetable>
+          </step>
+          <step>
+            <cmd>Повторите проверку (<shortcut>F7</shortcut>).</cmd>
+          </step>
+        </steps>
+      </remedy>
+    </troubleSolution>
+  </troublebody>
+</troubleshooting>

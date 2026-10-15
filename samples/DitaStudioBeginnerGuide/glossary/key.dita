@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary Entry//EN" "glossentry.dtd">
+<glossentry id="key" xml:lang="ru-RU">
+  <glossterm>ключ</glossterm>
+  <glossdef>Имя, за которым скрывается значение — текст, ссылка на топик или адрес. Значение задаётся в карте, в топиках ставится только имя; поменять значение — одна правка.</glossdef>
+</glossentry>

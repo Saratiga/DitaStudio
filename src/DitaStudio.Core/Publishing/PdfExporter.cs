@@ -98,7 +98,10 @@ public static class PdfExporter
             "--run-all-compositor-stages-before-draw",
             "--virtual-time-budget=10000",
             $"--user-data-dir=\"{profileDir}\"",
+            // Без служебных колонтитулов браузера (дата, заголовок вкладки, адрес файла): старый флаг понимают
+            // прежние версии, новый (--headless=new) — только --no-pdf-header-footer. Колонтитулы из CSS (@page) остаются.
             "--print-to-pdf-no-header",
+            "--no-pdf-header-footer",
             $"--print-to-pdf=\"{pdfPath}\"",
             $"\"{new Uri(Path.GetFullPath(htmlPath)).AbsoluteUri}\"");
 

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="review" xml:lang="ru-RU">
+  <title>Отмечаем правки</title>
+  <shortdesc>Когда руководство проверяет коллега, удобно видеть, что добавлено, что изменено
+    и что предлагается удалить. В DITA для этого есть пометки правок, а в редакторе — их
+    список.</shortdesc>
+  <taskbody>
+    <steps>
+      <step>
+        <cmd>Поставьте курсор в новый блок и выберите
+          <menucascade><uicontrol>Структура</uicontrol><uicontrol>Track changes: пометить как
+          вставленное</uicontrol></menucascade>.</cmd>
+        <info>
+          <p>Блок получает пометку «новое». Для блока, который предлагается убрать, —
+            <uicontrol>пометить как удалённое</uicontrol>: он остаётся в топике, но в
+            публикацию уже не входит.</p>
+          <p>Пометки над блоками цветные: новое — зелёная, изменённое — оранжевая, удалённое —
+            красная.</p>
+        </info>
+      </step>
+      <step>
+        <cmd>Откройте вкладку <uicontrol>Правки</uicontrol> справа.</cmd>
+        <stepresult>
+          <p>В списке — все помеченные блоки проекта: вид правки, элемент, файл и начало
+            текста. Список можно отфильтровать по виду правки.</p>
+          <fig>
+            <title>Список правок</title>
+            <image href="../images/screens/changes-panel.png" placement="break">
+              <alt>Вкладка «Правки»: удалённый абзац в concepts\about.dita, новый и изменённый
+                абзацы в troubleshooting\no-start.dita</alt>
+            </image>
+          </fig>
+        </stepresult>
+      </step>
+      <step>
+        <cmd>Щёлкните по строке списка.</cmd>
+        <stepresult><p>Открывается топик, курсор встаёт в помеченный блок.</p></stepresult>
+      </step>
+      <step>
+        <cmd>Примите или отклоните правку:
+          <menucascade><uicontrol>Структура</uicontrol><uicontrol>Track changes: принять
+          правку</uicontrol></menucascade> или <uicontrol>отклонить правку</uicontrol>.</cmd>
+        <info><p>Принятая вставка остаётся без пометки, принятое удаление убирает блок.
+          Отклонённая вставка убирает блок, отклонённое удаление возвращает его.</p></info>
+      </step>
+    </steps>
+    <result>
+      <p>Все правки рассмотрены, список на вкладке <uicontrol>Правки</uicontrol> пуст.</p>
+    </result>
+  </taskbody>
+</task>

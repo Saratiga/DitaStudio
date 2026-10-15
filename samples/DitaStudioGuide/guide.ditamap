@@ -33,6 +33,7 @@
     <topicref href="tasks/open-project.dita"/>
     <topicref href="tasks/edit-content.dita"/>
     <topicref href="tasks/insert-elements.dita"/>
+    <topicref href="tasks/tables.dita"/>
     <topicref href="tasks/validate-and-search.dita"/>
     <topicref href="tasks/publish.dita">
       <topicref href="concepts/docx-styling.dita"/>
@@ -53,6 +54,7 @@
     <topicmeta>
       <navtitle>Справочные материалы</navtitle>
     </topicmeta>
+    <topicref href="reference/main-window.dita"/>
     <topicref href="reference/keyboard-shortcuts.dita"/>
     <topicref href="reference/topic-structure.dita"/>
     <topicref href="reference/author-mode-limits.dita"/>

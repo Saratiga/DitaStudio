@@ -31,6 +31,12 @@
           <p>Папку можно создать прямо в программе: кнопка «Папка» на вкладке «Проект» или пункт
             «Новая папка…» в меню дерева (вложенная — через слеш, например
             <filepath>tasks/new</filepath>); пустые папки в дереве видны.</p>
+          <fig>
+            <title>Окно «Новая папка»</title>
+            <image href="../images/screens/new-folder-dialog.png" placement="break">
+              <alt>Поле «Имя папки» со значением tasks/setup и подсказкой о вложенных папках</alt>
+            </image>
+          </fig>
           <p>Скрытые папки и папки <filepath>out</filepath>, <filepath>bin</filepath>,
             <filepath>obj</filepath>, <filepath>temp</filepath>, <filepath>node_modules</filepath>
             редактор не сканирует. Сборку он по умолчанию предлагает класть в
@@ -42,7 +48,15 @@
           <uicontrol>Открыть папку проекта…</uicontrol></menucascade>
           (<shortcut>Ctrl+Shift+O</shortcut>).</cmd>
         <stepresult><p>Пустая папка — нормальный проект: дерево на вкладке «Проект» пока
-          пустое.</p></stepresult>
+          пустое. Над деревом — кнопки «Обновить», «Создать…» и «Папка» (1), ниже — папки и файлы
+          с заголовками топиков (2).</p>
+          <fig>
+            <title>Вкладка «Проект» учебного проекта</title>
+            <image href="../images/screens/project-tree.png" placement="break">
+              <alt>Рамка 1 — кнопки «Обновить», «Создать…», «Папка»; рамка 2 — дерево проекта «Пример» с папками concepts, glossary, reference, tasks, troubleshooting и картой guide.ditamap</alt>
+            </image>
+          </fig>
+        </stepresult>
       </step>
       <step>
         <cmd>Создайте карту: <menucascade><uicontrol>Файл</uicontrol>
@@ -65,6 +79,16 @@
           <chrow><choption>не работает — почему — что делать</choption><chdesc>Устранение неполадки</chdesc></chrow>
           <chrow><choption>определение термина</choption><chdesc>Статья глоссария</chdesc></chrow>
         </choicetable>
+        <info>
+          <fig>
+            <title>Окно «Создать документ»</title>
+            <image href="../images/screens/new-document-dialog.png" placement="break">
+              <alt>Список типов документа с пояснениями, поля «Заголовок» («Подключение датчика»), «Имя файла» (podklyuchenie_datchika.dita) и «Папка»</alt>
+            </image>
+          </fig>
+          <p>Имя файла и <parmname>id</parmname> строятся из заголовка (кириллица
+            транслитерируется).</p>
+        </info>
         <info><p>Когда карта уже есть, новый топик сразу добавляется в карту, выбранную на
           вкладке <uicontrol>Карта</uicontrol>, — после выделенной там строки (без выделения — в
           конец). Карта при этом открывается во вкладке с несохранённой правкой — сохраните её.</p></info>

@@ -18,7 +18,14 @@
         <cmd>Откройте топик и выберите <menucascade><uicontrol>Публикация</uicontrol>
           <uicontrol>Экспорт в XLIFF (для перевода)…</uicontrol></menucascade>.</cmd>
         <info>Окно «Языки XLIFF» предлагает исходный язык (<codeph>xml:lang</codeph> документа) и целевой;
-          можно ввести любые коды языков.</info>
+          можно ввести любые коды языков.
+          <fig>
+            <title>Окно «Языки XLIFF»</title>
+            <image href="../images/screens/xliff-languages-dialog.png" placement="break">
+              <alt>Поля исходного и целевого языка с кодами и кнопки OK и Отмена</alt>
+            </image>
+          </fig>
+        </info>
         <stepresult>Создаётся файл <filepath>.xliff</filepath> с выбранной языковой парой.</stepresult>
       </step>
       <step>

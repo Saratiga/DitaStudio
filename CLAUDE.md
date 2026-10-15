@@ -65,10 +65,15 @@ CefGlue); логика окна — общие ViewModel'и `src/DitaStudio.Pres
 
 ## Документация
 
-Пользовательская документация живёт в трёх местах, и их нужно держать согласованными
+Пользовательская документация живёт в четырёх местах, и их нужно держать согласованными
 при добавлении/изменении функций: `README.md` (обзор, сборка, ограничения),
-`USAGE.md` (пошаговое руководство по всем пунктам меню) и `samples/DitaStudioGuide`
-(то же руководство как DITA-проект, новый топик добавить в `guide.ditamap`). Оба проекта
+`USAGE.md` (пошаговое руководство по всем пунктам меню), `samples/DitaStudioGuide`
+(руководство для знающих DITA как DITA-проект, новый топик добавить в `guide.ditamap`) и
+`samples/DitaStudioBeginnerGuide` (для начинающих: понятия DITA и уроки). Снимки экрана руководств —
+`images/screens/*.png`, их делает `tests/DitaStudio.Desktop.Tests/GuideScreenshots.cs`
+(`DITASTUDIO_GUIDE_SHOTS=1`, настоящее окно на копии `samples/GuideSample`, пометки — красные рамки с номером);
+PDF и DOCX в `docs/guides` собирает `GuideBuild.cs` (`DITASTUDIO_GUIDE_BUILD=1`) — после правки руководств или
+интерфейса пересобрать снимки и руководства. Все три проекта
 из `samples/` проверяет тест `SampleProjectsTests`: ноль ошибок и предупреждений валидации,
 HTML и DOCX собираются без предупреждений (кроме SVG в DOCX: тест собирает без растеризатора) — после правки прогнать `dotnet test`. Чек-лист тестирования — `docs/TESTPLAN.md`.
 
@@ -108,6 +113,7 @@ tests/DitaStudio.Tests/  проверки ядра (xUnit)
 tests/DitaStudio.Desktop.Tests/ headless-тесты интерфейса (+ CefPreviewTests, MultiProjectTests)
 tests/TestPlugin/        пример плагина
 samples/GuideSample/     учебный DITA-проект
+samples/DitaStudioGuide/, samples/DitaStudioBeginnerGuide/  руководства (DITA), docs/guides — их PDF и DOCX
 ```
 
 Зависимости Avalonia-версии: **Avalonia 11.3**, **AvaloniaEdit** (исходный XML и редактор
@@ -159,6 +165,10 @@ Svg.Skia тянет SkiaSharp 3/4 и ломает отрисовку). Ядро 
   `@`, иначе `logo@2x.dita` читается как peg-ревизия.
 - **`MaxCharactersFromEntities` не ставить в 0** (это «без предела») — предел
   `DitaDocument.MaxEntityCharacters` защищает от «billion laughs» при открытии файла.
+- **Издание целиком (единый HTML, PDF, DOCX) идёт по `MapTree.PublicationOrderWithHeadings`**, а не `PublicationOrder`:
+  `topichead` с топиками (`MapItem.IsHeadingOnly`) — заголовок своего уровня (`HtmlRenderer.RenderHeadingOnly`,
+  `DocxRenderer.RenderHeadingOnly`), иначе топики раздела приклеиваются к предыдущей главе. Названия строк карты —
+  `DitaProject.TextWithKeys` (ключи подставлены), а не `InnerText`.
 - **PowerShell 5.1 читает UTF-8 без BOM как CP1251**, длинное тире превращается в
   «умную» кавычку и ломает разбор скрипта. `.ps1` в репозитории — только ASCII.
 

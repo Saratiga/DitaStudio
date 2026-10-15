@@ -79,7 +79,8 @@ public sealed class DitaDocument
         {
             // Пустой заголовок (топик из одной таблицы) — название по первому непустому
             // заголовку внутри, например по подписи таблицы.
-            var text = Root.FirstElement("title")?.InnerText.Trim();
+            // У статьи глоссария заголовка нет — её название в glossterm.
+            var text = (Root.FirstElement("title") ?? Root.FirstElement("glossterm"))?.InnerText.Trim();
             if (string.IsNullOrEmpty(text))
             {
                 text = Root.Descendants()

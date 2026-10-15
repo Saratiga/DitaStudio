@@ -100,6 +100,22 @@ public sealed class MapItem
         }
     }
 
+    /// <summary>
+    /// Строка-заголовок без своего топика (<c>topichead</c>, глава или часть книги без <c>href</c>, но с <c>navtitle</c>), под которой есть
+    /// публикуемые топики: в едином HTML, PDF и DOCX становится заголовком раздела своего уровня — иначе её топики
+    /// «приклеиваются» к предыдущей главе.
+    /// </summary>
+    public bool IsHeadingOnly =>
+        Parent is not null && TargetPath is null && !IsBroken && !IsResourceOnly && !IsMapRef && Node.Name != "topicgroup"
+        && HasNavTitle(Node) && DescendantsAndSelf().Skip(1).Any(i => i.IsPublishedTopic);
+
+    /// <summary>Топик, который выходит в публикацию: есть файл, строка не битая и не «только ресурс».</summary>
+    public bool IsPublishedTopic => TargetPath is not null && !IsBroken && !IsResourceOnly;
+
+    private static bool HasNavTitle(DitaNode node) =>
+        !string.IsNullOrWhiteSpace(node.FirstElement("topicmeta")?.FirstElement("navtitle")?.InnerText)
+        || !string.IsNullOrWhiteSpace(node.GetAttribute("navtitle"));
+
     public IEnumerable<MapItem> DescendantsAndSelf()
     {
         yield return this;
@@ -136,8 +152,11 @@ public sealed class MapTree
     public IEnumerable<MapItem> Items => Root.DescendantsAndSelf();
 
     /// <summary>Топики публикации в порядке обхода карты (без resource-only).</summary>
-    public IEnumerable<MapItem> PublicationOrder =>
-        Items.Where(i => !i.IsResourceOnly && i.TargetPath is not null && !i.IsBroken);
+    public IEnumerable<MapItem> PublicationOrder => Items.Where(i => i.IsPublishedTopic);
+
+    /// <summary>То же, что <see cref="PublicationOrder"/>, вместе со строками-заголовками (<see cref="MapItem.IsHeadingOnly"/>) — порядок
+    /// разделов единого HTML, PDF и DOCX.</summary>
+    public IEnumerable<MapItem> PublicationOrderWithHeadings => Items.Where(i => i.IsPublishedTopic || i.IsHeadingOnly);
 
     /// <summary>Связи из таблиц соответствий (reltable), ключ — абсолютный путь топика. Топики
     /// в одной строке reltable, но в разных ячейках, взаимно связываются; топики одной ячейки
@@ -390,18 +409,13 @@ public sealed class MapTree
             var doc = project.TryGetDocument(item.TargetPath);
             if (doc is not null)
             {
-                if (item.TargetTopicId is not null)
-                {
-                    var topic = RefResolver.FindById(doc.Root, item.TargetTopicId);
-                    var title = topic?.FirstElement("title")?.InnerText.Trim()
-                                ?? topic?.FirstElement("glossterm")?.InnerText.Trim();
-                    if (!string.IsNullOrEmpty(title))
-                    {
-                        return title!;
-                    }
-                }
-
-                return doc.Title;
+                var topic = item.TargetTopicId is null ? doc.Root : RefResolver.FindById(doc.Root, item.TargetTopicId);
+                // Заголовок с ключами («О <keyword keyref="product-name"/>») — с подставленным текстом ключа, пробелы и переносы строк — одним пробелом.
+                var titleNode = topic?.FirstElement("title") ?? topic?.FirstElement("glossterm");
+                var title = titleNode is null
+                    ? null
+                    : System.Text.RegularExpressions.Regex.Replace(project.TextWithKeys(titleNode, item.KeyScopeChain), @"\s+", " ").Trim();
+                return string.IsNullOrEmpty(title) ? doc.Title : title;
             }
         }
 

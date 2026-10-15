@@ -15,6 +15,27 @@ namespace DitaStudio.Docx;
 // DOCX: топик целиком (заголовок, тело, вложенные топики) и ссылки из таблиц соответствий.
 public sealed partial class DocxRenderer
 {
+    /// <summary>
+    /// Заголовок раздела карты без своего топика (<c>topichead</c>, <see cref="MapItem.IsHeadingOnly"/>): абзац-заголовок уровня строки
+    /// карты с закладкой для оглавления; номер и разрыв страницы — как у заголовка топика.
+    /// </summary>
+    public void RenderHeadingOnly(string title, W.Body body, int headingLevel, string bookmarkName, bool unnumbered = false, bool? pageBreakBefore = null)
+    {
+        var heading = HeadingParagraph(new List<OpenXmlElement> { new W.Run(new W.Text(title) { Space = SpaceProcessingModeValues.Preserve }) },
+            headingLevel, unnumbered);
+        PrependBookmark(heading, bookmarkName);
+        if (pageBreakBefore == true)
+        {
+            EnsureParagraphProperties(heading).PageBreakBefore = new W.PageBreakBefore();
+        }
+        else if (pageBreakBefore == false)
+        {
+            EnsureParagraphProperties(heading).PageBreakBefore = new W.PageBreakBefore { Val = false };
+        }
+
+        body.Append(heading);
+    }
+
     /// <summary>Отрисовывает один топик и добавляет его содержимое в конец body.</summary>
     /// <param name="unnumbered">Заголовок без номера и вне оглавления (строка карты с toc="no").</param>
     /// <param name="pageBreakBefore">Разрыв страницы перед топиком из карты (<see cref="TopicPageBreak"/>): true — с новой страницы,
