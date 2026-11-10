@@ -51,6 +51,9 @@ public sealed class StructureRequestEventArgs : EventArgs
     public bool Handled { get; set; }
 }
 
+/// <summary>Правка текста в блоке: где, сколько удалено и сколько вставлено (смещения — в тексте блока до правки).</summary>
+public sealed record TextChange(int Offset, int RemovalLength, int InsertionLength);
+
 /// <summary>
 /// Редактор смешанного содержимого одного элемента DITA (абзац, заголовок, ячейка, cmd…) —
 /// замена WPF InlineEditor (RichTextBox) на AvaloniaEdit. Текст блока — одна строка документа
@@ -93,6 +96,9 @@ public sealed class BlockEditor : TextEditor
 
         Document = new TextDocument(_content.Text);
         Document.UndoStack.ClearAll();
+        // Своей истории у блока нет: ввод текста попадает в общую историю документа (снимки, Ctrl+Z/Ctrl+Y окна) —
+        // см. TextChanging. Пустая история AvaloniaEdit не перехватывает Ctrl+Z, и сочетание доходит до окна.
+        Document.UndoStack.SizeLimit = 0;
         Document.Changed += OnDocumentChanged;
 
         TextArea.TextView.LineTransformers.Add(new InlineColorizer(this));
@@ -184,6 +190,9 @@ public sealed class BlockEditor : TextEditor
     /// <summary>Текст изменён пользователем (для отметки «не сохранено»).</summary>
     public event EventHandler? ContentChanged;
 
+    /// <summary>Правка текста пользователем (набор, удаление, вставка) — до того, как она записана в модель.</summary>
+    public event EventHandler<TextChange>? TextChanging;
+
     /// <summary>Меню по правой кнопке строится: подписчик добавляет свои пункты (например, «Вставить»).</summary>
     public event Action<BlockEditor, List<Control>>? ContextMenuBuilding;
 
@@ -200,6 +209,8 @@ public sealed class BlockEditor : TextEditor
             return;
         }
 
+        // До записи правки в модель: оболочка может сохранить снимок для отмены (модель ещё без этой правки).
+        TextChanging?.Invoke(this, new TextChange(e.Offset, e.RemovalLength, e.InsertionLength));
         _content.Replace(e.Offset, e.RemovalLength, e.InsertedText.Text);
         _misspellings = null;
         _dirty = true;

@@ -57,6 +57,13 @@ public sealed class RenderOptions
     /// и вложенных топиков получают тот же префикс "имяФайла--", что и HtmlPublisher.AnchorFor —
     /// иначе xref на file.dita#topicId/elementId целится в несуществующий якорь.</summary>
     public bool SingleFileAnchors { get; set; }
+
+    /// <summary>
+    /// Номера целей перекрёстных ссылок на всё издание (рисунки, таблицы, пункты, сноски): публикатор создаёт один на
+    /// издание и заменяет метки в готовом тексте (<see cref="CrossReferenceLabels.Resolve"/>). null — у отрисовщика свой,
+    /// метки заменяются в конце каждого топика.
+    /// </summary>
+    public CrossReferenceLabels? CrossReferences { get; set; }
 }
 
 /// <summary>
@@ -81,7 +88,18 @@ public sealed partial class HtmlRenderer
         _project = project;
         _catalog = project.Catalog;
         _options = options ?? new RenderOptions();
+        _ownCrossReferences = _options.CrossReferences is null;
+        _xrefs = _options.CrossReferences ?? new CrossReferenceLabels();
     }
+
+    private readonly CrossReferenceLabels _xrefs;
+    private readonly bool _ownCrossReferences;
+
+    /// <summary>Номера и подписи целей перекрёстных ссылок, записанные при отрисовке.</summary>
+    public CrossReferenceLabels CrossReferences => _xrefs;
+
+    /// <summary>Последний выданный номер заголовка (для подписи ссылки на раздел).</summary>
+    private string? _lastHeadingNumber;
 
     public int FigureNumber
     {
@@ -143,9 +161,12 @@ public sealed partial class HtmlRenderer
 
                 case "title":
                 case "glossterm":
+                    _lastHeadingNumber = null;
+                    var topicHeadingNumber = HeadingNumber(headingLevel, _options.TopicUnnumbered || TocRules.IsUnnumbered(child));
+                    _xrefs.Record(document.FilePath, id, XrefTargetKind.Topic, null, _lastHeadingNumber, child.InnerText);
                     sb.Append('<').Append(H(headingLevel)).Append(OptionalClassAttr(child))
                       .Append('>')
-                      .Append(HeadingNumber(headingLevel, _options.TopicUnnumbered || TocRules.IsUnnumbered(child)))
+                      .Append(topicHeadingNumber)
                       .Append(RenderInlineChildren(child))
                       .Append("</").Append(H(headingLevel)).Append(">\n");
                     break;
@@ -202,7 +223,9 @@ public sealed partial class HtmlRenderer
         sb.Append(RenderFootnotes());
         sb.Append(RenderReltableLinks());
         sb.Append("</article>\n");
-        return sb.ToString();
+        var html = sb.ToString();
+        // Свой набор номеров (предпросмотр одного топика): метки ссылок заменяются сразу; у издания — после всех топиков.
+        return _ownCrossReferences && _nestedDepth == 0 ? _xrefs.Resolve(html, Escape) : html;
     }
 
     /// <summary>
@@ -285,6 +308,8 @@ public sealed partial class HtmlRenderer
         {
             return string.Empty;
         }
+
+        _lastHeadingNumber = number;
 
         if (_nestedDepth == 0 && TopicNumber is null)
         {

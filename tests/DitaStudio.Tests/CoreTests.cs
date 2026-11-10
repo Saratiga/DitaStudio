@@ -112,6 +112,7 @@ public sealed class CoreTests
     [Fact] public void TableEdgesTests() => Run(CoreChecks.TableEdgesTests);
     [Fact]
     public void CellParagraphsDocxTests() => Run(CoreChecks.CellParagraphsDocxTests);
+    [Fact] public void CrossReferenceTests() => Run(CoreChecks.CrossReferenceTests);
     [Fact] public void CssCascadeDocxTests() => Run(CoreChecks.CssCascadeDocxTests);
     [Fact] public void HeaderFooterCssDocxTests() => Run(CoreChecks.HeaderFooterCssDocxTests);
     [Fact] public void MapMoveTests() => Run(CoreChecks.MapMoveTests);

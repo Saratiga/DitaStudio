@@ -18,7 +18,7 @@
       </step>
       <step>
         <cmd>Первым делом в <codeph>Execute</codeph> вызовите <codeph>pane.PushUndo(Name)</codeph>.</cmd>
-        <info><p>Это снимок документа до правки: пункт «Отменить структурное изменение» (<shortcut>Ctrl+Alt+Z</shortcut>) вернёт
+        <info><p>Это снимок документа до правки: пункт «Отменить» (<shortcut>Ctrl+Z</shortcut>) вернёт
           документ одним шагом. Без снимка правку плагина не отменить.</p></info>
       </step>
       <step>
@@ -69,7 +69,7 @@ public sealed class TypographicQuotesCommand : IAuthorCommandPlugin
 
     public void Execute(IDocumentView pane)
     {
-        // Снимок ДО правки: «Отменить структурное изменение» (Ctrl+Alt+Z) вернёт документ одним шагом.
+        // Снимок ДО правки: «Отменить» (Ctrl+Z) вернёт документ одним шагом.
         pane.PushUndo(Name);
 
         LastReplaced = 0;

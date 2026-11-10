@@ -178,24 +178,44 @@ public partial class InsertViewModel
             return;
         }
 
-        var result = await _ui.Dialogs.InsertXrefAsync(project, pane.FilePath);
-        if (result is null)
+        // Цели берутся из документа вкладки, если файл открыт (с несохранёнными правками), иначе — из проекта.
+        pane.CommitPendingEdits();
+        DitaDocument? DocumentFor(string path) =>
+            _docs.Panes.TryGetValue(Path.GetFullPath(path), out var open) ? open.Document : project.TryGetDocument(path);
+
+        var choice = await _ui.Dialogs.InsertCrossReferenceAsync(project, pane.FilePath, DocumentFor);
+        if (choice is null || DocumentFor(choice.FilePath) is not { } targetDocument)
         {
             return;
         }
 
-        var href = RefResolver.MakeRelative(pane.FilePath, result.File.FullPath);
-        if (!string.IsNullOrEmpty(result.TopicId))
+        // Ссылке нужен id цели: нет его — добавляется (в открытом документе — правкой вкладки, в закрытом — сразу на диск).
+        var (id, added) = XrefTargets.EnsureId(targetDocument, choice.Target);
+        if (added)
         {
-            href += "#" + result.TopicId;
+            if (_docs.Panes.TryGetValue(Path.GetFullPath(choice.FilePath), out var targetPane))
+            {
+                targetPane.Author.RefreshAttributeNotes(choice.Target.Node);
+            }
+            else
+            {
+                targetDocument.Save();
+            }
+
+            _shell.StatusText = Loc.T("Msg_XrefTargetIdAdded", id, Path.GetFileName(choice.FilePath));
         }
 
         var xref = DitaNode.Element("xref");
-        xref.SetAttribute("href", href);
+        xref.SetAttribute("href", XrefTargets.Href(pane.FilePath, choice.FilePath, choice.Target, id));
         xref.SetAttribute("format", "dita");
-        if (!string.IsNullOrWhiteSpace(result.Text))
+        if (CrossReferenceLabels.ClassOf(choice.Form) is { } formClass)
         {
-            xref.SetText(result.Text);
+            xref.SetAttribute("outputclass", formClass);
+        }
+
+        if (!string.IsNullOrWhiteSpace(choice.Text))
+        {
+            xref.SetText(choice.Text);
         }
 
         if (!pane.Author.InsertInlineNode(xref))

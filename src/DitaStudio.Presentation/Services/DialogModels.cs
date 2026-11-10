@@ -11,6 +11,12 @@ public sealed record TableResult(int Rows, int Columns, bool Header, string Titl
 
 public sealed record XrefResult(ProjectFile File, string? TopicId, string Text);
 
+/// <summary>
+/// Выбор в окне «Перекрёстная ссылка»: цель (<see cref="Target"/>) в файле <see cref="FilePath"/>, вид текста ссылки
+/// (<see cref="Form"/>) и свой текст (<see cref="Text"/>; пусто — текст по цели при публикации).
+/// </summary>
+public sealed record CrossReferenceChoice(string FilePath, XrefTarget Target, DitaStudio.Core.Publishing.XrefForm Form, string Text);
+
 /// <summary>Одна ячейка таблицы соответствий (reltable) — не более одного topicref на
 /// ячейку; DITA допускает несколько, но для редактора этого достаточно (частый случай на
 /// практике). Пустая ячейка (File == null) — допустимо, relcell может быть пустой.</summary>

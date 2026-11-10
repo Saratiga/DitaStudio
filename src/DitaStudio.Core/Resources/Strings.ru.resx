@@ -1611,6 +1611,9 @@
   <data name="Doc_Source" xml:space="preserve">
     <value>Исходный код</value>
   </data>
+  <data name="Doc_Typing" xml:space="preserve">
+    <value>Ввод текста</value>
+  </data>
   <data name="Doc_SourceEdit" xml:space="preserve">
     <value>Правка исходного кода</value>
   </data>
@@ -3316,7 +3319,7 @@
     <value>Элемент интерфейса</value>
   </data>
   <data name="Menu_UndoStructural" xml:space="preserve">
-    <value>Отменить структурное изменение</value>
+    <value>Отменить</value>
   </data>
   <data name="Menu_UnnumberedTitle" xml:space="preserve">
     <value>Заголовок без номера (не в оглавлении)</value>
@@ -4622,7 +4625,7 @@
     <value>Подчёркнутый (Ctrl+U)</value>
   </data>
   <data name="Tip_UndoStructural" xml:space="preserve">
-    <value>Отменить структурное изменение (Ctrl+Alt+Z)</value>
+    <value>Отменить (Ctrl+Z)</value>
   </data>
   <data name="Tip_UnnumberedTitle" xml:space="preserve">
     <value>Курсор в заголовке: при публикации он не нумеруется и не попадает в оглавление (outputclass="nonumber")</value>
@@ -4940,5 +4943,80 @@
   </data>
   <data name="Msg_PluginsFailedToLoad0" xml:space="preserve">
     <value>Плагины: не загрузилось {0} — см. «Справка → Плагины…»</value>
+  </data>
+  <data name="Xref_KindLabel" xml:space="preserve">
+    <value>Тип ссылки:</value>
+  </data>
+  <data name="Xref_FormLabel0" xml:space="preserve">
+    <value>Вставить ссылку на:</value>
+  </data>
+  <data name="Xref_KindNumbered" xml:space="preserve">
+    <value>Нумерованный пункт</value>
+  </data>
+  <data name="Xref_KindSection" xml:space="preserve">
+    <value>Заголовок раздела</value>
+  </data>
+  <data name="Xref_KindTopic" xml:space="preserve">
+    <value>Топик</value>
+  </data>
+  <data name="Xref_KindFootnote" xml:space="preserve">
+    <value>Сноска</value>
+  </data>
+  <data name="Xref_KindFigure" xml:space="preserve">
+    <value>Рисунок</value>
+  </data>
+  <data name="Xref_KindTable" xml:space="preserve">
+    <value>Таблица</value>
+  </data>
+  <data name="Xref_FormLabel" xml:space="preserve">
+    <value>Постоянная часть и номер («Рисунок 3»)</value>
+  </data>
+  <data name="Xref_FormFull" xml:space="preserve">
+    <value>Название целиком («Рисунок 3. Схема»)</value>
+  </data>
+  <data name="Xref_FormNumber" xml:space="preserve">
+    <value>Только номер («3»)</value>
+  </data>
+  <data name="Xref_FormCaptionText" xml:space="preserve">
+    <value>Только текст названия</value>
+  </data>
+  <data name="Xref_FormItemNumber" xml:space="preserve">
+    <value>Номер пункта</value>
+  </data>
+  <data name="Xref_FormItemText" xml:space="preserve">
+    <value>Текст пункта</value>
+  </data>
+  <data name="Xref_FormNumberAndText" xml:space="preserve">
+    <value>Номер и текст</value>
+  </data>
+  <data name="Xref_FormFootnoteNumber" xml:space="preserve">
+    <value>Номер сноски</value>
+  </data>
+  <data name="Xref_FormFootnoteText" xml:space="preserve">
+    <value>Текст сноски</value>
+  </data>
+  <data name="Xref_FormHeadingText" xml:space="preserve">
+    <value>Текст заголовка</value>
+  </data>
+  <data name="Xref_FormHeadingNumber" xml:space="preserve">
+    <value>Номер заголовка</value>
+  </data>
+  <data name="Xref_ThisDocument" xml:space="preserve">
+    <value>Этот документ</value>
+  </data>
+  <data name="Xref_Document" xml:space="preserve">
+    <value>Документ:</value>
+  </data>
+  <data name="Xref_Targets" xml:space="preserve">
+    <value>Для какого элемента:</value>
+  </data>
+  <data name="Xref_OwnText" xml:space="preserve">
+    <value>Свой текст ссылки (необязательно; пусто — по виду ссылки):</value>
+  </data>
+  <data name="Xref_NoTargets" xml:space="preserve">
+    <value>В документе нет элементов вида «{0}».</value>
+  </data>
+  <data name="Msg_XrefTargetIdAdded" xml:space="preserve">
+    <value>У цели ссылки нет id — добавлен id «{0}» в {1}.</value>
   </data>
 </root>

@@ -21,8 +21,8 @@
           <row><entry><shortcut>Ctrl+S</shortcut></entry><entry>Сохранить документ</entry></row>
           <row><entry><shortcut>Ctrl+Shift+S</shortcut></entry><entry>Сохранить всё</entry></row>
           <row><entry><shortcut>Ctrl+W</shortcut></entry><entry>Закрыть вкладку</entry></row>
-          <row><entry><shortcut>Ctrl+Alt+Z</shortcut></entry><entry>Отменить структурное изменение</entry></row>
-          <row><entry><shortcut>Ctrl+Alt+Y</shortcut></entry><entry>Повторить структурное изменение</entry></row>
+          <row><entry><shortcut>Ctrl+Z</shortcut></entry><entry>Отменить (набор текста и структурные правки; также <shortcut>Ctrl+Alt+Z</shortcut>)</entry></row>
+          <row><entry><shortcut>Ctrl+Y</shortcut></entry><entry>Повторить (также <shortcut>Ctrl+Shift+Z</shortcut>, <shortcut>Ctrl+Alt+Y</shortcut>)</entry></row>
           <row><entry><shortcut>Ctrl+Shift+F</shortcut></entry><entry>Найти в проекте</entry></row>
           <row><entry><shortcut>F7</shortcut></entry><entry>Проверить проект</entry></row>
           <row><entry><shortcut>F1</shortcut></entry><entry>Справка по элементу под курсором</entry></row>

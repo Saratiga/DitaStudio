@@ -277,9 +277,22 @@ public sealed partial class DocxRenderer
 
         var innerRuns = RenderInlineRuns(node).ToList();
         var hasText = innerRuns.OfType<W.Run>().Any(r => r.GetFirstChild<W.Text>()?.Text.Length > 0);
+        var target = CrossReferenceLabels.TargetOf(node, _document.FilePath);
+        if (target is var (targetPath, targetId) && bookmark is null)
+        {
+            // Ссылка на элемент (рисунок, таблицу, пункт, раздел) — на его закладку; нет её в документе — станет текстом.
+            bookmark = CrossReferenceLabels.BookmarkName(targetPath, targetId);
+        }
+
         if (!hasText)
         {
-            innerRuns = new List<OpenXmlElement> { new W.Run(new W.Text(label ?? external ?? href ?? string.Empty)) };
+            var fallback = label ?? external ?? href ?? string.Empty;
+            innerRuns = new List<OpenXmlElement>
+            {
+                new W.Run(new W.Text(target is var (path, id)
+                    ? CrossReferences.Token(path, id, CrossReferenceLabels.FormOf(node), fallback)
+                    : fallback) { Space = SpaceProcessingModeValues.Preserve })
+            };
         }
 
         if (bookmark is not null)
@@ -348,6 +361,9 @@ public sealed partial class DocxRenderer
         EnsureFootnotesRoot(footnotesPart);
 
         var id = _nextFootnoteId++;
+        var callout = node.GetAttribute("callout");
+        RecordTarget(null, node, XrefTargetKind.Footnote, null,
+            string.IsNullOrWhiteSpace(callout) ? id.ToString(System.Globalization.CultureInfo.InvariantCulture) : callout, node.InnerText);
         var runs = RenderInlineRuns(node);
         var paragraph = new W.Paragraph(
             new W.ParagraphProperties(new W.ParagraphStyleId { Val = DocxStyleCatalog.FootnoteText }),

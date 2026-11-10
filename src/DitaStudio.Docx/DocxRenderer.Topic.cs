@@ -84,6 +84,9 @@ public sealed partial class DocxRenderer
                         heading = HeadingParagraph(RenderInlineRuns(child), headingLevel, unnumbered || TocRules.IsUnnumbered(child));
                     }
 
+                    // Топик — цель ссылки с видом «номер» или «подпись целиком»: закладка у него своя (bookmarkName).
+                    CrossReferences.Record(document.FilePath, topic.GetAttribute("id"), XrefTargetKind.Topic, null, _lastHeadingNumber, child.InnerText);
+
                     if (bookmarkName is not null)
                     {
                         PrependBookmark(heading, bookmarkName);

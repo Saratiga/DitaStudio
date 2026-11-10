@@ -1,3 +1,4 @@
+using DitaStudio.Core.Model;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Localization;
@@ -55,6 +56,13 @@ public interface IDialogService
     Task<TableResult?> InsertTableAsync();
 
     Task<XrefResult?> InsertXrefAsync(DitaProject project, string? currentFile);
+
+    /// <summary>
+    /// Окно «Перекрёстная ссылка» (как в Word): тип цели (топик, раздел, рисунок, таблица, нумерованный пункт, сноска),
+    /// документ, сама цель и вид текста ссылки. <paramref name="documentFor"/> — документ по пути (открытый во вкладке —
+    /// с несохранёнными правками).
+    /// </summary>
+    Task<CrossReferenceChoice?> InsertCrossReferenceAsync(DitaProject project, string currentFile, Func<string, DitaDocument?> documentFor);
 
     Task<List<List<RelTableCell>>?> EditRelTableAsync(DitaProject project, List<List<RelTableCell>> initialRows);
 

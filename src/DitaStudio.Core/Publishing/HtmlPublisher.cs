@@ -150,7 +150,9 @@ public sealed class HtmlPublisher
             Numbering = new HeadingNumbering(_project.DocxLayout.NumberHeadings, _project.DocxLayout.NumberingDepth),
             NumberFiguresAndTables = _project.DocxLayout.NumberFiguresAndTables,
             CaptionSeparator = _project.DocxLayout.CaptionSeparator,
-            MarkMissingImages = options.MarkMissingImages
+            MarkMissingImages = options.MarkMissingImages,
+            // Номера рисунков, таблиц, пунктов для перекрёстных ссылок — одни на всё издание.
+            CrossReferences = new CrossReferenceLabels()
         };
 
         if (options.SingleFile)
@@ -226,7 +228,8 @@ public sealed class HtmlPublisher
         foreach (var (outPath, item, pageBody) in pages)
         {
             var pageToc = BuildToc(tree, fileNames, item, hasIndex ? (IndexPageName, labels.Index, false) : null, numbers);
-            File.WriteAllText(outPath, Page(item.Title, pageToc, pageBody, labels, customCss), new UTF8Encoding(false));
+            var resolvedBody = renderOptions.CrossReferences.Resolve(pageBody, HtmlRenderer.Escape);
+            File.WriteAllText(outPath, Page(item.Title, pageToc, resolvedBody, labels, customCss), new UTF8Encoding(false));
             written.Add(outPath);
         }
 
@@ -364,7 +367,8 @@ public sealed class HtmlPublisher
 
         body.Append(renderer.RenderIndexSection());
 
-        var html = Page(tree.Root.Title, null, body.ToString(), labels, customCss);
+        var resolved = renderOptions.CrossReferences?.Resolve(body.ToString(), HtmlRenderer.Escape) ?? body.ToString();
+        var html = Page(tree.Root.Title, null, resolved, labels, customCss);
         var outPath = Path.Combine(options.OutputDirectory, SafeFileName(tree.Root.Title) + ".html");
         File.WriteAllText(outPath, html, new UTF8Encoding(false));
         return outPath;

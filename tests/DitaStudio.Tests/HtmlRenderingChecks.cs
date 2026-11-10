@@ -128,7 +128,8 @@ internal static partial class CoreChecks
             // src, кешируя по абсолютному исходному пути (real.png использован трижды и должен
             // трижды сослаться на один и тот же скопированный файл).
             Check(html.Contains("<img src=\"media/real.png\" alt=\"\" />"), "html: изображение без width/height скопировано в media/, атрибуты размера не добавлены");
-            Check(html.Contains("width=\"2in\"") && html.Contains("height=\"1in\""), "html: явные width/height перенесены в <img> как есть (без пересчёта в EMU — это забота DOCX)");
+            Check(html.Contains("style=\"width:2in;height:1in;\"") && !html.Contains("width=\"2in\""),
+                "html: width/height в дюймах — в style (атрибут HTML понимает только пиксели), без пересчёта");
             Check(html.Contains("src=\"media/wide.png\""), "html: слишком широкое изображение всё равно отрисовано (у HTML нет понятия печатной полосы)");
             Check(html.Split("src=\"media/real.png\"").Length - 1 == 3,
                 $"html: keyref и прямой href на одно и то же изображение резолвятся в один и тот же скопированный файл (3 вхождения): {html.Split("src=\"media/real.png\"").Length - 1}");
@@ -225,6 +226,11 @@ internal static partial class CoreChecks
             File.WriteAllBytes(Path.Combine(root, "video.mp4"), new byte[] { 1, 2, 3 });
             File.WriteAllBytes(Path.Combine(root, "audio.mp3"), new byte[] { 4, 5, 6 });
             File.WriteAllBytes(Path.Combine(root, "flashthing.bin"), new byte[] { 7, 8 });
+            foreach (var picture in new[] { "mm.png", "px.png", "cm.png", "bad.png" })
+            {
+                File.WriteAllBytes(Path.Combine(root, picture), new byte[] { 0x89, 0x50, 0x4E, 0x47 });
+            }
+
 
             File.WriteAllText(Path.Combine(root, "glossary.dita"), """
 <?xml version="1.0" encoding="UTF-8"?>
@@ -274,6 +280,7 @@ internal static partial class CoreChecks
     <svg-container><svg width="10" height="10"><circle r="5"/></svg></svg-container>
     <codeblock><coderef href="code.txt"/></codeblock>
     <codeblock><coderef href="missing.txt"/></codeblock>
+    <p>Размеры: <image href="mm.png" width="50mm"/> <image href="px.png" width="300px" height="120"/> <image href="cm.png" width="2,5cm" height="10pt"/> <image href="bad.png" width="50mm;color:red"/></p>
     <p>Сноска с меткой<fn callout="*">Особая сноска.</fn> и обычная<fn>Вторая сноска.</fn>.</p>
     <p>Термин <indexterm>CPU<indexterm>детали</indexterm></indexterm> встречается и здесь: <indexterm>CPU</indexterm>.</p>
     <p>По ключу глоссария: <abbreviated-form keyref="cpu-key"/>; по ключу без глоссария: <abbreviated-form keyref="plain-key"/>; по несуществующему ключу: <abbreviated-form keyref="no-such-key"/>; без keyref: <abbreviated-form/>.</p>
@@ -310,6 +317,21 @@ internal static partial class CoreChecks
 
             Check(html.Contains("Вложенный топик") && html.Contains("Внутри вложенного."), "вложенный топик (RenderNestedTopic) отрисован");
             Check(html.Contains("Пользовательский раздел"), "section без title использует spectitle как заголовок");
+
+            // Размеры картинки: атрибут width/height HTML понимает только в пикселях (width="50mm" — это 50px),
+            // поэтому единицы длины уходят в style. Предпросмотр и печать в PDF идут тем же HtmlRenderer.
+            var preview = new HtmlPublisher(project).RenderPreview(project.GetDocument(Path.Combine(root, "main.dita"))!);
+            foreach (var (name, output) in new[] { ("публикация", html), ("предпросмотр", preview) })
+            {
+                Check(System.Text.RegularExpressions.Regex.IsMatch(output, "<img src=\"[^\"]*mm\\.png\" alt=\"\" style=\"width:50mm;\" />"),
+                    $"{name}: image width=\"50mm\" — CSS-размер style=\"width:50mm;\", не атрибут width");
+                Check(System.Text.RegularExpressions.Regex.IsMatch(output, "<img src=\"[^\"]*px\\.png\" alt=\"\" width=\"300\" height=\"120\" />"),
+                    $"{name}: пиксели (300px и число без единицы) — атрибутами HTML, без суффикса px");
+                Check(System.Text.RegularExpressions.Regex.IsMatch(output, "<img src=\"[^\"]*cm\\.png\" alt=\"\" style=\"width:2.5cm;height:10pt;\" />"),
+                    $"{name}: cm и pt — в style, десятичная запятая приведена к точке");
+                Check(System.Text.RegularExpressions.Regex.IsMatch(output, "<img src=\"[^\"]*bad\\.png\" alt=\"\" />") && !output.Contains("color:red"),
+                    $"{name}: нераспознанный размер не выводится — произвольный текст не попадает в style");
+            }
 
             Check(html.Contains("class=\"typeoftext\"") && html.Contains("ОПАСНО") && html.Contains("Не делайте так."),
                 "hazardstatement/messagepanel отрисован по произвольным именам дочерних элементов");

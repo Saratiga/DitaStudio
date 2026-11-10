@@ -33,9 +33,11 @@ public sealed partial class DocxRenderer
                 captionRuns.AddRange(RenderInlineRuns(title!));
             }
 
-            if (captionRuns.Count > 0)
+            var caption = captionRuns.Count > 0 ? Para(DocxStyleCatalog.TableCaption, captionRuns) : null;
+            RecordCaption(caption, node, XrefTargetKind.Table, L.Table, _tableNumber, title!);
+            if (caption is not null)
             {
-                yield return Para(DocxStyleCatalog.TableCaption, captionRuns);
+                yield return caption;
             }
         }
 

@@ -27,7 +27,10 @@ public partial class SidePanelsViewModel : ObservableObject
         _workspace = context.Workspace;
         _docs = docs;
         _insert = insert;
+        _platform = context.Ui.Platform;
     }
+
+    private readonly IUiPlatform _platform;
 
     /// <summary>Имена продуктов проекта — для выпадающего списка значения <c>@product</c>.</summary>
     public IReadOnlyList<string> ProductNames => _workspace.Project?.Products.Select(p => p.Name).ToList() ?? new List<string>();
@@ -100,7 +103,8 @@ public partial class SidePanelsViewModel : ObservableObject
         }
 
         var shown = node.Attributes.Select(a => a.Name).ToHashSet(StringComparer.Ordinal);
-        foreach (var name in def.Attributes.Keys.Where(a => !shown.Contains(a)).OrderBy(a => a, StringComparer.Ordinal))
+        // @class — технический класс специализации из каталога: вручную его не ставят (оформление — outputclass).
+        foreach (var name in def.Attributes.Keys.Where(a => !shown.Contains(a) && a != "class").OrderBy(a => a, StringComparer.Ordinal))
         {
             MissingAttributes.Add(name);
         }
@@ -108,6 +112,21 @@ public partial class SidePanelsViewModel : ObservableObject
 
     partial void OnAttributeToAddChanged(string? value)
     {
+        if (value is null)
+        {
+            return;
+        }
+
+        // Выбор в списке «Добавить атрибут» приходит из обработчика SelectionChanged самого списка. Пересобрать
+        // MissingAttributes прямо здесь нельзя: список ещё перебирает выбранные элементы, и Avalonia падает
+        // с «Index was out of range». Поэтому атрибут добавляется следующим шагом очереди интерфейса.
+        _platform.Post(() => AddAttribute(value));
+    }
+
+    /// <summary>Добавляет атрибут <paramref name="value"/> к элементу под курсором (значение по умолчанию из каталога).</summary>
+    public void AddAttribute(string value)
+    {
+        AttributeToAdd = null;
         var pane = _docs.Current;
         var node = pane?.Author.CurrentNode;
         if (value is null || pane is null || node is null || DitaCatalog.Default.Get(node.Name) is not { } def ||

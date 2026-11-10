@@ -67,8 +67,7 @@
           </row>
         </thead>
         <tbody>
-          <row><entry>Отменить / повторить набор текста</entry><entry><shortcut>Ctrl+Z</shortcut> / <shortcut>Ctrl+Y</shortcut></entry></row>
-          <row><entry>Отменить / повторить действие со структурой (вставка, удаление, перенос блока)</entry><entry><shortcut>Ctrl+Alt+Z</shortcut> / <shortcut>Ctrl+Alt+Y</shortcut></entry></row>
+          <row><entry>Отменить / повторить любое действие: набор текста, вставку, удаление, перенос блока</entry><entry><shortcut>Ctrl+Z</shortcut> / <shortcut>Ctrl+Y</shortcut></entry></row>
         </tbody>
       </tgroup>
     </table>

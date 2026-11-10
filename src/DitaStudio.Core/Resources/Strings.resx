@@ -1611,6 +1611,9 @@ Content: {2}</value>
   <data name="Doc_Source" xml:space="preserve">
     <value>Source</value>
   </data>
+  <data name="Doc_Typing" xml:space="preserve">
+    <value>Typing</value>
+  </data>
   <data name="Doc_SourceEdit" xml:space="preserve">
     <value>Source edit</value>
   </data>
@@ -3316,7 +3319,7 @@ Content: {2}</value>
     <value>UI control</value>
   </data>
   <data name="Menu_UndoStructural" xml:space="preserve">
-    <value>Undo structural change</value>
+    <value>Undo</value>
   </data>
   <data name="Menu_UnnumberedTitle" xml:space="preserve">
     <value>Title without number (not in table of contents)</value>
@@ -4622,7 +4625,7 @@ What to do with the row «</value>
     <value>Underline (Ctrl+U)</value>
   </data>
   <data name="Tip_UndoStructural" xml:space="preserve">
-    <value>Undo structural change (Ctrl+Alt+Z)</value>
+    <value>Undo (Ctrl+Z)</value>
   </data>
   <data name="Tip_UnnumberedTitle" xml:space="preserve">
     <value>Cursor in a title: when published it is not numbered and is left out of the table of contents (outputclass="nonumber")</value>
@@ -4940,5 +4943,80 @@ A plugin is a .dll in this folder or MyPlugin/MyPlugin.dll in a subfolder. Plugi
   </data>
   <data name="Msg_PluginsFailedToLoad0" xml:space="preserve">
     <value>Plugins: {0} could not be loaded — see Help → Plugins…</value>
+  </data>
+  <data name="Xref_KindLabel" xml:space="preserve">
+    <value>Reference type:</value>
+  </data>
+  <data name="Xref_FormLabel0" xml:space="preserve">
+    <value>Insert reference to:</value>
+  </data>
+  <data name="Xref_KindNumbered" xml:space="preserve">
+    <value>Numbered item</value>
+  </data>
+  <data name="Xref_KindSection" xml:space="preserve">
+    <value>Section heading</value>
+  </data>
+  <data name="Xref_KindTopic" xml:space="preserve">
+    <value>Topic</value>
+  </data>
+  <data name="Xref_KindFootnote" xml:space="preserve">
+    <value>Footnote</value>
+  </data>
+  <data name="Xref_KindFigure" xml:space="preserve">
+    <value>Figure</value>
+  </data>
+  <data name="Xref_KindTable" xml:space="preserve">
+    <value>Table</value>
+  </data>
+  <data name="Xref_FormLabel" xml:space="preserve">
+    <value>Label and number (&quot;Figure 3&quot;)</value>
+  </data>
+  <data name="Xref_FormFull" xml:space="preserve">
+    <value>Entire caption (&quot;Figure 3. Diagram&quot;)</value>
+  </data>
+  <data name="Xref_FormNumber" xml:space="preserve">
+    <value>Number only (&quot;3&quot;)</value>
+  </data>
+  <data name="Xref_FormCaptionText" xml:space="preserve">
+    <value>Caption text only</value>
+  </data>
+  <data name="Xref_FormItemNumber" xml:space="preserve">
+    <value>Item number</value>
+  </data>
+  <data name="Xref_FormItemText" xml:space="preserve">
+    <value>Item text</value>
+  </data>
+  <data name="Xref_FormNumberAndText" xml:space="preserve">
+    <value>Number and text</value>
+  </data>
+  <data name="Xref_FormFootnoteNumber" xml:space="preserve">
+    <value>Footnote number</value>
+  </data>
+  <data name="Xref_FormFootnoteText" xml:space="preserve">
+    <value>Footnote text</value>
+  </data>
+  <data name="Xref_FormHeadingText" xml:space="preserve">
+    <value>Heading text</value>
+  </data>
+  <data name="Xref_FormHeadingNumber" xml:space="preserve">
+    <value>Heading number</value>
+  </data>
+  <data name="Xref_ThisDocument" xml:space="preserve">
+    <value>This document</value>
+  </data>
+  <data name="Xref_Document" xml:space="preserve">
+    <value>Document:</value>
+  </data>
+  <data name="Xref_Targets" xml:space="preserve">
+    <value>For which item:</value>
+  </data>
+  <data name="Xref_OwnText" xml:space="preserve">
+    <value>Own link text (optional; empty means by reference type):</value>
+  </data>
+  <data name="Xref_NoTargets" xml:space="preserve">
+    <value>The document has no items of type &quot;{0}&quot;.</value>
+  </data>
+  <data name="Msg_XrefTargetIdAdded" xml:space="preserve">
+    <value>The reference target had no id; id &quot;{0}&quot; was added in {1}.</value>
   </data>
 </root>

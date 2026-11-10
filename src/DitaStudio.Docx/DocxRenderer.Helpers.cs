@@ -42,6 +42,8 @@ public sealed partial class DocxRenderer
             _lastHeadingLevel = level;
         }
 
+        TrackHeadingNumber(level, unnumbered);
+
         return Para(unnumbered ? DocxStyleCatalog.HeadingPlain(level) : DocxStyleCatalog.Heading(level), runs);
     }
 

@@ -2171,8 +2171,8 @@ public sealed class AuthorViewTests
             "<table frame=\"all\" colsep=\"1\"><tgroup cols=\"1\" align=\"left\"><tbody><row rowsep=\"0\"><entry colsep=\"0\" valign=\"top\">Ячейка</entry></row></tbody></tgroup></table>" +
             "</conbody></concept>");
         var ps = Paragraphs(document);
-        Assert.Equal("product: A · conref: other.dita#o/x · importance: high · rev: 2 · status: new · class: fancy", AuthorView.AttributeNote(ps[0]));
-        Assert.Null(AuthorView.AttributeNote(ps[1])); // id — служебный
+        Assert.Equal("id: x1 · product: A · conref: other.dita#o/x · importance: high · rev: 2 · status: new · class: fancy", AuthorView.AttributeNote(ps[0]));
+        Assert.Equal("id: x2", AuthorView.AttributeNote(ps[1])); // id виден: на него ссылаются xref и conref
         var truncated = AuthorView.AttributeNote(ps[2])!;
         Assert.Equal("translate: " + new string('в', 59) + "…", truncated);
 
@@ -2184,8 +2184,8 @@ public sealed class AuthorViewTests
         }
 
         var notes = window.GetVisualDescendants().OfType<TextBlock>().Where(t => Equals(t.Tag, "attribute-note")).Select(t => t.Text).ToList();
-        Assert.Equal(2, notes.Count);
-        Assert.StartsWith("product: A", notes[0]);
+        Assert.Equal(3, notes.Count);
+        Assert.StartsWith("id: x1 · product: A", notes[0]);
         window.Close();
     }
 
@@ -2480,5 +2480,86 @@ public sealed class AuthorViewTests
         }
 
         throw new DirectoryNotFoundException("Не найден корень репозитория (DitaStudio.sln).");
+    }
+
+    /// <summary>
+    /// Замечание: курсор после блока, чтобы вставить другой блок после него или между блоками. Щелчок под таблицей ставит
+    /// черту-курсор после таблицы (а не после её последней ячейки); ввод создаёт там абзац, Esc убирает черту, команда
+    /// вставки (палитра) ставит блок туда же, Enter открывает меню элементов для этого места.
+    /// </summary>
+    [AvaloniaFact]
+    public void ClickBelowTable_PlacesInsertPoint_TypingCreatesParagraphAfterTable()
+    {
+        var (window, author, document, undo) = Show(
+            "<concept id=\"c\"><title>Т</title><conbody><p>До таблицы.</p>" +
+            "<table><tgroup cols=\"1\"><tbody><row><entry>Ячейка</entry></row></tbody></tgroup></table>" +
+            "<p>После.</p></conbody></concept>");
+        var conbody = document.Root.FirstElement("conbody")!;
+        var table = conbody.FirstElement("table")!;
+
+        var clicks = 0;
+        void ClickBelow(DitaNode node)
+        {
+            window.CaptureRenderedFrame();
+            var view = author.ViewFor(node)!;
+            // Два щелчка подряд иначе считаются двойным (он открывает меню): выжидаем время двойного щелчка.
+            if (clicks++ > 0)
+            {
+                Thread.Sleep(window.PlatformSettings!.GetDoubleTapTime(PointerType.Mouse) + TimeSpan.FromMilliseconds(50));
+            }
+
+            // Середина промежутка до следующего блока.
+            var bottom = view.TranslatePoint(new Point(20, view.Bounds.Height), window)!.Value;
+            var next = EditCommands.NextElement(node) is { } sibling && author.ViewFor(sibling) is { } nextView
+                ? nextView.TranslatePoint(new Point(0, 0), window)!.Value.Y
+                : bottom.Y + 6;
+            var point = new Point(bottom.X, (bottom.Y + next) / 2);
+            window.MouseDown(point, MouseButton.Left, RawInputModifiers.None);
+            window.MouseUp(point, MouseButton.Left, RawInputModifiers.None);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        ClickBelow(table);
+        var point = Assert.IsType<AuthorView.InsertPoint>(author.CurrentInsertPoint);
+        Assert.Same(table, point.Anchor);
+        Assert.Same(conbody, point.Parent);
+        Assert.Equal(2, point.Index);
+        Assert.Same(table, author.CurrentNode);
+        Assert.Null(FocusedEditor(author));
+        var marker = window.GetVisualDescendants().OfType<Border>().Single(b => Equals(b.Tag, "insert-point"));
+        Assert.True(marker.IsVisible);
+
+        window.KeyTextInput("Новый абзац");
+        Dispatcher.UIThread.RunJobs();
+        author.FlushPendingEdits();
+        Assert.Equal(new[] { "p", "table", "p", "p" }, conbody.ElementChildren().Select(n => n.Name));
+        Assert.Equal("Новый абзац", conbody.ElementChildren().ElementAt(2).InnerText);
+        Assert.Null(author.CurrentInsertPoint);
+        Assert.False(marker.IsVisible);
+        Assert.Equal("Новый абзац".Length, FocusedEditor(author)!.CaretOffset);
+        Assert.Single(undo); // ввод в новый блок — часть шага «Вставить p»
+
+        // Esc убирает черту; команда вставки при черте ставит блок после таблицы.
+        ClickBelow(table);
+        Assert.NotNull(author.CurrentInsertPoint);
+        Press(window, Key.Escape, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(author.CurrentInsertPoint);
+
+        ClickBelow(table);
+        Assert.Same(table, author.CurrentInsertPoint?.Anchor);
+        Assert.Same(table, author.CurrentNode);
+        Assert.True(author.Surface.InsertElement("note"));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(new[] { "p", "table", "note", "p", "p" }, conbody.ElementChildren().Select(n => n.Name));
+
+        // Enter у черты — меню допустимых элементов для этого места.
+        ClickBelow(conbody.ElementChildren().First());
+        Assert.Same(conbody.ElementChildren().First(), author.CurrentInsertPoint!.Anchor);
+        Press(window, Key.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        Assert.NotNull(author.InsertMenu);
+        Assert.Contains(author.InsertMenu!.Visible, s => s.Element == "p");
+        window.Close();
     }
 }

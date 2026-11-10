@@ -296,6 +296,7 @@ internal static partial class CoreChecks
         for (var i = 1; i <= 5; i++)
         {
             limited.Push(document, $"запись {i}");
+            document.Root.FirstElement("conbody")!.FirstElement("p")!.SetText($"шаг {i}");
         }
 
         var descriptions = new List<string>();
@@ -308,5 +309,15 @@ internal static partial class CoreChecks
         Check(descriptions.Count == 3, $"история обрезана по лимиту: {descriptions.Count} записей вместо 5");
         Check(descriptions[0] == "запись 5" && descriptions[^1] == "запись 3",
             $"вытеснены самые старые записи, остались последние {string.Join(",", descriptions)}");
+
+        // Снимок, совпадающий с последним, не добавляется (команда записала снимок, её же правка текста — тоже): одна отмена.
+        var same = new UndoStack();
+        same.Push(document, "команда", "0/1:3");
+        same.Push(document, "ввод текста", "0/1:5");
+        document.Root.FirstElement("conbody")!.FirstElement("p")!.SetText("после");
+        Check(same.NextUndoDescription == "команда", "одинаковый снимок второй раз не записан");
+        Check(same.Undo(document, "0/1:9") && !same.CanUndo, "одна отмена возвращает состояние до команды");
+        Check(same.RestoredCaret == "0/1:3", $"с отменой возвращается курсор снимка: {same.RestoredCaret}");
+        Check(same.Redo(document) && same.RestoredCaret == "0/1:9", "повтор возвращает курсор, бывший при отмене");
     }
 }

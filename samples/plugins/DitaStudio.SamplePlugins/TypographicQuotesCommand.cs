@@ -24,7 +24,7 @@ public sealed class TypographicQuotesCommand : IAuthorCommandPlugin
 
     public void Execute(IDocumentView pane)
     {
-        // Снимок ДО правки: «Отменить структурное изменение» (Ctrl+Alt+Z) вернёт документ одним шагом.
+        // Снимок ДО правки: «Отменить» (Ctrl+Z) вернёт документ одним шагом.
         pane.PushUndo(Name);
 
         LastReplaced = 0;

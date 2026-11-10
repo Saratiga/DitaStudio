@@ -22,6 +22,10 @@
         <KeyBinding Gesture="F5" Command="{Binding Publish.PublishSiteCommand}" />
         <KeyBinding Gesture="F7" Command="{Binding Validation.ValidateProjectCommand}" />
         <KeyBinding Gesture="F1" Command="{Binding Help.ShowElementHelpCommand}" />
+        <!-- Одна история отмены: ввод текста и структурные правки. Поля ввода (панели, исходный код) отменяют своё сами. -->
+        <KeyBinding Gesture="Ctrl+Z" Command="{Binding Insert.UndoCommand}" />
+        <KeyBinding Gesture="Ctrl+Y" Command="{Binding Insert.RedoCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding Insert.RedoCommand}" />
         <KeyBinding Gesture="Ctrl+Alt+Z" Command="{Binding Insert.UndoCommand}" />
         <KeyBinding Gesture="Ctrl+Alt+Y" Command="{Binding Insert.RedoCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+Up" Command="{Binding Insert.MoveUpCommand}" />
@@ -55,8 +59,8 @@
             </MenuItem>
 
             <MenuItem Header="{loc:Tr Menu_Edit}">
-                <MenuItem Header="{loc:Tr Menu_UndoStructural}" Command="{Binding Insert.UndoCommand}" InputGesture="Ctrl+Alt+Z" />
-                <MenuItem Header="{loc:Tr Menu_Redo}" Command="{Binding Insert.RedoCommand}" InputGesture="Ctrl+Alt+Y" />
+                <MenuItem Header="{loc:Tr Menu_UndoStructural}" Command="{Binding Insert.UndoCommand}" InputGesture="Ctrl+Z" />
+                <MenuItem Header="{loc:Tr Menu_Redo}" Command="{Binding Insert.RedoCommand}" InputGesture="Ctrl+Y" />
                 <Separator />
                 <MenuItem Header="{loc:Tr Menu_FindInProject}" Click="OnFocusSearch" InputGesture="Ctrl+Shift+F" />
                 <MenuItem Header="{loc:Tr Menu_ValidateProject}" Command="{Binding Validation.ValidateProjectCommand}" InputGesture="F7" />

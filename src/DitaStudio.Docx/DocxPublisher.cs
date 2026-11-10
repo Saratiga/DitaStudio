@@ -154,7 +154,9 @@ public sealed partial class DocxPublisher
                 Styles = styles,
                 NumberFiguresAndTables = layout.NumberFiguresAndTables,
                 CaptionSeparator = layout.CaptionSeparator,
-                HeadingNumId = layout.NumberHeadings ? HeadingNumId : null
+                HeadingNumId = layout.NumberHeadings ? HeadingNumId : null,
+                NumberingDepth = layout.NumberingDepth,
+                CrossReferences = new CrossReferenceLabels()
             };
             var renderer = new DocxRenderer(_project, mainPart, numberingPart, renderOptions);
 
@@ -188,6 +190,7 @@ public sealed partial class DocxPublisher
                     unnumbered: TocRules.IsHiddenInMap(item.Node), pageBreakBefore: TopicPageBreak.Of(item.Node));
             }
 
+            renderer.FinishCrossReferences(); // номера рисунков, таблиц, пунктов в тексте ссылок — после всего издания
             WriteIndex(body, labels, renderer.IndexTerms);
 
             var mainSection = BuildSectionProperties(mainPart, WithLayoutPage(styles.Page, layout), layout, styles.MarginBoxes, title, date, warnings);

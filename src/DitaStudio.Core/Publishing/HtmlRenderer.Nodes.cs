@@ -83,7 +83,11 @@ public sealed partial class HtmlRenderer
         {
             // ------------------------------------------------------- блоки
             case "p" when _options.Numbering is { } numbering && HeadingNumbering.IsNumbered(node):
-                return $"<p{Attrs(node)}><span class=\"para-number\">{numbering.Paragraph()}</span> {RenderInlineChildren(node)}</p>\n";
+            {
+                var number = numbering.Paragraph();
+                _xrefs.Record(_document.FilePath, node.GetAttribute("id"), XrefTargetKind.NumberedItem, null, number, node.InnerText);
+                return $"<p{Attrs(node)}><span class=\"para-number\">{number}</span> {RenderInlineChildren(node)}</p>\n";
+            }
 
             case "p":
                 return $"<p{Attrs(node)}>{RenderInlineChildren(node)}</p>\n";
@@ -95,6 +99,7 @@ public sealed partial class HtmlRenderer
             case "sli":
             case "choice":
             case "stepsection":
+                RecordListItem(node);
                 return $"<li{Attrs(node)}>{RenderInlineChildren(node)}</li>\n";
 
             case "substeps":
@@ -102,6 +107,7 @@ public sealed partial class HtmlRenderer
 
             case "step":
             case "substep":
+                RecordListItem(node);
                 return $"<li{ClassedAttrs("step", node)}>{RenderChildren(node, level)}</li>\n";
 
             case "cmd":

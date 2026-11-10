@@ -119,6 +119,9 @@ public sealed partial class AuthorView : UserControl
     /// <summary>Сообщение для строки состояния (скопировано, вставлено, вставить нельзя).</summary>
     public event EventHandler<string>? StatusRequested;
 
+    /// <summary>Правка текста в блоке (отправитель — <see cref="BlockEditor"/>), до записи в модель: оболочка группирует ввод для отмены.</summary>
+    public event EventHandler<TextChange>? TextChanging;
+
     /// <summary>Просьба сохранить состояние для отмены перед структурной операцией.</summary>
     public event EventHandler<string>? BeforeStructuralEdit;
 
@@ -179,6 +182,7 @@ public sealed partial class AuthorView : UserControl
         _viewNodes.Clear();
         _childPanels.Clear();
         _activeEditor = null;
+        ClearInsertPoint();
         _panel.Children.Clear();
         _shownFootnotes = new List<DitaNode>();
         ClearHighlight();

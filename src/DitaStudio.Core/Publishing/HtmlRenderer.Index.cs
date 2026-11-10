@@ -143,6 +143,7 @@ public sealed partial class HtmlRenderer
         var number = _footnotes.Count;
         var callout = node.GetAttribute("callout");
         var marker = string.IsNullOrWhiteSpace(callout) ? number.ToString() : callout!;
+        _xrefs.Record(_document.FilePath, node.GetAttribute("id"), XrefTargetKind.Footnote, null, marker, node.InnerText);
         return $"<a class=\"fn-ref\" href=\"#fn{number}\" id=\"fnref{number}\">[{Escape(marker)}]</a>";
     }
 

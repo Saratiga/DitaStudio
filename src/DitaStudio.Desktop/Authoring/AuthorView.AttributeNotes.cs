@@ -44,7 +44,8 @@ public sealed partial class AuthorView
     // Классы, которые «Автор» показывает иначе (оформление текста, положение на листе, высота строки) — в пометку не попадают.
     private static readonly string[] HiddenClassPrefixes = { "align-", "size-", "color-", "mark-", "frame-", "row-height-", "place-", "page-break-" };
 
-    // Служебные атрибуты: идентификатор, пространства имён и «технический» class каталога — пользователю не интересны.
+    // Служебные атрибуты: пространства имён и «технический» class каталога — пользователю не интересны.
+    // id показывается первым (на него ссылаются перекрёстные ссылки и conref), outputclass — в конце как «class».
     private static readonly string[] ServiceAttributes = { "id", "class", "domains", "xtrf", "xtrc" };
 
     // Раскладка таблицы (CALS) и простой таблицы: ею управляют команды и рамка таблицы в «Авторе», в пометки она не попадает.
@@ -57,7 +58,7 @@ public sealed partial class AuthorView
     private const int NoteValueLimit = 60;
 
     /// <summary>
-    /// Текст серой пометки у блока с атрибутами: «product: Альфа, Бета · rev: 2 · class: warning-box». Условные атрибуты — первыми,
+    /// Текст серой пометки у блока с атрибутами: «id: intro · product: Альфа, Бета · rev: 2 · class: warning-box». id и условные атрибуты — первыми,
     /// остальные по алфавиту, классы оформления (<c>outputclass</c>) — в конце. Не показываются служебные атрибуты, раскладка
     /// таблицы и классы, которые «Автор» рисует иначе. null — у элемента нечего показывать.
     /// </summary>
@@ -74,6 +75,12 @@ public sealed partial class AuthorView
 
             var text = ConditionAttributes.Contains(name) ? string.Join(", ", tokens) : string.Join(" ", tokens);
             parts.Add($"{name}: {(text.Length > NoteValueLimit ? text[..(NoteValueLimit - 1)] + "…" : text)}");
+        }
+
+        // id самого топика есть всегда и виден в имени файла и на вкладке — его пометкой не дублируем.
+        if (node.GetAttribute("id") is { } id && DitaCatalog.Default.Get(node.Name)?.IsTopicType != true)
+        {
+            Add("id", id);
         }
 
         foreach (var name in ConditionAttributes)

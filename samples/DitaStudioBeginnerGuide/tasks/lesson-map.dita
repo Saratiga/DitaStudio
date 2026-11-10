@@ -48,7 +48,7 @@
       <step>
         <cmd>Сохраните карту (<shortcut>Ctrl+S</shortcut>).</cmd>
         <info><p>Правки карты отменяются, как и другие, —
-          <shortcut>Ctrl+Alt+Z</shortcut>.</p></info>
+          <shortcut>Ctrl+Z</shortcut>.</p></info>
       </step>
     </steps>
     <result>

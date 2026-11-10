@@ -31,8 +31,11 @@ public sealed partial class HtmlRenderer
         var explicitTitle = node.FirstElement("title");
         if (explicitTitle is not null)
         {
+            _lastHeadingNumber = null;
+            var sectionNumber = HeadingNumber(level + 1, TocRules.IsUnnumbered(explicitTitle));
+            _xrefs.Record(_document.FilePath, node.GetAttribute("id"), XrefTargetKind.Section, null, _lastHeadingNumber, explicitTitle.InnerText);
             sb.Append('<').Append(H(level + 1)).Append(MergedClassAttr("title", explicitTitle)).Append('>')
-              .Append(HeadingNumber(level + 1, TocRules.IsUnnumbered(explicitTitle)))
+              .Append(sectionNumber)
               .Append(RenderInlineChildren(explicitTitle))
               .Append("</").Append(H(level + 1)).Append(">\n");
         }
@@ -158,6 +161,7 @@ public sealed partial class HtmlRenderer
         {
             _figureNumber++;
             var hasText = CaptionRules.HasContent(title);
+            RecordCaption(node, XrefTargetKind.Figure, L.Figure, _figureNumber, title!);
             var caption = _options.NumberFiguresAndTables
                 ? $"{L.Figure} {_figureNumber}" + (hasText ? CaptionRules.Separator(_options.CaptionSeparator) + RenderInlineChildren(title!) : string.Empty)
                 : RenderInlineChildren(title!);
@@ -221,16 +225,26 @@ public sealed partial class HtmlRenderer
         var sb = new StringBuilder("<img src=\"").Append(Escape(src)).Append('"');
         sb.Append(" alt=\"").Append(Escape(alt)).Append('"');
 
-        var width = node.GetAttribute("width");
-        if (!string.IsNullOrWhiteSpace(width))
+        // Атрибуты width/height в HTML понимают только пиксели: width="170mm" браузер читает как
+        // 170px. Поэтому пиксели (число без единицы или px) идут атрибутом, прочие единицы DITA
+        // (mm, cm, in, pt, pc, em) — в style как есть, без пересчёта.
+        var style = new StringBuilder();
+        foreach (var name in new[] { "width", "height" })
         {
-            sb.Append(" width=\"").Append(Escape(width!)).Append('"');
+            switch (ImageDimension(node.GetAttribute(name)))
+            {
+                case (var number, ""):
+                    sb.Append(' ').Append(name).Append("=\"").Append(number).Append('"');
+                    break;
+                case (var number, var unit):
+                    style.Append(name).Append(':').Append(number).Append(unit).Append(';');
+                    break;
+            }
         }
 
-        var height = node.GetAttribute("height");
-        if (!string.IsNullOrWhiteSpace(height))
+        if (style.Length > 0)
         {
-            sb.Append(" height=\"").Append(Escape(height!)).Append('"');
+            sb.Append(" style=\"").Append(style).Append('"');
         }
 
         sb.Append(" />");
@@ -238,6 +252,39 @@ public sealed partial class HtmlRenderer
         return node.GetAttribute("placement") == "break"
             ? $"<div class=\"image-block\">{sb}</div>\n"
             : sb.ToString();
+    }
+
+    /// <summary>Размер картинки из атрибута DITA: число (в инвариантной записи) и единица CSS;
+    /// пиксели — с пустой единицей. Нераспознанное значение — null: его не выводим совсем, чтобы
+    /// произвольный текст не попал в style.</summary>
+    private static (string Number, string Unit)? ImageDimension(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var text = value.Trim().ToLowerInvariant();
+        var numberLength = 0;
+        while (numberLength < text.Length && (char.IsDigit(text[numberLength]) || text[numberLength] is '.' or ','))
+        {
+            numberLength++;
+        }
+
+        if (!double.TryParse(text[..numberLength].Replace(',', '.'), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var number) || number <= 0)
+        {
+            return null;
+        }
+
+        var unit = text[numberLength..].Trim();
+        var formatted = number.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+        return unit switch
+        {
+            "" or "px" => (formatted, string.Empty),
+            "mm" or "cm" or "in" or "pt" or "pc" or "em" or "%" => (formatted, unit),
+            _ => null
+        };
     }
 
     private string RenderXref(DitaNode node)
@@ -260,7 +307,11 @@ public sealed partial class HtmlRenderer
         var inner = RenderInlineChildren(node);
         if (string.IsNullOrWhiteSpace(StripTags(inner)))
         {
-            inner = Escape(label ?? target ?? href ?? string.Empty);
+            var fallback = label ?? target ?? href ?? string.Empty;
+            // Пустая ссылка на рисунок, таблицу, пункт, сноску, раздел: номер или подпись цели — после отрисовки всего издания.
+            inner = string.IsNullOrWhiteSpace(keyref) && XrefTargetOf(node, href) is var (path, id)
+                ? _xrefs.Token(path, id, CrossReferenceLabels.FormOf(node), fallback)
+                : Escape(fallback);
         }
 
         if (string.IsNullOrWhiteSpace(target))
@@ -269,6 +320,35 @@ public sealed partial class HtmlRenderer
         }
 
         return $"<a href=\"{Escape(target!)}\">{inner}</a>";
+    }
+
+    /// <summary>Цель ссылки внутри DITA-файла для подписи по номеру: путь и id элемента (у ссылки на топик с видом текста,
+    /// отличным от названия, — id топика). null — внешняя ссылка или ссылка на топик целиком.</summary>
+    private (string? Path, string Id)? XrefTargetOf(DitaNode node, string? href) => CrossReferenceLabels.TargetOf(node, _document.FilePath);
+
+    /// <summary>Подпись рисунка или таблицы — цель перекрёстных ссылок.</summary>
+    private void RecordCaption(DitaNode node, XrefTargetKind kind, string word, int number, DitaNode title)
+    {
+        var text = number.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        _xrefs.Record(_document.FilePath, node.GetAttribute("id"), kind,
+            _options.NumberFiguresAndTables ? word + " " + text : null, text, title.InnerText, CaptionRules.Separator(_options.CaptionSeparator));
+    }
+
+    /// <summary>Пункт нумерованного списка или шаг — цель ссылок с номером («3»); у маркированного списка номера нет.</summary>
+    private void RecordListItem(DitaNode node)
+    {
+        if (string.IsNullOrWhiteSpace(node.GetAttribute("id")) || node.Parent is not { } list)
+        {
+            return;
+        }
+
+        var ordered = list.Name is "ol" or "steps" or "substeps";
+        var number = ordered
+            ? (list.ElementChildren().Where(e => e.Name == node.Name).TakeWhile(e => !ReferenceEquals(e, node)).Count() + 1)
+                .ToString(System.Globalization.CultureInfo.InvariantCulture)
+            : null;
+        var text = node.Name is "step" or "substep" ? node.FirstElement("cmd")?.InnerText ?? node.InnerText : node.InnerText;
+        _xrefs.Record(_document.FilePath, node.GetAttribute("id"), XrefTargetKind.NumberedItem, null, number, text);
     }
 
     private (string? Target, string? Label) ResolveXrefKeyref(string keyref)

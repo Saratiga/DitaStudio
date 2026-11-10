@@ -98,9 +98,9 @@
       <step>
         <cmd>Следите за атрибутами по серым пометкам над блоками.</cmd>
         <info>
-          <p>Над блоком с атрибутами — строка вида «product: Альфа · rev: 2 · class:
-            warning-box»: сначала условные атрибуты, затем остальные, последним
-            <codeph>outputclass</codeph>. Пометка <codeph>status</codeph> цветная:
+          <p>Над блоком с атрибутами — строка вида «id: intro · product: Альфа · rev: 2 · class:
+            warning-box»: сначала <parmname>id</parmname> (на него ставят перекрёстные ссылки), затем
+            условные атрибуты, остальные, последним <codeph>outputclass</codeph>. Пометка <codeph>status</codeph> цветная:
             <codeph>new</codeph> — зелёная, <codeph>changed</codeph> — оранжевая,
             <codeph>deleted</codeph> — красная. Выключить —
             <menucascade><uicontrol>Структура</uicontrol><uicontrol>Показывать пометки

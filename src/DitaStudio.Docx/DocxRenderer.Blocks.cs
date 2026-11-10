@@ -236,6 +236,7 @@ public sealed partial class DocxRenderer
             {
                 var paragraph = Para(DocxStyleCatalog.BodyText, RenderInlineRuns(node));
                 NumberParagraph(paragraph);
+                RecordTarget(paragraph, node, XrefTargetKind.NumberedItem, null, NumberMirror.Paragraph(), node.InnerText);
                 yield return WithOutputClass(paragraph, node);
                 yield break;
             }
@@ -382,7 +383,9 @@ public sealed partial class DocxRenderer
         var explicitTitle = node.FirstElement("title");
         if (explicitTitle is not null)
         {
-            yield return HeadingParagraph(RenderInlineRuns(explicitTitle), Math.Min(level + 1, 6), TocRules.IsUnnumbered(explicitTitle));
+            var heading = HeadingParagraph(RenderInlineRuns(explicitTitle), Math.Min(level + 1, 6), TocRules.IsUnnumbered(explicitTitle));
+            RecordTarget(heading, node, XrefTargetKind.Section, null, _lastHeadingNumber, explicitTitle.InnerText);
+            yield return heading;
         }
         else if (label is not null)
         {
@@ -532,9 +535,11 @@ public sealed partial class DocxRenderer
                 captionRuns.AddRange(RenderInlineRuns(title!));
             }
 
-            if (captionRuns.Count > 0)
+            var caption = captionRuns.Count > 0 ? Para(DocxStyleCatalog.FigureCaption, captionRuns) : null;
+            RecordCaption(caption, node, XrefTargetKind.Figure, L.Figure, _figureNumber, title!);
+            if (caption is not null)
             {
-                yield return Para(DocxStyleCatalog.FigureCaption, captionRuns);
+                yield return caption;
             }
         }
 

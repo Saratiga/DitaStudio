@@ -1616,6 +1616,178 @@ public sealed class MainWindowTests : IDisposable
         window.Close();
     }
 
+    /// <summary>
+    /// Замечание: выбор в списке «Добавить атрибут» ронял окно («Index was out of range» в SelectionChanged:
+    /// список пересобирался, пока ComboBox ещё перебирал выбранное). Атрибут добавляется, список не падает,
+    /// выбор сбрасывается; технический <c>@class</c> в списке не предлагается; <c>id</c> виден в серой пометке блока.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task AddAttributeCombo_AddsWithoutCrash_IdShownInNote()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.Length > 10 && n.GetAttribute("rev") is null);
+        pane.AuthorEditor.EditorFor(p)!.FocusEditor(0);
+        Dispatcher.UIThread.RunJobs();
+        vm.SidePanels.Refresh();
+        Assert.DoesNotContain("class", vm.SidePanels.MissingAttributes);
+
+        var combo = window.GetLogicalDescendants().OfType<ComboBox>().First(c => ReferenceEquals(c.ItemsSource, vm.SidePanels.MissingAttributes));
+        combo.SelectedItem = "rev";
+        Dispatcher.UIThread.RunJobs();
+        Assert.NotNull(p.GetAttribute("rev"));
+        Assert.Contains(vm.SidePanels.Attributes, a => a.Name == "rev");
+        Assert.DoesNotContain("rev", vm.SidePanels.MissingAttributes);
+        Assert.Null(vm.SidePanels.AttributeToAdd);
+
+        // Тот же список ещё раз — тоже без падения.
+        combo.SelectedItem = "id";
+        Dispatcher.UIThread.RunJobs();
+        Assert.NotNull(p.GetAttribute("id"));
+
+        p.SetAttribute("id", "intro_p");
+        p.SetAttribute("rev", "2");
+        p.SetAttribute("outputclass", "lead");
+        Assert.Equal("id: intro_p · rev: 2 · class: lead", Desktop.Authoring.AuthorView.AttributeNote(p));
+        Assert.Null(Desktop.Authoring.AuthorView.AttributeNote(pane.Document.Root)); // id топика пометкой не дублируется
+        window.Close();
+    }
+
+    /// <summary>
+    /// Замечание: отмена — только Ctrl+Z. Ввод текста и структурные правки — одна история: набор, Enter, набор отменяются
+    /// по шагу в обратном порядке, Ctrl+Y повторяет; набор с паузой или в другом месте — отдельные шаги; курсор после
+    /// отмены — там, где была правка.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task CtrlZ_UndoesTypingAndStructure_InOneHistory()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var original = pane.Document.ToXmlString();
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.Length > 10 && !n.ElementChildren().Any());
+        var text = p.InnerText;
+        var editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(editor.PlainTextLength);
+        Dispatcher.UIThread.RunJobs();
+
+        bool HasP(string inner)
+        {
+            pane.CommitPendingEdits();
+            return pane.Document.Root.DescendantsAndSelf().Any(n => n.Name == "p" && n.InnerText == inner);
+        }
+
+        void Key(Avalonia.Input.Key key, Avalonia.Input.RawInputModifiers modifiers = Avalonia.Input.RawInputModifiers.None)
+        {
+            window.KeyPress(key, modifiers, Avalonia.Input.PhysicalKey.None, null);
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        window.KeyTextInput(" один");
+        window.KeyTextInput(" два"); // подряд — тот же шаг
+        Dispatcher.UIThread.RunJobs();
+        Key(Avalonia.Input.Key.Enter);
+        Key(Avalonia.Input.Key.Enter); // в конце блока Enter открывает подсказку — второй Enter: новый абзац
+        window.KeyTextInput("Новый");
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(HasP("Новый"));
+        Assert.True(HasP(text + " один два"));
+
+        Key(Avalonia.Input.Key.Z, Avalonia.Input.RawInputModifiers.Control); // набор «Новый»
+        Assert.False(HasP("Новый"));
+        Assert.True(HasP(string.Empty));
+        Assert.True(HasP(text + " один два"));
+
+        Key(Avalonia.Input.Key.Z, Avalonia.Input.RawInputModifiers.Control); // Enter
+        Assert.False(HasP(string.Empty));
+        Assert.True(HasP(text + " один два"));
+
+        Key(Avalonia.Input.Key.Z, Avalonia.Input.RawInputModifiers.Control); // « один два» — одним шагом
+        Assert.Equal(original, pane.Document.ToXmlString());
+        Assert.Equal(text.Length, pane.AuthorEditor.Editors.First(e => e.Node.InnerText == text).CaretOffset); // курсор — где был набор
+
+        Key(Avalonia.Input.Key.Y, Avalonia.Input.RawInputModifiers.Control);
+        Assert.True(HasP(text + " один два"));
+
+        // Пауза в наборе — новый шаг.
+        var pause = DocumentView.TypingPause;
+        DocumentView.TypingPause = TimeSpan.Zero;
+        try
+        {
+            var again = pane.AuthorEditor.Editors.First(e => e.Node.InnerText.StartsWith(text));
+            again.FocusEditor(again.PlainTextLength);
+            Dispatcher.UIThread.RunJobs();
+            window.KeyTextInput("!");
+            window.KeyTextInput("?");
+            Dispatcher.UIThread.RunJobs();
+            Key(Avalonia.Input.Key.Z, Avalonia.Input.RawInputModifiers.Control);
+            Assert.True(HasP(text + " один два!"));
+        }
+        finally
+        {
+            DocumentView.TypingPause = pause;
+        }
+
+        window.Close();
+    }
+
+    /// <summary>
+    /// Замечание: перекрёстная ссылка на рисунок, таблицу, нумерованный пункт, сноску — окно как в Word («Тип ссылки»,
+    /// «Вставить ссылку на», документ, элемент). У цели без id появляется id, ссылка — на него, вид текста — классом.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task CrossReferenceDialog_InsertsXrefToFigure_AddingId()
+    {
+        var (window, vm) = await OpenAsync();
+        var path = Path.Combine(_project, "concepts", "xref.dita");
+        File.WriteAllText(path,
+            "<concept id=\"x\"><title>Ссылки</title><conbody><p>См. </p>" +
+            "<fig><title>Схема</title></fig><ol><li>раз</li><li id=\"two\">два</li></ol></conbody></concept>");
+        var pane = (DocumentView)vm.OpenDocument!(path)!;
+        Dispatcher.UIThread.RunJobs();
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p");
+        pane.AuthorEditor.EditorFor(p)!.FocusEditor(4);
+        Dispatcher.UIThread.RunJobs();
+
+        async Task Insert(string kind, string target, string form)
+        {
+            var running = vm.Insert.InsertXrefCommand.ExecuteAsync(null);
+            Dispatcher.UIThread.RunJobs();
+            var dialog = Assert.Single(window.OwnedWindows);
+            ComboBox Combo(string name) => dialog.GetLogicalDescendants().OfType<ComboBox>().First(c => Avalonia.Automation.AutomationProperties.GetName(c) == name);
+            var kinds = Combo("Тип ссылки:");
+            kinds.SelectedItem = kinds.Items.Cast<object>().First(i => i.ToString() == kind);
+            Dispatcher.UIThread.RunJobs();
+            var list = dialog.GetLogicalDescendants().OfType<ListBox>().First();
+            list.SelectedItem = list.Items.Cast<object>().First(i => i.ToString() == target);
+            var forms = Combo("Вставить ссылку на:");
+            forms.SelectedItem = forms.Items.Cast<object>().First(i => i.ToString()!.StartsWith(form));
+            dialog.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Вставить")
+                .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Dispatcher.UIThread.RunJobs();
+            await running;
+            Dispatcher.UIThread.RunJobs();
+        }
+
+        await Insert("Рисунок", "Рисунок 1. Схема", "Название целиком");
+        pane.CommitPendingEdits();
+        var fig = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "fig");
+        Assert.Equal("fig_1", fig.GetAttribute("id"));
+        var xref = pane.Document.Root.DescendantsAndSelf().Single(n => n.Name == "xref");
+        Assert.Equal("#x/fig_1", xref.GetAttribute("href"));
+        Assert.Equal("xref-full", xref.GetAttribute("outputclass"));
+        Assert.Equal(string.Empty, xref.InnerText);
+
+        // Пункт нумерованного списка с id: id не меняется, вид по умолчанию — без класса.
+        await Insert("Нумерованный пункт", "2. два", "Номер пункта");
+        pane.CommitPendingEdits();
+        var second = pane.Document.Root.DescendantsAndSelf().Where(n => n.Name == "xref").Select(n => n.GetAttribute("href")).ToList();
+        Assert.Contains("#x/two", second);
+        Assert.Null(pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "xref" && n.GetAttribute("href") == "#x/two").GetAttribute("outputclass"));
+        window.Close();
+    }
+
     [AvaloniaFact]
     public async Task AuthorContextMenu_HasInsertSubmenu_InsertingAtCaret()
     {

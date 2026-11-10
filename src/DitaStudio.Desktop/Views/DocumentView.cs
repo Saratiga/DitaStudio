@@ -49,7 +49,19 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
         _author.SelectionChanged += (_, _) => SelectionChanged?.Invoke(this, EventArgs.Empty);
         _author.RootTitleCommitted += (_, _) => RootTitleCommitted?.Invoke(this, EventArgs.Empty);
         _author.StatusRequested += (_, message) => StatusRequested?.Invoke(this, message);
-        _author.BeforeStructuralEdit += (_, description) => Undo.Push(Document, description);
+        _author.BeforeStructuralEdit += (_, description) => Undo.Push(Document, description, CaretLocation());
+        _author.TextChanging += OnTextChanging;
+        Undo.Changed += (_, _) =>
+        {
+            if (!_typingPush)
+            {
+                // Чужой снимок (структурная правка, отмена, повтор): следующий ввод — новый шаг отмены. Правки текста,
+                // которые команда делает сразу после своего снимка (в той же обработке), входят в её шаг.
+                _typingEditor = null;
+                _commandTurn = true;
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => _commandTurn = false, Avalonia.Threading.DispatcherPriority.Send);
+            }
+        };
 
         _source.TextEdited += (_, _) =>
         {
@@ -424,25 +436,148 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
     public void PerformUndo()
     {
         CommitPendingEdits();
-        if (Undo.Undo(Document))
+        if (Undo.Undo(Document, CaretLocation()))
         {
-            ReloadViews();
+            ReloadViewsAt(Undo.RestoredCaret);
         }
     }
 
     public void PerformRedo()
     {
         CommitPendingEdits();
-        if (Undo.Redo(Document))
+        if (Undo.Redo(Document, CaretLocation()))
         {
-            ReloadViews();
+            ReloadViewsAt(Undo.RestoredCaret);
         }
     }
 
     public void PushUndo(string description)
     {
         CommitPendingEdits();
-        Undo.Push(Document, description);
+        Undo.Push(Document, description, CaretLocation());
+    }
+
+    // ------------------------------------------------------------ ввод текста в общей истории отмены
+
+    /// <summary>Пауза в наборе, после которой ввод — новый шаг отмены.</summary>
+    public static TimeSpan TypingPause { get; set; } = TimeSpan.FromSeconds(1.5);
+
+    private BlockEditor? _typingEditor;
+    private int _typingEnd;
+    private long _typingAt;
+    private bool _typingPush;
+    private bool _commandTurn;
+
+    /// <summary>
+    /// Ввод текста в «Авторе» — шаги общей истории (как в Word): снимок пишется в начале «группы ввода». Группа
+    /// продолжается, пока печатают подряд в том же блоке (правка начинается там, где кончилась прошлая, — набор или
+    /// Backspace) без паузы дольше <see cref="TypingPause"/>; другой блок, курсор в другом месте, пауза, структурная
+    /// правка или отмена начинают новую.
+    /// </summary>
+    private void OnTextChanging(object? sender, TextChange change)
+    {
+        if (sender is not BlockEditor editor)
+        {
+            return;
+        }
+
+        var now = Environment.TickCount64;
+        if (_commandTurn)
+        {
+            _typingEditor = null; // правка текста — часть только что записанной команды
+            return;
+        }
+
+        var continues = ReferenceEquals(editor, _typingEditor) && now - _typingAt < (long)TypingPause.TotalMilliseconds &&
+                        (change.Offset == _typingEnd || change.Offset + change.RemovalLength == _typingEnd);
+        if (!continues)
+        {
+            _typingPush = true;
+            try
+            {
+                _author.FlushPendingEdits();
+                Undo.Push(Document, Loc.T("Doc_Typing"), Location(editor.Node, change.Offset));
+            }
+            finally
+            {
+                _typingPush = false;
+            }
+        }
+
+        _typingEditor = editor;
+        _typingEnd = change.Offset + change.InsertionLength;
+        _typingAt = now;
+    }
+
+    /// <summary>Где курсор: путь элемента от корня (номера среди элементов-детей) и смещение — «0/2/1:14».</summary>
+    private string? CaretLocation()
+    {
+        if (Mode != EditorMode.Author || _author.CurrentNode is not { } node)
+        {
+            return null;
+        }
+
+        return Location(node, _author.ActiveEditorFor(node)?.CaretOffset ?? 0);
+    }
+
+    private string? Location(DitaNode node, int offset)
+    {
+        var path = new List<int>();
+        for (var current = node; current.Parent is { } parent; current = parent)
+        {
+            var index = parent.ElementChildren().ToList().IndexOf(current);
+            if (index < 0)
+            {
+                return null;
+            }
+
+            path.Insert(0, index);
+        }
+
+        return string.Join("/", path) + ":" + offset;
+    }
+
+    private (DitaNode Node, int Offset)? Resolve(string? location)
+    {
+        if (location is null || location.LastIndexOf(':') is var colon && colon < 0 ||
+            !int.TryParse(location[(colon + 1)..], out var offset))
+        {
+            return null;
+        }
+
+        var node = Document.Root;
+        foreach (var part in location[..colon].Split('/', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!int.TryParse(part, out var index) || node.ElementChildren().ElementAtOrDefault(index) is not { } child)
+            {
+                break; // узла уже нет — курсор в ближайшем сохранившемся предке
+            }
+
+            node = child;
+        }
+
+        return (node, offset);
+    }
+
+    /// <summary>После отмены/повтора: виды заново, курсор — туда, где была правка.</summary>
+    private void ReloadViewsAt(string? location)
+    {
+        if (Resolve(location) is { } target && Mode == EditorMode.Author)
+        {
+            var node = target.Node;
+            while (_author.EditorFor(node) is null && node.ElementChildren().FirstOrDefault() is { } first)
+            {
+                node = first; // у контейнера своего текста нет — курсор в его первый блок
+                target = (node, 0);
+            }
+
+            _author.Rebuild(node, target.Offset);
+            _outline?.Refresh();
+            RaiseDirty();
+            return;
+        }
+
+        ReloadViews();
     }
 
     public bool FocusNode(DitaNode node)

@@ -508,6 +508,13 @@ public sealed partial class AuthorView
     {
         base.OnKeyDown(e);
 
+        // Курсор-черта между блоками (AuthorView.InsertPoint): Enter, Esc, стрелки, Ctrl+V.
+        if (!e.Handled && InsertPointKey(e))
+        {
+            e.Handled = true;
+            return;
+        }
+
         // Выделены ячейки: Delete и Backspace очищают их, Esc снимает выделение.
         if (!e.Handled && _cellTable is not null)
         {

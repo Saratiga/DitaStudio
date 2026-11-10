@@ -429,6 +429,7 @@ public sealed partial class AuthorView
         var node = content.Node;
         var editor = new BlockEditor(content);
         editor.ContentChanged += (_, _) => Modified();
+        editor.TextChanging += (sender, change) => TextChanging?.Invoke(sender, change);
         editor.ContextMenuBuilding += (sender, items) => ContextMenuBuilding?.Invoke(sender, items);
         editor.Written += (_, _) => RefreshFootnotes();
         // Вопрос о переименовании файла — только если текст заголовка на выходе отличается от того, что был при входе.
@@ -450,6 +451,7 @@ public sealed partial class AuthorView
             : null;
         editor.Focused += (_, _) =>
         {
+            ClearInsertPoint(); // курсор в тексте — черта между блоками убирается
             ClearOutline(); // курсор в тексте — выделение таблицы целиком снимается
             ClearCellSelection();
             // Выделенный текст в других блоках при переходе сюда снимается — иначе выделений на экране несколько.

@@ -26,8 +26,16 @@ public sealed partial class DocxRenderer
 
             if (item.Name is "li" or "sli" or "choice" or "stepsection" or "step" or "substep")
             {
+                var first = true;
                 foreach (var block in RenderListItem(item, level, effectiveNumId, ilvl))
                 {
+                    if (first)
+                    {
+                        // Пункт — цель перекрёстных ссылок: номер по порядку и закладка в его первом абзаце.
+                        RecordListItem(block as W.Paragraph, item);
+                        first = false;
+                    }
+
                     yield return block;
                 }
             }

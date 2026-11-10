@@ -18,6 +18,7 @@ public sealed partial class HtmlRenderer
         {
             _tableNumber++;
             var hasText = CaptionRules.HasContent(title);
+            RecordCaption(node, XrefTargetKind.Table, L.Table, _tableNumber, title!);
             var caption = _options.NumberFiguresAndTables
                 ? $"{L.Table} {_tableNumber}" + (hasText ? CaptionRules.Separator(_options.CaptionSeparator) + RenderInlineChildren(title!) : string.Empty)
                 : RenderInlineChildren(title!);

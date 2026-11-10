@@ -42,6 +42,12 @@ public sealed class DocxRenderOptions
 
     public List<string> Warnings { get; } = new();
 
+    /// <summary>Номера целей перекрёстных ссылок на всё издание; метки заменяет <see cref="DocxRenderer.FinishCrossReferences"/>.</summary>
+    public CrossReferenceLabels? CrossReferences { get; set; }
+
+    /// <summary>Сколько уровней заголовков нумерует список заголовков Word (для номеров в тексте ссылок).</summary>
+    public int NumberingDepth { get; set; } = 9;
+
     /// <summary>Цепочка имён областей ключей (keyscope) для топика, который сейчас рендерится —
     /// см. MapItem.KeyScopeChain. Публикатор обновляет её перед каждым RenderTopic.</summary>
     public IReadOnlyList<string>? CurrentKeyScope { get; set; }
