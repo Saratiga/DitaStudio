@@ -134,6 +134,11 @@ public sealed partial class DocxPublisher
             settings.Append(new W.AutoHyphenation());
         }
 
+        if (layout.DifferentOddEven)
+        {
+            settings.Append(new W.EvenAndOddHeaders()); // в схеме — после autoHyphenation, до updateFields
+        }
+
         settings.Append(new W.UpdateFieldsOnOpen { Val = true });
         settingsPart.Settings = settings;
     }

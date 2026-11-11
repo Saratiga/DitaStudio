@@ -57,7 +57,10 @@ public sealed partial class AvaloniaDialogService
     public async Task<CrossReferenceChoice?> InsertCrossReferenceAsync(DitaProject project, string currentFile, Func<string, DitaDocument?> documentFor)
     {
         var labels = Labels.For(Loc.Instance.Language);
-        var kind = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = XrefKinds.Select(k => new Choice<XrefTargetKind>(k, KindTitle(k))).ToList() };
+        // Последний тип — «Сторонний ресурс» (null): сайт, программа или файл вне проекта.
+        var kinds = XrefKinds.Select(k => new Choice<XrefTargetKind?>(k, KindTitle(k))).ToList();
+        kinds.Add(new Choice<XrefTargetKind?>(null, Loc.T("Xref_KindExternal")));
+        var kind = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = kinds };
         var form = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch };
         AutomationProperties.SetName(kind, Loc.T("Xref_KindLabel"));
         AutomationProperties.SetName(form, Loc.T("Xref_FormLabel0"));
@@ -77,12 +80,51 @@ public sealed partial class AvaloniaDialogService
         var text = Input();
         AutomationProperties.SetName(text, Loc.T("Xref_OwnText"));
 
+        // Сторонний ресурс: адрес сайта или путь к программе/файлу (кнопка «Обзор…»).
+        var address = Input();
+        address.Watermark = Loc.T("Xref_ExternalWatermark");
+        AutomationProperties.SetName(address, Loc.T("Xref_ExternalAddress"));
+        var browse = new Button { Content = Loc.T("Xref_ExternalBrowse"), Padding = new Thickness(12, 3), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+        browse.Click += async (_, _) =>
+        {
+            if (await _files.OpenFileAsync(Loc.T("Xref_ExternalBrowseTitle"), new[] { FileFilter.All }, project.RootPath) is { } picked)
+            {
+                address.Text = picked;
+            }
+        };
+        var addressRow = new DockPanel();
+        DockPanel.SetDock(browse, Dock.Right);
+        addressRow.Children.Add(browse);
+        addressRow.Children.Add(address);
+        var external = new StackPanel
+        {
+            IsVisible = false,
+            Children = { Label(Loc.T("Xref_ExternalAddress")), addressRow, Muted(Wrapped(Loc.T("Xref_ExternalHint"), 4)) }
+        };
+        var internalTop = new StackPanel();
+
+        bool IsExternal() => kind.SelectedItem is Choice<XrefTargetKind?> { Value: null };
+
         void Refill()
         {
-            if (kind.SelectedItem is not Choice<XrefTargetKind> k || file.SelectedItem is not Choice<string> f)
+            var isExternal = IsExternal();
+            external.IsVisible = isExternal;
+            internalTop.IsVisible = !isExternal;
+            targets.IsVisible = !isExternal;
+            form.IsEnabled = !isExternal;
+            if (isExternal)
+            {
+                form.ItemsSource = new[] { new Choice<XrefForm>(XrefForm.Default, Loc.T("Xref_FormExternal")) };
+                form.SelectedIndex = 0;
+                return;
+            }
+
+            if (kind.SelectedItem is not Choice<XrefTargetKind?> { Value: { } kindValue } || file.SelectedItem is not Choice<string> f)
             {
                 return;
             }
+
+            var k = new Choice<XrefTargetKind>(kindValue, KindTitle(kindValue));
 
             var formTitle = (form.SelectedItem as Choice<XrefForm>)?.Value;
             var forms = XrefForms(k.Value).Select(x => new Choice<XrefForm>(x.Form, x.Title)).ToList();
@@ -113,7 +155,14 @@ public sealed partial class AvaloniaDialogService
         var window = Shell(Loc.T("Menu_CrossReference").TrimEnd('…'), root, 600, 560, autoHeight: false);
         var buttons = Buttons(window, () =>
         {
-            if (targets.SelectedItem is Choice<XrefTarget> chosen && file.SelectedItem is Choice<string> f)
+            if (IsExternal())
+            {
+                if (!string.IsNullOrWhiteSpace(address.Text))
+                {
+                    result = CrossReferenceChoice.External(address.Text.Trim(), (text.Text ?? string.Empty).Trim());
+                }
+            }
+            else if (targets.SelectedItem is Choice<XrefTarget> chosen && file.SelectedItem is Choice<string> f)
             {
                 result = new CrossReferenceChoice(f.Value, chosen.Value, (form.SelectedItem as Choice<XrefForm>)?.Value ?? XrefForm.Default,
                     (text.Text ?? string.Empty).Trim());
@@ -121,7 +170,11 @@ public sealed partial class AvaloniaDialogService
         }, Loc.T("Author_Paste"));
         AcceptOnDoubleTap(targets, buttons);
 
-        var top = new StackPanel { Children = { grid, Label(Loc.T("Xref_Document")), file, Label(Loc.T("Xref_Targets")), empty } };
+        internalTop.Children.Add(Label(Loc.T("Xref_Document")));
+        internalTop.Children.Add(file);
+        internalTop.Children.Add(Label(Loc.T("Xref_Targets")));
+        internalTop.Children.Add(empty);
+        var top = new StackPanel { Children = { grid, internalTop, external } };
         var bottom = new StackPanel { Children = { Label(Loc.T("Xref_OwnText")), text, buttons } };
         DockPanel.SetDock(top, Dock.Top);
         DockPanel.SetDock(bottom, Dock.Bottom);

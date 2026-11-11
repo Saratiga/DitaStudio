@@ -360,6 +360,11 @@ public sealed partial class AvaloniaDialogService
         panel.Children.Add(Header(Loc.T("Dlg_TitlePage")));
         var titlePage = Check(Loc.T("Dlg_ASeparateTitlePageWithThe"), current.TitlePage);
         panel.Children.Add(titlePage);
+        var titleMapName = Check(Loc.T("Dlg_MapTitleOnTitlePage"), current.TitlePageMapTitle, top: 6);
+        titleMapName.Margin = new Thickness(20, 6, 0, 0);
+        panel.Children.Add(titleMapName);
+        titleMapName.IsEnabled = titlePage.IsChecked == true;
+        titlePage.IsCheckedChanged += (_, _) => titleMapName.IsEnabled = titlePage.IsChecked == true;
         panel.Children.Add(Label(Loc.T("Dlg_Subtitle")));
         var subtitle = Named(Input(current.Subtitle), Loc.T("Dlg_SubtitleText"));
         panel.Children.Add(subtitle);
@@ -442,8 +447,36 @@ public sealed partial class AvaloniaDialogService
         var fitImages = Check(Loc.T("Dlg_FitImagesToTheHeaderOr"),
             current.FitHeaderFooterImages, top: 6);
         panel.Children.Add(fitImages);
+        // ---- особые колонтитулы: первая страница и чётные страницы, как «Особый колонтитул» в Word
+        panel.Children.Add(Header(Loc.T("Dlg_SpecialHeadersFooters")));
         var noFirst = Check(Loc.T("Dlg_DoNotShowHeadersAndFooters"), current.NoHeaderOnFirstPage, top: 6);
         panel.Children.Add(noFirst);
+        var firstHeader = Named(Input(current.FirstPageHeaderText), Loc.T("Dlg_FirstPageHeader"));
+        firstHeader.Watermark = Loc.T("Dlg_EmptyNoHeader");
+        var firstFooter = Named(Input(current.FirstPageFooterText), Loc.T("Dlg_FirstPageFooter"));
+        firstFooter.Watermark = Loc.T("Dlg_EmptyNoFooter");
+        var firstPanel = new StackPanel
+        {
+            Margin = new Thickness(20, 0, 0, 0),
+            Children = { Label(Loc.T("Dlg_FirstPageHeader")), firstHeader, Label(Loc.T("Dlg_FirstPageFooter")), firstFooter }
+        };
+        panel.Children.Add(firstPanel);
+        firstPanel.IsEnabled = noFirst.IsChecked == true;
+        noFirst.IsCheckedChanged += (_, _) => firstPanel.IsEnabled = noFirst.IsChecked == true;
+
+        var oddEven = Check(Loc.T("Dlg_DifferentOddEven"), current.DifferentOddEven, top: 10);
+        panel.Children.Add(oddEven);
+        var evenHeader = Named(Input(current.EvenHeaderText), Loc.T("Dlg_EvenPageHeader"));
+        var evenFooter = Named(Input(current.EvenFooterText), Loc.T("Dlg_EvenPageFooter"));
+        var evenPanel = new StackPanel
+        {
+            Margin = new Thickness(20, 0, 0, 0),
+            Children = { Label(Loc.T("Dlg_EvenPageHeader")), evenHeader, Label(Loc.T("Dlg_EvenPageFooter")), evenFooter,
+                Muted(new TextBlock { Text = Loc.T("Dlg_EvenPagesHint"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) }) }
+        };
+        panel.Children.Add(evenPanel);
+        evenPanel.IsEnabled = oddEven.IsChecked == true;
+        oddEven.IsCheckedChanged += (_, _) => evenPanel.IsEnabled = oddEven.IsChecked == true;
 
         // ---- печать
         panel.Children.Add(Header(Loc.T("Dlg_Printing")));
@@ -482,6 +515,7 @@ public sealed partial class AvaloniaDialogService
                 TemplatePath = (templatePath.Text ?? string.Empty).Trim(),
                 TableStyle = tableStyle.SelectedItem is TemplateTableStyle { Id.Length: > 0 } style ? style.Id : string.Empty,
                 TitlePage = titlePage.IsChecked == true,
+                TitlePageMapTitle = titleMapName.IsChecked == true,
                 Subtitle = (subtitle.Text ?? string.Empty).Trim(),
                 Author = (author.Text ?? string.Empty).Trim(),
                 TitlePageDate = titleDate.IsChecked == true,
@@ -501,6 +535,11 @@ public sealed partial class AvaloniaDialogService
                 FooterText = footer.Text ?? string.Empty,
                 FooterAlignment = (DocxHeaderAlignment)Math.Max(0, footerAlign.SelectedIndex),
                 NoHeaderOnFirstPage = noFirst.IsChecked == true,
+                FirstPageHeaderText = firstHeader.Text ?? string.Empty,
+                FirstPageFooterText = firstFooter.Text ?? string.Empty,
+                DifferentOddEven = oddEven.IsChecked == true,
+                EvenHeaderText = evenHeader.Text ?? string.Empty,
+                EvenFooterText = evenFooter.Text ?? string.Empty,
                 FitHeaderFooterImages = fitImages.IsChecked == true,
                 HeaderImage = headerImage.Path(),
                 HeaderImageAlignment = headerImage.Alignment(),

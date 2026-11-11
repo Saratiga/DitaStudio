@@ -1581,10 +1581,33 @@ public sealed class MainWindowTests : IDisposable
         row.ProductChoices[2].IsSelected = true;
         Assert.Equal("Чужой Бета Гамма", p.GetAttribute("product"));
 
+        // Вместо поля ввода — выпадающий список; набранный текст только ищет в списке и значение не меняет.
+        Assert.True(row.IsProductPicker);
+        Assert.False(row.IsPlainText);
+        row.ProductSearch = "ал";
+        Assert.True(row.IsProductDropDownOpen);
+        Assert.Equal(new[] { "Альфа" }, row.FilteredProductChoices.Select(c => c.Name));
+        Assert.Equal("Чужой Бета Гамма", p.GetAttribute("product"));
+        row.ToggleFoundProductCommand.Execute(null); // Enter: единственный найденный — отмечается
+        Assert.Equal("Чужой Альфа Бета Гамма", p.GetAttribute("product"));
+        Assert.Equal(string.Empty, row.ProductSearch);
+        row.ProductSearch = "Несуществующий";
+        Assert.Empty(row.FilteredProductChoices);
+        Assert.True(row.HasProductListHint);
+        row.ToggleFoundProductCommand.Execute(null);
+        Assert.Equal("Чужой Альфа Бета Гамма", p.GetAttribute("product"));
+        row.IsProductDropDownOpen = false; // закрыт — поиск сброшен, в поле снова значение
+        Assert.Equal(string.Empty, row.ProductSearch);
+        Assert.True(row.ShowsProductValue);
+        Assert.Equal("Чужой Альфа Бета Гамма", row.ProductDisplay);
+
         // Окно «Список продуктов»: добавить, удалить.
         var editing = vm.Dialogs.EditProductsAsync(vm.Project);
         Dispatcher.UIThread.RunJobs();
         var dialog = Assert.Single(window.OwnedWindows);
+        // Поле папки списка: в тестах папка не задана — пусто, список хранится в проекте.
+        var folderField = dialog.GetLogicalDescendants().OfType<TextBox>().Single(t => Avalonia.Automation.AutomationProperties.GetName(t) == "Папка списка продуктов");
+        Assert.True(string.IsNullOrEmpty(folderField.Text));
         dialog.GetLogicalDescendants().OfType<TextBox>().First(t => Avalonia.Automation.AutomationProperties.GetName(t) == "Имя нового продукта").Text = "Дельта плюс";
         dialog.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "Добавить")
             .RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
@@ -1605,7 +1628,7 @@ public sealed class MainWindowTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         var conditions = Assert.Single(window.OwnedWindows);
         var boxes = conditions.GetLogicalDescendants().OfType<CheckBox>().Where(c => Avalonia.Automation.AutomationProperties.GetName(c)?.StartsWith("Продукт ") == true).ToList();
-        Assert.Equal(new[] { "Бета", "Гамма", "Дельта_плюс", "Чужой" }.OrderBy(x => x), boxes.Select(c => (string)c.Content!).OrderBy(x => x)); // список проекта + найденные в топиках
+        Assert.Equal(new[] { "Альфа", "Бета", "Гамма", "Дельта_плюс", "Чужой" }.OrderBy(x => x), boxes.Select(c => (string)c.Content!).OrderBy(x => x)); // список проекта + найденные в топиках
         Assert.All(boxes, b => Assert.True(b.IsChecked));
         boxes.First(b => (string)b.Content! == "Гамма").IsChecked = false;
         conditions.GetLogicalDescendants().OfType<Button>().First(b => b.Content as string == "ОК")

@@ -53,7 +53,11 @@ public sealed partial class DocxPublisher
                 }
             }
 
-            body.Append(StyledParagraph(DocxStyleCatalog.Title, title));
+            if (layout.TitlePageMapTitle)
+            {
+                body.Append(StyledParagraph(DocxStyleCatalog.Title, title));
+            }
+
             if (layout.Subtitle.Length > 0)
             {
                 body.Append(StyledParagraph(DocxStyleCatalog.Subtitle, layout.Subtitle));

@@ -456,6 +456,47 @@ li::marker { color: #1a5fb4; }
                 "docx-layout: свойства файла — автор и название");
         }
 
+        // Особые колонтитулы: свой текст первой страницы, разные для чётных и нечётных страниц; титул без названия карты.
+        var special = new DocxLayout
+        {
+            TitlePage = true, TitlePageMapTitle = false, Subtitle = "Только подзаголовок", TableOfContents = false,
+            HeaderText = "Нечётная {title}", HeaderAlignment = DocxHeaderAlignment.Right, FooterText = "Стр. {page}",
+            NoHeaderOnFirstPage = true, FirstPageHeaderText = "Первая страница", FirstPageFooterText = string.Empty,
+            DifferentOddEven = true, EvenHeaderText = "Чётная", EvenFooterText = "Чёт {page}"
+        };
+        var specialPath = Path.Combine(root, "special.docx");
+        new DocxPublisher(reopened).Publish(mapPath, new PublishOptions { Language = "ru" }, specialPath, styles: null, layout: special);
+        Check(ValidationErrors(specialPath).Count == 0, $"docx-layout: особые колонтитулы проходят проверку OpenXML ({string.Join("; ", ValidationErrors(specialPath).Take(3))})");
+        using (var doc = WordprocessingDocument.Open(specialPath, false))
+        {
+            var main = doc.MainDocumentPart!;
+            var body = main.Document.Body!;
+            var section = body.Elements<SectionProperties>().Last();
+            string? HeaderTextOf(HeaderFooterValues type) => section.Elements<HeaderReference>().Where(r => r.Type?.Value == type)
+                .Select(r => ((HeaderPart)main.GetPartById(r.Id!.Value!)).Header!.InnerText).FirstOrDefault();
+            string? FooterTextOf(HeaderFooterValues type) => section.Elements<FooterReference>().Where(r => r.Type?.Value == type)
+                .Select(r => ((FooterPart)main.GetPartById(r.Id!.Value!)).Footer!.InnerText).FirstOrDefault();
+            Check(HeaderTextOf(HeaderFooterValues.First) == "Первая страница" && FooterTextOf(HeaderFooterValues.First) == string.Empty &&
+                  section.GetFirstChild<TitlePage>() is not null,
+                "docx-layout: особый колонтитул первой страницы — свой текст, пустой нижний — без колонтитула");
+            Check(HeaderTextOf(HeaderFooterValues.Even) == "Чётная" && FooterTextOf(HeaderFooterValues.Even)?.StartsWith("Чёт") == true &&
+                  HeaderTextOf(HeaderFooterValues.Default) == "Нечётная Книга",
+                "docx-layout: чётные страницы — свои колонтитулы, нечётные — основные");
+            var evenRef = section.Elements<HeaderReference>().First(r => r.Type?.Value == HeaderFooterValues.Even);
+            var evenParagraph = ((HeaderPart)main.GetPartById(evenRef.Id!.Value!)).Header!.Elements<Paragraph>().First();
+            Check(evenParagraph.ParagraphProperties?.Justification?.Val?.Value == JustificationValues.Left,
+                "docx-layout: на чётных страницах выравнивание зеркальное (справа → слева)");
+            Check(main.DocumentSettingsPart!.Settings!.GetFirstChild<EvenAndOddHeaders>() is not null, "docx-layout: настройка evenAndOddHeaders");
+            Check(!body.Descendants<Paragraph>().Any(p => p.ParagraphProperties?.ParagraphStyleId?.Val == "Title") &&
+                  body.Descendants<Paragraph>().Any(p => p.ParagraphProperties?.ParagraphStyleId?.Val == "Subtitle" && p.InnerText == "Только подзаголовок"),
+                "docx-layout: название карты на титуле можно убрать — подзаголовок остаётся");
+        }
+
+        var roundTrip = DocxLayout.FromJson(special.ToJson());
+        Check(!roundTrip.TitlePageMapTitle && roundTrip.DifferentOddEven && roundTrip.EvenFooterText == "Чёт {page}" && roundTrip.FirstPageHeaderText == "Первая страница",
+            "docx-layout: особые колонтитулы и название на титуле сохраняются в настройках");
+        Check(new DocxLayout().TitlePageMapTitle && !new DocxLayout().DifferentOddEven, "docx-layout: по умолчанию название карты на титуле есть, чётные не отличаются");
+
         var noFront = new DocxLayout { TitlePage = false, TableOfContents = false };
         var bare = Path.Combine(root, "bare.docx");
         new DocxPublisher(reopened).Publish(mapPath, new PublishOptions { Language = "ru" }, bare, styles: null, layout: noFront);

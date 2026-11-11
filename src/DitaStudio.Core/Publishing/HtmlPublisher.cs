@@ -285,7 +285,10 @@ public sealed class HtmlPublisher
                 .Append("mm;max-width:100%\" alt=\"\"></div>\n");
         }
 
-        body.Append("<h1 class=\"book-title\">").Append(HtmlRenderer.Escape(tree.Root.Title)).Append("</h1>\n");
+        if (!_project.DocxLayout.TitlePage || _project.DocxLayout.TitlePageMapTitle)
+        {
+            body.Append("<h1 class=\"book-title\">").Append(HtmlRenderer.Escape(tree.Root.Title)).Append("</h1>\n");
+        }
         var tocTitle = _project.DocxLayout.TocTitle.Length > 0 ? _project.DocxLayout.TocTitle : labels.Contents;
         var tocSlot = body.Length; // оглавление вставляется после обхода топиков: номера разделов известны только после их отрисовки
         var topicNumbers = new Dictionary<MapItem, string>(ReferenceEqualityComparer.Instance);

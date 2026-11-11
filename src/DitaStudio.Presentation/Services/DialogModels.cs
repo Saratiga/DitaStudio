@@ -14,8 +14,16 @@ public sealed record XrefResult(ProjectFile File, string? TopicId, string Text);
 /// <summary>
 /// Выбор в окне «Перекрёстная ссылка»: цель (<see cref="Target"/>) в файле <see cref="FilePath"/>, вид текста ссылки
 /// (<see cref="Form"/>) и свой текст (<see cref="Text"/>; пусто — текст по цели при публикации).
+/// Ссылка на сторонний ресурс (сайт, программа, файл вне проекта) — <see cref="ExternalAddress"/> задан, цели нет.
 /// </summary>
-public sealed record CrossReferenceChoice(string FilePath, XrefTarget Target, DitaStudio.Core.Publishing.XrefForm Form, string Text);
+public sealed record CrossReferenceChoice(string FilePath, XrefTarget? Target, DitaStudio.Core.Publishing.XrefForm Form, string Text,
+    string? ExternalAddress = null)
+{
+    public bool IsExternal => ExternalAddress is not null;
+
+    public static CrossReferenceChoice External(string address, string text) =>
+        new(string.Empty, null, DitaStudio.Core.Publishing.XrefForm.Default, text, address);
+}
 
 /// <summary>Одна ячейка таблицы соответствий (reltable) — не более одного topicref на
 /// ячейку; DITA допускает несколько, но для редактора этого достаточно (частый случай на

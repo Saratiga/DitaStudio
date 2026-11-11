@@ -10,6 +10,74 @@ internal static partial class CoreChecks
     internal static void ProductListTests()
     {
         Section("Список продуктов проекта");
+        var keepFolderSetting = ProductListFolder.SettingsPath;
+        ProductListFolder.SettingsPath = Path.Combine(Path.GetTempPath(), "DitaStudioTests", "products-folder-" + Guid.NewGuid().ToString("N") + ".txt");
+        try
+        {
+            ProductListBody();
+            ProductListFolderBody();
+        }
+        finally
+        {
+            if (File.Exists(ProductListFolder.SettingsPath))
+            {
+                File.Delete(ProductListFolder.SettingsPath);
+            }
+
+            ProductListFolder.SettingsPath = keepFolderSetting;
+        }
+    }
+
+    // Папка списка продуктов — настройка редактора: список общий для всех проектов, путь переживает смену проекта.
+    private static void ProductListFolderBody()
+    {
+        var shared = Path.Combine(Path.GetTempPath(), "DitaStudioTests", "shared-" + Guid.NewGuid().ToString("N"));
+        var first = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        var second = Path.Combine(Path.GetTempPath(), "DitaStudioTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(first);
+        Directory.CreateDirectory(second);
+        try
+        {
+            Check(ProductListFolder.Load() is null, "папка списка по умолчанию не задана — список хранится в проекте");
+            var a = new DitaProject(first);
+            a.SetProducts(new[] { new ProductInfo("Местный") });
+            Check(File.Exists(Path.Combine(first, ".ditastudio-products")), "без папки — список в .ditastudio-products проекта");
+
+            ProductListFolder.Save(shared);
+            Check(ProductListFolder.Load() == Path.GetFullPath(shared), "путь к папке списка запоминается");
+            var reopened = new DitaProject(first);
+            Check(reopened.Products.Select(p => p.Name).SequenceEqual(new[] { "Местный" }),
+                "в новой папке списка ещё нет — берётся список проекта");
+            reopened.SetProducts(new[] { new ProductInfo("Общий", "для всех") });
+            var sharedFile = Path.Combine(shared, ProductListFolder.FileName);
+            Check(File.Exists(sharedFile) && reopened.Settings.ProductsPath == sharedFile, "список сохраняется в выбранную папку");
+
+            var b = new DitaProject(second);
+            Check(b.Products.Select(p => p.Name).SequenceEqual(new[] { "Общий" }) && b.Products[0].Description == "для всех",
+                "другой проект видит тот же список — путь к папке переносится из проекта в проект");
+            b.SetProducts(Array.Empty<ProductInfo>());
+            Check(File.Exists(sharedFile) && ProductList.Read(sharedFile).Count == 0, "пустой общий список пишется, файл в общей папке не удаляется");
+
+            ProductListFolder.Save(null);
+            Check(ProductListFolder.Load() is null, "сброс папки — список снова в проекте");
+            b.Settings.ReloadProducts();
+            Check(b.Products.Count == 0, "после сброса — список проекта (пустой)");
+        }
+        finally
+        {
+            ProductListFolder.Save(null);
+            foreach (var dir in new[] { shared, first, second })
+            {
+                if (Directory.Exists(dir))
+                {
+                    Directory.Delete(dir, true);
+                }
+            }
+        }
+    }
+
+    private static void ProductListBody()
+    {
 
         Check(ProductList.NormalizeName("  Мой  продукт ") == "Мой_продукт" && ProductList.NormalizeName("   ") == string.Empty && ProductList.NormalizeName(null) == string.Empty,
             "имя продукта — одно слово: пробелы заменяются на «_»");

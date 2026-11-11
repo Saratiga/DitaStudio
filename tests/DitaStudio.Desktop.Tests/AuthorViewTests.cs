@@ -353,6 +353,26 @@ public sealed class AuthorViewTests
     }
 
     [AvaloniaFact]
+    public void InsertInlineNode_LinkWithOwnText_IsTextNotChip()
+    {
+        // Замечание: при своём тексте ссылки на её месте появлялся непонятный символ (плашка U+FFFC без отрисовки).
+        var (window, author, document, _) = Show();
+        var second = Paragraphs(document)[1];
+        Focus(window, author, second, "Второй".Length);
+
+        var xref = DitaNode.Element("xref");
+        xref.SetAttribute("href", "https://example.com");
+        xref.SetAttribute("scope", "external");
+        xref.SetText("сайт");
+        Assert.True(author.Surface.InsertInlineNode(xref));
+        Assert.Equal("<p>Второй<xref href=\"https://example.com\" scope=\"external\">сайт</xref> абзац.</p>", XmlSerializer.ToXml(second));
+        var text = author.EditorFor(second)!.Text;
+        Assert.DoesNotContain(InlineChar, text);
+        Assert.Contains("Второйсайт абзац.", text);
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void InsertElement_InlineGoesToCaret_BlockGoesAfter()
     {
         // Замечание: сноска и картинка из палитры вставлялись блоком после абзаца, а не у курсора.

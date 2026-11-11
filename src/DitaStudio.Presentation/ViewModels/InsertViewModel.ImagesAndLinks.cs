@@ -184,7 +184,13 @@ public partial class InsertViewModel
             _docs.Panes.TryGetValue(Path.GetFullPath(path), out var open) ? open.Document : project.TryGetDocument(path);
 
         var choice = await _ui.Dialogs.InsertCrossReferenceAsync(project, pane.FilePath, DocumentFor);
-        if (choice is null || DocumentFor(choice.FilePath) is not { } targetDocument)
+        if (choice is { IsExternal: true })
+        {
+            InsertExternalLink(pane, choice);
+            return;
+        }
+
+        if (choice?.Target is null || DocumentFor(choice.FilePath) is not { } targetDocument)
         {
             return;
         }
@@ -224,6 +230,34 @@ public partial class InsertViewModel
             return;
         }
 
+        _docs.RefreshAllTabTitles();
+    }
+
+    /// <summary>Ссылка на сторонний ресурс: <c>&lt;xref href="https://…" scope="external" format="html"&gt;</c>.</summary>
+    private void InsertExternalLink(IDocumentView pane, CrossReferenceChoice choice)
+    {
+        if (XrefTargets.ExternalHref(choice.ExternalAddress) is not { } link)
+        {
+            _shell.StatusText = Loc.T("Xref_ExternalAddressEmpty");
+            return;
+        }
+
+        var xref = DitaNode.Element("xref");
+        xref.SetAttribute("href", link.Href);
+        xref.SetAttribute("scope", "external");
+        xref.SetAttribute("format", link.Format);
+        if (!string.IsNullOrWhiteSpace(choice.Text))
+        {
+            xref.SetText(choice.Text);
+        }
+
+        if (!pane.Author.InsertInlineNode(xref))
+        {
+            _shell.StatusText = Loc.T("Msg_PutTheCursorInTheText");
+            return;
+        }
+
+        _shell.StatusText = Loc.T("Xref_ExternalInserted", link.Href);
         _docs.RefreshAllTabTitles();
     }
 

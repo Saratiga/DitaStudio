@@ -162,4 +162,54 @@ public static class XrefTargets
 
         return (href.Length == 0 ? "#" : href + "#") + (target.TopicId is { Length: > 0 } topic ? topic + "/" + id : id);
     }
+
+    /// <summary>
+    /// Ссылка на сторонний ресурс (сайт, программа, файл вне проекта): <c>href</c> и <c>format</c> для
+    /// <c>&lt;xref scope="external"&gt;</c>. Адрес без схемы вида «example.com» получает https://, путь к файлу
+    /// («C:\Program Files\app.exe», «/usr/bin/app») — URI file:///, остальные схемы (mailto:, ftp:, tel:…) остаются как есть.
+    /// Пустой адрес — null.
+    /// </summary>
+    public static (string Href, string Format)? ExternalHref(string? address)
+    {
+        var text = (address ?? string.Empty).Trim().Trim('"');
+        if (text.Length == 0)
+        {
+            return null;
+        }
+
+        var isWindowsPath = text.Length >= 3 && char.IsLetter(text[0]) && text[1] == ':' && (text[2] == '\\' || text[2] == '/');
+        var isUncPath = text.StartsWith(@"\\", StringComparison.Ordinal);
+        var isUnixPath = text.StartsWith('/') && !text.StartsWith("//", StringComparison.Ordinal);
+        if (isWindowsPath || isUncPath || isUnixPath)
+        {
+            var uri = new Uri(isUnixPath ? "file://" + text : text).AbsoluteUri;
+            return (uri, FormatOfPath(text));
+        }
+
+        var schemeEnd = text.IndexOf(':');
+        var hasScheme = schemeEnd > 1 && text[..schemeEnd].All(c => char.IsLetterOrDigit(c) || c is '+' or '-' or '.');
+        if (!hasScheme)
+        {
+            text = "https://" + text.TrimStart('/');
+        }
+
+        if (text.StartsWith("http:", StringComparison.OrdinalIgnoreCase) || text.StartsWith("https:", StringComparison.OrdinalIgnoreCase))
+        {
+            return (text, "html");
+        }
+
+        if (text.StartsWith("file:", StringComparison.OrdinalIgnoreCase) && Uri.TryCreate(text, UriKind.Absolute, out var file))
+        {
+            return (text, FormatOfPath(file.LocalPath));
+        }
+
+        return (text, "html");
+    }
+
+    /// <summary>format для файла — его расширение (exe, pdf, docx…), как велит DITA для не-DITA ресурсов; без расширения — html.</summary>
+    private static string FormatOfPath(string path)
+    {
+        var extension = Path.GetExtension(path.TrimEnd('/', '\\')).TrimStart('.').ToLowerInvariant();
+        return extension.Length > 0 ? extension : "html";
+    }
 }

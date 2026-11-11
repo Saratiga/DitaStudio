@@ -11,7 +11,9 @@ internal static class TestLanguage
     {
         // Тесты открывают проекты: список недавних — свой, временный, а не пользовательский.
         DitaStudio.Presentation.RecentProjects.SettingsPath = Path.Combine(Path.GetTempPath(), "DitaStudioTests", "recent-" + Environment.ProcessId + ".txt");
-        LanguageSettings.SettingsPath = Path.Combine(Path.GetTempPath(), "DitaStudioTests", "language-" + Environment.ProcessId + ".txt");
+        // Папка списка продуктов — тоже настройка пользователя: в тестах её нет, список живёт в проекте.
+        DitaStudio.Core.Project.ProductListFolder.SettingsPath = Path.Combine(Path.GetTempPath(), "DitaStudioTests", "products-folder-" + Environment.ProcessId + ".txt");
+        LanguageSettings.SettingsPath =Path.Combine(Path.GetTempPath(), "DitaStudioTests", "language-" + Environment.ProcessId + ".txt");
         Loc.Instance.SetUserLanguage("ru");
     }
 }

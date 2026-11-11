@@ -963,7 +963,7 @@ Content: {2}</value>
     <value>An image (for example, a logo; PNG, JPEG, GIF, BMP) goes on the left, center or right, </value>
   </data>
   <data name="Dlg_ASeparateTitlePageWithThe" xml:space="preserve">
-    <value>A separate title page with the map title (clear the check box for no title page)</value>
+    <value>A separate title page (clear the box — no title page)</value>
   </data>
   <data name="Dlg_AsInTheProjectCSSUsually" xml:space="preserve">
     <value>As in the project CSS (usually A4)</value>
@@ -1132,7 +1132,7 @@ Content: {2}</value>
     <value>DOCX layout</value>
   </data>
   <data name="Dlg_DoNotShowHeadersAndFooters" xml:space="preserve">
-    <value>Do not show headers and footers on the first page</value>
+    <value>Special header and footer on the first page (usually the title page)</value>
   </data>
   <data name="Dlg_EachRowLinksTheTopicsFrom" xml:space="preserve">
     <value>Each row links the topics from different columns to each other — when published </value>
@@ -5018,5 +5018,89 @@ A plugin is a .dll in this folder or MyPlugin/MyPlugin.dll in a subfolder. Plugi
   </data>
   <data name="Msg_XrefTargetIdAdded" xml:space="preserve">
     <value>The reference target had no id; id &quot;{0}&quot; was added in {1}.</value>
+  </data>
+  <data name="Xref_KindExternal" xml:space="preserve">
+    <value>External resource (website, program, file)</value>
+  </data>
+  <data name="Xref_ExternalAddress" xml:space="preserve">
+    <value>Address — website URL or path to a program or file:</value>
+  </data>
+  <data name="Xref_ExternalWatermark" xml:space="preserve">
+    <value>https://example.com, C:\Program Files\App\app.exe, mailto:…</value>
+  </data>
+  <data name="Xref_ExternalBrowse" xml:space="preserve">
+    <value>Browse…</value>
+  </data>
+  <data name="Xref_ExternalBrowseTitle" xml:space="preserve">
+    <value>Program or file for the link</value>
+  </data>
+  <data name="Xref_ExternalHint" xml:space="preserve">
+    <value>An address without a scheme gets https://, a file path becomes file:///. The link is inserted as &lt;xref scope="external"&gt;; empty own text shows the address itself.</value>
+  </data>
+  <data name="Xref_FormExternal" xml:space="preserve">
+    <value>Address or own text</value>
+  </data>
+  <data name="Xref_ExternalAddressEmpty" xml:space="preserve">
+    <value>No address for the external link.</value>
+  </data>
+  <data name="Xref_ExternalInserted" xml:space="preserve">
+    <value>External link inserted: {0}</value>
+  </data>
+  <data name="Dlg_MapTitleOnTitlePage" xml:space="preserve">
+    <value>Map title on the title page</value>
+  </data>
+  <data name="Dlg_SpecialHeadersFooters" xml:space="preserve">
+    <value>Special headers and footers</value>
+  </data>
+  <data name="Dlg_FirstPageHeader" xml:space="preserve">
+    <value>First page header:</value>
+  </data>
+  <data name="Dlg_FirstPageFooter" xml:space="preserve">
+    <value>First page footer:</value>
+  </data>
+  <data name="Dlg_EmptyNoHeader" xml:space="preserve">
+    <value>empty — no header</value>
+  </data>
+  <data name="Dlg_EmptyNoFooter" xml:space="preserve">
+    <value>empty — no footer</value>
+  </data>
+  <data name="Dlg_DifferentOddEven" xml:space="preserve">
+    <value>Different headers and footers for odd and even pages</value>
+  </data>
+  <data name="Dlg_EvenPageHeader" xml:space="preserve">
+    <value>Even page header:</value>
+  </data>
+  <data name="Dlg_EvenPageFooter" xml:space="preserve">
+    <value>Even page footer:</value>
+  </data>
+  <data name="Dlg_EvenPagesHint" xml:space="preserve">
+    <value>The main headers and footers go on odd pages. On even pages the alignment is mirrored (left and right swap), the image is the same. Fields are the same: {page}, {pages}, {title}, {date}. Special headers apply to DOCX.</value>
+  </data>
+  <data name="Dlg_ProductListFolder" xml:space="preserve">
+    <value>Product list folder</value>
+  </data>
+  <data name="Dlg_ProductListFolderWatermark" xml:space="preserve">
+    <value>empty — the list is kept in the project folder</value>
+  </data>
+  <data name="Dlg_ProductListFolderHint" xml:space="preserve">
+    <value>The list is saved to products.ditastudio-products in this folder. The folder path is an editor setting: it stays the same when you open another project, so all projects share one list.</value>
+  </data>
+  <data name="Dlg_ProductListLoadedFromFolder" xml:space="preserve">
+    <value>The list from the folder is loaded: {0} products.</value>
+  </data>
+  <data name="Dlg_ProductListWillBeSavedToFolder" xml:space="preserve">
+    <value>The folder has no list yet — the current list is saved there when you click OK.</value>
+  </data>
+  <data name="Attr_ProductListEmpty" xml:space="preserve">
+    <value>The product list is empty: Publishing → Product list…</value>
+  </data>
+  <data name="Attr_ProductNotFound" xml:space="preserve">
+    <value>No product matches “{0}”</value>
+  </data>
+  <data name="Attr_ProductNotSelected" xml:space="preserve">
+    <value>not selected</value>
+  </data>
+  <data name="Attr_ProductSearch" xml:space="preserve">
+    <value>Search in the product list</value>
   </data>
 </root>

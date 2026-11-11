@@ -156,7 +156,12 @@ public sealed partial class DocxPublisher
         var textWidthPt = page.WidthPt - page.LeftPt - page.RightPt - layout.GutterMm * DocxPageSetup.MmToPt;
         var hasHeader = boxes.HasTop || layout.HeaderText.Trim().Length > 0 || headerImage is not null;
         var hasFooter = boxes.HasBottom || layout.FooterText.Trim().Length > 0 || footerImage is not null;
-        var distinctFirst = layout.NoHeaderOnFirstPage && (hasHeader || hasFooter);
+        var firstHeader = layout.FirstPageHeaderText.Trim().Length > 0;
+        var firstFooter = layout.FirstPageFooterText.Trim().Length > 0;
+        var distinctFirst = layout.NoHeaderOnFirstPage && (hasHeader || hasFooter || firstHeader || firstFooter);
+        // Чётные страницы — свой текст с зеркальным выравниванием; картинка и CSS-поля — как у основного колонтитула.
+        var evenHeader = layout.DifferentOddEven && (hasHeader || layout.EvenHeaderText.Trim().Length > 0);
+        var evenFooter = layout.DifferentOddEven && (hasFooter || layout.EvenFooterText.Trim().Length > 0);
 
         // Отступ колонтитула от края листа: из CSS (margin-top / margin-bottom поля) или 12,5 мм, но не больше половины поля.
         var topTwips = DocxPropsWriter.Twips(page.TopPt);
@@ -183,9 +188,27 @@ public sealed partial class DocxPublisher
             });
         }
 
+        if (evenHeader)
+        {
+            section.Append(new W.HeaderReference
+            {
+                Type = W.HeaderFooterValues.Even,
+                Id = AddHeader(mainPart, part => boxes.HasTop && layout.EvenHeaderText.Trim().Length == 0
+                    ? DocxHeaderFooter.FromBoxes(part, DocxStyleCatalog.PageHeader, boxes.Top, _project.RootPath, title, textWidthPt, headerArea, 9003, warnings)
+                    : HeaderFooterBlock(part, DocxStyleCatalog.PageHeader, layout.EvenHeaderText, DocxLayout.Mirror(layout.HeaderAlignment),
+                        headerImage, DocxLayout.Mirror(layout.HeaderImageAlignment), headerImageHeight, textWidthPt, title, date, 9003))
+            });
+        }
+
         if (distinctFirst)
         {
-            section.Append(new W.HeaderReference { Type = W.HeaderFooterValues.First, Id = AddHeader(mainPart, _ => new W.Paragraph()) });
+            section.Append(new W.HeaderReference
+            {
+                Type = W.HeaderFooterValues.First,
+                Id = AddHeader(mainPart, _ => firstHeader
+                    ? HeaderFooterParagraph(DocxStyleCatalog.PageHeader, layout.FirstPageHeaderText, layout.HeaderAlignment, title, date)
+                    : new W.Paragraph())
+            });
         }
 
         if (hasFooter)
@@ -200,9 +223,27 @@ public sealed partial class DocxPublisher
             });
         }
 
+        if (evenFooter)
+        {
+            section.Append(new W.FooterReference
+            {
+                Type = W.HeaderFooterValues.Even,
+                Id = AddFooter(mainPart, part => boxes.HasBottom && layout.EvenFooterText.Trim().Length == 0
+                    ? DocxHeaderFooter.FromBoxes(part, DocxStyleCatalog.PageFooter, boxes.Bottom, _project.RootPath, title, textWidthPt, footerArea, 9004, warnings)
+                    : HeaderFooterBlock(part, DocxStyleCatalog.PageFooter, layout.EvenFooterText, DocxLayout.Mirror(layout.FooterAlignment),
+                        footerImage, DocxLayout.Mirror(layout.FooterImageAlignment), footerImageHeight, textWidthPt, title, date, 9004))
+            });
+        }
+
         if (distinctFirst)
         {
-            section.Append(new W.FooterReference { Type = W.HeaderFooterValues.First, Id = AddFooter(mainPart, _ => new W.Paragraph()) });
+            section.Append(new W.FooterReference
+            {
+                Type = W.HeaderFooterValues.First,
+                Id = AddFooter(mainPart, _ => firstFooter
+                    ? HeaderFooterParagraph(DocxStyleCatalog.PageFooter, layout.FirstPageFooterText, layout.FooterAlignment, title, date)
+                    : new W.Paragraph())
+            });
         }
 
         var width = (uint)DocxPropsWriter.Twips(page.WidthPt);

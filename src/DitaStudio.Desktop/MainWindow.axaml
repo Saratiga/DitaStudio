@@ -613,22 +613,61 @@
                                                 <ComboBox IsVisible="{Binding IsEnumeration}" IsEditable="True" HorizontalAlignment="Stretch"
                                                           ItemsSource="{Binding Values}" Text="{Binding Value}"
                                                           SelectionChanged="OnAttributeComboSelected" LostFocus="OnAttributeEditorLostFocus" />
-                                                <TextBox IsVisible="{Binding !IsEnumeration}" Text="{Binding Value}"
+                                                <TextBox IsVisible="{Binding IsPlainText}" Text="{Binding Value}"
                                                          LostFocus="OnAttributeEditorLostFocus">
                                                     <TextBox.KeyBindings>
                                                         <KeyBinding Gesture="Enter" Command="{Binding ApplyCommand}" />
                                                     </TextBox.KeyBindings>
                                                 </TextBox>
-                                                <!-- @product: продукты проекта флажками — можно выбрать несколько -->
-                                                <Expander IsVisible="{Binding HasProductChoices}" Header="{loc:Tr Hdr_ProjectProducts}" Margin="0,4,0,0" IsExpanded="True">
-                                                    <ItemsControl ItemsSource="{Binding ProductChoices}">
-                                                        <ItemsControl.ItemTemplate>
-                                                            <DataTemplate DataType="vm:ProductChoice">
-                                                                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="4,0,0,0" />
-                                                            </DataTemplate>
-                                                        </ItemsControl.ItemTemplate>
-                                                    </ItemsControl>
-                                                </Expander>
+                                                <!-- @product: выпадающий список продуктов проекта (флажки — можно несколько) того же размера, что поле;
+                                                     набранный текст — только поиск по списку, значение им не задаётся -->
+                                                <Grid Name="ProductPickerHost" IsVisible="{Binding IsProductPicker}" ColumnDefinitions="*,Auto">
+                                                    <Grid.Styles>
+                                                        <Style Selector="TextBlock.muted">
+                                                            <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+                                                        </Style>
+                                                    </Grid.Styles>
+                                                    <TextBox Name="ProductPickerSearch" Grid.ColumnSpan="2" Text="{Binding ProductSearch}" Padding="6,4,28,4"
+                                                             AutomationProperties.Name="{loc:Tr Attr_ProductSearch}">
+                                                        <TextBox.KeyBindings>
+                                                            <KeyBinding Gesture="Enter" Command="{Binding ToggleFoundProductCommand}" />
+                                                            <KeyBinding Gesture="Down" Command="{Binding OpenProductDropDownCommand}" />
+                                                            <KeyBinding Gesture="Alt+Down" Command="{Binding OpenProductDropDownCommand}" />
+                                                            <KeyBinding Gesture="Escape" Command="{Binding CloseProductDropDownCommand}" />
+                                                        </TextBox.KeyBindings>
+                                                    </TextBox>
+                                                    <TextBlock IsVisible="{Binding ShowsProductValue}" IsHitTestVisible="False" Margin="8,0,30,0"
+                                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                               Text="{Binding ProductDisplay}"
+                                                               Classes.muted="{Binding !HasProductValue}" />
+                                                    <ToggleButton Grid.Column="1" Classes="tool" Margin="0,0,2,0" Padding="6,0" VerticalAlignment="Stretch"
+                                                                  Background="Transparent" BorderThickness="0" Focusable="False"
+                                                                  IsChecked="{Binding IsProductDropDownOpen, Mode=TwoWay}"
+                                                                  ToolTip.Tip="{loc:Tr Hdr_ProjectProducts}">
+                                                        <Path Data="M0,0 L4,4 L8,0" Stroke="{DynamicResource TextMuted}" StrokeThickness="1.5" Width="8" Height="5" Stretch="None" />
+                                                    </ToggleButton>
+                                                    <Popup Grid.ColumnSpan="2" IsOpen="{Binding IsProductDropDownOpen, Mode=TwoWay}" PlacementTarget="{Binding #ProductPickerHost}"
+                                                           Placement="BottomEdgeAlignedLeft" IsLightDismissEnabled="True"
+                                                           OverlayDismissEventPassThrough="True"
+                                                           MinWidth="{Binding #ProductPickerHost.Bounds.Width}">
+                                                        <Border Background="{DynamicResource Surface}" BorderBrush="{DynamicResource LineStrong}" BorderThickness="1"
+                                                                CornerRadius="3" Padding="2,4" MaxHeight="280">
+                                                            <StackPanel>
+                                                                <TextBlock IsVisible="{Binding HasProductListHint}" Text="{Binding ProductListHint}" TextWrapping="Wrap"
+                                                                           Margin="8,4" FontSize="11" Foreground="{DynamicResource TextMuted}" />
+                                                                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="260">
+                                                                    <ItemsControl ItemsSource="{Binding FilteredProductChoices}">
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate DataType="vm:ProductChoice">
+                                                                                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="6,0,6,0" />
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                </ScrollViewer>
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </Popup>
+                                                </Grid>
                                                 <TextBlock IsVisible="{Binding HasDescription}" Text="{Binding Description}" FontSize="10.5"
                                                            TextWrapping="Wrap" Foreground="{DynamicResource TagBrush}" Margin="0,2,0,0" />
                                             </StackPanel>

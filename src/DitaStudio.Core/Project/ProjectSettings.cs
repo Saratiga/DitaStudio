@@ -58,7 +58,7 @@ public sealed class ProjectSettings
     /// <summary>Срабатывает при каждом сбое из <see cref="Warnings"/> — чтобы сообщить сразу.</summary>
     public event Action<string>? Warning;
 
-    internal void Report(string message)
+    public void Report(string message)
     {
         _warnings.Add(message);
         Warning?.Invoke(message);
@@ -289,17 +289,69 @@ public sealed class ProjectSettings
     /// <summary>Список продуктов проекта (значения атрибута <c>product</c>).</summary>
     public IReadOnlyList<ProductInfo> Products { get; private set; } = Array.Empty<ProductInfo>();
 
+    /// <summary>
+    /// Файл, где лежит список продуктов: в папке из настройки редактора (<see cref="ProductListFolder"/>, общая для всех
+    /// проектов) или, если она не задана, <c>.ditastudio-products</c> в папке проекта.
+    /// </summary>
+    public string ProductsPath => ProductListFolder.Load() is { } folder ? ProductListFolder.FileIn(folder) : PathOf(ProductsFile);
+
     public void SetProducts(IEnumerable<ProductInfo> products)
     {
         Products = ProductList.Clean(products);
         var list = Products;
+        if (ProductListFolder.Load() is { } folder)
+        {
+            // Общий список: пустой тоже пишется — файл в общей папке не удаляется из-за одного проекта.
+            var path = ProductListFolder.FileIn(folder);
+            try
+            {
+                ProductList.Write(path, list);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Report(Loc.T("Core_CouldNotSave012", path, ex.Message, Loc.T("Core_TheProductListAppliesUntilThe")));
+            }
+
+            return;
+        }
+
         Save(ProductsFile, Loc.T("Core_TheProductListAppliesUntilThe"),
             list.Count == 0 ? null : path => ProductList.Write(path, list));
     }
 
-    private void LoadProducts() => Load(ProductsFile, Loc.T("Core_TheProductListIsEmpty"),
-        path => Products = ProductList.Read(path),
-        () => Products = Array.Empty<ProductInfo>());
+    /// <summary>Перечитывает список — после смены папки списка продуктов.</summary>
+    public void ReloadProducts()
+    {
+        Products = Array.Empty<ProductInfo>();
+        LoadProducts();
+    }
+
+    private void LoadProducts()
+    {
+        if (ProductListFolder.Load() is { } folder)
+        {
+            var path = ProductListFolder.FileIn(folder);
+            try
+            {
+                if (File.Exists(path))
+                {
+                    Products = ProductList.Read(path);
+                    return;
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Products = Array.Empty<ProductInfo>();
+                Report(Loc.T("Core_CouldNotRead012", path, ex.Message, Loc.T("Core_TheProductListIsEmpty")));
+                return;
+            }
+            // В общей папке списка ещё нет — берётся список проекта (если есть), при первом сохранении он попадёт в папку.
+        }
+
+        Load(ProductsFile, Loc.T("Core_TheProductListIsEmpty"),
+            path => Products = ProductList.Read(path),
+            () => Products = Array.Empty<ProductInfo>());
+    }
 
     // ------------------------------------------------------------ закреплённые вкладки
 

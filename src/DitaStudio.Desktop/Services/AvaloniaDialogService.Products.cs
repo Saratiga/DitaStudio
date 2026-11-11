@@ -23,6 +23,19 @@ public sealed partial class AvaloniaDialogService
         panel.Children.Add(Wrapped(Loc.T("Dlg_ProjectProductsAreTheValuesOf") +
                                    Loc.T("Dlg_AndTickedInBuildConditionsA")));
 
+        // Папка списка — настройка редактора: путь общий для всех проектов, список в ней — тоже.
+        panel.Children.Add(Label(Loc.T("Dlg_ProductListFolder")));
+        var folderBox = Input(ProductListFolder.Load() ?? string.Empty);
+        folderBox.Watermark = Loc.T("Dlg_ProductListFolderWatermark");
+        AutomationProperties.SetName(folderBox, Loc.T("Dlg_ProductListFolder"));
+        var browseFolder = new Button { Content = Loc.T("Xref_ExternalBrowse"), Padding = new Thickness(12, 3), Margin = new Thickness(8, 0, 0, 0) };
+        var folderRow = new DockPanel();
+        DockPanel.SetDock(browseFolder, Dock.Right);
+        folderRow.Children.Add(browseFolder);
+        folderRow.Children.Add(folderBox);
+        panel.Children.Add(folderRow);
+        panel.Children.Add(Muted(new TextBlock { Text = Loc.T("Dlg_ProductListFolderHint"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0) }));
+
         var list = new ListBox { Height = 200, Margin = new Thickness(0, 8, 0, 0) };
         AutomationProperties.SetName(list, Loc.T("Hdr_ProjectProducts"));
         panel.Children.Add(list);
@@ -64,6 +77,52 @@ public sealed partial class AvaloniaDialogService
             status.Text = Loc.T("Dlg_Added0", name);
             Refresh();
         }
+
+        // Выбрана папка, где список уже есть, — он показывается в окне (сохранится туда же по «ОК»).
+        void LoadFromFolder()
+        {
+            var folder = (folderBox.Text ?? string.Empty).Trim();
+            if (folder.Length == 0)
+            {
+                return;
+            }
+
+            var file = ProductListFolder.FileIn(folder);
+            try
+            {
+                if (File.Exists(file))
+                {
+                    products = ProductList.Read(file);
+                    status.Text = Loc.T("Dlg_ProductListLoadedFromFolder", products.Count);
+                    Refresh();
+                }
+                else
+                {
+                    status.Text = Loc.T("Dlg_ProductListWillBeSavedToFolder");
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                status.Text = Loc.T("Dlg_CouldNotReadTheList") + ex.Message;
+            }
+        }
+
+        browseFolder.Click += async (_, _) =>
+        {
+            var start = (folderBox.Text ?? string.Empty).Trim() is { Length: > 0 } typed && Directory.Exists(typed) ? typed : project.RootPath;
+            if (await _files.OpenFolderAsync(Loc.T("Dlg_ProductListFolder"), start) is { } picked)
+            {
+                folderBox.Text = picked;
+                LoadFromFolder();
+            }
+        };
+        folderBox.LostFocus += (_, _) =>
+        {
+            if (!string.Equals((folderBox.Text ?? string.Empty).Trim(), ProductListFolder.Load() ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+            {
+                LoadFromFolder();
+            }
+        };
 
         add.Click += (_, _) => AddCurrent();
         nameBox.KeyDown += (_, e) =>
@@ -155,7 +214,24 @@ public sealed partial class AvaloniaDialogService
 
         IReadOnlyList<ProductInfo>? result = null;
         var window = Shell(Loc.T("Dlg_ProductList"), new ScrollViewer { Content = panel }, 520, 640);
-        panel.Children.Add(Buttons(window, () => result = ProductList.Clean(products)));
+        panel.Children.Add(Buttons(window, () =>
+        {
+            result = ProductList.Clean(products);
+            var folder = (folderBox.Text ?? string.Empty).Trim();
+            try
+            {
+                if (folder.Length > 0)
+                {
+                    Directory.CreateDirectory(folder);
+                }
+
+                ProductListFolder.Save(folder);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+            {
+                project.Settings.Report(Loc.T("Dlg_CouldNotSave") + ex.Message);
+            }
+        }));
         return await ShowAsync(window) ? result : null;
     }
 

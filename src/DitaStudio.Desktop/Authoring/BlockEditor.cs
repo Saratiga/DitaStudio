@@ -431,6 +431,36 @@ public sealed class BlockEditor : TextEditor
     public void InsertInlineNode(DitaNode node)
     {
         var offset = TextArea.Selection.IsEmpty ? CaretOffset : TextArea.Selection.SurroundingSegment.Offset;
+
+        // Ссылка со своим текстом (<xref>текст</xref>) — не плашка: плашкой рисуется только пустая ссылка, а у непустой
+        // в строке оставался голый символ U+FFFC. Её текст вставляется как текст элемента — так же, как набранный руками.
+        // Сноска остаётся плашкой: её текст живёт в области «Сноски».
+        if (node.Name != "fn" && node.Children.Count > 0 && node.Children.All(c => c.Kind == NodeKind.Text))
+        {
+            var text = string.Concat(node.Children.Select(c => c.Value));
+            var element = DitaNode.Element(node.Name);
+            foreach (var attribute in node.Attributes)
+            {
+                element.SetAttribute(attribute.Name, attribute.Value);
+            }
+
+            text = text.Replace(InlineContent.ChipChar, ' ');
+            _content.InsertElementText(offset, element, text);
+            _syncing = true;
+            try
+            {
+                Document.Insert(offset, text);
+            }
+            finally
+            {
+                _syncing = false;
+            }
+
+            CaretOffset = offset + text.Length;
+            CommitFormatting();
+            return;
+        }
+
         _content.InsertChip(offset, node);
         _syncing = true;
         try

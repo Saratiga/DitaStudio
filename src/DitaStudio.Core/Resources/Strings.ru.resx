@@ -963,7 +963,7 @@
     <value>Картинка (например, логотип; PNG, JPEG, GIF, BMP) ставится слева, по центру или справа, </value>
   </data>
   <data name="Dlg_ASeparateTitlePageWithThe" xml:space="preserve">
-    <value>Отдельная титульная страница с названием карты (снимите флажок — титула не будет)</value>
+    <value>Отдельная титульная страница (снимите флажок — титула не будет)</value>
   </data>
   <data name="Dlg_AsInTheProjectCSSUsually" xml:space="preserve">
     <value>Как в CSS проекта (обычно A4)</value>
@@ -1132,7 +1132,7 @@
     <value>Оформление DOCX</value>
   </data>
   <data name="Dlg_DoNotShowHeadersAndFooters" xml:space="preserve">
-    <value>Не показывать колонтитулы на первой странице</value>
+    <value>Особый колонтитул первой страницы (обычно — титульной)</value>
   </data>
   <data name="Dlg_EachRowLinksTheTopicsFrom" xml:space="preserve">
     <value>Каждая строка связывает между собой топики из разных столбцов — при публикации </value>
@@ -5018,5 +5018,89 @@
   </data>
   <data name="Msg_XrefTargetIdAdded" xml:space="preserve">
     <value>У цели ссылки нет id — добавлен id «{0}» в {1}.</value>
+  </data>
+  <data name="Xref_KindExternal" xml:space="preserve">
+    <value>Сторонний ресурс (сайт, программа, файл)</value>
+  </data>
+  <data name="Xref_ExternalAddress" xml:space="preserve">
+    <value>Адрес — ссылка на сайт или путь к программе, файлу:</value>
+  </data>
+  <data name="Xref_ExternalWatermark" xml:space="preserve">
+    <value>https://example.com, C:\Program Files\App\app.exe, mailto:…</value>
+  </data>
+  <data name="Xref_ExternalBrowse" xml:space="preserve">
+    <value>Обзор…</value>
+  </data>
+  <data name="Xref_ExternalBrowseTitle" xml:space="preserve">
+    <value>Программа или файл для ссылки</value>
+  </data>
+  <data name="Xref_ExternalHint" xml:space="preserve">
+    <value>Адрес без схемы получает https://, путь к файлу становится file:///. Ссылка вставляется как &lt;xref scope="external"&gt;; без своего текста в публикации виден сам адрес.</value>
+  </data>
+  <data name="Xref_FormExternal" xml:space="preserve">
+    <value>Адрес или свой текст</value>
+  </data>
+  <data name="Xref_ExternalAddressEmpty" xml:space="preserve">
+    <value>Не задан адрес сторонней ссылки.</value>
+  </data>
+  <data name="Xref_ExternalInserted" xml:space="preserve">
+    <value>Вставлена ссылка на сторонний ресурс: {0}</value>
+  </data>
+  <data name="Dlg_MapTitleOnTitlePage" xml:space="preserve">
+    <value>Название карты на титульной странице</value>
+  </data>
+  <data name="Dlg_SpecialHeadersFooters" xml:space="preserve">
+    <value>Особые колонтитулы</value>
+  </data>
+  <data name="Dlg_FirstPageHeader" xml:space="preserve">
+    <value>Верхний колонтитул первой страницы:</value>
+  </data>
+  <data name="Dlg_FirstPageFooter" xml:space="preserve">
+    <value>Нижний колонтитул первой страницы:</value>
+  </data>
+  <data name="Dlg_EmptyNoHeader" xml:space="preserve">
+    <value>пусто — без колонтитула</value>
+  </data>
+  <data name="Dlg_EmptyNoFooter" xml:space="preserve">
+    <value>пусто — без колонтитула</value>
+  </data>
+  <data name="Dlg_DifferentOddEven" xml:space="preserve">
+    <value>Разные колонтитулы для чётных и нечётных страниц</value>
+  </data>
+  <data name="Dlg_EvenPageHeader" xml:space="preserve">
+    <value>Верхний колонтитул чётных страниц:</value>
+  </data>
+  <data name="Dlg_EvenPageFooter" xml:space="preserve">
+    <value>Нижний колонтитул чётных страниц:</value>
+  </data>
+  <data name="Dlg_EvenPagesHint" xml:space="preserve">
+    <value>Основные колонтитулы — на нечётных страницах. На чётных выравнивание зеркальное (слева и справа меняются местами), картинка — та же. Поля те же: {page}, {pages}, {title}, {date}. Особые колонтитулы действуют в DOCX.</value>
+  </data>
+  <data name="Dlg_ProductListFolder" xml:space="preserve">
+    <value>Папка списка продуктов</value>
+  </data>
+  <data name="Dlg_ProductListFolderWatermark" xml:space="preserve">
+    <value>пусто — список хранится в папке проекта</value>
+  </data>
+  <data name="Dlg_ProductListFolderHint" xml:space="preserve">
+    <value>Список сохраняется в файл products.ditastudio-products в этой папке. Путь к папке — настройка редактора: он сохраняется при открытии другого проекта, и у всех проектов один список.</value>
+  </data>
+  <data name="Dlg_ProductListLoadedFromFolder" xml:space="preserve">
+    <value>Загружен список из папки: продуктов — {0}.</value>
+  </data>
+  <data name="Dlg_ProductListWillBeSavedToFolder" xml:space="preserve">
+    <value>В папке списка ещё нет — текущий список сохранится туда по «ОК».</value>
+  </data>
+  <data name="Attr_ProductListEmpty" xml:space="preserve">
+    <value>Список продуктов пуст: Публикация → Список продуктов…</value>
+  </data>
+  <data name="Attr_ProductNotFound" xml:space="preserve">
+    <value>Нет продукта «{0}»</value>
+  </data>
+  <data name="Attr_ProductNotSelected" xml:space="preserve">
+    <value>не выбран</value>
+  </data>
+  <data name="Attr_ProductSearch" xml:space="preserve">
+    <value>Поиск в списке продуктов</value>
   </data>
 </root>

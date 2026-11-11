@@ -88,6 +88,11 @@
           (<codeph>fig_1</codeph>, <codeph>item_1</codeph>…). В DOCX ссылка ведёт на закладку элемента.</p></info>
         <info><p>Щелчок по плашке ссылки без текста открывает «Свойства ссылки»: текст,
           <parmname>href</parmname> и <parmname>scope</parmname>.</p></info>
+        <info><p>Тип <uicontrol>Сторонний ресурс</uicontrol> ставит ссылку на сайт, программу или файл вне
+          проекта: введите адрес (<codeph>example.com</codeph> получит <codeph>https://</codeph>) или выберите
+          файл кнопкой <uicontrol>Обзор…</uicontrol>. Вставляется <codeph>xref</codeph> с
+          <codeph>scope="external"</codeph>. Ссылка со своим текстом стоит в строке обычным текстом, без
+          плашки.</p></info>
       </step>
       <step>
         <cmd>Ключ (<codeph>keyref</codeph>): опишите значение один раз в <codeph>keydef</codeph>

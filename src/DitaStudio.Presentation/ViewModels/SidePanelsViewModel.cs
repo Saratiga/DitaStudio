@@ -35,6 +35,9 @@ public partial class SidePanelsViewModel : ObservableObject
     /// <summary>Имена продуктов проекта — для выпадающего списка значения <c>@product</c>.</summary>
     public IReadOnlyList<string> ProductNames => _workspace.Project?.Products.Select(p => p.Name).ToList() ?? new List<string>();
 
+    /// <summary>Открыт ли проект: тогда <c>@product</c> выбирается из выпадающего списка продуктов, а не набирается.</summary>
+    public bool HasProject => _workspace.Project is not null;
+
     // ------------------------------------------------------------ атрибуты
 
     [ObservableProperty]
@@ -262,13 +265,18 @@ public sealed partial class AttributeRowViewModel : ObservableObject
         Values = def is { Type: AttrType.Enumeration } ? def.Values : Array.Empty<string>();
         Description = def?.Description ?? string.Empty;
 
-        // @product — значения выбираются из списка продуктов проекта (можно несколько), а не набираются руками.
-        if (name == "product")
+        // @product — значения выбираются из выпадающего списка продуктов проекта (можно несколько), а не набираются руками.
+        // Значения из документа, которых нет в списке, тоже показываются — их можно снять.
+        if (name == "product" && owner.HasProject)
         {
-            foreach (var product in owner.ProductNames)
+            IsProductPicker = true;
+            var tokens = Tokens(value);
+            foreach (var product in owner.ProductNames.Concat(tokens).Distinct(StringComparer.Ordinal))
             {
-                ProductChoices.Add(new ProductChoice(product, Tokens(value).Contains(product, StringComparer.Ordinal), OnChoiceToggled));
+                ProductChoices.Add(new ProductChoice(product, tokens.Contains(product, StringComparer.Ordinal), OnChoiceToggled));
             }
+
+            RefilterProducts();
         }
     }
 
@@ -276,6 +284,92 @@ public sealed partial class AttributeRowViewModel : ObservableObject
     public ObservableCollection<ProductChoice> ProductChoices { get; } = new();
 
     public bool HasProductChoices => ProductChoices.Count > 0;
+
+    /// <summary>@product при открытом проекте: вместо поля ввода — выпадающий список продуктов с поиском.</summary>
+    public bool IsProductPicker { get; }
+
+    /// <summary>Обычное поле ввода: не перечисление и не @product.</summary>
+    public bool IsPlainText => !IsEnumeration && !IsProductPicker;
+
+    /// <summary>
+    /// Текст, набранный в выпадающем списке продуктов, — только поиск по списку: значение атрибута им не задаётся,
+    /// оно меняется флажками. Пусто — в поле видно текущее значение.
+    /// </summary>
+    [ObservableProperty]
+    private string productSearch = string.Empty;
+
+    /// <summary>Открыт ли выпадающий список продуктов.</summary>
+    [ObservableProperty]
+    private bool isProductDropDownOpen;
+
+    /// <summary>Продукты, подходящие под <see cref="ProductSearch"/> (без учёта регистра, по вхождению).</summary>
+    public ObservableCollection<ProductChoice> FilteredProductChoices { get; } = new();
+
+    /// <summary>Подсказка выпадающего списка: список пуст или поиск ничего не нашёл.</summary>
+    public string ProductListHint => ProductChoices.Count == 0
+        ? Loc.T("Attr_ProductListEmpty")
+        : FilteredProductChoices.Count == 0 ? Loc.T("Attr_ProductNotFound", ProductSearch.Trim()) : string.Empty;
+
+    public bool HasProductListHint => ProductListHint.Length > 0;
+
+    /// <summary>Текущее значение в поле, пока ничего не набрано для поиска.</summary>
+    public bool ShowsProductValue => ProductSearch.Length == 0;
+
+    /// <summary>Что видно в поле: выбранные продукты или «не выбрано».</summary>
+    public string ProductDisplay => string.IsNullOrWhiteSpace(Value) ? Loc.T("Attr_ProductNotSelected") : Value;
+
+    public bool HasProductValue => !string.IsNullOrWhiteSpace(Value);
+
+    partial void OnProductSearchChanged(string value)
+    {
+        RefilterProducts();
+        OnPropertyChanged(nameof(ShowsProductValue));
+        if (value.Length > 0)
+        {
+            IsProductDropDownOpen = true;
+        }
+    }
+
+    partial void OnIsProductDropDownOpenChanged(bool value)
+    {
+        if (!value && ProductSearch.Length > 0)
+        {
+            ProductSearch = string.Empty; // список закрыт — поиск сброшен, в поле снова значение
+        }
+    }
+
+    private void RefilterProducts()
+    {
+        var filter = ProductSearch.Trim();
+        FilteredProductChoices.Clear();
+        foreach (var choice in ProductChoices.Where(c => filter.Length == 0 || c.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)))
+        {
+            FilteredProductChoices.Add(choice);
+        }
+
+        OnPropertyChanged(nameof(ProductListHint));
+        OnPropertyChanged(nameof(HasProductListHint));
+    }
+
+    /// <summary>Enter в поле поиска: найден один продукт (или имя совпало точно) — флажок переключается.</summary>
+    [RelayCommand]
+    private void ToggleFoundProduct()
+    {
+        var filter = ProductSearch.Trim();
+        var match = FilteredProductChoices.FirstOrDefault(c => string.Equals(c.Name, filter, StringComparison.OrdinalIgnoreCase))
+                    ?? (FilteredProductChoices.Count == 1 ? FilteredProductChoices[0] : null);
+        if (match is not null)
+        {
+            match.IsSelected = !match.IsSelected;
+            ProductSearch = string.Empty;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenProductDropDown() => IsProductDropDownOpen = true;
+
+    [RelayCommand]
+    private void CloseProductDropDown() => IsProductDropDownOpen = false;
 
     private bool _syncingChoices;
 
@@ -306,6 +400,8 @@ public sealed partial class AttributeRowViewModel : ObservableObject
         }
 
         _syncingChoices = false;
+        OnPropertyChanged(nameof(ProductDisplay));
+        OnPropertyChanged(nameof(HasProductValue));
     }
 
     public string Name { get; }

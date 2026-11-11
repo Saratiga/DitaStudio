@@ -24,6 +24,9 @@ public sealed class DocxLayout
     /// <summary>Отдельная титульная страница с названием карты.</summary>
     public bool TitlePage { get; set; } = true;
 
+    /// <summary>Название карты на титульной странице (и заголовком единого HTML/PDF). Нет — титул из картинки, подзаголовка, автора, даты.</summary>
+    public bool TitlePageMapTitle { get; set; } = true;
+
     /// <summary>Картинка на титульной странице (путь от папки проекта; PNG, JPEG, GIF, BMP) — над названием; пусто — без картинки.</summary>
     public string TitleImage { get; set; } = string.Empty;
 
@@ -124,6 +127,29 @@ public sealed class DocxLayout
 
     /// <summary>Не показывать колонтитулы на первой странице (обычно — на титульной).</summary>
     public bool NoHeaderOnFirstPage { get; set; } = true;
+
+    /// <summary>Особый верхний колонтитул первой страницы (при <see cref="NoHeaderOnFirstPage"/>; пусто — без колонтитула). Поля — как у основного.</summary>
+    public string FirstPageHeaderText { get; set; } = string.Empty;
+
+    /// <summary>Особый нижний колонтитул первой страницы (при <see cref="NoHeaderOnFirstPage"/>; пусто — без колонтитула).</summary>
+    public string FirstPageFooterText { get; set; } = string.Empty;
+
+    /// <summary>Разные колонтитулы чётных и нечётных страниц: основные — на нечётных, <see cref="EvenHeaderText"/>/<see cref="EvenFooterText"/> — на чётных.</summary>
+    public bool DifferentOddEven { get; set; }
+
+    /// <summary>Верхний колонтитул чётных страниц (при <see cref="DifferentOddEven"/>); выравнивание — зеркальное основному.</summary>
+    public string EvenHeaderText { get; set; } = string.Empty;
+
+    /// <summary>Нижний колонтитул чётных страниц (при <see cref="DifferentOddEven"/>); выравнивание — зеркальное основному.</summary>
+    public string EvenFooterText { get; set; } = string.Empty;
+
+    /// <summary>Зеркальное выравнивание для чётной страницы: слева и справа меняются местами, по центру — по центру.</summary>
+    public static DocxHeaderAlignment Mirror(DocxHeaderAlignment alignment) => alignment switch
+    {
+        DocxHeaderAlignment.Left => DocxHeaderAlignment.Right,
+        DocxHeaderAlignment.Right => DocxHeaderAlignment.Left,
+        _ => alignment
+    };
 
     /// <summary>Зеркальные поля — для двусторонней печати.</summary>
     public bool MirrorMargins { get; set; }
@@ -323,6 +349,10 @@ public sealed class DocxLayout
         TableStyle = TableStyle?.Trim() ?? string.Empty;
         TitleImageHeightMm = double.IsFinite(TitleImageHeightMm) ? Math.Clamp(TitleImageHeightMm, 5, 250) : 40;
         FooterText ??= string.Empty;
+        FirstPageHeaderText ??= string.Empty;
+        FirstPageFooterText ??= string.Empty;
+        EvenHeaderText ??= string.Empty;
+        EvenFooterText ??= string.Empty;
         Language = string.IsNullOrWhiteSpace(Language) ? "ru-RU" : Language.Trim();
 
         static double? Margin(double? value) => value is { } v && double.IsFinite(v) ? Math.Clamp(v, 0, 100) : null;

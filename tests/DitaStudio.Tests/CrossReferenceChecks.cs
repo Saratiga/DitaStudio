@@ -128,6 +128,19 @@ internal static partial class CoreChecks
             Check(XrefTargets.EnsureId(second, items[1]) == ("s2", false), "цель с id — свой id, документ не трогается");
             Check(XrefTargets.Href(Path.Combine(root, "a.dita"), Path.Combine(root, "b.dita"), items[1], "s2") == "b.dita#b/s2", "href из другого файла — файл#топик/элемент");
             Check(XrefTargets.Href(Path.Combine(root, "b.dita"), Path.Combine(root, "b.dita"), items[1], "s2") == "#b/s2", "href в своём файле — #топик/элемент");
+
+            // Ссылки на сторонние ресурсы: сайт, программа, файл, почта.
+            Check(XrefTargets.ExternalHref("https://example.com/a?b=1") == ("https://example.com/a?b=1", "html"), "внешняя ссылка: адрес сайта — как есть, format=html");
+            Check(XrefTargets.ExternalHref("  example.com ") == ("https://example.com", "html"), "внешняя ссылка: адрес без схемы получает https://");
+            Check(XrefTargets.ExternalHref("mailto:doc@example.com") == ("mailto:doc@example.com", "html"), "внешняя ссылка: mailto: остаётся как есть");
+            if (OperatingSystem.IsWindows())
+            {
+                Check(XrefTargets.ExternalHref(@"""C:\Program Files\App\app.exe""") == ("file:///C:/Program%20Files/App/app.exe", "exe"),
+                    $"внешняя ссылка: путь к программе — file:///, format по расширению ({XrefTargets.ExternalHref(@"C:\Program Files\App\app.exe")})");
+            }
+
+            Check(XrefTargets.ExternalHref("/usr/share/doc/manual.pdf") == ("file:///usr/share/doc/manual.pdf", "pdf"), "внешняя ссылка: путь Unix — file:///, format=pdf");
+            Check(XrefTargets.ExternalHref("   ") is null, "внешняя ссылка: пустой адрес — null");
         });
     }
 }
