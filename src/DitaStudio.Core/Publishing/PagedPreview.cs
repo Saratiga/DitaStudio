@@ -29,7 +29,8 @@ public sealed record PageGeometry(double WidthMm, double HeightMm, double TopMm,
 /// «Живой» постраничный предпросмотр: страница с листами заданного размера (бумага, ориентация, поля из «Параметров страницы»),
 /// на которые текст раскладывается в самом браузере скриптом — без печати в PDF, поэтому пересчёт занимает доли секунды и
 /// выполняется при каждой правке (<c>ditaSetContent</c> подменяет текст и раскладывает заново, не перезагружая страницу).
-/// Разрывы — между блоками (абзац, строка таблицы, пункт списка не режется), заголовок остаётся с следующим блоком; вложенность
+/// Разрывы — между блоками; абзац (пункт, заметка из текста) длиннее остатка листа режется по словам и продолжается на следующем листе,
+/// как в Word, — текст не обрезается краем листа. Строка таблицы не режется; заголовок остаётся с началом следующего блока; вложенность
 /// (списки, разделы, таблицы) сохраняется на каждой странице; блок с разрывом страницы перед собой (page-break-before) начинает новый лист.
 /// Сноски — как в Word: внизу того листа, где на них ссылаются, под короткой чертой, с надстрочным номером. Текст оформлен как документ
 /// Word (<see cref="Assets.WordPreviewCss"/>: Calibri 11 пт, чёрные заголовки), колонтитулы — текст из настроек с полями {page}, {pages},
@@ -64,6 +65,8 @@ public static class PagedPreview
           .Append(".sheet .fnarea hr{width:33%;margin:0 0 3pt 0;border:0;border-top:.75pt solid #000;}\n")
           .Append(".sheet .fnarea ol{list-style:none;margin:0;padding:0;}\n.sheet .fnarea li{margin:0 0 2pt;}\n")
           .Append(".sheet .fnarea .fn-num{vertical-align:super;font-size:.75em;margin-right:2pt;}\n")
+          // Продолжение абзаца или пункта, разрезанного между листами: без отступа сверху и без второго маркера.
+          .Append(".sheet .cont{margin-top:0 !important;text-indent:0;}\n.sheet li.cont{list-style:none;}\n")
           .Append(".sheet a.fn-ref{vertical-align:super;font-size:.7em;line-height:0;color:inherit;text-decoration:none;}\n")
           .Append(".sheet .content>main>:first-child,.sheet .content>main>:first-child>:first-child{margin-top:0;}\n")
           .Append(".sheet .head,.sheet .foot{position:absolute;left:").Append(Mm(page.LeftMm)).Append(";right:").Append(Mm(page.RightMm))
@@ -195,12 +198,16 @@ public static class PagedPreview
             return s;
           }
 
-          function shallow(el) {
+          function shallow(el, entry) {
             var w = el.cloneNode(false);
             w.removeAttribute('id');
             if (el.tagName === 'TABLE') {
               var cg = el.querySelector(':scope > colgroup');
               if (cg) { w.appendChild(cg.cloneNode(true)); }
+            }
+            // Нумерованный список, продолжающийся на следующем листе, продолжает и нумерацию.
+            if (el.tagName === 'OL' && entry && entry.done > 0) {
+              w.setAttribute('start', String((parseInt(el.getAttribute('start') || '1', 10) || 1) + entry.done));
             }
             return w;
           }
@@ -223,7 +230,7 @@ public static class PagedPreview
             placed = 0;
             var parent = main;
             for (var i = 0; i < stack.length; i++) {
-              var w = shallow(stack[i].src);
+              var w = shallow(stack[i].src, stack[i]);
               parent.appendChild(w);
               stack[i].el = w;
               parent = w;
@@ -238,6 +245,69 @@ public static class PagedPreview
             var r = [];
             for (var c = node.firstChild; c; c = c.nextSibling) { if (c.nodeType === 1) { r.push(c); } }
             return r;
+          }
+
+          // Блок с текстом, который можно разрезать между листами по словам (как абзац в Word); таблицы, рисунки, код — нет.
+          var SPLITTABLE = /^(P|LI|DD|DT|BLOCKQUOTE|H[1-6]|DIV)$/;
+          function splittable(el) {
+            if (el.nodeType !== 1 || !SPLITTABLE.test(el.tagName)) { return false; }
+            if (el.tagName === 'DIV' && el.querySelector('div,p,ul,ol,dl,table,figure,pre')) { return false; }
+            return !el.querySelector('table,figure,pre,img,svg') && wordCount(el) > 1;
+          }
+
+          function wordCount(el) { var m = el.textContent.match(/\S+/g); return m ? m.length : 0; }
+
+          // Место начала n-го слова (с нуля) в клоне: текстовый узел и смещение.
+          function wordStart(root, n) {
+            var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), node, seen = 0;
+            while ((node = walker.nextNode())) {
+              var re = /\S+/g, m;
+              while ((m = re.exec(node.data))) {
+                if (seen === n) { return { node: node, offset: m.index }; }
+                seen++;
+              }
+            }
+            return null;
+          }
+
+          // Первые n слов блока (head) или всё после них (tail); оформление (b, a, span) режется вместе с текстом.
+          function cutClone(el, n, head) {
+            var c = el.cloneNode(true);
+            var at = wordStart(c, n);
+            if (!at) { return head ? c : null; }
+            var r = document.createRange();
+            if (head) { r.setStart(at.node, at.offset); r.setEnd(c, c.childNodes.length); }
+            else { r.setStart(c, 0); r.setEnd(at.node, at.offset); }
+            r.deleteContents();
+            if (!head) { c.removeAttribute('id'); c.classList.add('cont'); }
+            return c;
+          }
+
+          // Ставит на лист столько слов блока, сколько помещается; возвращает остаток (null — блок поставлен целиком, сам блок — ничего не влезло).
+          function placeHead(el) {
+            var total = wordCount(el), parent = host(), lo = 1, hi = total - 1, best = 0;
+            var minWords = Math.min(total - 1, 6); // одна-две строки в низу листа не оставляем
+            while (lo <= hi) {
+              var mid = (lo + hi) >> 1, part = cutClone(el, mid, true);
+              parent.appendChild(part);
+              var notes = addFootnotes(part), ok = fits();
+              removeFootnotes(notes);
+              parent.removeChild(part);
+              if (ok) { best = mid; lo = mid + 1; } else { hi = mid - 1; }
+            }
+            if (best < minWords && !(placed === 0 && best > 0)) { return el; }
+            var headPart = cutClone(el, best, true);
+            parent.appendChild(headPart);
+            addFootnotes(headPart);
+            placed++;
+            return cutClone(el, best, false);
+          }
+
+          function placeWhole(node) {
+            var single = node.cloneNode(true);
+            host().appendChild(single);
+            addFootnotes(single);
+            placed++;
           }
 
           function place(node) {
@@ -257,39 +327,64 @@ public static class PagedPreview
             parent.removeChild(clone);
 
             if (CONTAINERS.test(tag) && elementChildren(node).length > 0) {
-              var w = shallow(node);
+              var entry = { src: node, el: null, head: null, done: 0 };
+              var w = shallow(node, entry);
               parent.appendChild(w);
-              var entry = { src: node, el: w, head: null };
+              entry.el = w;
               stack.push(entry);
-              for (var c = node.firstChild; c; c = c.nextSibling) {
-                place(c);
-                if (tag === 'TABLE' && c.nodeType === 1 && c.tagName === 'THEAD') { entry.head = c; }
-              }
+              placeKids(node, entry);
               stack.pop();
               return;
             }
+
+            // Длинный абзац не обрезается краем листа: часть — на этом листе, остаток — на следующих.
+            if (splittable(node)) {
+              var rest = placeHead(node);
+              while (rest) {
+                if (rest === node && placed === 0) { placeWhole(node); break; } // даже первое слово не влезает в пустой лист
+                nextSheet();
+                var whole = rest.cloneNode(true);
+                host().appendChild(whole);
+                var wholeNotes = addFootnotes(whole);
+                if (fits()) { placed++; break; }
+                removeFootnotes(wholeNotes);
+                host().removeChild(whole);
+                var more = placeHead(rest);
+                if (more === rest) { placeWhole(rest); break; }
+                rest = more;
+              }
+              return;
+            }
+
             if (placed > 0) { nextSheet(); }
-            var single = node.cloneNode(true);
-            host().appendChild(single);
-            addFootnotes(single);
-            placed++;
+            placeWhole(node);
           }
 
-          function placeWithHeadings(container) {
-            var kids = elementChildren(container);
-            for (var i = 0; i < kids.length; i++) {
-              var el = kids[i];
-              // Заголовок не остаётся один внизу листа: переносится вместе со следующим блоком.
-              if (HEADINGS.test(el.tagName) && i + 1 < kids.length && placed > 0) {
-                var h = el.cloneNode(true), n = kids[i + 1].cloneNode(true), p = host();
-                p.appendChild(h); p.appendChild(n);
-                var ok = fits();
-                p.removeChild(n); p.removeChild(h);
-                if (!ok && !CONTAINERS.test(kids[i + 1].tagName)) { nextSheet(); }
+          // Заголовок не остаётся один внизу листа — переносится вместе с началом следующего блока (и внутри разделов, списков, заметок).
+          function keepsWithNext(heading, next) {
+            var test = splittable(next) ? cutClone(next, Math.min(wordCount(next) - 1, 12), true) : next.cloneNode(true);
+            var h = heading.cloneNode(true), p = host();
+            p.appendChild(h); p.appendChild(test);
+            var ok = fits();
+            p.removeChild(test); p.removeChild(h);
+            return ok;
+          }
+
+          function placeKids(container, entry) {
+            for (var c = container.firstChild; c; c = c.nextSibling) {
+              if (c.nodeType === 1 && HEADINGS.test(c.tagName) && placed > 0) {
+                var next = c.nextElementSibling;
+                if (next && !CONTAINERS.test(next.tagName) && !keepsWithNext(c, next)) { nextSheet(); }
               }
-              place(el);
+              place(c);
+              if (entry && c.nodeType === 1) {
+                if (c.tagName === 'THEAD' && container.tagName === 'TABLE') { entry.head = c; }
+                if (c.tagName === 'LI') { entry.done++; }
+              }
             }
           }
+
+          function placeWithHeadings(container) { placeKids(container, null); }
 
           function fill() {
             var total = sheets.length;

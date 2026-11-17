@@ -675,6 +675,8 @@ public sealed partial class AuthorView : UserControl
             ? editor.Document.GetOffset(position.Location)
             : point.Y < editor.Bounds.Height / 2 ? 0 : editor.PlainTextLength;
         editor.FocusEditor(offset);
+        // Фокус по щелчку окно ставит уже после обработчиков нажатия (на ближайший фокусируемый предок) — курсор возвращается в текст следом.
+        Dispatcher.UIThread.Post(() => editor.FocusEditor(offset), DispatcherPriority.Input);
         view.InvalidateVisual();
     }
 

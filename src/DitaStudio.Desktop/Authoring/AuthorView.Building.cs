@@ -372,7 +372,9 @@ public sealed partial class AuthorView
             Padding = new Thickness(4, 2, 4, 2),
             Margin = new Thickness(0, 1 + editor.Margin.Top, 0, 1 + editor.Margin.Bottom),
             BorderThickness = new Thickness(2, 0, 0, 0),
-            BorderBrush = Brushes.Transparent
+            BorderBrush = Brushes.Transparent,
+            // Поля строки ловят щелчок: промах мимо текста ставит курсор в ближайшее место текста (см. AttachSelection).
+            Background = Brushes.Transparent
         };
         editor.Margin = new Thickness(editor.Margin.Left, 0, editor.Margin.Right, 0);
         ApplyBlockFormat(editor, node);

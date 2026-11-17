@@ -291,6 +291,12 @@ public sealed class BlockEditor : TextEditor
 
     public void PlaceCaretAt(int offset)
     {
+        // Курсор ставится заново — прежнее выделение снимается (иначе следующая вставка заменила бы невидимо выделенный текст).
+        if (!TextArea.Selection.IsEmpty)
+        {
+            TextArea.ClearSelection();
+        }
+
         CaretOffset = Math.Clamp(offset, 0, Document.TextLength);
         TextArea.Caret.BringCaretToView();
     }
@@ -910,7 +916,7 @@ public sealed class BlockEditor : TextEditor
     /// Подсветка выделения по строкам переноса: от первого до последнего выделенного знака строки, без хвоста за концом текста. Если выделение
     /// продолжается на следующей строке, к строке добавляется ширина одного пробела (как в Word у переноса).
     /// </summary>
-    private sealed class SelectionRenderer : IBackgroundRenderer
+    internal sealed class SelectionRenderer : IBackgroundRenderer
     {
         private readonly BlockEditor _editor;
 
@@ -977,6 +983,19 @@ public sealed class BlockEditor : TextEditor
                 }
             }
         }
+    }
+
+    /// <summary>Прямоугольники подсветки текущего выделения (для проверок): по одному на строку переноса.</summary>
+    public IReadOnlyList<Rect> SelectionRectangles()
+    {
+        var selection = TextArea.Selection;
+        if (selection.IsEmpty || !TextArea.TextView.VisualLinesValid)
+        {
+            return Array.Empty<Rect>();
+        }
+
+        var segment = selection.SurroundingSegment;
+        return SelectionRenderer.SelectionRects(TextArea.TextView, segment.Offset, segment.EndOffset).ToList();
     }
 
     /// <summary>Волнистое подчёркивание слов с ошибками — как проверка орфографии WPF.</summary>

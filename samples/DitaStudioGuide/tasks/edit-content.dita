@@ -52,7 +52,10 @@
         <cmd>Оформите текст: <shortcut>Ctrl+B</shortcut> — <codeph>b</codeph>,
           <shortcut>Ctrl+I</shortcut> — <codeph>i</codeph>, <shortcut>Ctrl+U</shortcut> —
           <codeph>u</codeph>, <shortcut>Ctrl+`</shortcut> — <codeph>codeph</codeph>,
-          <shortcut>Ctrl+Shift+U</shortcut> — <codeph>uicontrol</codeph>.</cmd>
+          <shortcut>Ctrl+Shift+U</shortcut> — <codeph>uicontrol</codeph>,
+          <shortcut>Ctrl+=</shortcut> — подстрочный знак <codeph>sub</codeph>,
+          <shortcut>Ctrl+Shift+=</shortcut> — надстрочный <codeph>sup</codeph>. Кнопки панели
+          инструментов, как в Word, — ещё и зачёркнутый (<codeph>line-through</codeph>).</cmd>
         <info>
           <p>Кнопки и сочетания — переключатели: когда курсор или выделение в оформленном
             тексте, кнопка подсвечена, повторное нажатие снимает элемент — с выделенной части
@@ -74,9 +77,11 @@
         </info>
       </step>
       <step>
-        <cmd>Выделите блок целиком: щёлкните по его подписи, рамке или полю вокруг, а не по
-          тексту.</cmd>
-        <info><p>Блок обводится контуром; <shortcut>Delete</shortcut> удаляет его одним шагом
+        <cmd>Выделите блок целиком: щёлкните по полю слева от текста (указатель — «рука», как
+          полоса выделения в Word), по подписи элемента или по левой полосе рамки.</cmd>
+        <info><p>Повторный щелчок по полю выделяет блок вокруг (пункт → список, абзац → раздел).
+          Щелчок мимо текста по пустым полям абзаца не выделяет блок, а ставит курсор в
+          ближайшее место текста. Блок обводится контуром; <shortcut>Delete</shortcut> удаляет его одним шагом
           отмены, <shortcut>Esc</shortcut> снимает выделение. Протяжка мышью из одного блока в
           другой выделяет диапазон блоков (у вложенных берётся внешний),
           <shortcut>Shift</shortcut>+щелчок продлевает его.</p></info>
@@ -92,6 +97,14 @@
           <codeph>fig</codeph>, <codeph>example</codeph>…).</p></info>
       </step>
       <step>
+        <cmd>Чтобы вставить новый блок между другими, щёлкните в промежутке между ними.</cmd>
+        <info><p>Появляется мигающая черта — после блока над щелчком или перед блоком под ним
+          (например, перед первым абзацем сразу под заголовком или первым блоком раздела). В
+          ячейке таблицы из нескольких абзацев черта ставится так же: перед первым, между ними и
+          после последнего. Ввод текста создаёт там абзац, <shortcut>Enter</shortcut> — меню
+          допустимых элементов, палитра и кнопки вставки ставят блок на место черты.</p></info>
+      </step>
+      <step>
         <cmd>Переставьте блок без мыши: <shortcut>Ctrl+Shift+↑</shortcut> /
           <shortcut>Ctrl+Shift+↓</shortcut>.</cmd>
       </step>
@@ -100,16 +113,21 @@
         <info>
           <p>Над блоком с атрибутами — строка вида «id: intro · product: Альфа · rev: 2 · class:
             warning-box»: сначала <parmname>id</parmname> (на него ставят перекрёстные ссылки), затем
-            условные атрибуты, остальные, последним <codeph>outputclass</codeph>. Пометка <codeph>status</codeph> цветная:
-            <codeph>new</codeph> — зелёная, <codeph>changed</codeph> — оранжевая,
-            <codeph>deleted</codeph> — красная. Выключить —
+            условные атрибуты, остальные, последним <codeph>outputclass</codeph>. Пометка правки
+            (<codeph>status</codeph>) — первой и цветная: «Вставлено» — зелёная, «Изменено» —
+            оранжевая, «Удалено» — красная, с автором и временем правки.</p>
+          <p>Продукт и другие условия можно задать и словам внутри блока: выделите их — панель
+            <uicontrol>Атрибуты</uicontrol> покажет «Выделенные слова в &lt;p&gt;», и заданный там
+            <parmname>product</parmname> получат только они (обёртка <codeph>ph</codeph>). Такие
+            слова подчёркнуты серым пунктиром, в пометке над блоком — «‹слова› product: Альфа»;
+            курсор в них показывает в панели их атрибуты. Выключить пометки —
             <menucascade><uicontrol>Структура</uicontrol><uicontrol>Показывать пометки
             атрибутов</uicontrol></menucascade>.</p>
           <fig>
-            <title>Пометка status: deleted над абзацем</title>
+            <title>Пометка «Удалено» над абзацем</title>
             <image href="../images/screens/status-notes.png" placement="break">
               <alt>Топик «О продукте»: над абзацем «Устаревший абзац о старой версии» красная
-                пометка «status: deleted», над примечанием серая «type: tip»</alt>
+                пометка «Удалено», над примечанием серая «type: tip»</alt>
             </image>
           </fig>
         </info>

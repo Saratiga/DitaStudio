@@ -259,7 +259,8 @@ public sealed class DitaValidator
                 title,
                 document.FilePath));
         }
-        else if (title is null || string.IsNullOrWhiteSpace(title.InnerText))
+        // Заголовок топика с подстановкой (ключ, conref) не пуст — текст появится при публикации; ошибка — только у глоссария без термина.
+        else if (title is null || (title.Name != "title" && string.IsNullOrWhiteSpace(title.InnerText)))
         {
             issues.Add(new ValidationIssue(
                 IssueSeverity.Error,

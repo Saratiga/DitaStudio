@@ -45,6 +45,7 @@
           <row><entry>Соединить с предыдущим блоком</entry><entry><shortcut>Backspace</shortcut> в начале блока</entry></row>
           <row><entry>Сдвинуть пункт или шаг вглубь / обратно</entry><entry><shortcut>Tab</shortcut> / <shortcut>Shift+Tab</shortcut></entry></row>
           <row><entry>Полужирный, курсив, подчёркнутый</entry><entry><shortcut>Ctrl+B</shortcut>, <shortcut>Ctrl+I</shortcut>, <shortcut>Ctrl+U</shortcut></entry></row>
+          <row><entry>Подстрочный и надстрочный знак</entry><entry><shortcut>Ctrl+=</shortcut>, <shortcut>Ctrl+Shift+=</shortcut></entry></row>
           <row><entry>Код в строке</entry><entry><shortcut>Ctrl+`</shortcut></entry></row>
           <row><entry>Элемент интерфейса (кнопка, меню)</entry><entry><shortcut>Ctrl+Shift+U</shortcut></entry></row>
           <row><entry>Снять оформление</entry><entry><shortcut>Ctrl+Shift+Space</shortcut></entry></row>

@@ -325,6 +325,15 @@ public sealed class GuideScreenshots : IDisposable
         Shot(window, "format-buttons", Guide.Both, new[] { (Bounds(bold, window, 2), "1"), (Bounds(code, window, 2), "2") },
             crop: new Rect(0, 28, Math.Min(760, Bounds(toolbar, window).Width), 62));
 
+        // Кнопки как в Word: зачёркнутый, индексы, уравнение и символ — правее кнопок оформления.
+        var wordButtons = Bounds(Named<Button>(window, "StrikeButton"), window)
+            .Union(Bounds(Named<Button>(window, "SubscriptButton"), window))
+            .Union(Bounds(Named<Button>(window, "SuperscriptButton"), window))
+            .Union(Bounds(Named<Button>(window, "EquationButton"), window))
+            .Union(Bounds(Named<Button>(window, "SymbolButton"), window))
+            .Inflate(8);
+        Shot(window, "word-buttons", Guide.Expert, crop: wordButtons);
+
         // Задача: шаги, подсказка по Enter в конце шага.
         var install = Open(vm, "tasks/install.dita");
         var lastCmd = install.Document.Root.Descendants().Last(n => n.Name == "cmd");
@@ -451,7 +460,17 @@ public sealed class GuideScreenshots : IDisposable
         var aboutPath = Path.Combine(_project, "concepts", "about.dita");
         var aboutText = File.ReadAllText(aboutPath);
         var pAt = aboutText.LastIndexOf("<p>", StringComparison.Ordinal);
-        File.WriteAllText(aboutPath, aboutText[..pAt] + "<p status=\"deleted\">Устаревший абзац о старой версии.</p>" + aboutText[pAt..]);
+        // Правки в словах: вставленное, удалённое, изменённое — и слово в ячейке таблицы (снимок tracked-words).
+        var trackedWords =
+            "<p>Слова <ph status=\"new\" tcauthor=\"Иванов\" tcdate=\"2026-11-17 14:05\">вставлены</ph>, " +
+            "<ph status=\"deleted\" tcauthor=\"Петров\" tcdate=\"2026-11-17 14:06\">удалены</ph> и " +
+            "<ph status=\"changed\" tcauthor=\"Сидоров\" tcdate=\"2026-11-17 14:07\">изменены</ph>.</p>" +
+            "<table><tgroup cols=\"2\"><tbody><row>" +
+            "<entry>Ячейка <ph status=\"new\" tcauthor=\"Иванов\" tcdate=\"2026-11-17 14:05\">новое</ph></entry>" +
+            "<entry>Вторая</entry></row></tbody></tgroup></table>";
+        File.WriteAllText(aboutPath, aboutText[..pAt] + "<p status=\"deleted\">Устаревший абзац о старой версии.</p>"
+            + trackedWords + aboutText[pAt..]);
+
 
         var (window, vm) = await OpenAsync();
         var about = Open(vm, "concepts/about.dita");
@@ -489,12 +508,24 @@ public sealed class GuideScreenshots : IDisposable
         Shot(window, "changes-panel", Guide.Both, crop: rightArea.WithHeight(260));
 
         // Цветные пометки правок в «Авторе».
-        var deleted = about.Document.Root.Descendants().First(n => n.GetAttribute("status") == "deleted");
+        var deleted = about.Document.Root.Descendants().First(n => n.Name == "p" && n.GetAttribute("status") == "deleted");
         var deletedEditor = about.AuthorEditor.EditorFor(deleted)!;
         deletedEditor.FocusEditor(0);
         deletedEditor.BringIntoView();
         Dispatcher.UIThread.RunJobs();
         Shot(window, "status-notes", Guide.Expert, crop: Bounds(about, window));
+
+        // Правки в словах: вставлено, удалено, изменено и слово в ячейке таблицы.
+        var words = about.Document.Root.Descendants()
+            .First(n => n.Name == "p" && n.Descendants().Any(d => d.Name == "ph" && d.GetAttribute("status") is not null));
+        var wordsEditor = about.AuthorEditor.EditorFor(words)!;
+        wordsEditor.FocusEditor(0);
+        wordsEditor.BringIntoView();
+        Dispatcher.UIThread.RunJobs();
+        // Кадр от начала топика: пометки, правки в словах и таблица со словом в ячейке — целиком.
+        about.AuthorEditor.GetVisualDescendants().OfType<ScrollViewer>().First().Offset = new Vector(0, 0);
+        Dispatcher.UIThread.RunJobs();
+        Shot(window, "tracked-words", Guide.Expert, crop: Bounds(about, window));
         Close(window);
     }
 

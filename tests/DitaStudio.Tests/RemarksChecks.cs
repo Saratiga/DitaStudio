@@ -66,7 +66,7 @@ internal static partial class CoreChecks
         Check(Symbols.Quick.Count == Symbols.QuickCount && Symbols.Quick[0].Text == "∑", "недавний символ — первым в коротком списке");
 
         // --- Пустой заголовок топика — не ошибка (и с пустым фразовым элементом внутри)
-        foreach (var title in new[] { "<title/>", "<title> </title>", "<title><ph/></title>" })
+        foreach (var title in new[] { "<title/>", "<title> </title>", "<title><ph/></title>", "<title><keyword keyref=\"product\"/></title>" })
         {
             var empty = DitaDocument.Parse($"<topic id=\"t\">{title}<shortdesc>К</shortdesc><body><p>Текст</p></body></topic>");
             var issues = new DitaValidator().Validate(empty);

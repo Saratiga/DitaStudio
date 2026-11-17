@@ -53,6 +53,8 @@
           <row><entry><shortcut>Ctrl+U</shortcut></entry><entry>Подчёркнутый</entry></row>
           <row><entry><shortcut>Ctrl+`</shortcut></entry><entry>Код (<codeph>codeph</codeph>)</entry></row>
           <row><entry><shortcut>Ctrl+Shift+U</shortcut></entry><entry>Элемент интерфейса (<codeph>uicontrol</codeph>)</entry></row>
+          <row><entry><shortcut>Ctrl+=</shortcut></entry><entry>Подстрочный знак (<codeph>sub</codeph>)</entry></row>
+          <row><entry><shortcut>Ctrl+Shift+=</shortcut></entry><entry>Надстрочный знак (<codeph>sup</codeph>)</entry></row>
           <row><entry><shortcut>Ctrl+Shift+Space</shortcut></entry><entry>Снять оформление</entry></row>
         </tbody>
       </tgroup>

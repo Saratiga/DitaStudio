@@ -762,7 +762,6 @@ public sealed class MainWindowTests : IDisposable
 
         var menu = window.GetLogicalDescendants().OfType<TreeView>().First(t => t.Name == "MapTreeView").ContextMenu!;
         bool Visible(string header) => menu.Items.OfType<MenuItem>().First(i => i.Header as string == header).IsVisible;
-        IEnumerable<string> VisibleHeaders() => menu.Items.OfType<MenuItem>().Where(i => i.IsVisible).Select(i => (string)i.Header!);
 
         var row = MapRows(window).First(r => (r.DataContext as MapTreeNode)?.Title == "Новый раздел");
         var point = row.TranslatePoint(new Point(100, 10), window)!.Value;
@@ -2175,6 +2174,170 @@ public sealed class MainWindowTests : IDisposable
         {
             Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
         }
+    }
+
+    /// <summary>Замечания (3): продукт для выделенных слов через панель «Атрибуты» — черновик ph, флажок продукта, отмена.</summary>
+    [AvaloniaFact]
+    public async Task Remarks_ProductOnSelectedWords_ViaAttributesPanel_Undo()
+    {
+        var (window, vm) = await OpenAsync();
+        vm.Project!.SetProducts(new[] { new Core.Project.ProductInfo("Альфа"), new Core.Project.ProductInfo("Бета") });
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.Length > 20 && !n.Descendants().Any(d => d.Kind == Core.Model.NodeKind.Element));
+        var editor = pane.AuthorEditor.EditorFor(p)!;
+        var word = p.InnerText.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1];
+        var start = editor.Text.IndexOf(word, StringComparison.Ordinal);
+        editor.FocusEditor(start);
+        editor.Select(start, word.Length);
+        Dispatcher.UIThread.RunJobs();
+        vm.SidePanels.RefreshAttributesIfTargetChanged();
+        Assert.Contains("Выделенные слова", vm.SidePanels.AttributeContext);
+        Assert.Contains("product", vm.SidePanels.MissingAttributes);
+
+        vm.SidePanels.AddAttribute("product");
+        var row = vm.SidePanels.Attributes.Single(a => a.Name == "product");
+        Assert.True(row.IsProductPicker);
+        Assert.Null(p.GetAttribute("product")); // пока значения нет — документ не тронут
+        Assert.Empty(p.Descendants().Where(n => n.Name == "ph"));
+
+        row.ProductChoices.First(c => c.Name == "Бета").IsSelected = true;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Null(p.GetAttribute("product"));
+        var ph = Assert.Single(p.Descendants().Where(n => n.Name == "ph"));
+        Assert.Equal("Бета", ph.GetAttribute("product"));
+        Assert.Equal(word, ph.InnerText);
+        Assert.Contains($"‹{word}› product: Бета", pane.AuthorEditor.GetVisualDescendants().OfType<TextBlock>()
+            .Where(t => Equals(t.Tag, "attribute-note")).Select(t => t.Text));
+        Assert.True(vm.SidePanels.AttributeContext.StartsWith("<ph> «" + word), vm.SidePanels.AttributeContext); // панель — атрибуты этих слов
+        Assert.Equal("Бета", vm.SidePanels.Attributes.Single(a => a.Name == "product").Value);
+        window.CaptureRenderedFrame();
+        Dispatcher.UIThread.RunJobs();
+        Save(window, "remarks-product-on-words");
+
+        vm.Insert.UndoCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.Contains(word));
+        Assert.Empty(p.Descendants().Where(n => n.Name == "ph"));
+        window.Close();
+    }
+
+    /// <summary>Замечания (3): команды правок с выделением, отмена; «изменено» в меню «Структура»; кнопки панели.</summary>
+    [AvaloniaFact]
+    public async Task Remarks_TrackCommands_Toolbar_EquationAndSymbol()
+    {
+        var (window, vm) = await OpenAsync();
+        var pane = (DocumentView)vm.OpenDocument!(Path.Combine(_project, "concepts", "about.dita"))!;
+        Dispatcher.UIThread.RunJobs();
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.Length > 20 && !n.Descendants().Any(d => d.Kind == Core.Model.NodeKind.Element));
+        var editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(0);
+        editor.Select(0, 5);
+        Dispatcher.UIThread.RunJobs();
+
+        vm.Insert.MarkTrackedChangedCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains("Выделенный текст помечен", vm.StatusText);
+        Assert.Equal("changed", Assert.Single(p.Descendants().Where(n => n.Name == "ph")).GetAttribute("status"));
+        Assert.True(pane.Document.IsDirty);
+
+        var paragraphText = p.InnerText;
+        vm.Insert.UndoCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText == paragraphText);
+        Assert.Empty(p.Descendants().Where(n => n.Name == "ph"));
+
+        // Меню «Структура»: три пометки track changes.
+        var menu = window.GetLogicalDescendants().OfType<MenuItem>().Select(m => m.Header as string).ToList();
+        Assert.Contains("Track changes: пометить как изменённое", menu);
+
+        // Кнопки панели инструментов.
+        var buttons = window.GetLogicalDescendants().OfType<Button>().Where(b => b.Name is not null).ToDictionary(b => b.Name!);
+        foreach (var name in new[] { "StrikeButton", "SubscriptButton", "SuperscriptButton", "EquationButton", "SymbolButton" })
+        {
+            Assert.True(buttons.ContainsKey(name), name);
+        }
+
+        var equations = Assert.IsType<MenuFlyout>(buttons["EquationButton"].Flyout).ItemsSource!.OfType<MenuItem>().ToList();
+        Assert.Equal(2 + Core.Editing.Equations.BuiltIn.Count, equations.Count);
+        Assert.IsType<Flyout>(buttons["SymbolButton"].Flyout);
+
+        // Зачёркнутый через кнопку — переключатель: нажата в зачёркнутом тексте.
+        editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(0);
+        editor.Select(0, 4);
+        vm.Insert.FormatStrikethroughCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        editor = pane.AuthorEditor.EditorFor(p)!;
+        editor.FocusEditor(2);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Contains("active", buttons["StrikeButton"].Classes);
+
+        // Уравнение и символ — командами панели.
+        editor.FocusEditor(editor.PlainTextLength);
+        vm.Insert.InsertEquationCommand.Execute("euler");
+        Dispatcher.UIThread.RunJobs();
+        vm.Insert.InsertSymbolCommand.Execute("™");
+        Dispatcher.UIThread.RunJobs();
+        pane.AuthorEditor.FlushPendingEdits();
+        Assert.Single(p.Descendants().Where(n => n.Name == "equation-inline"));
+        Assert.EndsWith("™", p.InnerText);
+        Assert.Equal("™", Core.Editing.Symbols.Quick[0].Text);
+        window.CaptureRenderedFrame();
+        Dispatcher.UIThread.RunJobs();
+        var shown = pane.AuthorEditor.EditorFor(p)!;
+        // Курсор поставлен заново — выделение «Прое» снято: формула встаёт в конец, зачёркнутый текст на месте.
+        Assert.Equal(p.InnerText, shown.Text);
+        Assert.Equal(paragraphText[..4], p.Descendants().Single(n => n.Name == "line-through").InnerText);
+        Assert.StartsWith(paragraphText, p.InnerText);
+        Save(window, "remarks-toolbar");
+
+        // Без курсора в тексте — сообщение, документ не меняется.
+        pane.AuthorEditor.Deselect();
+        window.Close();
+    }
+
+    /// <summary>Замечания (3): двойной щелчок по строке «Проверки» ведёт в «Автор», курсор — у элемента с ошибкой.</summary>
+    [AvaloniaFact]
+    public async Task Remarks_ValidationIssue_OpensAuthorAtElement()
+    {
+        var file = Path.Combine(_project, "concepts", "about.dita");
+        var text = File.ReadAllText(file);
+        var at = text.IndexOf("</conbody>", StringComparison.Ordinal);
+        File.WriteAllText(file, text[..at] + "<section><title>Раздел</title><p>Битая <xref href=\"nowhere.dita\">ссылка</xref>.</p></section>" + text[at..]);
+
+        var (window, vm) = await OpenAsync();
+        vm.Validation.ValidateProjectCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        var issue = vm.Validation.Issues.First(i => i.Node?.Name == "xref" && i.FilePath == file);
+        vm.Validation.SelectedIssue = issue;
+        vm.Validation.OpenSelectedIssueCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+
+        var pane = (DocumentView)vm.Documents.Current!;
+        Assert.Equal(file, pane.FilePath);
+        Assert.Equal(DitaStudio.Presentation.Services.EditorMode.Author, pane.Mode);
+        var p = pane.Document.Root.DescendantsAndSelf().First(n => n.Name == "p" && n.InnerText.StartsWith("Битая"));
+        Assert.Same(p, pane.Author.CurrentNode);
+        Assert.Equal("ссылка", pane.AuthorEditor.EditorFor(p)!.SelectedText);
+        window.Close();
+    }
+
+    /// <summary>Замечания (3): пустой заголовок топика — не ошибка проекта.</summary>
+    [AvaloniaFact]
+    public async Task Remarks_EmptyTopicTitle_NotAnError()
+    {
+        var file = Path.Combine(_project, "concepts", "about.dita");
+        var text = File.ReadAllText(file);
+        var start = text.IndexOf("<title>", StringComparison.Ordinal);
+        var end = text.IndexOf("</title>", start, StringComparison.Ordinal) + "</title>".Length;
+        File.WriteAllText(file, text[..start] + "<title></title>" + text[end..]);
+
+        var (window, vm) = await OpenAsync();
+        vm.Validation.ValidateProjectCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.DoesNotContain(vm.Validation.Issues, i => i.FilePath == file && i.Severity == Core.Validation.IssueSeverity.Error);
+        window.Close();
     }
 
     private async Task<(MainWindow Window, MainViewModel Vm)> OpenAsync()

@@ -141,13 +141,43 @@ public static class TrackChanges
         // Пометка слов внутри блока — обёртка ph без своих атрибутов: после снятия пометки она не нужна, текст остаётся на месте.
         if (node.Name == "ph" && node.Attributes.Count == 0 && node.Parent is { } parent)
         {
-            var index = parent.IndexOf(node);
+            var first = parent.IndexOf(node);
+            var index = first;
             foreach (var child in node.Children.ToList())
             {
                 parent.Insert(index++, child);
             }
 
             parent.Remove(node);
+
+            // Пометка через границу оформления разрезала его (<b>жир</b><b>ный</b>) — после снятия обёртки половины склеиваются.
+            MergeAt(parent, index - 1);
+            MergeAt(parent, first - 1);
         }
+    }
+
+    /// <summary>Склеивает два соседних одинаковых фразовых элемента (то же имя и атрибуты) на позиции <paramref name="index"/> и следующей.</summary>
+    private static void MergeAt(DitaNode parent, int index)
+    {
+        if (index < 0 || index + 1 >= parent.Children.Count)
+        {
+            return;
+        }
+
+        var left = parent.Children[index];
+        var right = parent.Children[index + 1];
+        if (left.Kind != NodeKind.Element || right.Kind != NodeKind.Element || left.Name != right.Name ||
+            Schema.DitaCatalog.Default.Get(left.Name) is not { IsInline: true } || left.Name is "xref" or "fn" or "image" ||
+            left.Attributes.Count != right.Attributes.Count || left.Attributes.Any(a => right.GetAttribute(a.Name) != a.Value))
+        {
+            return;
+        }
+
+        foreach (var child in right.Children.ToList())
+        {
+            left.Add(child);
+        }
+
+        parent.Remove(right);
     }
 }

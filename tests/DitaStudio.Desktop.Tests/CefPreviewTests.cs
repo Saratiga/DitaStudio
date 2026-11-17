@@ -321,6 +321,107 @@ public sealed class CefPreviewTests
         Assert.Null(error);
     }
 
+    /// <summary>
+    /// Замечания (3): длинный топик со сносками и разрывом страницы — в «Страницах (живой)» и рядом с текстом: несколько листов, каждая сноска
+    /// внизу того листа, где на неё ссылаются (без списка «Сноски» в конце), листы не переполнены, разрыв начинает новый лист,
+    /// правка в «Авторе» добавляет листы.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task LivePages_Footnotes_AtSheetBottom_ManyPages_SideBySide()
+    {
+        if (!Enabled)
+        {
+            return;
+        }
+
+        var root = Path.Combine(Path.GetTempPath(), "DitaStudioCefTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var body = new System.Text.StringBuilder();
+        for (var s = 1; s <= 6; s++)
+        {
+            body.Append($"<section><title>Раздел {s}</title>");
+            for (var i = 1; i <= 5; i++)
+            {
+                body.Append($"<p>Абзац {s}.{i}. ").Append(string.Concat(Enumerable.Repeat("Текст для раскладки по листам. ", 12)));
+                if (i == 3)
+                {
+                    body.Append($"Ссылка<fn>Сноска {s} — пояснение.</fn> в тексте.");
+                }
+
+                body.Append("</p>");
+            }
+
+            body.Append("</section>");
+        }
+
+        body.Append("<p outputclass=\"page-break-before\">С НОВОГО ЛИСТА</p>");
+        var file = Path.Combine(root, "long.dita");
+        await File.WriteAllTextAsync(file, "<topic id=\"t\"><title>Длинный</title><body>" + body + "</body></topic>");
+        var project = new DitaProject(root);
+        project.Scan();
+        var document = DitaDocument.Load(file);
+        var view = new Desktop.Views.DocumentView(project, document, new CefPdfPrinter());
+        var window = new Window { Width = 1400, Height = 850, Content = view };
+        window.Show();
+        view.ShowLivePreview = true;
+        var live = view.LivePreview!;
+
+        async Task<int> PagesAsync(Func<int, bool> ready)
+        {
+            for (var i = 0; i < 100; i++)
+            {
+                await Task.Delay(100);
+                Dispatcher.UIThread.RunJobs();
+                if (int.TryParse(await live.EvaluateAsync("document.documentElement.getAttribute('data-pages') || '0'"), out var n) && ready(n))
+                {
+                    return n;
+                }
+            }
+
+            return 0;
+        }
+
+        var pages = await PagesAsync(n => n > 2);
+        Assert.True(pages > 2, "длинный топик — несколько листов, а не один: " + pages);
+
+        // Каждая сноска — на листе со ссылкой на неё; в конце списка «Сноски» нет.
+        var mismatched = await live.EvaluateAsync(
+            "Array.from(document.querySelectorAll('.sheet')).filter(s => s.querySelectorAll('a.fn-ref').length !== s.querySelectorAll('.fnarea li').length).length");
+        Assert.Equal("0", mismatched);
+        Assert.Equal("6", await live.EvaluateAsync("document.querySelectorAll('#pages .fnarea li').length"));
+        Assert.Equal("0", await live.EvaluateAsync("document.querySelectorAll('#pages .footnotes').length"));
+        Assert.Equal("0", await live.EvaluateAsync("Array.from(document.querySelectorAll('.sheet .content')).filter(c => c.scrollHeight > c.clientHeight + 1).length"));
+        Assert.Equal("1", await live.EvaluateAsync("document.querySelectorAll('.sheet .fn-ref')[0].textContent")); // номер без скобок
+
+        // Разрыв страницы: абзац — первым на своём листе.
+        Assert.Equal("true", await live.EvaluateAsync(
+            "(function(){var p=Array.from(document.querySelectorAll('#pages p')).find(x=>x.textContent.indexOf('С НОВОГО ЛИСТА')>=0);var m=p.closest('main');return m.textContent.trim().indexOf('С НОВОГО ЛИСТА')===0;})()"));
+
+        // Все листы досягаемы прокруткой (страница выше окна).
+        Assert.Equal("true", await live.EvaluateAsync("document.documentElement.scrollHeight > window.innerHeight * 2"));
+
+        // Правка в «Авторе» — листов больше.
+        var paragraph = document.Root.DescendantsAndSelf().First(n => n.Name == "p");
+        var editor = view.AuthorEditor.EditorFor(paragraph)!;
+        editor.FocusEditor(0);
+        editor.Text = string.Concat(Enumerable.Repeat("Ещё много текста. ", 400)) + editor.Text;
+        var more = await PagesAsync(n => n > pages);
+        Assert.True(more > pages, $"после правки листов должно стать больше ({pages} → {more})");
+
+        // Абзац длиннее листа не обрезается краем: он продолжается на следующих листах, весь текст на месте, листы не переполнены.
+        Assert.Equal("400", await live.EvaluateAsync("(document.getElementById('pages').innerText.match(/Ещё много текста/g) || []).length"));
+        Assert.Equal("0", await live.EvaluateAsync("Array.from(document.querySelectorAll('.sheet .content')).filter(c => c.scrollHeight > c.clientHeight + 1).length"));
+        Assert.True(int.Parse((await live.EvaluateAsync("document.querySelectorAll('#pages p.cont').length"))!) >= 1, "у разрезанного абзаца есть продолжение");
+        // Заголовок раздела не остаётся один: на первом листе после него есть начало абзаца.
+        Assert.Equal("true", await live.EvaluateAsync("document.querySelectorAll('.sheet')[0].innerText.indexOf('Ещё много текста') >= 0"));
+
+        var frame = window.CaptureRenderedFrame();
+        Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "screenshots"));
+        frame?.Save(Path.Combine(AppContext.BaseDirectory, "screenshots", "live-pages-footnotes.png"));
+        view.Dispose();
+        window.Close();
+    }
+
     private static string PagedPreview_Html(int paragraphs) =>
         string.Concat(Enumerable.Range(1, paragraphs).Select(i => $"<p>Абзац {i}. " + string.Concat(Enumerable.Repeat("слово ", 30)) + "</p>"));
 
