@@ -57,6 +57,19 @@ public static class ProjectChanges
         }
     }
 
+    /// <summary>Путь к элементу: индексы среди элементов от корня (как <see cref="ProjectChange.Path"/>); у текста — путь к его элементу.</summary>
+    public static IReadOnlyList<int> PathOf(DitaNode node)
+    {
+        var element = node.Kind == NodeKind.Element ? node : node.Parent;
+        var path = new List<int>();
+        for (var current = element; current?.Parent is { } parent; current = parent)
+        {
+            path.Insert(0, parent.ElementChildren().TakeWhile(c => !ReferenceEquals(c, current)).Count());
+        }
+
+        return path;
+    }
+
     /// <summary>Элемент документа по пути из <see cref="ProjectChange.Path"/>; null — документ с тех пор изменился и пути нет.</summary>
     public static DitaNode? Resolve(DitaDocument document, IReadOnlyList<int> path)
     {

@@ -30,8 +30,10 @@ public sealed record PageGeometry(double WidthMm, double HeightMm, double TopMm,
 /// на которые текст раскладывается в самом браузере скриптом — без печати в PDF, поэтому пересчёт занимает доли секунды и
 /// выполняется при каждой правке (<c>ditaSetContent</c> подменяет текст и раскладывает заново, не перезагружая страницу).
 /// Разрывы — между блоками (абзац, строка таблицы, пункт списка не режется), заголовок остаётся с следующим блоком; вложенность
-/// (списки, разделы, таблицы) сохраняется на каждой странице. Колонтитулы — текст из настроек с полями {page}, {pages}, {title}, {date}.
-/// Результат близок к печати в PDF, но не пиксель-в-пиксель: точные разрывы даёт режим PDF.
+/// (списки, разделы, таблицы) сохраняется на каждой странице; блок с разрывом страницы перед собой (page-break-before) начинает новый лист.
+/// Сноски — как в Word: внизу того листа, где на них ссылаются, под короткой чертой, с надстрочным номером. Текст оформлен как документ
+/// Word (<see cref="Assets.WordPreviewCss"/>: Calibri 11 пт, чёрные заголовки), колонтитулы — текст из настроек с полями {page}, {pages},
+/// {title}, {date}. Результат близок к печати в PDF и DOCX, но не пиксель-в-пиксель: точные разрывы даёт режим PDF.
 /// </summary>
 public static class PagedPreview
 {
@@ -44,14 +46,25 @@ public static class PagedPreview
         sb.Append("<!DOCTYPE html>\n<html lang=\"ru\">\n<head>\n<meta charset=\"utf-8\" />\n<title>")
           .Append(System.Net.WebUtility.HtmlEncode(title)).Append("</title>\n");
         sb.Append("<style>\n").Append(css).Append("\n</style>\n");
+        // Вид страницы Word: шрифт, интервалы и заголовки документа Word поверх стилей публикации.
+        sb.Append("<style id=\"word-css\">\n").Append(Assets.WordPreviewCss)
+          .Append(".sheet main p{margin:0 0 8pt;}\n.sheet main li>p{margin:0;}\n.sheet main h1{margin-top:0;}\n")
+          .Append(".sheet main .related-links,.sheet main .pager,.sheet main .breadcrumbs{display:none;}\n")
+          .Append("</style>\n");
         sb.Append("<style id=\"paged-css\">\n")
           .Append("html,body{margin:0;padding:0;background:#8a8f98;}\n")
           .Append("#pages{display:flex;flex-direction:column;align-items:center;gap:18px;padding:18px 0 40px;}\n")
           .Append(".sheet{position:relative;background:#fff;color:#1b1f23;box-sizing:border-box;flex:none;overflow:hidden;")
           .Append("width:").Append(Mm(page.WidthMm)).Append(";height:").Append(Mm(page.HeightMm)).Append(";box-shadow:0 2px 10px rgba(0,0,0,.45);}\n")
-          .Append(".sheet .content{position:absolute;overflow:hidden;left:").Append(Mm(page.LeftMm)).Append(";top:").Append(Mm(page.TopMm))
+          .Append(".sheet .content{position:absolute;overflow:hidden;display:flex;flex-direction:column;left:").Append(Mm(page.LeftMm)).Append(";top:").Append(Mm(page.TopMm))
           .Append(";width:").Append(Mm(page.ContentWidthMm)).Append(";height:").Append(Mm(page.ContentHeightMm)).Append(";}\n")
-          .Append(".sheet .content>main{display:block;max-width:none;margin:0;padding:0;}\n")
+          .Append(".sheet .content>main{display:block;flex:none;max-width:none;margin:0;padding:0;}\n")
+          // Сноски листа — внизу области текста, как в Word: черта в треть ширины, мелкий шрифт, номер надстрочным знаком.
+          .Append(".sheet .fnarea{margin-top:auto;flex:none;padding-top:6pt;font:9pt/1.2 Calibri,'Segoe UI',Arial,sans-serif;color:#000;}\n")
+          .Append(".sheet .fnarea hr{width:33%;margin:0 0 3pt 0;border:0;border-top:.75pt solid #000;}\n")
+          .Append(".sheet .fnarea ol{list-style:none;margin:0;padding:0;}\n.sheet .fnarea li{margin:0 0 2pt;}\n")
+          .Append(".sheet .fnarea .fn-num{vertical-align:super;font-size:.75em;margin-right:2pt;}\n")
+          .Append(".sheet a.fn-ref{vertical-align:super;font-size:.7em;line-height:0;color:inherit;text-decoration:none;}\n")
           .Append(".sheet .content>main>:first-child,.sheet .content>main>:first-child>:first-child{margin-top:0;}\n")
           .Append(".sheet .head,.sheet .foot{position:absolute;left:").Append(Mm(page.LeftMm)).Append(";right:").Append(Mm(page.RightMm))
           .Append(";font:9px 'Segoe UI',Arial,sans-serif;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}\n")
@@ -104,7 +117,74 @@ public static class PagedPreview
           var srcMain = document.querySelector('#src > main');
           var CONTAINERS = /^(DIV|SECTION|ARTICLE|ASIDE|NAV|UL|OL|DL|BLOCKQUOTE|FIGURE|TABLE|THEAD|TBODY|TFOOT)$/;
           var HEADINGS = /^H[1-6]$/;
-          var sheet, content, main, stack, placed, sheets;
+          var sheet, content, main, stack, placed, sheets, footnotes;
+
+          // Сноски публикации (список в конце топика) уходят из текста: каждая встаёт внизу листа со ссылкой на неё.
+          function extractFootnotes() {
+            var blocks = srcMain.querySelectorAll('.footnotes');
+            if (!blocks.length && footnotes) { return; } // повторная раскладка того же текста (ditaPaginate)
+            footnotes = {};
+            for (var b = 0; b < blocks.length; b++) {
+              var items = blocks[b].querySelectorAll('li[id]');
+              for (var i = 0; i < items.length; i++) {
+                var li = items[i].cloneNode(true);
+                var back = li.querySelector('a[href^="#fnref"]');
+                if (back) { back.parentNode.removeChild(back); }
+                footnotes[items[i].id] = li.innerHTML.replace(/\s+$/, '');
+              }
+              blocks[b].parentNode.removeChild(blocks[b]);
+            }
+          }
+
+          function footnoteList() {
+            var ol = content.querySelector('.fnarea ol');
+            if (!ol) {
+              var area = document.createElement('div');
+              area.className = 'fnarea';
+              area.innerHTML = '<hr><ol></ol>';
+              content.appendChild(area);
+              ol = area.querySelector('ol');
+            }
+            return ol;
+          }
+
+          // Ссылки на сноски в только что поставленном блоке: номер без скобок, текст сноски — внизу этого листа.
+          function addFootnotes(el) {
+            var added = [];
+            if (el.nodeType !== 1) { return added; }
+            var refs = el.matches('a.fn-ref') ? [el] : Array.prototype.slice.call(el.querySelectorAll('a.fn-ref'));
+            for (var i = 0; i < refs.length; i++) {
+              var a = refs[i];
+              var id = (a.getAttribute('href') || '').replace(/^#/, '');
+              var marker = a.textContent.replace(/^\[|\]$/g, '');
+              a.textContent = marker;
+              if (!(id in footnotes)) { continue; }
+              var li = document.createElement('li');
+              var num = document.createElement('span');
+              num.className = 'fn-num';
+              num.textContent = marker;
+              li.appendChild(num);
+              li.insertAdjacentHTML('beforeend', footnotes[id]);
+              footnoteList().appendChild(li);
+              added.push(li);
+            }
+            return added;
+          }
+
+          function removeFootnotes(added) {
+            for (var i = 0; i < added.length; i++) {
+              var ol = added[i].parentNode;
+              ol.removeChild(added[i]);
+              if (!ol.children.length) { var area = ol.parentNode; area.parentNode.removeChild(area); }
+            }
+          }
+
+          function breaksBefore(el) {
+            if (el.nodeType !== 1) { return false; }
+            if (el.classList.contains('page-break-before')) { return true; }
+            var s = window.getComputedStyle(el);
+            return s.breakBefore === 'page' || s.pageBreakBefore === 'always';
+          }
 
           function newSheetElement() {
             var s = document.createElement('div');
@@ -167,10 +247,13 @@ public static class PagedPreview
             }
             if (node.nodeType !== 1) { return; }
             var tag = node.tagName;
+            if (placed > 0 && breaksBefore(node)) { nextSheet(); }
             var clone = node.cloneNode(true);
             var parent = host();
             parent.appendChild(clone);
+            var notes = addFootnotes(clone);
             if (fits()) { placed++; return; }
+            removeFootnotes(notes);
             parent.removeChild(clone);
 
             if (CONTAINERS.test(tag) && elementChildren(node).length > 0) {
@@ -186,7 +269,9 @@ public static class PagedPreview
               return;
             }
             if (placed > 0) { nextSheet(); }
-            host().appendChild(node.cloneNode(true));
+            var single = node.cloneNode(true);
+            host().appendChild(single);
+            addFootnotes(single);
             placed++;
           }
 
@@ -232,6 +317,7 @@ public static class PagedPreview
             pagesEl.style.zoom = 1; // измерения — в натуральную величину
             pagesEl.innerHTML = '';
             sheets = []; stack = [];
+            extractFootnotes();
             startSheet();
             placeWithHeadings(srcMain);
             fill();
@@ -241,7 +327,7 @@ public static class PagedPreview
 
           window.addEventListener('resize', fit);
 
-          window.ditaSetContent = function (html) { srcMain.innerHTML = html; paginate(); };
+          window.ditaSetContent = function (html) { srcMain.innerHTML = html; footnotes = null; paginate(); };
           window.ditaPaginate = paginate;
           window.ditaSetContent(INITIAL);
         })();

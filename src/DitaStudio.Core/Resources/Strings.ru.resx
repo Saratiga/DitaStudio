@@ -5103,4 +5103,145 @@
   <data name="Attr_ProductSearch" xml:space="preserve">
     <value>Поиск в списке продуктов</value>
   </data>
+  <data name="Track_Inserted" xml:space="preserve">
+    <value>Вставлено</value>
+  </data>
+  <data name="Track_Changed" xml:space="preserve">
+    <value>Изменено</value>
+  </data>
+  <data name="Track_Deleted" xml:space="preserve">
+    <value>Удалено</value>
+  </data>
+  <data name="Menu_TrackChanged" xml:space="preserve">
+    <value>Track changes: пометить как изменённое</value>
+  </data>
+  <data name="Msg_MarkAsChangedTrackChanges" xml:space="preserve">
+    <value>Пометить как изменённое (track changes)</value>
+  </data>
+  <data name="Msg_TrackMarkedChanged" xml:space="preserve">
+    <value>Элемент помечен как изменённый</value>
+  </data>
+  <data name="Msg_TrackSelectionMarked" xml:space="preserve">
+    <value>Выделенный текст помечен: {0}</value>
+  </data>
+  <data name="Tip_TrackSelection" xml:space="preserve">
+    <value>С выделенным текстом пометка ставится только на выделенные слова, без выделения — на весь блок</value>
+  </data>
+  <data name="Msg_SelectionAttribute" xml:space="preserve">
+    <value>Выделенные слова: @{0} = {1}</value>
+  </data>
+  <data name="Attr_SelectionContext" xml:space="preserve">
+    <value>Выделенные слова в &lt;{0}&gt; — атрибуты получат только они (обёртка &lt;ph&gt;)</value>
+  </data>
+  <data name="Attr_InlineContext" xml:space="preserve">
+    <value>&lt;{0}&gt; «{1}» в &lt;{2}&gt; — атрибуты этих слов</value>
+  </data>
+  <data name="Menu_LinkSettings" xml:space="preserve">
+    <value>Настройка ссылки…</value>
+  </data>
+  <data name="Menu_RemoveLink" xml:space="preserve">
+    <value>Убрать ссылку (оставить текст)</value>
+  </data>
+  <data name="Eq_CircleArea" xml:space="preserve">
+    <value>Площадь круга</value>
+  </data>
+  <data name="Eq_Pythagoras" xml:space="preserve">
+    <value>Теорема Пифагора</value>
+  </data>
+  <data name="Eq_Quadratic" xml:space="preserve">
+    <value>Корни квадратного уравнения</value>
+  </data>
+  <data name="Eq_Binomial" xml:space="preserve">
+    <value>Бином Ньютона</value>
+  </data>
+  <data name="Eq_Trig" xml:space="preserve">
+    <value>Тригонометрическое тождество</value>
+  </data>
+  <data name="Eq_Euler" xml:space="preserve">
+    <value>Тождество Эйлера</value>
+  </data>
+  <data name="Eq_Placeholder" xml:space="preserve">
+    <value>Место для уравнения</value>
+  </data>
+  <data name="Eq_New" xml:space="preserve">
+    <value>Вставить новое уравнение</value>
+  </data>
+  <data name="Eq_Block" xml:space="preserve">
+    <value>Выключная формула (отдельной строкой)</value>
+  </data>
+  <data name="Btn_Equation" xml:space="preserve">
+    <value>Уравнение</value>
+  </data>
+  <data name="Btn_Symbol" xml:space="preserve">
+    <value>Символ</value>
+  </data>
+  <data name="Tip_Equation" xml:space="preserve">
+    <value>Уравнение: новое или готовое (как в Word) — формула в строке текста, equation-inline</value>
+  </data>
+  <data name="Tip_Symbol" xml:space="preserve">
+    <value>Символ: знак, которого нет на клавиатуре (©, ±, →, α…)</value>
+  </data>
+  <data name="Tip_Strikethrough" xml:space="preserve">
+    <value>Зачёркнутый (line-through)</value>
+  </data>
+  <data name="Tip_Subscript" xml:space="preserve">
+    <value>Подстрочный знак (sub), Ctrl+=</value>
+  </data>
+  <data name="Tip_Superscript" xml:space="preserve">
+    <value>Надстрочный знак (sup), Ctrl+Shift+=</value>
+  </data>
+  <data name="Menu_Strikethrough" xml:space="preserve">
+    <value>Зачёркнутый</value>
+  </data>
+  <data name="Menu_Subscript" xml:space="preserve">
+    <value>Подстрочный знак</value>
+  </data>
+  <data name="Menu_Superscript" xml:space="preserve">
+    <value>Надстрочный знак</value>
+  </data>
+  <data name="Sym_More" xml:space="preserve">
+    <value>Другие символы…</value>
+  </data>
+  <data name="Sym_Common" xml:space="preserve">
+    <value>Частые</value>
+  </data>
+  <data name="Sym_Greek" xml:space="preserve">
+    <value>Греческие буквы</value>
+  </data>
+  <data name="Sym_Math" xml:space="preserve">
+    <value>Математические</value>
+  </data>
+  <data name="Sym_Arrows" xml:space="preserve">
+    <value>Стрелки и фигуры</value>
+  </data>
+  <data name="Sym_Currency" xml:space="preserve">
+    <value>Денежные единицы</value>
+  </data>
+  <data name="Sym_Other" xml:space="preserve">
+    <value>Прочие</value>
+  </data>
+  <data name="Sym_Title" xml:space="preserve">
+    <value>Символ</value>
+  </data>
+  <data name="Sym_Code" xml:space="preserve">
+    <value>Код знака (шестнадцатеричный):</value>
+  </data>
+  <data name="Sym_Insert" xml:space="preserve">
+    <value>Вставить</value>
+  </data>
+  <data name="Msg_PutCursorForSymbol" xml:space="preserve">
+    <value>Поставьте курсор в текст в режиме «Автор»</value>
+  </data>
+  <data name="Msg_SymbolInserted" xml:space="preserve">
+    <value>Вставлен символ «{0}»</value>
+  </data>
+  <data name="Msg_EquationInserted" xml:space="preserve">
+    <value>Вставлено уравнение</value>
+  </data>
+  <data name="Author_BeforeThisBlock" xml:space="preserve">
+    <value>перед этим блоком</value>
+  </data>
+  <data name="Author_MarginSelectsBlock" xml:space="preserve">
+    <value>Щелчок — выделить блок целиком; ещё щелчок — блок вокруг него; Shift+щелчок — несколько блоков</value>
+  </data>
 </root>

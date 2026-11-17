@@ -248,7 +248,8 @@ public sealed class DitaValidator
         }
 
         var title = root.FirstElement("title") ?? root.FirstElement("glossterm");
-        if (title is { Name: "title" } && IsEmptyTitle(title))
+        // Заголовок без текста — не ошибка, даже если в нём остались пустые фразовые элементы (плашка, пустой ph).
+        if (title is { Name: "title" } && (IsEmptyTitle(title) || IsBlankTitle(title)))
         {
             // Пустой <title/> допустим по DTD — так делают топик из одной таблицы: при публикации
             // заголовок не печатается и в оглавление не попадает.
@@ -276,6 +277,15 @@ public sealed class DitaValidator
                 document.FilePath));
         }
     }
+
+    /// <summary>Заголовок без видимого текста и без подстановки: пустые фразовые элементы внутри не в счёт (ключ подставит текст — не пустой).</summary>
+    private static bool IsBlankTitle(DitaNode title) =>
+        string.IsNullOrWhiteSpace(title.InnerText) &&
+        string.IsNullOrWhiteSpace(title.GetAttribute("conref")) &&
+        string.IsNullOrWhiteSpace(title.GetAttribute("conkeyref")) &&
+        !title.DescendantsAndSelf().Any(n => n.Kind == NodeKind.Element &&
+            (!string.IsNullOrWhiteSpace(n.GetAttribute("keyref")) || !string.IsNullOrWhiteSpace(n.GetAttribute("conref")) ||
+             n.Name is "image" or "xref"));
 
     /// <summary>Заголовок топика без текста и без подстановки (conref/keyref) — топик без заголовка.</summary>
     public static bool IsEmptyTitle(DitaNode title) =>

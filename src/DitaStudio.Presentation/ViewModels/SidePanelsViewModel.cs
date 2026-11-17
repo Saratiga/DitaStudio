@@ -79,12 +79,92 @@ public partial class SidePanelsViewModel : ObservableObject
         _shell.ContextText = _docs.Current?.Author.CurrentNode?.Path ?? string.Empty;
     }
 
+    // Выделены слова, у которых ещё нет своей обёртки: атрибуты набираются в «черновик» ph, а при записи значения выделение
+    // оборачивается в ph с ними — атрибут достаётся только этим словам, а не всему блоку.
+    private DitaNode? _selectionDraft;
+    private DitaNode? _draftBlock;
+    private object? _lastTarget;
+
+    /// <summary>Элемент, атрибуты которого показывает панель: фраза у выделения или курсора, черновик ph для выделенных слов или блок.</summary>
+    private DitaNode? AttributeTarget(IDocumentView pane)
+    {
+        var author = pane.Author;
+        var block = author.CurrentNode;
+        if (block is null)
+        {
+            return null;
+        }
+
+        if (author.InlineAttributeTarget() is { } inline)
+        {
+            _selectionDraft = null;
+            return inline;
+        }
+
+        if (author.HasPartialTextSelection)
+        {
+            if (_selectionDraft is null || !ReferenceEquals(_draftBlock, block))
+            {
+                _selectionDraft = DitaNode.Element("ph");
+                _draftBlock = block;
+            }
+
+            return _selectionDraft;
+        }
+
+        _selectionDraft = null;
+        return block;
+    }
+
+    /// <summary>Курсор или выделение сдвинулись внутри блока: панель перестраивается, только если сменился её элемент.</summary>
+    public void RefreshAttributesIfTargetChanged()
+    {
+        if (_docs.Current is not { } pane)
+        {
+            return;
+        }
+
+        if (!ReferenceEquals(AttributeTarget(pane), _lastTarget))
+        {
+            RefreshAttributes();
+        }
+    }
+
+    internal bool IsSelectionDraft(DitaNode node) => _selectionDraft is not null && ReferenceEquals(node, _selectionDraft);
+
+    /// <summary>Записывает атрибуты черновика выделенным словам: выделение оборачивается в ph (или их ph получает атрибуты).</summary>
+    internal void ApplyDraftToSelection(IDocumentView pane, string name)
+    {
+        if (_selectionDraft is not { } draft)
+        {
+            return;
+        }
+
+        pane.PushUndo(Loc.T("Msg_Change0", name));
+        var wrapper = pane.Author.SetSelectionAttributes(draft.Attributes.Select(a => new KeyValuePair<string, string?>(a.Name, a.Value)).ToList());
+        _selectionDraft = null;
+        pane.Document.IsDirty = true;
+        _docs.RefreshAllTabTitles();
+        RefreshAttributes();
+        if (wrapper is not null)
+        {
+            _shell.StatusText = Loc.T("Msg_SelectionAttribute", name, wrapper.GetAttribute(name) ?? string.Empty);
+        }
+    }
+
+    internal void RemoveFromDraft(string name)
+    {
+        _selectionDraft?.RemoveAttribute(name);
+        RefreshAttributes();
+    }
+
     public void RefreshAttributes()
     {
         Attributes.Clear();
         MissingAttributes.Clear();
         var pane = _docs.Current;
-        var node = pane?.Author.CurrentNode;
+        var node = pane is null ? null : AttributeTarget(pane);
+        _lastTarget = node;
         if (pane is null || node is null)
         {
             AttributeContext = Loc.T("Msg_NoElementSelected");
@@ -92,7 +172,11 @@ public partial class SidePanelsViewModel : ObservableObject
         }
 
         var def = DitaCatalog.Default.Get(node.Name);
-        AttributeContext = $"<{node.Name}>  {def?.Description ?? string.Empty}";
+        AttributeContext = IsSelectionDraft(node)
+            ? Loc.T("Attr_SelectionContext", pane.Author.CurrentNode?.Name ?? string.Empty)
+            : !ReferenceEquals(node, pane.Author.CurrentNode)
+                ? Loc.T("Attr_InlineContext", node.Name, Excerpt(node.InnerText), pane.Author.CurrentNode?.Name ?? string.Empty)
+                : $"<{node.Name}>  {def?.Description ?? string.Empty}";
 
         foreach (var attribute in node.Attributes.ToList())
         {
@@ -113,6 +197,12 @@ public partial class SidePanelsViewModel : ObservableObject
         }
     }
 
+    private static string Excerpt(string text)
+    {
+        var words = string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        return words.Length > 30 ? words[..29] + "…" : words;
+    }
+
     partial void OnAttributeToAddChanged(string? value)
     {
         if (value is null)
@@ -131,10 +221,18 @@ public partial class SidePanelsViewModel : ObservableObject
     {
         AttributeToAdd = null;
         var pane = _docs.Current;
-        var node = pane?.Author.CurrentNode;
+        var node = pane is null ? null : AttributeTarget(pane);
         if (value is null || pane is null || node is null || DitaCatalog.Default.Get(node.Name) is not { } def ||
             !def.Attributes.TryGetValue(value, out var attributeDef))
         {
+            return;
+        }
+
+        if (IsSelectionDraft(node))
+        {
+            // Черновик для выделенных слов: атрибут появляется в панели, в документ он попадёт вместе со значением.
+            node.SetAttribute(value, attributeDef.DefaultValue ?? (attributeDef.Values.Count > 0 ? attributeDef.Values[0] : string.Empty));
+            RefreshAttributes();
             return;
         }
 
@@ -150,6 +248,12 @@ public partial class SidePanelsViewModel : ObservableObject
         if (node is not null)
         {
             pane.Author.RefreshAttributeNotes(node);
+        }
+
+        // Атрибуты слов внутри блока — в серой пометке самого блока.
+        if (pane.Author.CurrentNode is { } block && !ReferenceEquals(block, node))
+        {
+            pane.Author.RefreshAttributeNotes(block);
         }
 
         _docs.RefreshAllTabTitles();
@@ -424,6 +528,17 @@ public sealed partial class AttributeRowViewModel : ObservableObject
     [RelayCommand]
     private void Apply()
     {
+        if (_owner.IsSelectionDraft(_node))
+        {
+            _node.SetAttribute(Name, Value);
+            if (!string.IsNullOrWhiteSpace(Value))
+            {
+                _owner.ApplyDraftToSelection(_pane, Name);
+            }
+
+            return;
+        }
+
         if (_node.GetAttribute(Name) == Value)
         {
             return;
@@ -438,6 +553,12 @@ public sealed partial class AttributeRowViewModel : ObservableObject
     [RelayCommand]
     private void Remove()
     {
+        if (_owner.IsSelectionDraft(_node))
+        {
+            _owner.RemoveFromDraft(Name);
+            return;
+        }
+
         _pane.PushUndo(Loc.T("Msg_Delete02", Name));
         _node.RemoveAttribute(Name);
         _owner.AfterAttributeEdit(_pane, _node);

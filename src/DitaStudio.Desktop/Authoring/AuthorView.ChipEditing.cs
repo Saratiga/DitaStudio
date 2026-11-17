@@ -77,9 +77,10 @@ public sealed partial class AuthorView
         {
             RebuildAround(node, null);
         }
-        else if (result.ChipDissolved)
+        else if (result.ChipDissolved || node.Children.Count > 0)
         {
-            RebuildAround(editor.Node, editor.Node);
+            // Ссылка со своим текстом — не плашка, а текст блока: блок перечитывается из модели, курсор остаётся на месте.
+            RebuildAround(editor.Node, editor.Node, editor.CaretOffset);
         }
         else
         {

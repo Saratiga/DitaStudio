@@ -88,6 +88,9 @@
                 <Separator />
                 <MenuItem Header="{loc:Tr Menu_Bold}" Command="{Binding Insert.FormatBoldCommand}" InputGesture="Ctrl+B" />
                 <MenuItem Header="{loc:Tr Menu_Italic}" Command="{Binding Insert.FormatItalicCommand}" InputGesture="Ctrl+I" />
+                <MenuItem Header="{loc:Tr Menu_Strikethrough}" Command="{Binding Insert.FormatStrikethroughCommand}" />
+                <MenuItem Header="{loc:Tr Menu_Subscript}" Command="{Binding Insert.FormatSubscriptCommand}" InputGesture="Ctrl+OemPlus" />
+                <MenuItem Header="{loc:Tr Menu_Superscript}" Command="{Binding Insert.FormatSuperscriptCommand}" InputGesture="Ctrl+Shift+OemPlus" />
                 <MenuItem Header="{loc:Tr Menu_InlineCode}" Command="{Binding Insert.FormatCodeCommand}" />
                 <MenuItem Header="{loc:Tr Menu_UiControl}" Command="{Binding Insert.FormatUicontrolCommand}" />
             </MenuItem>
@@ -159,8 +162,9 @@
                 <MenuItem Header="{loc:Tr Menu_MarkRevChanged}" Command="{Binding Insert.ToggleRevChangedCommand}"
                           ToolTip.Tip="{loc:Tr Tip_MarkRevChanged}" />
                 <Separator />
-                <MenuItem Header="{loc:Tr Menu_TrackInserted}" Command="{Binding Insert.MarkTrackedInsertedCommand}" />
-                <MenuItem Header="{loc:Tr Menu_TrackDeleted}" Command="{Binding Insert.MarkTrackedDeletedCommand}" />
+                <MenuItem Header="{loc:Tr Menu_TrackInserted}" Command="{Binding Insert.MarkTrackedInsertedCommand}" ToolTip.Tip="{loc:Tr Tip_TrackSelection}" />
+                <MenuItem Header="{loc:Tr Menu_TrackChanged}" Command="{Binding Insert.MarkTrackedChangedCommand}" ToolTip.Tip="{loc:Tr Tip_TrackSelection}" />
+                <MenuItem Header="{loc:Tr Menu_TrackDeleted}" Command="{Binding Insert.MarkTrackedDeletedCommand}" ToolTip.Tip="{loc:Tr Tip_TrackSelection}" />
                 <MenuItem Header="{loc:Tr Menu_TrackAccept}" Command="{Binding Insert.AcceptTrackedChangeCommand}" />
                 <MenuItem Header="{loc:Tr Menu_TrackReject}" Command="{Binding Insert.RejectTrackedChangeCommand}" />
                 <Separator />
@@ -223,11 +227,38 @@
                 <Button Classes="tool" Name="UnderlineButton" Command="{Binding Insert.FormatUnderlineCommand}" ToolTip.Tip="{loc:Tr Tip_Underline}">
                     <TextBlock Text="{loc:Tr Btn_UnderlineLetter}" TextDecorations="Underline" />
                 </Button>
+                <Button Classes="tool" Name="StrikeButton" Command="{Binding Insert.FormatStrikethroughCommand}" ToolTip.Tip="{loc:Tr Tip_Strikethrough}">
+                    <TextBlock Text="abc" TextDecorations="Strikethrough" FontSize="12" VerticalAlignment="Center" />
+                </Button>
+                <Button Classes="tool" Name="SubscriptButton" Command="{Binding Insert.FormatSubscriptCommand}" ToolTip.Tip="{loc:Tr Tip_Subscript}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="x" FontSize="13" />
+                        <TextBlock Text="2" FontSize="8" VerticalAlignment="Bottom" Margin="0,0,0,-1" />
+                    </StackPanel>
+                </Button>
+                <Button Classes="tool" Name="SuperscriptButton" Command="{Binding Insert.FormatSuperscriptCommand}" ToolTip.Tip="{loc:Tr Tip_Superscript}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="x" FontSize="13" />
+                        <TextBlock Text="2" FontSize="8" VerticalAlignment="Top" />
+                    </StackPanel>
+                </Button>
                 <Button Classes="tool" Name="CodeButton" Content="&lt;/&gt;" FontFamily="{DynamicResource MonoFont}" FontSize="12" Command="{Binding Insert.FormatCodeCommand}" ToolTip.Tip="{loc:Tr Menu_InlineCode}" />
                 <Rectangle Classes="separator" />
                 <Button Classes="tool" Content="🔗" Command="{Binding Insert.InsertXrefCommand}" ToolTip.Tip="{loc:Tr Menu_CrossReference}" />
                 <Button Classes="tool" Content="🖼" Command="{Binding Insert.InsertImageCommand}" ToolTip.Tip="{loc:Tr Menu_InsertImage}" />
                 <Button Classes="tool" Content="¹" FontWeight="Bold" Command="{Binding Insert.InsertFootnoteCommand}" ToolTip.Tip="{loc:Tr Tip_FootnoteAtCursor}" />
+                <Button Classes="tool" Name="EquationButton" ToolTip.Tip="{loc:Tr Tip_Equation}">
+                    <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="π" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Text="⌄" FontSize="9" VerticalAlignment="Center" Opacity="0.7" />
+                    </StackPanel>
+                </Button>
+                <Button Classes="tool" Name="SymbolButton" ToolTip.Tip="{loc:Tr Tip_Symbol}">
+                    <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="Ω" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Text="⌄" FontSize="9" VerticalAlignment="Center" Opacity="0.7" />
+                    </StackPanel>
+                </Button>
                 <Rectangle Classes="separator" />
                 <Button Classes="tool" Content="§" Command="{Binding Insert.InsertSectionCommand}" ToolTip.Tip="{loc:Tr Tip_SectionAfter}" />
                 <Button Classes="tool" Content="¶" Command="{Binding Insert.InsertParagraphCommand}" ToolTip.Tip="{loc:Tr Tip_ParagraphAfter}" />

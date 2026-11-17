@@ -182,7 +182,10 @@ public sealed partial class AuthorView
         var editor = CreateEditor(InlineContent.FromNode(cellNode));
         editor.FontWeight = isHeader ? FontWeight.SemiBold : FontWeight.Normal;
         ApplyBlockFormat(editor, cellNode);
-        border.Child = editor;
+        // Серая (цветная у правок) пометка — и у ячейки: продукт, правка track changes, помеченные слова внутри.
+        border.Child = AttributeNotesEnabled && AttributeNote(cellNode) is { } note
+            ? WithAttributeNote(note, editor, NoteStatus(cellNode))
+            : editor;
         AttachSelection(border, cellNode);
         return border;
     }

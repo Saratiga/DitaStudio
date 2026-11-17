@@ -184,7 +184,15 @@ public partial class ValidationViewModel : ObservableObject
         if (issue.FilePath is not null && File.Exists(issue.FilePath))
         {
             var pane = _docs.OpenDocument(issue.FilePath);
-            if (pane is not null && issue.Node is not null && !pane.FocusNode(issue.Node))
+            // Проверка проекта могла читать свою копию файла — элемент ищется в открытом документе по тому же пути от корня.
+            var node = issue.Node;
+            if (pane is not null && node is not null && !ReferenceEquals(Root(node), pane.Document.Root))
+            {
+                node = ProjectChanges.Resolve(pane.Document, ProjectChanges.PathOf(node)) ?? node;
+            }
+
+            // Ошибку исправляют в «Авторе»: курсор встаёт в элемент (или в ближайший к нему текст), исходный код — только если в «Авторе» элемента нет.
+            if (pane is not null && node is not null && !pane.FocusNode(node))
             {
                 // Узла нет среди блоков «Автора» (атрибут, служебный элемент) — показываем исходник.
                 pane.Mode = EditorMode.Source;
@@ -196,5 +204,15 @@ public partial class ValidationViewModel : ObservableObject
         }
 
         _shell.StatusText = issue.ToString();
+    }
+
+    private static Core.Model.DitaNode Root(Core.Model.DitaNode node)
+    {
+        while (node.Parent is { } parent)
+        {
+            node = parent;
+        }
+
+        return node;
     }
 }

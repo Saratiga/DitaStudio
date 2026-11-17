@@ -9,8 +9,13 @@ namespace DitaStudio.Desktop.Authoring;
 public static class InlineStyles
 {
     /// <summary>Классы оформления из «Автора» у фразового элемента: размер (пт) и цвет текста.</summary>
-    public static void ApplyFormatting(VisualLineElementTextRunProperties run, DitaNode node)
+    public static void ApplyFormatting(VisualLineElementTextRunProperties run, DitaNode node, Func<string, IBrush?>? brush = null)
     {
+        if (brush is not null)
+        {
+            ApplyMarks(run, node, brush);
+        }
+
         if (TextFormatting.SizeOf(node) is { } points)
         {
             run.SetFontRenderingEmSize(points * 4.0 / 3);
@@ -31,6 +36,8 @@ public static class InlineStyles
             }
         }
     }
+
+    private static readonly FontFamily MathFont = new("Cambria Math, Times New Roman, serif");
 
     /// <summary>Применяет оформление элемента к участку текста редактора блока.</summary>
     /// <param name="brush">Кисть из текущей темы по ключу палитры.</param>
@@ -59,6 +66,11 @@ public static class InlineStyles
             case "q":
             case "cite":
                 Face(style: FontStyle.Italic);
+                break;
+            case "equation-inline":
+            case "equation-block":
+                // Формула — шрифтом формул, как уравнения Word.
+                Face(family: MathFont);
                 break;
             case "term":
                 Face(style: FontStyle.Italic);
@@ -117,6 +129,61 @@ public static class InlineStyles
                 run.SetForegroundBrush(brush("EditorChipText"));
                 run.SetFontRenderingEmSize(run.FontRenderingEmSize * 0.9);
                 break;
+        }
+    }
+
+    /// <summary>Условные атрибуты фразы (продукт, аудитория…): их слова подчёркиваются серым пунктиром.</summary>
+    public static readonly string[] ConditionAttributes = { "product", "audience", "platform", "props", "otherprops", "deliveryTarget" };
+
+    public static bool HasConditions(DitaNode node) =>
+        ConditionAttributes.Any(a => !string.IsNullOrWhiteSpace(node.GetAttribute(a)));
+
+    /// <summary>
+    /// Пометки слов внутри блока: правки track changes (вставлено — зелёным с подчёркиванием, удалено — красным зачёркнутым, изменено —
+    /// оранжевым с пунктиром, как правки в Word) и условные атрибуты (серый пунктир под словами).
+    /// </summary>
+    private static void ApplyMarks(VisualLineElementTextRunProperties run, DitaNode node, Func<string, IBrush?> brush)
+    {
+        void Decorate(TextDecorationLocation location, IBrush? stroke, bool dashed, double thickness = 1)
+        {
+            var decorations = new TextDecorationCollection();
+            if (run.TextDecorations is { } existing)
+            {
+                decorations.AddRange(existing);
+            }
+
+            decorations.Add(new TextDecoration
+            {
+                Location = location,
+                Stroke = stroke,
+                StrokeThickness = thickness,
+                StrokeThicknessUnit = TextDecorationUnit.Pixel,
+                StrokeDashArray = dashed ? new Avalonia.Collections.AvaloniaList<double> { 2, 2 } : null,
+                StrokeOffset = location == TextDecorationLocation.Underline ? 1 : 0,
+                StrokeOffsetUnit = TextDecorationUnit.Pixel
+            });
+            run.SetTextDecorations(decorations);
+        }
+
+        switch (node.GetAttribute("status"))
+        {
+            case "new":
+                run.SetForegroundBrush(brush("Success"));
+                Decorate(TextDecorationLocation.Underline, brush("Success"), dashed: false);
+                break;
+            case "deleted":
+                run.SetForegroundBrush(brush("Danger"));
+                Decorate(TextDecorationLocation.Strikethrough, brush("Danger"), dashed: false);
+                break;
+            case "changed":
+                run.SetForegroundBrush(brush("Warning"));
+                Decorate(TextDecorationLocation.Underline, brush("Warning"), dashed: true, 1.5);
+                break;
+        }
+
+        if (HasConditions(node))
+        {
+            Decorate(TextDecorationLocation.Underline, brush("EditorTag"), dashed: true);
         }
     }
 }

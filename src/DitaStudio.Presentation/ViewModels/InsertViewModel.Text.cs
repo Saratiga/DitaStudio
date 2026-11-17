@@ -262,42 +262,60 @@ public partial class InsertViewModel
     }
 
     [RelayCommand]
-    private void MarkTrackedInserted()
+    private void MarkTrackedInserted() => MarkTracked(TrackChanges.StatusNew);
+
+    [RelayCommand]
+    private void MarkTrackedChanged() => MarkTracked(TrackChanges.StatusChanged);
+
+    [RelayCommand]
+    private void MarkTrackedDeleted() => MarkTracked(TrackChanges.StatusDeleted);
+
+    /// <summary>Track changes: выделенные слова (обёртка ph) или, без выделения, блок под курсором.</summary>
+    private void MarkTracked(string status)
     {
-        var node = _docs.Current?.Author.CurrentNode;
-        if (node is null)
+        var author = _docs.Current?.Author;
+        if (author?.CurrentNode is null)
         {
             _shell.StatusText = Loc.T("Msg_PutTheCursorInTheElement2");
             return;
         }
 
-        _docs.Current!.Author.MarkCurrentInserted();
-        _docs.RefreshAllTabTitles();
-        _hooks.RefreshAttributePanel?.Invoke();
-        _shell.StatusText = Loc.T("Msg_TheElementIsMarkedAsInserted");
-    }
-
-    [RelayCommand]
-    private void MarkTrackedDeleted()
-    {
-        var node = _docs.Current?.Author.CurrentNode;
-        if (node is null)
+        var selection = author.HasTextSelection;
+        switch (status)
         {
-            _shell.StatusText = Loc.T("Msg_PutTheCursorInTheElement3");
-            return;
+            case TrackChanges.StatusNew:
+                author.MarkCurrentInserted();
+                break;
+            case TrackChanges.StatusChanged:
+                author.MarkCurrentChanged();
+                break;
+            default:
+                author.MarkCurrentDeleted();
+                break;
         }
 
-        _docs.Current!.Author.MarkCurrentDeleted();
         _docs.RefreshAllTabTitles();
         _hooks.RefreshAttributePanel?.Invoke();
-        _shell.StatusText = Loc.T("Msg_TheElementIsMarkedAsDeleted");
+        var label = status switch
+        {
+            TrackChanges.StatusNew => Loc.T("Track_Inserted"),
+            TrackChanges.StatusChanged => Loc.T("Track_Changed"),
+            _ => Loc.T("Track_Deleted")
+        };
+        _shell.StatusText = selection
+            ? Loc.T("Msg_TrackSelectionMarked", label.ToLowerInvariant())
+            : status switch
+            {
+                TrackChanges.StatusNew => Loc.T("Msg_TheElementIsMarkedAsInserted"),
+                TrackChanges.StatusChanged => Loc.T("Msg_TrackMarkedChanged"),
+                _ => Loc.T("Msg_TheElementIsMarkedAsDeleted")
+            };
     }
 
     [RelayCommand]
     private void AcceptTrackedChange()
     {
-        var node = _docs.Current?.Author.CurrentNode;
-        if (node is null || !TrackChanges.IsTracked(node))
+        if (_docs.Current?.Author.TrackedAtCursor() is null)
         {
             _shell.StatusText = Loc.T("Msg_PutTheCursorInAnElement2");
             return;
@@ -312,8 +330,7 @@ public partial class InsertViewModel
     [RelayCommand]
     private void RejectTrackedChange()
     {
-        var node = _docs.Current?.Author.CurrentNode;
-        if (node is null || !TrackChanges.IsTracked(node))
+        if (_docs.Current?.Author.TrackedAtCursor() is null)
         {
             _shell.StatusText = Loc.T("Msg_PutTheCursorInAnElement2");
             return;

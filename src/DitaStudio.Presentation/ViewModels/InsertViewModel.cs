@@ -147,6 +147,63 @@ public partial class InsertViewModel : ObservableObject
     private void FormatCode() => Format("codeph");
 
     [RelayCommand]
+    private void FormatStrikethrough() => Format("line-through");
+
+    [RelayCommand]
+    private void FormatSubscript() => Format("sub");
+
+    [RelayCommand]
+    private void FormatSuperscript() => Format("sup");
+
+    /// <summary>
+    /// «Уравнение»: пусто — новая формула в строке с выделенной заготовкой, <see cref="Equations.BlockKey"/> — выключная формула после блока,
+    /// иначе — готовая формула из <see cref="Equations.BuiltIn"/>.
+    /// </summary>
+    [RelayCommand]
+    private void InsertEquation(string? key)
+    {
+        if (_docs.Current is not { } pane || pane.Author.CurrentNode is null)
+        {
+            _shell.StatusText = Loc.T("Msg_PutCursorForSymbol");
+            return;
+        }
+
+        var done = string.IsNullOrEmpty(key)
+            ? pane.Author.InsertInlineElement(DitaNode.Element("equation-inline"), Loc.T("Eq_Placeholder"))
+            : key == Equations.BlockKey
+                ? pane.Author.InsertElement("equation-block")
+                : Equations.Build(key) is { } equation && pane.Author.InsertInlineFragment(equation);
+        if (!done)
+        {
+            _shell.StatusText = Loc.T("Msg_PutCursorForSymbol");
+            return;
+        }
+
+        _docs.RefreshAllTabTitles();
+        _shell.StatusText = Loc.T("Msg_EquationInserted");
+    }
+
+    /// <summary>«Символ»: вставляет знак у курсора (поверх выделения), как набранный с клавиатуры.</summary>
+    [RelayCommand]
+    private void InsertSymbol(string? symbol)
+    {
+        if (string.IsNullOrEmpty(symbol))
+        {
+            return;
+        }
+
+        if (_docs.Current is not { } pane || !pane.Author.InsertText(symbol))
+        {
+            _shell.StatusText = Loc.T("Msg_PutCursorForSymbol");
+            return;
+        }
+
+        Symbols.Remember(symbol);
+        _docs.RefreshAllTabTitles();
+        _shell.StatusText = Loc.T("Msg_SymbolInserted", symbol);
+    }
+
+    [RelayCommand]
     private void FormatUicontrol() => Format("uicontrol");
 
     [RelayCommand]

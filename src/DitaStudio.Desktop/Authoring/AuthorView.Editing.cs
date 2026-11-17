@@ -235,7 +235,8 @@ public sealed partial class AuthorView
         return OpenInsertMenu(above?.Node, emptyContainer, _panel, new Rect(point, new Size(1, 1)), () => above?.FocusEditor(above.CaretOffset));
     }
 
-    private bool OpenInsertMenu(DitaNode? anchor, DitaNode? emptyContainer, Control target, Rect rect, Action cancelled)
+    private bool OpenInsertMenu(DitaNode? anchor, DitaNode? emptyContainer, Control target, Rect rect, Action cancelled,
+        (DitaNode Parent, int Index)? before = null)
     {
         var catalog = DitaCatalog.Default;
         var items = new List<ElementSuggestion>();
@@ -258,6 +259,11 @@ public sealed partial class AuthorView
         if (emptyContainer is not null)
         {
             Offer(emptyContainer, 0, Loc.T("Author_Inside0", emptyContainer.Name), inside: true);
+        }
+
+        if (before is var (beforeParent, beforeIndex))
+        {
+            Offer(beforeParent, beforeIndex, Loc.T("Author_BeforeThisBlock"), inside: false);
         }
 
         var level = anchor;
@@ -327,6 +333,13 @@ public sealed partial class AuthorView
             {
                 return;
             }
+        }
+
+        // Поле слева от блоков — полоса выделения: блок на этой высоте выделяется целиком.
+        if (e.ClickCount == 1 && e.GetPosition(_panel).X < 0 && SelectFromMargin(e.GetPosition(_panel), e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Shift)))
+        {
+            e.Handled = true;
+            return;
         }
 
         // Щелчок по свободному месту снимает выделение (рамку выбранного блока и выделенный текст) и ставит

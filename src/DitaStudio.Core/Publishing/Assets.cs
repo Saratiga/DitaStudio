@@ -63,6 +63,8 @@ pre, .codeblock, .screen, .msgblock, .pre, .lines {
 .uicontrol { font-weight: 600; }
 .menucascade > .uicontrol + .uicontrol::before { content: " → "; font-weight: 400; }
 .term { font-style: italic; }
+.equation-inline, .equation-block { font-family: "Cambria Math", "Times New Roman", serif; }
+.equation-block { display: block; text-align: center; margin: .8em 0; }
 .note { background: var(--note-bg); border-left: 4px solid var(--accent); padding: 10px 14px; margin: 1em 0; border-radius: 0 6px 6px 0; }
 /* Полоса на полях у элементов с непустым атрибутом rev — штатная DITA-пометка изменений. */
 .rev-changed { border-left: 3px solid #d4380d; padding-left: 8px; }
@@ -70,6 +72,11 @@ pre, .codeblock, .screen, .msgblock, .pre, .lines {
    публикации помеченное на удаление содержимое не показывает вовсе. */
 .tc-inserted { background: #e6f4ea; border-left: 3px solid #2e8b3d; padding-left: 8px; }
 .tc-deleted { text-decoration: line-through; opacity: .6; background: #fbe9e7; border-left: 3px solid #8b2e2e; padding-left: 8px; }
+.tc-changed { background: #fff4e0; border-left: 3px solid #d48806; padding-left: 8px; }
+/* Пометка слов внутри абзаца (ph со status) — без полосы на полях: цвет и подчёркивание, как правки в Word. */
+span.tc-inserted, span.tc-deleted, span.tc-changed { border-left: none; padding-left: 0; }
+span.tc-inserted { color: #1e7b34; text-decoration: underline; }
+span.tc-changed { text-decoration: underline dotted #d48806; }
 .note .label { font-weight: 600; margin-right: .4em; }
 .note.caution, .note.attention, .note.warning, .note.notice { background: var(--warn-bg); border-left-color: #c58217; }
 .note.danger { background: var(--danger-bg); border-left-color: #c0392b; }

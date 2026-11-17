@@ -2191,7 +2191,8 @@ public sealed class AuthorViewTests
             "<table frame=\"all\" colsep=\"1\"><tgroup cols=\"1\" align=\"left\"><tbody><row rowsep=\"0\"><entry colsep=\"0\" valign=\"top\">Ячейка</entry></row></tbody></tgroup></table>" +
             "</conbody></concept>");
         var ps = Paragraphs(document);
-        Assert.Equal("id: x1 · product: A · conref: other.dita#o/x · importance: high · rev: 2 · status: new · class: fancy", AuthorView.AttributeNote(ps[0]));
+        // Правка track changes — первой и по-человечески («Вставлено»), а не сырыми атрибутами status/tcauthor/tcdate.
+        Assert.Equal("Вставлено · id: x1 · product: A · conref: other.dita#o/x · importance: high · rev: 2 · class: fancy", AuthorView.AttributeNote(ps[0]));
         Assert.Equal("id: x2", AuthorView.AttributeNote(ps[1])); // id виден: на него ссылаются xref и conref
         var truncated = AuthorView.AttributeNote(ps[2])!;
         Assert.Equal("translate: " + new string('в', 59) + "…", truncated);
@@ -2205,7 +2206,7 @@ public sealed class AuthorViewTests
 
         var notes = window.GetVisualDescendants().OfType<TextBlock>().Where(t => Equals(t.Tag, "attribute-note")).Select(t => t.Text).ToList();
         Assert.Equal(3, notes.Count);
-        Assert.StartsWith("id: x1 · product: A", notes[0]);
+        Assert.StartsWith("Вставлено · id: x1 · product: A", notes[0]);
         window.Close();
     }
 

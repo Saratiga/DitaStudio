@@ -65,6 +65,15 @@ public sealed partial class AuthorView : UserControl
         };
         _root.Children.Add(_scroll);
         _scroll.AddHandler(PointerPressedEvent, OnScrollPointerPressed, RoutingStrategies.Bubble, handledEventsToo: false);
+        _scroll.AddHandler(PointerMovedEvent, (_, e) =>
+        {
+            var inMargin = e.GetPosition(_panel).X < 0 && e.GetPosition(_panel).Y >= 0;
+            if (inMargin != ReferenceEquals(_scroll.Cursor, MarginCursor))
+            {
+                _scroll.Cursor = inMargin ? MarginCursor : null;
+                ToolTip.SetTip(_scroll, inMargin ? Loc.T("Author_MarginSelectsBlock") : null);
+            }
+        }, RoutingStrategies.Tunnel, handledEventsToo: true);
 
         // Любой щелчок в «Авторе» (до того, как блок откроет своё меню), прокрутка и уход из окна закрывают открытое контекстное меню.
         AddHandler(PointerPressedEvent, (_, _) => AuthorMenus.Close(), RoutingStrategies.Tunnel, handledEventsToo: true);
@@ -482,6 +491,88 @@ public sealed partial class AuthorView : UserControl
         return true;
     }
 
+    /// <summary>Есть ли в «Автора» место для элемента: свой текст, текст внутри, текст вокруг (фраза) или рамка блока.</summary>
+    public bool CanReveal(DitaNode node) => RevealTarget(node) is not null;
+
+    private (BlockEditor? Editor, DitaNode? Block)? RevealTarget(DitaNode node)
+    {
+        if (_editors.TryGetValue(node, out var own))
+        {
+            return (own, null);
+        }
+
+        // Фраза (ссылка, картинка, пустой ph) — в тексте ближайшего блока.
+        for (var ancestor = node.Parent; ancestor is not null; ancestor = ancestor.Parent)
+        {
+            if (_editors.TryGetValue(ancestor, out var around))
+            {
+                return (around, null);
+            }
+
+            if (_views.ContainsKey(ancestor))
+            {
+                break;
+            }
+        }
+
+        // Контейнер (раздел, таблица, список) — первый текст внутри; без текста — рамка блока.
+        if (node.Descendants().FirstOrDefault(n => _editors.ContainsKey(n)) is { } inner)
+        {
+            return (_editors[inner], node);
+        }
+
+        return FindBlockBorder(node) is not null ? (null, node) : null;
+    }
+
+    /// <summary>
+    /// Показывает элемент в «Авторе», чтобы его можно было исправить (двойной щелчок по строке «Проверки»): курсор — в его текст (у фразы —
+    /// на её место в тексте блока, у контейнера — в первый текст внутри), у блока без текста — выделение рамкой. false — элемента не видно.
+    /// </summary>
+    public bool RevealNode(DitaNode node)
+    {
+        if (RevealTarget(node) is not var (editor, block))
+        {
+            return false;
+        }
+
+        if (editor is not null)
+        {
+            CurrentNode = editor.Node;
+            var extent = ReferenceEquals(editor.Node, node) ? null : editor.Content.ExtentOf(node) ?? ChipExtent(editor, node);
+            editor.FocusEditor(extent?.Start ?? 0);
+            if (extent is { } span)
+            {
+                editor.Select(span.Start, span.Length);
+            }
+
+            editor.BringIntoView();
+            Dispatcher.UIThread.Post(editor.ScrollCaretIntoView, DispatcherPriority.Loaded);
+            return true;
+        }
+
+        if (block is not null && FindBlockBorder(block) is { } border)
+        {
+            SelectBlock(border, block);
+            border.BringIntoView();
+            return true;
+        }
+
+        return false;
+    }
+
+    private static (int Start, int Length)? ChipExtent(BlockEditor editor, DitaNode node)
+    {
+        for (var i = 0; i < editor.Content.Length; i++)
+        {
+            if (editor.Content.ChipAt(i) is { } chip && (ReferenceEquals(chip, node) || chip.Descendants().Contains(node)))
+            {
+                return (i, 1);
+            }
+        }
+
+        return null;
+    }
+
     private void Modified()
     {
         if (Document is not null)
@@ -515,14 +606,130 @@ public sealed partial class AuthorView : UserControl
 
             if (ReferenceEquals(owner, border))
             {
-                CurrentNode = node;
-                HighlightBorder(border);
-                // Блок выделяется рамкой целиком и забирает клавиатуру: Delete и Backspace удаляют его, Esc снимает выделение.
-                SelectOutline(border);
-                Focus();
+                // Блок целиком выделяет щелчок по левой полосе рамки, по подписи элемента и по полю слева от текста (см.
+                // OnScrollPointerPressed). Промах мимо текста по пустым полям текстового блока — не выделение, а курсор в ближайшее
+                // место текста; пустое место ячейки с абзацами — черта между ними.
+                if (e.GetCurrentPoint(border).Properties.IsLeftButtonPressed && !e.KeyModifiers.HasFlag(KeyModifiers.Shift) &&
+                    e.Source is Border or Panel && e.GetPosition(border).X > border.BorderThickness.Left + SelectStripWidth)
+                {
+                    if (OwnEditor(border) is { } own)
+                    {
+                        PlaceCaretNear(own, e.GetPosition(own));
+                        e.Handled = true;
+                        return;
+                    }
+
+                    if (e.ClickCount == 1 && node.Name is "entry" or "stentry" && PlaceInsertPointAt(e.GetPosition(_panel)))
+                    {
+                        e.Handled = true;
+                        return;
+                    }
+                }
+
+                SelectBlock(border, node);
                 e.Handled = true;
             }
         });
+    }
+
+    private static readonly Cursor MarginCursor = new(StandardCursorType.Hand);
+
+    /// <summary>Ширина полосы у левого края рамки блока, щелчок по которой выделяет блок целиком.</summary>
+    private const double SelectStripWidth = 6;
+
+    /// <summary>Выделяет блок рамкой целиком: он забирает клавиатуру, Delete и Backspace удаляют его, Esc снимает выделение.</summary>
+    private void SelectBlock(Border border, DitaNode node)
+    {
+        CurrentNode = node;
+        HighlightBorder(border);
+        SelectOutline(border);
+        Focus();
+    }
+
+    /// <summary>Редактор текста самого блока рамки (не вложенного блока); null — у рамки нет своего текста.</summary>
+    private static BlockEditor? OwnEditor(Border border)
+    {
+        foreach (var editor in border.GetLogicalDescendants().OfType<BlockEditor>())
+        {
+            var tagged = editor.FindAncestorOfType<Border>();
+            while (tagged is not null && tagged.Tag is not DitaNode)
+            {
+                tagged = tagged.FindAncestorOfType<Border>();
+            }
+
+            if (ReferenceEquals(tagged, border))
+            {
+                return editor;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Курсор в ближайшее к точке место текста редактора (точка может быть чуть выше, ниже или сбоку от текста).</summary>
+    private static void PlaceCaretNear(BlockEditor editor, Point point)
+    {
+        var view = editor.TextArea.TextView;
+        var clamped = new Point(Math.Clamp(point.X, 0, Math.Max(0, editor.Bounds.Width - 1)), Math.Clamp(point.Y, 1, Math.Max(1, editor.Bounds.Height - 1)));
+        var offset = editor.GetPositionFromPoint(clamped) is { } position
+            ? editor.Document.GetOffset(position.Location)
+            : point.Y < editor.Bounds.Height / 2 ? 0 : editor.PlainTextLength;
+        editor.FocusEditor(offset);
+        view.InvalidateVisual();
+    }
+
+    /// <summary>
+    /// Поле слева от текста (как полоса выделения в Word): щелчок выделяет блок на этой высоте целиком, повторный щелчок по уже выделенному
+    /// блоку — его родителя (раздел, список, заметку). Shift+щелчок — диапазон блоков от выделенного до этого.
+    /// </summary>
+    private bool SelectFromMargin(Point point, bool extend)
+    {
+        Border? best = null;
+        DitaNode? bestNode = null;
+        foreach (var border in _panel.GetVisualDescendants().OfType<Border>())
+        {
+            if (border.Tag is not DitaNode node || node.Name is "entry" or "stentry" or "row" or "strow" || border.GetVisualRoot() is null ||
+                border.TranslatePoint(new Point(0, 0), _panel) is not { } origin)
+            {
+                continue;
+            }
+
+            var bounds = new Rect(origin, border.Bounds.Size);
+            if (point.Y < bounds.Top || point.Y > bounds.Bottom || bounds.Height <= 0)
+            {
+                continue;
+            }
+
+            // Самый вложенный блок на этой высоте (абзац, а не раздел вокруг него).
+            if (best is null || bounds.Height < best.Bounds.Height - 0.5)
+            {
+                best = border;
+                bestNode = node;
+            }
+        }
+
+        if (best is null || bestNode is null)
+        {
+            return false;
+        }
+
+        if (extend && SelectedBlocks.FirstOrDefault() is { } anchor && !ReferenceEquals(anchor, bestNode) &&
+            DitaStudio.Core.Editing.BlockRanges.Between(anchor, bestNode) is { } span && SelectSpan(span, focus: true))
+        {
+            return true;
+        }
+
+        // Повторный щелчок по выделенному блоку — выделить родителя (кроме тела топика и самого топика).
+        if (SelectedBlocks.Count == 1 && ReferenceEquals(SelectedBlocks[0], bestNode) && bestNode.Parent is { } parent &&
+            DitaStudio.Core.Schema.DitaCatalog.Default.Get(parent.Name) is { IsTopicType: false } && parent.Name is not ("body" or "conbody" or "taskbody" or "refbody" or "troublebody") &&
+            FindBlockBorder(parent) is { } parentBorder)
+        {
+            SelectBlock(parentBorder, parent);
+            return true;
+        }
+
+        SelectBlock(best, bestNode);
+        return true;
     }
 
     private void HighlightEditor(BlockEditor editor)
@@ -648,6 +855,9 @@ public sealed partial class AuthorView : UserControl
 
         protected override void BeforeStructuralEdit(string description) => _view.BeforeStructuralEdit?.Invoke(_view, description);
 
+        protected override (DitaNode Parent, int Index)? InsertSlotOverride() =>
+            _view.CurrentInsertPoint is { Before: true } point ? (point.Parent, point.Index) : null;
+
         protected override void AfterStructuralEdit(DitaNode? focus, DitaNode? parent, IReadOnlyList<DitaNode> changed)
         {
             _view.DocumentModified?.Invoke(_view, EventArgs.Empty);
@@ -683,6 +893,58 @@ public sealed partial class AuthorView : UserControl
         }
 
         public override void RefreshAttributeNotes(DitaNode node) => _view.RefreshMarks(node);
+
+        protected override bool TrackSelection(string description, string status)
+        {
+            if (CurrentNode is null || _view.ActiveEditorFor(CurrentNode) is not { } editor || !editor.HasPartialSelection)
+            {
+                return false;
+            }
+
+            _view.BeforeStructuralEdit?.Invoke(_view, description);
+            var when = DateTime.Now.ToString(DitaStudio.Core.Editing.TrackChanges.DateFormat, System.Globalization.CultureInfo.InvariantCulture);
+            editor.SetSelectionAttributes(new KeyValuePair<string, string?>[]
+            {
+                new("status", status), new("tcauthor", TrackAuthor), new("tcdate", when)
+            });
+            _view.RefreshMarks(CurrentNode);
+            return true;
+        }
+
+        public override bool HasPartialTextSelection =>
+            CurrentNode is not null && _view.ActiveEditorFor(CurrentNode) is { } editor && editor.HasPartialSelection;
+
+        public override DitaNode? InlineAttributeTarget()
+        {
+            if (CurrentNode is null || _view.ActiveEditorFor(CurrentNode) is not { } editor)
+            {
+                return null;
+            }
+
+            if (editor.HasPartialSelection)
+            {
+                return editor.SelectionWrapper();
+            }
+
+            return editor.TextArea.Selection.IsEmpty
+                ? editor.FormattingAtCaret().LastOrDefault(n => n.Name == "ph" && (InlineStyles.HasConditions(n) || DitaStudio.Core.Editing.TrackChanges.IsTracked(n)))
+                : null;
+        }
+
+        public override DitaNode? SetSelectionAttributes(IReadOnlyList<KeyValuePair<string, string?>> attributes)
+        {
+            if (CurrentNode is not { } block || _view.ActiveEditorFor(block) is not { } editor || editor.TextArea.Selection.IsEmpty)
+            {
+                return null;
+            }
+
+            var result = editor.SetSelectionAttributes(attributes);
+            _view.RefreshMarks(block);
+            return result;
+        }
+
+        public override DitaNode? TrackedInlineAtCursor() =>
+            CurrentNode is not null && _view.ActiveEditorFor(CurrentNode) is { } editor ? editor.TrackedAtCaret() : null;
 
         public override void Rebuild()
         {
@@ -795,6 +1057,30 @@ public sealed partial class AuthorView : UserControl
             }
 
             editor.InsertInlineElement(element, placeholder);
+            return true;
+        }
+
+        public override bool InsertInlineFragment(DitaNode node)
+        {
+            if (CurrentNode is null || _view.ActiveEditorFor(CurrentNode) is not { } editor)
+            {
+                return false;
+            }
+
+            _view.BeforeStructuralEdit?.Invoke(_view, Loc.T("Author_Insert0", node.Name));
+            editor.InsertFragment(node);
+            editor.TextArea.Focus();
+            return true;
+        }
+
+        public override bool InsertText(string text)
+        {
+            if (CurrentNode is null || _view.ActiveEditorFor(CurrentNode) is not { } editor)
+            {
+                return false;
+            }
+
+            editor.InsertTyped(text);
             return true;
         }
 

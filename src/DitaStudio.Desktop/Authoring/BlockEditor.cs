@@ -106,6 +106,13 @@ public sealed class BlockEditor : TextEditor
         TextArea.Caret.PositionChanged += (_, _) => CaretMoved?.Invoke(this, EventArgs.Empty);
         TextArea.SelectionChanged += (_, _) => CaretMoved?.Invoke(this, EventArgs.Empty);
         TextArea.TextView.BackgroundRenderers.Add(new SpellingRenderer(this));
+        // Выделение рисуется своим слоем: штатный слой AvaloniaEdit у перенесённой строки растягивает подсветку за конец текста
+        // (большой прямоугольник справа от последнего слова строки) и рвёт её на куски по участкам оформления.
+        TextArea.SelectionBrush = Brushes.Transparent;
+        TextArea.SelectionBorder = null;
+        TextArea.SelectionCornerRadius = 0;
+        TextArea.TextView.BackgroundRenderers.Add(new SelectionRenderer(this));
+        TextArea.TextView.PointerMoved += OnMarksPointerMoved;
         TextArea.AddHandler(PointerPressedEvent, OnPointerPressedTunnel, RoutingStrategies.Tunnel);
         // Щелчок по плашке: поле Capture у TextArea уводит отпускание кнопки на себя, поэтому ловим и нажатие, и отпускание здесь.
         TextArea.AddHandler(PointerPressedEvent, OnChipPointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
@@ -476,6 +483,38 @@ public sealed class BlockEditor : TextEditor
         CommitFormatting();
     }
 
+    /// <summary>Вставляет у курсора (вместо выделения) фразовый элемент с оформленным содержимым — готовую формулу.</summary>
+    public void InsertFragment(DitaNode element)
+    {
+        if (!TextArea.Selection.IsEmpty)
+        {
+            var segment = TextArea.Selection.SurroundingSegment;
+            Document.Remove(segment.Offset, segment.Length);
+        }
+
+        var offset = CaretOffset;
+        var length = _content.InsertFragment(offset, element);
+        _syncing = true;
+        try
+        {
+            Document.Insert(offset, _content.Text.Substring(offset, length));
+        }
+        finally
+        {
+            _syncing = false;
+        }
+
+        CaretOffset = offset + length;
+        CommitFormatting();
+    }
+
+    /// <summary>Вставляет текст у курсора поверх выделения — как набор с клавиатуры (общая история отмены, оформление слева).</summary>
+    public void InsertTyped(string text)
+    {
+        TextArea.Selection.ReplaceSelectionWithText(text.Replace(InlineContent.ChipChar, ' '));
+        TextArea.Focus();
+    }
+
     /// <summary>
     /// Вставляет у курсора фразовый элемент с текстом (сноска, термин): выделение оборачивается,
     /// иначе внутрь ставится выделенная заготовка — набор сразу её заменяет.
@@ -546,6 +585,113 @@ public sealed class BlockEditor : TextEditor
         CommitFormatting();
     }
 
+    /// <summary>Выделение — часть текста блока (не пусто и не весь текст): атрибуты ставятся на слова, а не на блок.</summary>
+    public bool HasPartialSelection
+    {
+        get
+        {
+            var selection = TextArea.Selection;
+            if (selection.IsEmpty)
+            {
+                return false;
+            }
+
+            var segment = selection.SurroundingSegment;
+            return !(segment.Offset == 0 && segment.Length >= Document.TextLength && _content.IsFirstSegment && _content.IsLastSegment);
+        }
+    }
+
+    /// <summary>ph ровно по выделенным словам (уже существующий); null — такого нет или выделения нет.</summary>
+    public DitaNode? SelectionWrapper()
+    {
+        var selection = TextArea.Selection;
+        return selection.IsEmpty ? null : _content.ExactWrapper(selection.SurroundingSegment.Offset, selection.SurroundingSegment.Length, "ph");
+    }
+
+    /// <summary>
+    /// Ставит атрибуты выделенным словам: ph ровно по выделению получает их, иначе выделение оборачивается в новый ph (null-значение
+    /// снимает атрибут). Возвращает ph уже из модели (после записи); null — выделения нет.
+    /// </summary>
+    public DitaNode? SetSelectionAttributes(IReadOnlyList<KeyValuePair<string, string?>> attributes)
+    {
+        var selection = TextArea.Selection;
+        if (selection.IsEmpty)
+        {
+            return null;
+        }
+
+        var segment = selection.SurroundingSegment;
+        var wrapper = _content.ExactWrapper(segment.Offset, segment.Length, "ph") ?? _content.WrapNode(segment.Offset, segment.Length, "ph");
+        if (wrapper is null)
+        {
+            return null;
+        }
+
+        foreach (var (name, value) in attributes)
+        {
+            wrapper.SetAttribute(name, string.IsNullOrWhiteSpace(value) ? null : value);
+        }
+
+        CommitFormatting();
+        var model = _content.ExactWrapper(segment.Offset, segment.Length, "ph");
+        if (model is not null && model.Attributes.Count == 0)
+        {
+            // Последний атрибут снят — обёртка больше не нужна.
+            _content.UnwrapNode(model);
+            CommitFormatting();
+            return null;
+        }
+
+        return model;
+    }
+
+    /// <summary>Помеченные правкой слова под курсором (самый глубокий элемент); null — курсор не в них.</summary>
+    public DitaNode? TrackedAtCaret() => FormattingAtCaret().LastOrDefault(DitaStudio.Core.Editing.TrackChanges.IsTracked);
+
+    /// <summary>Подсказка к словам под указателем: правка (кто и когда) и условные атрибуты; null — ничего особенного.</summary>
+    public string? MarksTipAt(int offset)
+    {
+        if (offset < 0 || offset >= _content.Length)
+        {
+            return null;
+        }
+
+        var lines = new List<string>();
+        foreach (var node in _content.ChainAt(offset).Nodes)
+        {
+            if (DitaStudio.Core.Editing.TrackChanges.Describe(node) is { } change)
+            {
+                lines.Add(change);
+            }
+
+            foreach (var name in InlineStyles.ConditionAttributes)
+            {
+                if (node.GetAttribute(name) is { Length: > 0 } value)
+                {
+                    lines.Add($"{name}: {string.Join(", ", value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))}");
+                }
+            }
+        }
+
+        return lines.Count == 0 ? null : string.Join(Environment.NewLine, lines);
+    }
+
+    private void OnMarksPointerMoved(object? sender, PointerEventArgs e)
+    {
+        string? tip = null;
+        if (GetPositionFromPoint(e.GetPosition(this)) is { } position)
+        {
+            var offset = Document.GetOffset(position.Location);
+            // Позиция — граница между знаками: берётся знак, над которым указатель (левее границы, если указатель за серединой).
+            tip = MarksTipAt(offset) ?? MarksTipAt(offset - 1);
+        }
+
+        if (!Equals(ToolTip.GetTip(TextArea.TextView), tip))
+        {
+            ToolTip.SetTip(TextArea.TextView, tip);
+        }
+    }
+
     private void CommitFormatting()
     {
         _misspellings = null;
@@ -571,6 +717,8 @@ public sealed class BlockEditor : TextEditor
                 Key.U when !shift => "u",
                 Key.U => "uicontrol",
                 Key.OemTilde => "codeph",
+                Key.OemPlus when shift => "sup",
+                Key.OemPlus => "sub",
                 _ => null
             };
 
@@ -758,6 +906,79 @@ public sealed class BlockEditor : TextEditor
             TextArea.TextView.InvalidateLayer(KnownLayer.Selection);
         });
 
+    /// <summary>
+    /// Подсветка выделения по строкам переноса: от первого до последнего выделенного знака строки, без хвоста за концом текста. Если выделение
+    /// продолжается на следующей строке, к строке добавляется ширина одного пробела (как в Word у переноса).
+    /// </summary>
+    private sealed class SelectionRenderer : IBackgroundRenderer
+    {
+        private readonly BlockEditor _editor;
+
+        public SelectionRenderer(BlockEditor editor)
+        {
+            _editor = editor;
+        }
+
+        public KnownLayer Layer => KnownLayer.Selection;
+
+        public void Draw(TextView textView, DrawingContext drawingContext)
+        {
+            var selection = _editor.TextArea.Selection;
+            if (selection.IsEmpty || !textView.VisualLinesValid)
+            {
+                return;
+            }
+
+            var accent = _editor.ThemeBrush("Accent") is ISolidColorBrush solid ? solid.Color : Colors.SteelBlue;
+            var brush = new SolidColorBrush(accent, _editor.TextArea.IsFocused ? 0.28 : 0.16);
+            var segment = selection.SurroundingSegment;
+            foreach (var rect in SelectionRects(textView, segment.Offset, segment.EndOffset))
+            {
+                drawingContext.FillRectangle(brush, rect);
+            }
+        }
+
+        public static IEnumerable<Rect> SelectionRects(TextView textView, int start, int end)
+        {
+            foreach (var line in textView.VisualLines)
+            {
+                var lineStart = line.FirstDocumentLine.Offset;
+                var lineEnd = line.LastDocumentLine.EndOffset;
+                if (end < lineStart || start > lineEnd)
+                {
+                    continue;
+                }
+
+                var startColumn = line.GetVisualColumn(Math.Clamp(start, lineStart, lineEnd) - lineStart);
+                var endColumn = line.GetVisualColumn(Math.Clamp(end, lineStart, lineEnd) - lineStart);
+                var rowStart = 0;
+                foreach (var row in line.TextLines)
+                {
+                    var rowEnd = rowStart + row.Length;
+                    var from = Math.Max(startColumn, rowStart);
+                    var to = Math.Min(endColumn, rowEnd);
+                    if (from < to)
+                    {
+                        var left = line.GetTextLineVisualXPosition(row, from);
+                        var right = line.GetTextLineVisualXPosition(row, to);
+                        var lastOffset = lineStart + line.GetRelativeOffset(to - 1);
+                        if (to == rowEnd && lastOffset < textView.Document.TextLength && char.IsWhiteSpace(textView.Document.GetCharAt(lastOffset)))
+                        {
+                            // Строка кончается пробелом переноса: его подсветка — шириной одного пробела, а не до края области.
+                            var lastChar = line.GetTextLineVisualXPosition(row, to - 1);
+                            right = Math.Min(right, lastChar + textView.WideSpaceWidth);
+                        }
+
+                        var top = line.GetTextLineVisualYPosition(row, VisualYPosition.LineTop) - textView.ScrollOffset.Y;
+                        yield return new Rect(left - textView.ScrollOffset.X, top, Math.Max(1, right - left), row.Height);
+                    }
+
+                    rowStart = rowEnd;
+                }
+            }
+        }
+    }
+
     /// <summary>Волнистое подчёркивание слов с ошибками — как проверка орфографии WPF.</summary>
     private sealed class SpellingRenderer : IBackgroundRenderer
     {
@@ -823,6 +1044,7 @@ public sealed class BlockEditor : TextEditor
         }
 
         TextArea.Focus();
+        Flush(); // узлы ссылки в меню — уже из модели
         AuthorMenus.Open(BuildContextMenu(offset), this);
         e.Handled = true;
     }
@@ -857,6 +1079,22 @@ public sealed class BlockEditor : TextEditor
             items.Add(new Separator());
         }
 
+        // Ссылка под курсором: окно её настройки (текст, адрес, область) и «Убрать ссылку» — текст остаётся.
+        if (LinkAt(offset) is { } link)
+        {
+            var settings = new MenuItem { Header = Loc.T("Menu_LinkSettings"), FontWeight = FontWeight.SemiBold };
+            settings.Click += (_, _) => LinkSettingsRequested?.Invoke(this, new ChipClickedEventArgs(link, this));
+            items.Add(settings);
+            if (link.Children.Count > 0)
+            {
+                var unlink = new MenuItem { Header = Loc.T("Menu_RemoveLink") };
+                unlink.Click += (_, _) => UnwrapRequested?.Invoke(this, link);
+                items.Add(unlink);
+            }
+
+            items.Add(new Separator());
+        }
+
         var hasSelection = !TextArea.Selection.IsEmpty;
         var cut = new MenuItem { Header = Loc.T("Menu_Cut"), InputGesture = new KeyGesture(Key.X, KeyModifiers.Control), IsEnabled = hasSelection };
         cut.Click += (_, _) => Cut();
@@ -877,6 +1115,54 @@ public sealed class BlockEditor : TextEditor
         }
 
         return new ContextMenu { ItemsSource = items };
+    }
+
+    /// <summary>Ссылка (xref, link) у позиции: текст ссылки или её плашка; null — не ссылка.</summary>
+    public DitaNode? LinkAt(int? offset)
+    {
+        if (offset is not { } o || _content.Length == 0)
+        {
+            return null;
+        }
+
+        foreach (var at in new[] { o, o - 1 })
+        {
+            if (at < 0 || at >= _content.Length)
+            {
+                continue;
+            }
+
+            var chain = _content.ChainAt(at);
+            if (chain.Chip is { Name: "xref" or "link" } chip)
+            {
+                return chip;
+            }
+
+            if (chain.Nodes.LastOrDefault(n => n.Name is "xref" or "link") is { } node)
+            {
+                return node;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>«Настройка ссылки» в меню: оболочка открывает окно с текстом, адресом и областью ссылки.</summary>
+    public event EventHandler<ChipClickedEventArgs>? LinkSettingsRequested;
+
+    /// <summary>Убрать фразовый элемент (например, ссылку), оставив текст, — через оболочку, чтобы сохранить точку отмены.</summary>
+    public event EventHandler<DitaNode>? UnwrapRequested;
+
+    /// <summary>Убирает фразовый элемент <paramref name="node"/>: его текст остаётся без обёртки.</summary>
+    public bool UnwrapInline(DitaNode node)
+    {
+        if (!_content.UnwrapNode(node))
+        {
+            return false;
+        }
+
+        CommitFormatting();
+        return true;
     }
 
     // ------------------------------------------------------------ оформление
@@ -928,7 +1214,7 @@ public sealed class BlockEditor : TextEditor
                     foreach (var node in nodes)
                     {
                         InlineStyles.Apply(element.TextRunProperties, node.Name, _editor.ThemeBrush, mono);
-                        InlineStyles.ApplyFormatting(element.TextRunProperties, node);
+                        InlineStyles.ApplyFormatting(element.TextRunProperties, node, _editor.ThemeBrush);
                     }
                 });
             }

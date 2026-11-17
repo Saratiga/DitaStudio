@@ -480,7 +480,7 @@ public sealed class MainWindowTests : IDisposable
         var pane = (DocumentView)vm.Documents.Current!;
         Assert.Equal(about, pane.FilePath);
         Assert.Equal("new", pane.Author.CurrentNode?.GetAttribute("status"));
-        var note = pane.AuthorEditor.GetLogicalDescendants().OfType<TextBlock>().First(t => Equals(t.Tag, "attribute-note") && t.Text!.Contains("status: new"));
+        var note = pane.AuthorEditor.GetLogicalDescendants().OfType<TextBlock>().First(t => Equals(t.Tag, "attribute-note") && t.Text!.Contains("Вставлено"));
         Assert.True(window.TryFindResource("Success", window.ActualThemeVariant, out var success));
         Assert.Equal(((Avalonia.Media.ISolidColorBrush)success!).Color, ((Avalonia.Media.ISolidColorBrush)note.Foreground!).Color);
         Assert.Equal("Danger", Authoring.AuthorView.NoteBrushKey("deleted"));

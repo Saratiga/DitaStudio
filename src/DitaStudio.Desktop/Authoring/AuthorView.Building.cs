@@ -10,6 +10,7 @@ using DitaStudio.Core.Publishing;
 using DitaStudio.Core.Project;
 using DitaStudio.Core.Schema;
 using DitaStudio.Presentation.Authoring;
+using DitaStudio.Core.Localization;
 
 namespace DitaStudio.Desktop.Authoring;
 
@@ -27,7 +28,7 @@ public sealed partial class AuthorView
 
         if (view is not null && AttributeNotesEnabled && AttributeNote(node) is { } note)
         {
-            view = WithAttributeNote(note, view, node.GetAttribute("status"));
+            view = WithAttributeNote(note, view, NoteStatus(node));
         }
 
         if (view is not null)
@@ -445,6 +446,12 @@ public sealed partial class AuthorView
             }
         };
         editor.ChipClicked += (_, e) => EditChip(e.Node, e.Control, editor);
+        editor.LinkSettingsRequested += (_, e) => EditChip(e.Node, e.Control, editor);
+        editor.UnwrapRequested += (_, inline) =>
+        {
+            BeforeStructuralEdit?.Invoke(this, Loc.T("Menu_RemoveLink"));
+            editor.UnwrapInline(inline);
+        };
         editor.ChipFactory = chip => chip.Name == "image" && TryLoadImage(chip) is { } bitmap
             ? new ResizableImage(bitmap, ResizableImage.WidthFromAttributes(chip.GetAttribute("width"), chip.GetAttribute("height"), bitmap),
                 480, 240, width => ResizeImage(chip, width, editor))

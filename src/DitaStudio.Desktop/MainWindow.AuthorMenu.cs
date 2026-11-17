@@ -26,7 +26,12 @@ public partial class MainWindow
         }
 
         view.AuthorEditor.CaptionNameRequested += (_, _) => ViewModel.Insert.RenameCaptionCommand.Execute(null);
-        view.AuthorEditor.CaretFormattingChanged += (_, _) => RefreshFormatButtons();
+        view.AuthorEditor.CaretFormattingChanged += (_, _) =>
+        {
+            RefreshFormatButtons();
+            // Выделены слова или курсор в словах со своим продуктом — панель «Атрибуты» показывает их, а не блок.
+            ViewModel.SidePanels.RefreshAttributesIfTargetChanged();
+        };
         view.AuthorEditor.ContextMenuBuilding += (_, items) =>
         {
             if (ViewModel.Current?.Author.CurrentNode is { } node && TableCommands.CellOf(node) is not null)
@@ -206,6 +211,115 @@ public partial class MainWindow
         return items;
     }
 
+    /// <summary>Меню кнопки «Уравнение» (как в Word): новое уравнение, выключная формула и готовые формулы.</summary>
+    private void BuildEquationMenu()
+    {
+        var items = new List<Control>
+        {
+            new MenuItem { Header = Loc.T("Eq_New"), Command = ViewModel.Insert.InsertEquationCommand, CommandParameter = null, FontWeight = Avalonia.Media.FontWeight.SemiBold },
+            new MenuItem { Header = Loc.T("Eq_Block"), Command = ViewModel.Insert.InsertEquationCommand, CommandParameter = Core.Editing.Equations.BlockKey },
+            new Separator()
+        };
+        foreach (var equation in Core.Editing.Equations.BuiltIn)
+        {
+            items.Add(new MenuItem
+            {
+                Header = new StackPanel
+                {
+                    Spacing = 1,
+                    Children =
+                    {
+                        new TextBlock { Text = equation.Name, FontSize = 11, Opacity = 0.75 },
+                        new TextBlock { Text = EquationPreview(equation.Markup), FontFamily = new Avalonia.Media.FontFamily("Cambria Math, Times New Roman, serif"), FontSize = 15 }
+                    }
+                },
+                Command = ViewModel.Insert.InsertEquationCommand,
+                CommandParameter = equation.Key
+            });
+        }
+
+        EquationButton.Flyout = new MenuFlyout { ItemsSource = items };
+    }
+
+    /// <summary>Формула в меню — одной строкой: степени и индексы надстрочными знаками Юникода, где они есть.</summary>
+    internal static string EquationPreview(string markup)
+    {
+        const string digits = "0123456789+−=()nikaα";
+        const string sup = "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ⁿⁱᵏᵃᵅ";
+        const string sub = "₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎ₙᵢₖₐα";
+        var result = new System.Text.StringBuilder();
+        var mode = 0;
+        foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(markup, "<(/?)(sup|sub|i)>|[^<]+"))
+        {
+            if (m.Groups[2].Success)
+            {
+                if (m.Groups[2].Value != "i")
+                {
+                    mode = m.Groups[1].Value == "/" ? 0 : m.Groups[2].Value == "sup" ? 1 : 2;
+                }
+
+                continue;
+            }
+
+            foreach (var ch in m.Value)
+            {
+                var index = digits.IndexOf(ch);
+                result.Append(mode == 0 || index < 0 ? ch : (mode == 1 ? sup : sub)[index]);
+            }
+        }
+
+        return result.ToString();
+    }
+
+    /// <summary>Панель кнопки «Символ» (как в Word): сетка частых и недавних знаков и «Другие символы…».</summary>
+    private void BuildSymbolPanel()
+    {
+        var grid = new WrapPanel { Width = 5 * 34 };
+        var panel = new StackPanel { Margin = new Avalonia.Thickness(4), Children = { grid } };
+        void Fill()
+        {
+            grid.Children.Clear();
+            foreach (var symbol in Core.Editing.Symbols.Quick)
+            {
+                var button = new Button
+                {
+                    Content = symbol.Text == "\u00A0" ? "⍽" : symbol.Text,
+                    Width = 32,
+                    Height = 30,
+                    Margin = new Avalonia.Thickness(1),
+                    Padding = new Avalonia.Thickness(0),
+                    FontSize = 15,
+                    HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                    VerticalContentAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                    Command = ViewModel.Insert.InsertSymbolCommand,
+                    CommandParameter = symbol.Text
+                };
+                ToolTip.SetTip(button, symbol.Name);
+                button.Click += (_, _) => SymbolButton.Flyout?.Hide();
+                grid.Children.Add(button);
+            }
+        }
+
+        var more = new Button
+        {
+            Content = Loc.T("Sym_More"),
+            Margin = new Avalonia.Thickness(1, 6, 1, 1),
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch
+        };
+        more.Click += async (_, _) =>
+        {
+            SymbolButton.Flyout?.Hide();
+            if (await SymbolWindow.PickAsync(this) is { } chosen)
+            {
+                ViewModel.Insert.InsertSymbolCommand.Execute(chosen);
+            }
+        };
+        panel.Children.Add(more);
+        var flyout = new Flyout { Content = panel };
+        flyout.Opening += (_, _) => Fill(); // недавние символы — первыми
+        SymbolButton.Flyout = flyout;
+    }
+
     /// <summary>Меню «Границы» как в Word: у кнопки на панели и в «Структура → Таблица → Границы выделенных ячеек».</summary>
     private void BuildCellBordersMenus()
     {
@@ -269,6 +383,9 @@ public partial class MainWindow
         BoldButton.Classes.Set("active", formatting.Has("b"));
         ItalicButton.Classes.Set("active", formatting.Has("i"));
         UnderlineButton.Classes.Set("active", formatting.Has("u"));
+        StrikeButton.Classes.Set("active", formatting.Has("line-through"));
+        SubscriptButton.Classes.Set("active", formatting.Has("sub"));
+        SuperscriptButton.Classes.Set("active", formatting.Has("sup"));
         CodeButton.Classes.Set("active", formatting.Has("codeph"));
         var align = formatting.Align;
         AlignLeftButton.Classes.Set("active", align == "left");

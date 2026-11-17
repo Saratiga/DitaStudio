@@ -94,6 +94,8 @@ public partial class MainWindow : Window
         BuildColorPalette();
         BuildMarkerPalette();
         BuildCellBordersMenus();
+        BuildEquationMenu();
+        BuildSymbolPanel();
     }
 
     public MainViewModel ViewModel { get; }

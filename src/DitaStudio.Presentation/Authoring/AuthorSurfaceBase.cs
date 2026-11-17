@@ -52,6 +52,12 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
 
     public virtual bool HasTextSelection => false;
 
+    public virtual bool HasPartialTextSelection => false;
+
+    public virtual DitaNode? InlineAttributeTarget() => null;
+
+    public virtual DitaNode? SetSelectionAttributes(IReadOnlyList<KeyValuePair<string, string?>> attributes) => null;
+
     public virtual bool MarkerPenActive => false;
 
     public virtual string? MarkerPenToken => null;
@@ -68,6 +74,10 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
     /// (тогда элемент вставляется блоком после текущего).
     /// </summary>
     public virtual bool InsertInlineElement(DitaNode element, string placeholder) => false;
+
+    public virtual bool InsertInlineFragment(DitaNode node) => false;
+
+    public virtual bool InsertText(string text) => false;
 
     /// <summary>Первый элемент со смешанным содержимым внутри узла — куда ставить курсор после правки.</summary>
     protected static DitaNode FirstEditable(DitaNode node)
@@ -105,7 +115,9 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         FlushPendingEdits();
         BeforeStructuralEdit(Loc.T("Author_Insert0", name));
 
-        var created = PlaceBlock(CurrentNode, name);
+        // Черта «перед блоком» (первый блок раздела, абзац под заголовком): блок — на её место, если он там допустим.
+        var created = InsertSlotOverride() is var (slotParent, slotIndex) ? EditCommands.InsertInto(slotParent, name, slotIndex) : null;
+        created ??= PlaceBlock(CurrentNode, name);
         if (created is null)
         {
             return false;
@@ -114,6 +126,9 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         Changed(FirstEditable(created), created.Parent);
         return true;
     }
+
+    /// <summary>Место для нового блока, выбранное в оболочке (черта перед блоком); null — вставка после текущего блока.</summary>
+    protected virtual (DitaNode Parent, int Index)? InsertSlotOverride() => null;
 
     /// <summary>Ставит новый блочный элемент после <paramref name="current"/>, а если там нельзя — в конец
     /// ближайшего родителя, куда он допустим. null — нигде нельзя.</summary>
@@ -677,47 +692,86 @@ public abstract partial class AuthorSurfaceBase : IAuthorSurface
         return !hasRev;
     }
 
-    public void MarkCurrentInserted() => Track(Loc.T("Msg_MarkAsInsertedTrackChanges"), node => TrackChanges.MarkInserted(node, Environment.UserName));
+    public void MarkCurrentInserted() => Track(Loc.T("Msg_MarkAsInsertedTrackChanges"), TrackChanges.StatusNew);
 
-    public void MarkCurrentDeleted() => Track(Loc.T("Msg_MarkAsDeletedTrackChanges"), node => TrackChanges.MarkDeleted(node, Environment.UserName));
+    public void MarkCurrentChanged() => Track(Loc.T("Msg_MarkAsChangedTrackChanges"), TrackChanges.StatusChanged);
 
-    private void Track(string description, Action<DitaNode> mark)
+    public void MarkCurrentDeleted() => Track(Loc.T("Msg_MarkAsDeletedTrackChanges"), TrackChanges.StatusDeleted);
+
+    /// <summary>Автор правок track changes — имя пользователя системы.</summary>
+    public static string TrackAuthor => Environment.UserName;
+
+    /// <summary>
+    /// Пометка только выделенных слов блока (обёртка ph со status, tcauthor, tcdate). true — выделение было и помечено;
+    /// false — выделения нет, помечается блок целиком. Оболочка без выделения текста ничего не делает.
+    /// </summary>
+    protected virtual bool TrackSelection(string description, string status) => false;
+
+    /// <summary>Фразовый элемент с пометкой правки под курсором (самый глубокий); null — курсор не в помеченных словах.</summary>
+    public virtual DitaNode? TrackedInlineAtCursor() => null;
+
+    /// <summary>Правка под курсором: помеченные слова, иначе сам блок, если он помечен; null — правки здесь нет.</summary>
+    public DitaNode? TrackedAtCursor() =>
+        TrackedInlineAtCursor() ?? (CurrentNode is { } node && TrackChanges.IsTracked(node) ? node : null);
+
+    private void Track(string description, string status)
     {
         if (Document is null || CurrentNode is null)
         {
             return;
         }
 
+        FlushPendingEdits();
+        if (TrackSelection(description, status))
+        {
+            return;
+        }
+
         BeforeStructuralEdit(description);
-        mark(CurrentNode);
+        TrackChanges.Mark(CurrentNode, status, TrackAuthor);
         Changed(FirstEditable(CurrentNode), CurrentNode.Parent, CurrentNode);
     }
 
-    public void AcceptCurrentTrackedChange()
+    public void AcceptCurrentTrackedChange() => ResolveTracked(accept: true);
+
+    public void RejectCurrentTrackedChange() => ResolveTracked(accept: false);
+
+    private void ResolveTracked(bool accept)
     {
-        if (Document is null || CurrentNode is not { } node || !TrackChanges.IsTracked(node))
+        FlushPendingEdits();
+        if (Document is null || CurrentNode is not { } current || TrackedAtCursor() is not { } node)
         {
             return;
         }
 
-        BeforeStructuralEdit(Loc.T("Msg_AcceptChangeTrackChanges"));
-        var wasDeleted = TrackChanges.IsDeleted(node);
-        var parent = node.Parent;
-        TrackChanges.Accept(node);
-        Changed(wasDeleted ? null : FirstEditable(node), parent, node);
-    }
-
-    public void RejectCurrentTrackedChange()
-    {
-        if (Document is null || CurrentNode is not { } node || !TrackChanges.IsTracked(node))
+        BeforeStructuralEdit(Loc.T(accept ? "Msg_AcceptChangeTrackChanges" : "Msg_RejectChangeTrackChanges"));
+        if (!ReferenceEquals(node, current))
         {
+            // Помеченные слова внутри блока: блок остаётся, перестраивается его текст.
+            if (accept)
+            {
+                TrackChanges.Accept(node);
+            }
+            else
+            {
+                TrackChanges.Reject(node);
+            }
+
+            Changed(FirstEditable(current), current.Parent, current);
             return;
         }
 
-        BeforeStructuralEdit(Loc.T("Msg_RejectChangeTrackChanges"));
-        var wasInserted = TrackChanges.IsInserted(node);
+        var removes = accept ? TrackChanges.IsDeleted(node) : TrackChanges.IsInserted(node);
         var parent = node.Parent;
-        TrackChanges.Reject(node);
-        Changed(wasInserted ? null : FirstEditable(node), parent, node);
+        if (accept)
+        {
+            TrackChanges.Accept(node);
+        }
+        else
+        {
+            TrackChanges.Reject(node);
+        }
+
+        Changed(removes ? null : FirstEditable(node), parent, node);
     }
 }

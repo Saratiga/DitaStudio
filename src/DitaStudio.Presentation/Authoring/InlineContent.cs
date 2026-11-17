@@ -402,6 +402,25 @@ public sealed class InlineContent
         _chains.InsertRange(offset, Enumerable.Repeat(chain, text.Length));
     }
 
+    /// <summary>
+    /// Вставляет в позицию фразовый элемент вместе с оформленным содержимым (формула с курсивом и степенями): каждый знак получает свою
+    /// цепочку, как при чтении из модели. Возвращает число вставленных знаков.
+    /// </summary>
+    public int InsertFragment(int offset, DitaNode element)
+    {
+        offset = Math.Clamp(offset, 0, _text.Length);
+        var start = _text.Length;
+        AppendChild(element, ContextAt(offset).ToList());
+        var length = _text.Length - start;
+        var text = _text.ToString(start, length);
+        var chains = _chains.GetRange(start, length);
+        _text.Remove(start, length);
+        _chains.RemoveRange(start, length);
+        _text.Insert(offset, text);
+        _chains.InsertRange(offset, chains);
+        return length;
+    }
+
     /// <summary>Вставляет узел плашкой (ссылка, картинка, сноска) в позицию.</summary>
     public void InsertChip(int offset, DitaNode node)
     {
@@ -546,6 +565,32 @@ public sealed class InlineContent
         }
 
         return nodes.Count > 0;
+    }
+
+    /// <summary>Убирает фразовый элемент <paramref name="node"/> из цепочек: его текст остаётся на месте без обёртки.</summary>
+    public bool UnwrapNode(DitaNode node)
+    {
+        var changed = false;
+        var mapped = new Dictionary<InlineChain, InlineChain>(ReferenceEqualityComparer.Instance);
+        for (var i = 0; i < _chains.Count; i++)
+        {
+            var chain = _chains[i];
+            if (!chain.Nodes.Any(n => ReferenceEquals(n, node)))
+            {
+                continue;
+            }
+
+            if (!mapped.TryGetValue(chain, out var updated))
+            {
+                updated = new InlineChain(chain.Nodes.Where(n => !ReferenceEquals(n, node)).ToArray(), chain.Chip);
+                mapped[chain] = updated;
+            }
+
+            _chains[i] = updated;
+            changed = true;
+        }
+
+        return changed;
     }
 
     /// <summary>

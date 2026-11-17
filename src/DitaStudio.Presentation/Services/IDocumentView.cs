@@ -110,6 +110,15 @@ public interface IAuthorSurface
     /// <summary>Вставляет фразовый узел в позицию курсора внутри текстового блока.</summary>
     bool InsertInlineNode(DitaNode node);
 
+    /// <summary>Вставляет у курсора фразовый элемент с текстом-заготовкой (выделение оборачивается). false — курсор не в тексте.</summary>
+    bool InsertInlineElement(DitaNode element, string placeholder) => false;
+
+    /// <summary>Вставляет у курсора готовый фразовый элемент с оформленным содержимым (формула). false — курсор не в тексте.</summary>
+    bool InsertInlineFragment(DitaNode node) => false;
+
+    /// <summary>Вставляет текст у курсора (поверх выделения), как набор с клавиатуры. false — курсор не в тексте.</summary>
+    bool InsertText(string text) => false;
+
     /// <summary>Вставляет рисунок (блок <c>fig</c> с названием и этим изображением) после текущего блока.</summary>
     bool InsertFigure(DitaNode image) => false;
 
@@ -172,6 +181,18 @@ public interface IAuthorSurface
     /// <summary>Есть ли выделенный текст (в «Авторе» — внутри одного блока).</summary>
     bool HasTextSelection => false;
 
+    /// <summary>Выделена часть текста блока (не весь): условные атрибуты и правки ставятся только на эти слова.</summary>
+    bool HasPartialTextSelection => false;
+
+    /// <summary>
+    /// Элемент, чьи атрибуты показывает панель «Атрибуты»: ph ровно по выделенным словам или фраза с условиями под курсором;
+    /// null — сам блок (<see cref="CurrentNode"/>).
+    /// </summary>
+    DitaNode? InlineAttributeTarget() => null;
+
+    /// <summary>Ставит атрибуты выделенным словам (обёртка ph); null-значение снимает. Возвращает ph из модели; null — выделения нет.</summary>
+    DitaNode? SetSelectionAttributes(IReadOnlyList<KeyValuePair<string, string?>> attributes) => null;
+
     /// <summary>Выделены ли ячейки таблицы (прямоугольник, выбранный мышью): строки, столбцы, объединение, границы действуют на них.</summary>
     bool HasCellSelection => false;
 
@@ -218,9 +239,15 @@ public interface IAuthorSurface
     /// <summary>Переключает пометку rev; null — элемента нет.</summary>
     bool? ToggleCurrentRev();
 
+    /// <summary>Track changes: помечает выделенные слова (обёртка ph), а без выделения — блок под курсором.</summary>
     void MarkCurrentInserted();
 
+    void MarkCurrentChanged();
+
     void MarkCurrentDeleted();
+
+    /// <summary>Правка под курсором: помеченные слова или помеченный блок; null — правки нет.</summary>
+    DitaNode? TrackedAtCursor();
 
     void AcceptCurrentTrackedChange();
 

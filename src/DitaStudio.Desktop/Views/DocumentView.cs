@@ -582,12 +582,12 @@ public sealed class DocumentView : UserControl, IDocumentView, IDisposable
 
     public bool FocusNode(DitaNode node)
     {
-        if (_author.EditorFor(node) is null)
+        if (!_author.CanReveal(node))
         {
             return false;
         }
 
         Mode = EditorMode.Author;
-        return _author.FocusNode(node);
+        return _author.RevealNode(node);
     }
 }

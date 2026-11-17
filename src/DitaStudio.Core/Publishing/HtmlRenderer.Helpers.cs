@@ -73,6 +73,10 @@ public sealed partial class HtmlRenderer
         {
             classes.Add("tc-deleted");
         }
+        else if (node is not null && TrackChanges.IsChanged(node))
+        {
+            classes.Add("tc-changed");
+        }
 
         var flag = node is null ? null : ResolveFlagRule(node);
         if (flag is not null)

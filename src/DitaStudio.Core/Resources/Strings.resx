@@ -5103,4 +5103,145 @@ A plugin is a .dll in this folder or MyPlugin/MyPlugin.dll in a subfolder. Plugi
   <data name="Attr_ProductSearch" xml:space="preserve">
     <value>Search in the product list</value>
   </data>
+  <data name="Track_Inserted" xml:space="preserve">
+    <value>Inserted</value>
+  </data>
+  <data name="Track_Changed" xml:space="preserve">
+    <value>Changed</value>
+  </data>
+  <data name="Track_Deleted" xml:space="preserve">
+    <value>Deleted</value>
+  </data>
+  <data name="Menu_TrackChanged" xml:space="preserve">
+    <value>Track changes: mark as changed</value>
+  </data>
+  <data name="Msg_MarkAsChangedTrackChanges" xml:space="preserve">
+    <value>Mark as changed (track changes)</value>
+  </data>
+  <data name="Msg_TrackMarkedChanged" xml:space="preserve">
+    <value>The element is marked as changed</value>
+  </data>
+  <data name="Msg_TrackSelectionMarked" xml:space="preserve">
+    <value>The selected text is marked: {0}</value>
+  </data>
+  <data name="Tip_TrackSelection" xml:space="preserve">
+    <value>With selected text only the selected words are marked; without a selection, the whole block</value>
+  </data>
+  <data name="Msg_SelectionAttribute" xml:space="preserve">
+    <value>Selected words: @{0} = {1}</value>
+  </data>
+  <data name="Attr_SelectionContext" xml:space="preserve">
+    <value>Selected words in &lt;{0}&gt;: only they get the attributes (a &lt;ph&gt; wrapper)</value>
+  </data>
+  <data name="Attr_InlineContext" xml:space="preserve">
+    <value>&lt;{0}&gt; "{1}" in &lt;{2}&gt;: attributes of these words</value>
+  </data>
+  <data name="Menu_LinkSettings" xml:space="preserve">
+    <value>Link settings…</value>
+  </data>
+  <data name="Menu_RemoveLink" xml:space="preserve">
+    <value>Remove link (keep text)</value>
+  </data>
+  <data name="Eq_CircleArea" xml:space="preserve">
+    <value>Area of a circle</value>
+  </data>
+  <data name="Eq_Pythagoras" xml:space="preserve">
+    <value>Pythagorean theorem</value>
+  </data>
+  <data name="Eq_Quadratic" xml:space="preserve">
+    <value>Quadratic formula</value>
+  </data>
+  <data name="Eq_Binomial" xml:space="preserve">
+    <value>Binomial theorem</value>
+  </data>
+  <data name="Eq_Trig" xml:space="preserve">
+    <value>Trigonometric identity</value>
+  </data>
+  <data name="Eq_Euler" xml:space="preserve">
+    <value>Euler's identity</value>
+  </data>
+  <data name="Eq_Placeholder" xml:space="preserve">
+    <value>Type equation here</value>
+  </data>
+  <data name="Eq_New" xml:space="preserve">
+    <value>Insert new equation</value>
+  </data>
+  <data name="Eq_Block" xml:space="preserve">
+    <value>Display equation (on its own line)</value>
+  </data>
+  <data name="Btn_Equation" xml:space="preserve">
+    <value>Equation</value>
+  </data>
+  <data name="Btn_Symbol" xml:space="preserve">
+    <value>Symbol</value>
+  </data>
+  <data name="Tip_Equation" xml:space="preserve">
+    <value>Equation: a new one or a built-in one (as in Word), an inline equation-inline</value>
+  </data>
+  <data name="Tip_Symbol" xml:space="preserve">
+    <value>Symbol: a character that is not on the keyboard (©, ±, →, α…)</value>
+  </data>
+  <data name="Tip_Strikethrough" xml:space="preserve">
+    <value>Strikethrough (line-through)</value>
+  </data>
+  <data name="Tip_Subscript" xml:space="preserve">
+    <value>Subscript (sub), Ctrl+=</value>
+  </data>
+  <data name="Tip_Superscript" xml:space="preserve">
+    <value>Superscript (sup), Ctrl+Shift+=</value>
+  </data>
+  <data name="Menu_Strikethrough" xml:space="preserve">
+    <value>Strikethrough</value>
+  </data>
+  <data name="Menu_Subscript" xml:space="preserve">
+    <value>Subscript</value>
+  </data>
+  <data name="Menu_Superscript" xml:space="preserve">
+    <value>Superscript</value>
+  </data>
+  <data name="Sym_More" xml:space="preserve">
+    <value>More symbols…</value>
+  </data>
+  <data name="Sym_Common" xml:space="preserve">
+    <value>Common</value>
+  </data>
+  <data name="Sym_Greek" xml:space="preserve">
+    <value>Greek letters</value>
+  </data>
+  <data name="Sym_Math" xml:space="preserve">
+    <value>Mathematical</value>
+  </data>
+  <data name="Sym_Arrows" xml:space="preserve">
+    <value>Arrows and shapes</value>
+  </data>
+  <data name="Sym_Currency" xml:space="preserve">
+    <value>Currency</value>
+  </data>
+  <data name="Sym_Other" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="Sym_Title" xml:space="preserve">
+    <value>Symbol</value>
+  </data>
+  <data name="Sym_Code" xml:space="preserve">
+    <value>Character code (hex):</value>
+  </data>
+  <data name="Sym_Insert" xml:space="preserve">
+    <value>Insert</value>
+  </data>
+  <data name="Msg_PutCursorForSymbol" xml:space="preserve">
+    <value>Put the cursor in the text in Author mode</value>
+  </data>
+  <data name="Msg_SymbolInserted" xml:space="preserve">
+    <value>Inserted symbol “{0}”</value>
+  </data>
+  <data name="Msg_EquationInserted" xml:space="preserve">
+    <value>Equation inserted</value>
+  </data>
+  <data name="Author_BeforeThisBlock" xml:space="preserve">
+    <value>before this block</value>
+  </data>
+  <data name="Author_MarginSelectsBlock" xml:space="preserve">
+    <value>Click to select the whole block; click again for the enclosing block; Shift+click for several blocks</value>
+  </data>
 </root>

@@ -77,6 +77,12 @@ public sealed partial class AuthorView
             parts.Add($"{name}: {(text.Length > NoteValueLimit ? text[..(NoteValueLimit - 1)] + "…" : text)}");
         }
 
+        // Правка track changes — первой и по-человечески: «Изменено · Иванов · 17.11.2026 14:05».
+        if (DitaStudio.Core.Editing.TrackChanges.Describe(node) is { } change)
+        {
+            parts.Add(change);
+        }
+
         // id самого топика есть всегда и виден в имени файла и на вкладке — его пометкой не дублируем.
         if (node.GetAttribute("id") is { } id && DitaCatalog.Default.Get(node.Name)?.IsTopicType != true)
         {
@@ -93,6 +99,7 @@ public sealed partial class AuthorView
 
         var others = node.Attributes
             .Where(a => !ConditionAttributes.Contains(a.Name) && a.Name != "outputclass" && !ServiceAttributes.Contains(a.Name) &&
+                        !(TrackAttributes.Contains(a.Name) && DitaStudio.Core.Editing.TrackChanges.IsTracked(node)) &&
                         !TableLayoutAttributes.Contains(a.Name) && !a.Name.StartsWith("xml:", StringComparison.Ordinal) &&
                         !a.Name.StartsWith("xmlns", StringComparison.Ordinal) && !a.Name.StartsWith("ditaarch:", StringComparison.Ordinal))
             .OrderBy(a => a.Name, StringComparer.Ordinal);
@@ -108,8 +115,66 @@ public sealed partial class AuthorView
             Add("class", string.Join(" ", classes));
         }
 
+        // Слова внутри блока со своими условиями или правкой: «‹слово›: product: Альфа» — коротко, сами слова подчёркнуты в тексте.
+        foreach (var inline in InlineMarked(node))
+        {
+            var words = string.Join(' ', inline.InnerText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+            if (words.Length > InlineWordsLimit)
+            {
+                words = words[..(InlineWordsLimit - 1)] + "…";
+            }
+
+            var marks = new List<string>();
+            if (DitaStudio.Core.Editing.TrackChanges.StatusLabel(inline) is { } label)
+            {
+                marks.Add(label.ToLowerInvariant());
+            }
+
+            foreach (var name in ConditionAttributes)
+            {
+                if (inline.GetAttribute(name) is { Length: > 0 } value)
+                {
+                    marks.Add($"{name}: {string.Join(", ", value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))}");
+                }
+            }
+
+            parts.Add($"‹{words}› {string.Join(", ", marks)}");
+        }
+
         return parts.Count == 0 ? null : string.Join(" · ", parts);
     }
+
+    private static readonly string[] TrackAttributes = { "status", "tcauthor", "tcdate" };
+
+    private const int InlineWordsLimit = 24;
+
+    /// <summary>Фразовые элементы в собственном тексте блока (не во вложенных блоках) с условиями или пометкой правки.</summary>
+    private static IEnumerable<DitaNode> InlineMarked(DitaNode node)
+    {
+        foreach (var child in node.Children)
+        {
+            if (child.Kind != NodeKind.Element || InlineContent.IsStructuralChild(child) || child.Name == "fn")
+            {
+                continue;
+            }
+
+            if (DitaStudio.Core.Editing.TrackChanges.IsTracked(child) || InlineStyles.HasConditions(child))
+            {
+                yield return child;
+            }
+
+            foreach (var nested in InlineMarked(child))
+            {
+                yield return nested;
+            }
+        }
+    }
+
+    /// <summary>Статус для цвета пометки: у самого блока, а если он не помечен — у первых помеченных слов внутри.</summary>
+    public static string? NoteStatus(DitaNode node) =>
+        node.GetAttribute("status") is { } own && DitaStudio.Core.Editing.TrackChanges.IsTracked(node)
+            ? own
+            : InlineMarked(node).FirstOrDefault(DitaStudio.Core.Editing.TrackChanges.IsTracked)?.GetAttribute("status");
 
     /// <summary>
     /// Пересобирает только обёртки блока (метка размещения, серая пометка атрибутов) после того, как атрибуты узла изменились
@@ -119,6 +184,13 @@ public sealed partial class AuthorView
     {
         if (!_views.TryGetValue(node, out var outer) || outer.Parent is null)
         {
+            // Ячейка таблицы своего представления в _views не имеет — перестраивается таблица вокруг, курсор остаётся в ячейке.
+            if (node.Name is "entry" or "stentry" && _editors.TryGetValue(node, out var cellEditor))
+            {
+                var caret = cellEditor.CaretOffset;
+                RebuildAround(node, node, caret);
+            }
+
             return;
         }
 
@@ -150,7 +222,7 @@ public sealed partial class AuthorView
 
         if (note is not null)
         {
-            view = WithAttributeNote(note, view, node.GetAttribute("status"));
+            view = WithAttributeNote(note, view, NoteStatus(node));
         }
 
         _viewNodes.Remove(outer);

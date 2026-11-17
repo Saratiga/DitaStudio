@@ -132,6 +132,7 @@ public sealed class CoreTests
     [Fact] public void TableResizeTests() => Run(CoreChecks.TableResizeTests);
     [Fact] public void NumberedParagraphTests() => Run(CoreChecks.NumberedParagraphTests);
     [Fact] public void PagePlacementTests() => Run(CoreChecks.PagePlacementTests);
+    [Fact] public void RemarksTests() => Run(CoreChecks.RemarksTests);
 
     private void Run(Action section)
     {

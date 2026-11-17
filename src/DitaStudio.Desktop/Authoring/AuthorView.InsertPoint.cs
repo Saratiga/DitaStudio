@@ -19,9 +19,11 @@ namespace DitaStudio.Desktop.Authoring;
 // идёт «после текущего». Курсор в тексте блока, Esc и стрелки убирают черту.
 public sealed partial class AuthorView
 {
-    /// <summary>Место между блоками: новый блок встанет в <paramref name="Parent"/> на позицию <paramref name="Index"/>,
-    /// сразу после <paramref name="Anchor"/>.</summary>
-    public sealed record InsertPoint(DitaNode Anchor, DitaNode Parent, int Index);
+    /// <summary>
+    /// Место между блоками: новый блок встанет в <paramref name="Parent"/> на позицию <paramref name="Index"/> — сразу после
+    /// <paramref name="Anchor"/>, а при <paramref name="Before"/> — перед ним (первый блок раздела, ячейки, абзац сразу после заголовка).
+    /// </summary>
+    public sealed record InsertPoint(DitaNode Anchor, DitaNode Parent, int Index, bool Before = false);
 
     private InsertPoint? _insertPoint;
     private Border? _insertMarker;
@@ -42,6 +44,18 @@ public sealed partial class AuthorView
         }
 
         SetInsertPoint(found);
+        return true;
+    }
+
+    /// <summary>Точка вставки перед блоком <paramref name="anchor"/> (если туда можно что-нибудь вставить).</summary>
+    public bool PlaceInsertPointBefore(DitaNode anchor)
+    {
+        if (anchor.Parent is not { } parent || !CanHoldInsertPoint(anchor, before: true))
+        {
+            return false;
+        }
+
+        SetInsertPoint(new InsertPoint(anchor, parent, EditCommands.ElementIndexOf(parent, anchor), Before: true));
         return true;
     }
 
@@ -66,34 +80,61 @@ public sealed partial class AuthorView
 
         // Блок над точкой: нижний край выше точки и ниже всех остальных таких. Из блоков с общим нижним краем (последний
         // абзац заметки и сама заметка, последняя строка таблицы и таблица) берётся внешний — черта после него.
+        // Блок под точкой: верхний край ниже точки и выше всех остальных — черта перед ним (первый абзац раздела или ячейки,
+        // абзац сразу под заголовком, после которого вставить нельзя). Берётся то место, чей край ближе к щелчку.
         DitaNode? best = null;
         var bestBottom = double.MinValue;
-        foreach (var (node, view) in _views)
+        DitaNode? below = null;
+        var belowTop = double.MaxValue;
+        foreach (var (node, view) in InsertPointViews())
         {
-            if (!CanHoldInsertPoint(node) || view.GetVisualRoot() is null || view.TranslatePoint(new Point(0, 0), _panel) is not { } origin)
+            if (view.GetVisualRoot() is null || view.TranslatePoint(new Point(0, 0), _panel) is not { } origin)
             {
                 continue;
             }
 
             var bounds = new Rect(origin, view.Bounds.Size);
-            if (bounds.Bottom > point.Y + 1 || bounds.Width <= 0 || point.X < bounds.Left - 40 || point.X > bounds.Right + 40)
+            if (bounds.Width <= 0 || point.X < bounds.Left - 40 || point.X > bounds.Right + 40)
             {
                 continue;
             }
 
-            if (bounds.Bottom > bestBottom + 1.5 ||
-                (Math.Abs(bounds.Bottom - bestBottom) <= 1.5 && best is not null && best.Ancestors().Contains(node)))
+            if (bounds.Bottom <= point.Y + 1 && CanHoldInsertPoint(node) &&
+                (bounds.Bottom > bestBottom + 1.5 ||
+                 (Math.Abs(bounds.Bottom - bestBottom) <= 1.5 && best is not null && best.Ancestors().Contains(node))))
             {
                 best = node;
                 bestBottom = bounds.Bottom;
             }
+
+            if (bounds.Top >= point.Y - 1 && CanHoldInsertPoint(node, before: true) &&
+                (bounds.Top < belowTop - 1.5 ||
+                 (Math.Abs(bounds.Top - belowTop) <= 1.5 && below is not null && below.Ancestors().Contains(node))))
+            {
+                below = node;
+                belowTop = bounds.Top;
+            }
+        }
+
+        // «Перед» — только если над точкой нет места «после» ближе, чем край блока под ней (например, между заголовком и абзацем).
+        if (below is { Parent: { } belowParent } && (best is null || belowTop - point.Y < point.Y - bestBottom) &&
+            !(best is not null && ReferenceEquals(best.Parent, belowParent) &&
+              EditCommands.ElementIndexOf(belowParent, best) + 1 == EditCommands.ElementIndexOf(belowParent, below)))
+        {
+            return new InsertPoint(below, belowParent, EditCommands.ElementIndexOf(belowParent, below), Before: true);
         }
 
         return best is { Parent: { } parent } ? new InsertPoint(best, parent, EditCommands.ElementIndexOf(parent, best) + 1) : null;
     }
 
-    /// <summary>После узла может стоять точка вставки: он блочный, не часть таблицы и не сноска, а после него допустим блок.</summary>
-    private static bool CanHoldInsertPoint(DitaNode node)
+    /// <summary>Блоки, у которых может стоять черта: представления блоков и блоки внутри ячеек таблиц.</summary>
+    private IEnumerable<(DitaNode Node, Control View)> InsertPointViews() => _views.Select(pair => (pair.Key, pair.Value));
+
+    /// <summary>
+    /// После (или перед) узлом может стоять точка вставки: он блочный, не строка таблицы и не сноска, а в этом месте допустим блок.
+    /// Блоки внутри ячейки (абзацы, списки) — тоже: черта между ними, перед первым и после последнего.
+    /// </summary>
+    private static bool CanHoldInsertPoint(DitaNode node, bool before = false)
     {
         var catalog = DitaCatalog.Default;
         if (node.Kind != NodeKind.Element || node.Parent is not { } parent || node.Name == "fn" ||
@@ -103,7 +144,7 @@ public sealed partial class AuthorView
             return false;
         }
 
-        return catalog.InsertableAt(parent, EditCommands.ElementIndexOf(parent, node) + 1)
+        return catalog.InsertableAt(parent, EditCommands.ElementIndexOf(parent, node) + (before ? 0 : 1))
             .Any(d => d.Display is not (DisplayKind.Inline or DisplayKind.Empty));
     }
 
@@ -189,8 +230,10 @@ public sealed partial class AuthorView
             return;
         }
 
-        // Черта — посередине промежутка до следующего блока (не больше 6 px ниже блока).
-        var y = bottom.Y + 3;
+        // Черта — посередине промежутка до следующего блока (не больше 6 px ниже блока); у точки «перед» — над блоком.
+        var y = _insertPoint.Before
+            ? (view.TranslatePoint(new Point(0, 0), _root) is { } top ? top.Y - 3 : bottom.Y)
+            : bottom.Y + 3;
         _insertMarker.Margin = new Thickness(bottom.X, y, 0, 0);
         _insertMarker.Width = Math.Max(24, view.Bounds.Width);
         _insertMarker.IsVisible = y >= 0 && y <= _root.Bounds.Height;
@@ -258,7 +301,30 @@ public sealed partial class AuthorView
                 var rect = _insertMarker is { IsVisible: true } marker
                     ? new Rect(marker.Margin.Left, marker.Margin.Top, 1, 2)
                     : new Rect(0, 0, 1, 1);
-                return OpenInsertMenu(point.Anchor, null, _root, rect, () => Focus());
+                return point.Before
+                    ? OpenInsertMenu(null, null, _root, rect, () => Focus(), (point.Parent, point.Index))
+                    : OpenInsertMenu(point.Anchor, null, _root, rect, () => Focus());
+
+            case Key.Up or Key.Left when point.Before:
+                // Курсор в конец блока перед чертой (или в начало блока под ней, если выше ничего нет).
+                ClearInsertPoint();
+                var previous = _order.TakeWhile(ed => !(ReferenceEquals(ed.Node, point.Anchor) || ed.Node.Ancestors().Contains(point.Anchor)))
+                    .LastOrDefault(ed => ed.Node.Name != "fn");
+                if (previous is not null)
+                {
+                    previous.FocusEditor(previous.PlainTextLength);
+                }
+                else
+                {
+                    _order.FirstOrDefault(ed => ReferenceEquals(ed.Node, point.Anchor) || ed.Node.Ancestors().Contains(point.Anchor))?.FocusEditor(0);
+                }
+
+                return true;
+
+            case Key.Down or Key.Right when point.Before:
+                ClearInsertPoint();
+                _order.FirstOrDefault(ed => ReferenceEquals(ed.Node, point.Anchor) || ed.Node.Ancestors().Contains(point.Anchor))?.FocusEditor(0);
+                return true;
 
             case Key.Up or Key.Left:
                 // Курсор в конец блока над чертой.
@@ -297,7 +363,7 @@ public sealed partial class AuthorView
 
         var text = SystemClipboard is { } clipboard ? await clipboard.TryGetTextAsync() : null;
         text ??= BlockClipboard.LastCopiedText;
-        if (BlockClipboard.Parse(text) is not null)
+        if (BlockClipboard.Parse(text) is not null && !point.Before)
         {
             ClearInsertPoint();
             await PasteBlocksAsync(point.Anchor);
